@@ -11,6 +11,11 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+
 # Jobs structure:
 #
 # 1. Runs unit tests
