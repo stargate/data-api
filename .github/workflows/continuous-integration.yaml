@@ -60,9 +60,11 @@ jobs:
         include:
           - type: docker
             profile: ''
+            image: docsapi
 
           - type: native
             profile: '-Pnative'
+            image: docsapi-native
 
     steps:
       - uses: actions/checkout@v3
@@ -84,7 +86,7 @@ jobs:
       - name: Export docker image (if failed)
         if: ${{ failure() }}
         run: |
-          docker save --output ${{ matrix.type }}-${{ github.sha }}.tar stargateio/docsapi-native:${{ github.sha }}
+          docker save --output ${{ matrix.type }}-${{ github.sha }}.tar stargateio/${{ matrix.image }}:${{ github.sha }}
 
       # then upload
       - name: Upload docker Image (if failed)
