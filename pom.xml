@@ -115,6 +115,7 @@
                 <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
                 <testing.containers.cluster-version>${stargate.int-test.cluster.version}</testing.containers.cluster-version>
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
+                <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
               </systemPropertyVariables>
               <includes>

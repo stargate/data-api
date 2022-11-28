@@ -12,6 +12,7 @@ import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
@@ -73,6 +74,11 @@ class CollectionResourceIntegrationTest {
     }
 
     @Test
+    @DisabledIfSystemProperty(
+        named = "testing.package.type",
+        matches = "native",
+        disabledReason =
+            "[V2 exception mappers map to ApiError which is not registered for refection](https://github.com/riptano/sgv3-docsapi/issues/8)")
     public void notValidDocumentMissing() {
       String json =
           """
