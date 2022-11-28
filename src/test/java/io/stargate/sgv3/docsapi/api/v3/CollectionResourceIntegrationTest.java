@@ -30,7 +30,7 @@ class CollectionResourceIntegrationTest {
       String json =
           """
               {
-                "insertOne": {
+                "findOne": {
                   "sort": ["user.age"]
                 }
               }
