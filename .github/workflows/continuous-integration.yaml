@@ -77,17 +77,17 @@ jobs:
       # run the int tests
       - name: Integration Test
         run: |
-          ./mvnw -B -ntp verify -DskipUnitTests -Dquarkus.container-image.build=true ${{ matrix.profile }}
+          ./mvnw -B -ntp verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
 
       # lets upload with docker image in case test fails
       # first export
-      - name: Export docker image
+      - name: Export docker image (if failed)
         if: ${{ failure() }}
         run: |
           docker save --output ${{ matrix.type }}-${{ github.sha }}.tar stargateio/docsapi-native:${{ github.sha }}
 
       # then upload
-      - name: Upload Docker Images
+      - name: Upload docker Image (if failed)
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
