@@ -1,6 +1,5 @@
 package io.stargate.sgv3.docsapi.api.model.command;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
@@ -30,5 +29,4 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
   @JsonSubTypes.Type(value = FindOneCommand.class),
   @JsonSubTypes.Type(value = InsertOneCommand.class),
 })
-@JsonIgnoreProperties({"commandName"})
 public interface Command {}

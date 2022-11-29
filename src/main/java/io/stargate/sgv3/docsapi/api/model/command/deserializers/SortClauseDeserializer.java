@@ -24,14 +24,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
   @Override
   public SortClause deserialize(JsonParser parser, DeserializationContext ctxt)
       throws IOException, JacksonException {
-    JsonNode node = parser.getCodec().readTree(parser);
+    JsonNode node = ctxt.readTree(parser);
 
     // if missing or null, return null back
     if (node.isMissingNode() || node.isNull()) {
+      // TODO should we return empty sort clause instead?
       return null;
     }
 
     // TODO, should we have specific exceptions, or throw generic JSON ones?
+    //  https://github.com/riptano/sgv3-docsapi/issues/9
 
     // otherwise, if it's not array throw exception
     if (!node.isArray()) {
