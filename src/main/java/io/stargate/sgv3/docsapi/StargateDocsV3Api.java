@@ -80,7 +80,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
             }))
-public class StargateDocsApi extends Application {
+public class StargateDocsV3Api extends Application {
 
   @Produces
   @SourceApiQualifier
