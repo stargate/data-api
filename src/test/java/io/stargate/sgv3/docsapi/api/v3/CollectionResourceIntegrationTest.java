@@ -12,6 +12,7 @@ import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
@@ -23,17 +24,78 @@ class CollectionResourceIntegrationTest {
   }
 
   @Nested
-  class PostCommand {
+  class FindOne {
 
     @Test
     public void happyPath() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "sort": ["user.age"]
+                }
+              }
+              """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
+          .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, "database", "collection")
           .then()
           .statusCode(200);
+    }
+  }
+
+  @Nested
+  class InsertOne {
+
+    @Test
+    public void emptyDocument() {
+      String json =
+          """
+          {
+            "insertOne": {
+              "document": {
+              }
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "database", "collection")
+          .then()
+          .statusCode(200);
+    }
+
+    @Test
+    @DisabledIfSystemProperty(
+        named = "testing.package.type",
+        matches = "native",
+        disabledReason =
+            "[V2 exception mappers map to ApiError which is not registered for refection](https://github.com/riptano/sgv3-docsapi/issues/8)")
+    public void notValidDocumentMissing() {
+      String json =
+          """
+              {
+                "insertOne": {
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "database", "collection")
+          .then()
+          .statusCode(400);
     }
   }
 }

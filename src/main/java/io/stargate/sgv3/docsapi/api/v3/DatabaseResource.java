@@ -8,12 +8,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
 
 @Path(DatabaseResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
+@Tag(name = "Databases", description = "Executes database commands.")
 public class DatabaseResource {
 
   public static final String BASE_PATH = "/v3/{database}";
