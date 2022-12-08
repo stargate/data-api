@@ -50,18 +50,23 @@ public class CommandProcessor {
     return commandResolverService
         .resolverForCommand(command)
 
-        // create operation and execute
+        // resolver can be null, not handled in CommandResolverService for now
         .flatMap(
             resolver -> {
+              // TODO this should rather throw exception that can be trasnformed to the error
+              // stating that the command is not implemented
+              if (null == resolver) {
+                return Uni.createFrom().item(new CommandResult());
+              }
+
+              // if we have resolver, resolve operation and execute
               Operation operation = resolver.resolveCommand(commandContext, command);
-              return operation.execute(stargateBridge);
-            })
-
-        // call supplier get to map to the command result
-        .onItem()
-        .ifNotNull()
-        .transform(Supplier::get);
-
-    // TODO if we want to map errors here to CommandResult, this is the place
+              return operation
+                  .execute(stargateBridge) // call supplier get to map to the command result
+                  .onItem()
+                  .ifNotNull()
+                  .transform(Supplier::get);
+            });
+    // TODO if we want to catch errors here and map to CommandResult, this is the place
   }
 }
