@@ -2,14 +2,19 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
+import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
+import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv3.docsapi.config.constants.OpenApiConstants;
+import io.stargate.sgv3.docsapi.service.processor.CommandProcessor;
+import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -32,6 +37,13 @@ public class CollectionResource {
 
   public static final String BASE_PATH = "/v3/{database}/{collection}";
 
+  private final CommandProcessor commandProcessor;
+
+  @Inject
+  public CollectionResource(CommandProcessor commandProcessor) {
+    this.commandProcessor = commandProcessor;
+  }
+
   @Operation(
       summary = "Execute command",
       description = "Executes a single command against a collection.")
@@ -50,7 +62,19 @@ public class CollectionResource {
                 @ExampleObject(ref = "insertOne"),
               }))
   @POST
-  public Uni<RestResponse<?>> postCommand(@NotNull @Valid Command command) {
-    return Uni.createFrom().item(RestResponse.ok());
+  public Uni<RestResponse<CommandResult>> postCommand(
+      @NotNull @Valid Command command,
+      @PathParam("database") String database,
+      @PathParam("collection") String collection) {
+
+    // create context
+    CommandContext commandContext = new CommandContext(database, collection);
+
+    // call processor
+    return commandProcessor
+        .processCommand(commandContext, command)
+
+        // map to 2xx always
+        .map(RestResponse::ok);
   }
 }
