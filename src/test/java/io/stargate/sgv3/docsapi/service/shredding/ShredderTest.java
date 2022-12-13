@@ -8,9 +8,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +32,8 @@ public class ShredderTest {
 { "_id" : "abc",
   "name" : "Bob",
   "values" : [ 1, 2 ],
-  "[extra.stuff]" : true
+  "[extra.stuff]" : true,
+  "nullable" : null
 }
                 """;
     WritableShreddedDocument doc = shredder.shred(objectMapper.readTree(JSON));
@@ -39,10 +44,34 @@ public class ShredderTest {
             JSONPath.fromEncoded("values"),
             JSONPath.fromEncoded("values.[0]"),
             JSONPath.fromEncoded("values.[1]"),
-            JSONPath.fromEncoded("\\[extra\\.stuff]"));
+            JSONPath.fromEncoded("\\[extra\\.stuff]"),
+            JSONPath.fromEncoded("nullable"));
 
+    // First verify paths
     assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
     assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+    // Then array info (doc has one array)
+    assertThat(doc.arrayContents()).isEmpty(); // not yet implemented
+    assertThat(doc.arrayEquals()).isEmpty(); // not yet implemented
+    assertThat(doc.arraySize())
+        .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("values"), Integer.valueOf(2)));
+
+    // Sub-documents (Object values)
+    assertThat(doc.subDocEquals()).isEmpty();
+
+    // Then atomic value containers
+    assertThat(doc.queryBoolValues())
+        .isEqualTo(
+            Collections.singletonMap(JSONPath.fromEncoded("\\[extra\\.stuff]"), Boolean.TRUE));
+    Map<JSONPath, BigDecimal> expNums = new LinkedHashMap<>();
+    expNums.put(JSONPath.fromEncoded("values.[0]"), BigDecimal.valueOf(1));
+    expNums.put(JSONPath.fromEncoded("values.[1]"), BigDecimal.valueOf(2));
+    assertThat(doc.queryNumberValues()).isEqualTo(expNums);
+    assertThat(doc.queryTextValues())
+        .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("name"), "Bob"));
+    assertThat(doc.queryNullValues())
+        .isEqualTo(Collections.singleton(JSONPath.fromEncoded("nullable")));
   }
 
   @Test
