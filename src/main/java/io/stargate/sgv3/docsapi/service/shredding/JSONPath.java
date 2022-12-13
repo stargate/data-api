@@ -62,6 +62,10 @@ public final class JSONPath {
     return new JSONPath(encoded);
   }
 
+  public static Builder rootBuilder() {
+    return new Builder(null);
+  }
+
   @Override
   public int hashCode() {
     return encodedPath.hashCode();
@@ -100,7 +104,7 @@ public final class JSONPath {
       return new Builder(encoded);
     }
 
-    public void property(String propName) {
+    public Builder property(String propName) {
       // Properties trickier since need to escape '.' and '['
       StringBuilder sb;
       final int len = propName.length();
@@ -119,9 +123,10 @@ public final class JSONPath {
         sb.append(c);
       }
       encoded = sb.toString();
+      return this;
     }
 
-    public void index(int index) {
+    public Builder index(int index) {
       // Indexes are easy as no escaping needed
       StringBuilder sb;
 
@@ -131,6 +136,7 @@ public final class JSONPath {
         sb = new StringBuilder(base).append('.');
       }
       encoded = sb.append('[').append(index).append(']').toString();
+      return this;
     }
 
     public JSONPath build() {
@@ -140,9 +146,5 @@ public final class JSONPath {
       }
       return new JSONPath(encoded);
     }
-  }
-
-  public static Builder rootBuilder() {
-    return new Builder(null);
   }
 }
