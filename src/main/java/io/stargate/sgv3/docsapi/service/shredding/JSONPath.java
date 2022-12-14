@@ -40,8 +40,10 @@ import java.util.Objects;
  *   <li>{@code "values.[1]"}
  *   <li>{@code "\\[extra\\.stuff]"}
  * </ul>
+ *
+ * <p>Instances can be sorted; sorting order uses underlying encoded path value.
  */
-public final class JSONPath {
+public final class JSONPath implements Comparable<JSONPath> {
   private static final JSONPath ROOT_PATH = new JSONPath("$");
 
   private final String encodedPath;
@@ -80,6 +82,12 @@ public final class JSONPath {
   public boolean equals(Object o) {
     if (o == this) return true;
     return (o instanceof JSONPath) && encodedPath.equals(((JSONPath) o).encodedPath);
+  }
+
+  @Override
+  public int compareTo(JSONPath o) {
+    // Sorting by lexicographic (~= alphabetic) order of encoded path
+    return this.encodedPath.compareTo(o.encodedPath);
   }
 
   /**
