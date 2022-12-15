@@ -2,6 +2,8 @@ package io.stargate.sgv3.docsapi.service.resolver;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +37,19 @@ public class CommandResolverService {
    * @param <T> Type of the command
    */
   public <T extends Command> Uni<CommandResolver<T>> resolverForCommand(T command) {
-    // TODO should we already emit an error on null?
-    return Uni.createFrom().item((CommandResolver<T>) resolvers.get(command.getClass()));
+    // try to get from the map of resolvers
+    return Uni.createFrom()
+        .item((CommandResolver<T>) resolvers.get(command.getClass()))
+
+        // if this results to null, fail here with not implemented
+        .onItem()
+        .ifNull()
+        .failWith(
+            () -> {
+              String msg =
+                  "The command %s is not implemented."
+                      .formatted(command.getClass().getSimpleName());
+              return new DocsException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
+            });
   }
 }
