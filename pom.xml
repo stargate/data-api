@@ -72,6 +72,27 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <scope>provided</scope>
+      <version>2.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javatuples</groupId>
+      <artifactId>javatuples</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-core</artifactId>
+      <version>4.14.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-query-builder</artifactId>
+      <version>4.14.1</version>
+    </dependency>
+    <dependency>
       <groupId>io.stargate</groupId>
       <artifactId>sgv2-quarkus-common</artifactId>
       <version>${stargate.version}</version>
