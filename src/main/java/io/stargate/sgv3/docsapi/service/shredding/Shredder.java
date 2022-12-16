@@ -40,11 +40,13 @@ public class Shredder {
     }
     ObjectNode docOb = (ObjectNode) doc;
 
-    // We will remove id if there is one
+    // We will extract id if there is one; stored separately, removed so we won't process
+    // it, add path or such (since it has specific meaning separate from general properties)
     JsonNode idNode = docOb.remove("_id");
     final String id;
 
-    // For now not having id is ok since insertion may omit it and auto-generate instead
+    // Cannot require existence as id often auto-generated when inserting: caller has to verify
+    // if existence required
     if (idNode == null) {
       id = null;
     } else {
@@ -65,7 +67,11 @@ public class Shredder {
     throw new RuntimeException(String.format(format, args));
   }
 
-  private void traverse(JsonNode doc, ShredCallback callback, JSONPath.Builder pathBuilder) {
+  /**
+   * Main traversal method we need to produce callbacks to passed-in listener; used to separate
+   * shredding logic from that of recursive-descent traversal.
+   */
+  private void traverse(JsonNode doc, ShredListener callback, JSONPath.Builder pathBuilder) {
     // NOTE: main level is handled bit differently; no callbacks for Objects or Arrays,
     // only for the (rare) case of atomic values. Just traversal.
 
@@ -79,7 +85,7 @@ public class Shredder {
   }
 
   private void traverseObject(
-      ObjectNode obj, ShredCallback callback, JSONPath.Builder pathBuilder) {
+      ObjectNode obj, ShredListener callback, JSONPath.Builder pathBuilder) {
     Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
@@ -88,7 +94,7 @@ public class Shredder {
     }
   }
 
-  private void traverseArray(ArrayNode arr, ShredCallback callback, JSONPath.Builder pathBuilder) {
+  private void traverseArray(ArrayNode arr, ShredListener callback, JSONPath.Builder pathBuilder) {
     int ix = 0;
     for (JsonNode value : arr) {
       pathBuilder.index(ix++);
@@ -96,7 +102,7 @@ public class Shredder {
     }
   }
 
-  private void traverseValue(JsonNode value, ShredCallback callback, JSONPath.Builder pathBuilder) {
+  private void traverseValue(JsonNode value, ShredListener callback, JSONPath.Builder pathBuilder) {
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
       callback.shredObject(pathBuilder, ob);

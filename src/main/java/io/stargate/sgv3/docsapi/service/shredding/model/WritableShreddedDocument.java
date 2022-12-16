@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv3.docsapi.service.shredding.JSONPath;
-import io.stargate.sgv3.docsapi.service.shredding.ShredCallback;
+import io.stargate.sgv3.docsapi.service.shredding.ShredListener;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,9 +40,9 @@ public record WritableShreddedDocument(
 
   /**
    * Due to large number of fields we need a Builder to construct instances. Builder also implements
-   * {@link ShredCallback} for automated construction when traversing a Document.
+   * {@link ShredListener} for automated construction when traversing a Document.
    */
-  public static class Builder implements ShredCallback {
+  public static class Builder implements ShredListener {
     /**
      * We use helper object for efficient calculation of content value hashes we need for shredded
      * results.
