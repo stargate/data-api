@@ -51,14 +51,14 @@ public class ShredderTest {
     assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
     assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
 
-    // Then array info (doc has one array)
-    assertThat(doc.arrayContents()).isEmpty(); // not yet implemented
-    assertThat(doc.arrayEquals()).isEmpty(); // not yet implemented
+    // Then array info (doc has one array, with 2 elements)
     assertThat(doc.arraySize())
         .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("values"), Integer.valueOf(2)));
+    assertThat(doc.arrayEquals()).hasSize(1);
+    assertThat(doc.arrayContains()).hasSize(2);
 
-    // Sub-documents (Object values)
-    assertThat(doc.subDocEquals()).isEmpty();
+    // Sub-documents (Object values): none in this example
+    assertThat(doc.subDocEquals()).hasSize(0);
 
     // Then atomic value containers
     assertThat(doc.queryBoolValues())

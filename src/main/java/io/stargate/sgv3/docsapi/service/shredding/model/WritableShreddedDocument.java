@@ -1,5 +1,6 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv3.docsapi.service.shredding.JSONPath;
@@ -17,6 +18,10 @@ import java.util.UUID;
 
 /** The fully shredded document, everything we need to write the document. */
 public record WritableShreddedDocument(
+    /**
+     * Unique id of this document: may be {@code null} when inserting; if so, will be
+     * auto-generated.
+     */
     String id,
     Optional<UUID> txID,
     List<JSONPath> docFieldOrder,
@@ -24,13 +29,13 @@ public record WritableShreddedDocument(
     Map<JSONPath, String> subDocEquals,
     Map<JSONPath, Integer> arraySize,
     Map<JSONPath, String> arrayEquals,
-    Map<JSONPath, String> arrayContents,
+    Set<String> arrayContains,
     Map<JSONPath, Boolean> queryBoolValues,
     Map<JSONPath, BigDecimal> queryNumberValues,
     Map<JSONPath, String> queryTextValues,
     Set<JSONPath> queryNullValues) {
-  public static Builder builder(String id, Optional<UUID> txID) {
-    return new Builder(id, txID);
+  public static Builder builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
+    return new Builder(hasher, id, txID);
   }
 
   /**
@@ -38,6 +43,12 @@ public record WritableShreddedDocument(
    * {@link ShredCallback} for automated construction when traversing a Document.
    */
   public static class Builder implements ShredCallback {
+    /**
+     * We use helper object for efficient calculation of content value hashes we need for shredded
+     * results.
+     */
+    private final DocValueHasher hasher;
+
     private final String id;
     private final Optional<UUID> txID;
 
@@ -49,14 +60,15 @@ public record WritableShreddedDocument(
 
     private Map<JSONPath, Integer> arraySize;
     private Map<JSONPath, String> arrayEquals;
-    private Map<JSONPath, String> arrayContents;
+    private Set<String> arrayContains;
 
     private Map<JSONPath, Boolean> queryBoolValues;
     private Map<JSONPath, BigDecimal> queryNumberValues;
     private Map<JSONPath, String> queryTextValues;
     private Set<JSONPath> queryNullValues;
 
-    public Builder(String id, Optional<UUID> txID) {
+    public Builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
+      this.hasher = hasher;
       this.id = id;
       this.txID = txID;
 
@@ -81,7 +93,7 @@ public record WritableShreddedDocument(
           _nonNull(subDocEquals),
           _nonNull(arraySize),
           _nonNull(arrayEquals),
-          _nonNull(arrayContents),
+          _nonNull(arrayContains),
           _nonNull(queryBoolValues),
           _nonNull(queryNumberValues),
           _nonNull(queryTextValues),
@@ -107,19 +119,34 @@ public record WritableShreddedDocument(
       final JSONPath path = pathBuilder.build();
       addKey(path);
 
-      // !!! TODO: subDocEquals
+      if (subDocEquals == null) {
+        subDocEquals = new HashMap<>();
+      }
+      subDocEquals.put(path, hasher.hash(obj).toString());
     }
 
     @Override
     public void shredArray(JSONPath.Builder pathBuilder, ArrayNode arr) {
       final JSONPath path = pathBuilder.build();
       addKey(path);
-      if (arraySize == null) {
+      if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
+        arrayEquals = new HashMap<>();
+        arrayContains = new HashSet<>();
       }
       arraySize.put(path, arr.size());
 
-      // !!! TODO: arrayEquals, arrayContains
+      // 16-Dec-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
+      //    is quite unclear: older documents claim it's "JSONPath + content hash" (per
+      //    element presumably). For now will use that, with space as separator; probably
+      //    not what we want but...
+
+      arrayEquals.put(path, hasher.hash(arr).toString());
+      for (JsonNode element : arr) {
+        // Assuming it's path to array, NOT index, since otherwise containment tricky.
+        // Plus atomic values contains entries for in-array atomics anyway
+        arrayContains.add(path + " " + hasher.hash(element).toString());
+      }
     }
 
     @Override

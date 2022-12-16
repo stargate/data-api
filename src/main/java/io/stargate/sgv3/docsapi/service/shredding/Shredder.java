@@ -3,6 +3,7 @@ package io.stargate.sgv3.docsapi.service.shredding;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.Iterator;
 import java.util.Map;
@@ -53,7 +54,8 @@ public class Shredder {
       id = idNode.asText();
     }
 
-    final WritableShreddedDocument.Builder b = WritableShreddedDocument.builder(id, txId);
+    final WritableShreddedDocument.Builder b =
+        WritableShreddedDocument.builder(new DocValueHasher(), id, txId);
     traverse(doc, b, JSONPath.rootBuilder());
     return b.build();
   }
