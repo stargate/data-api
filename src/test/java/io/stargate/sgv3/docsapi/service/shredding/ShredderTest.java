@@ -51,6 +51,9 @@ public class ShredderTest {
     assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
     assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
 
+    // Atomic value counts (5 atomic fields, _id not included)
+    assertThat(doc.docAtomicFields()).hasSize(5);
+
     // Then array info (doc has one array, with 2 elements)
     assertThat(doc.arraySize())
         .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("values"), Integer.valueOf(2)));

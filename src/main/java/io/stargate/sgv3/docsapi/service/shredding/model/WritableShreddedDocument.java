@@ -23,8 +23,10 @@ public record WritableShreddedDocument(
      * auto-generated.
      */
     String id,
+    /** Optional transaction id used for optimistic locking */
     Optional<UUID> txID,
     List<JSONPath> docFieldOrder,
+    Map<JSONPath, String> docAtomicFields,
     Set<JSONPath> existKeys,
     Map<JSONPath, String> subDocEquals,
     Map<JSONPath, Integer> arraySize,
@@ -54,6 +56,8 @@ public record WritableShreddedDocument(
 
     private final List<JSONPath> docFieldOrder;
 
+    private final Map<JSONPath, String> docAtomicFields;
+
     private final Set<JSONPath> existKeys;
 
     private Map<JSONPath, String> subDocEquals;
@@ -76,6 +80,7 @@ public record WritableShreddedDocument(
       // expected to be always needed are pre-allocated
 
       docFieldOrder = new ArrayList<>();
+      docAtomicFields = new HashMap<>();
       existKeys = new HashSet<>();
     }
 
@@ -89,6 +94,7 @@ public record WritableShreddedDocument(
           id,
           txID,
           docFieldOrder,
+          docAtomicFields,
           existKeys,
           _nonNull(subDocEquals),
           _nonNull(arraySize),
@@ -156,6 +162,9 @@ public record WritableShreddedDocument(
         queryTextValues = new HashMap<>();
       }
       queryTextValues.put(path, text);
+
+      // !!! TODO: actual value, not hash
+      docAtomicFields.put(path, hasher.stringHash(text).toString());
     }
 
     @Override
@@ -165,6 +174,8 @@ public record WritableShreddedDocument(
         queryNumberValues = new HashMap<>();
       }
       queryNumberValues.put(path, number);
+      // !!! TODO: actual value, not hash
+      docAtomicFields.put(path, hasher.numberHash(number).toString());
     }
 
     @Override
@@ -174,6 +185,8 @@ public record WritableShreddedDocument(
         queryBoolValues = new HashMap<>();
       }
       queryBoolValues.put(path, value);
+      // !!! TODO: actual value, not hash
+      docAtomicFields.put(path, hasher.booleanHash(value).toString());
     }
 
     @Override
@@ -183,6 +196,8 @@ public record WritableShreddedDocument(
         queryNullValues = new HashSet<>();
       }
       queryNullValues.add(path);
+      // !!! TODO: actual value, not hash
+      docAtomicFields.put(path, hasher.nullHash().toString());
     }
 
     /*

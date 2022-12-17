@@ -37,8 +37,8 @@ public class DocValueHasher {
   public DocValueHash hash(JsonNode value) {
     return switch (value.getNodeType()) {
       case ARRAY -> arrayHash((ArrayNode) value);
-      case BOOLEAN -> value.booleanValue() ? HASH_BOOLEAN_TRUE : HASH_BOOLEAN_FALSE;
-      case NULL -> HASH_NULL;
+      case BOOLEAN -> booleanHash(value.booleanValue());
+      case NULL -> nullHash();
       case NUMBER -> numberHash(value.decimalValue());
       case OBJECT -> objectHash((ObjectNode) value);
       case STRING -> stringHash(value.textValue());
@@ -48,7 +48,11 @@ public class DocValueHasher {
     };
   }
 
-  private DocValueHash numberHash(BigDecimal value) {
+  public DocValueHash booleanHash(boolean b) {
+    return b ? HASH_BOOLEAN_TRUE : HASH_BOOLEAN_FALSE;
+  }
+
+  public DocValueHash numberHash(BigDecimal value) {
     DocValueHash hash = atomicHashes.get(value);
     if (hash == null) {
       hash = calcNumberHash(value);
@@ -57,7 +61,11 @@ public class DocValueHasher {
     return hash;
   }
 
-  private DocValueHash stringHash(String value) {
+  public DocValueHash nullHash() {
+    return HASH_NULL;
+  }
+
+  public DocValueHash stringHash(String value) {
     DocValueHash hash = atomicHashes.get(value);
     if (hash == null) {
       hash = calcStringHash(value);
@@ -66,7 +74,7 @@ public class DocValueHasher {
     return hash;
   }
 
-  private DocValueHash arrayHash(ArrayNode n) {
+  public DocValueHash arrayHash(ArrayNode n) {
     DocValueHash hash = structuredHashes.get(n);
     if (hash == null) {
       hash = calcArrayHash(n);
@@ -75,7 +83,7 @@ public class DocValueHasher {
     return hash;
   }
 
-  private DocValueHash objectHash(ObjectNode n) {
+  public DocValueHash objectHash(ObjectNode n) {
     DocValueHash hash = structuredHashes.get(n);
     if (hash == null) {
       hash = calcObjectHash(n);
@@ -105,29 +113,28 @@ public class DocValueHasher {
    */
 
   private DocValueHash calcArrayHash(ArrayNode n) {
-    // !!! TODO: proper implementation: for now create json-ish (but not valid) lookalike
-    //  (and do not yet do MD5 hashing for full value)
-    StringBuilder sb = new StringBuilder();
-    sb.append('[');
+    // !!! TODO: proper implementation:
+
+    // Actual implementation would actually use iterated over values;
+    // we will traverse to exercise caching for tests but not really use:
     for (JsonNode element : n) {
-      sb.append(hash(element).toString()).append(',');
+      DocValueHash childHash = hash(element);
     }
-    sb.append(']');
-    return new DocValueHash(sb.toString());
+
+    return new DocValueHash("[]");
   }
 
   private DocValueHash calcObjectHash(ObjectNode n) {
-    // !!! TODO: proper implementation: for now create json-ish (but not valid) lookalike
-    //  (and do not yet do MD5 hashing for full value)
-    StringBuilder sb = new StringBuilder();
-    sb.append('{');
+    // !!! TODO: proper implementation:
+
+    // Actual implementation would actually use iterated over values;
+    // we will traverse to exercise caching for tests but not really use:
     Iterator<Map.Entry<String, JsonNode>> it = n.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
-      sb.append(entry.getKey()).append(':');
-      sb.append(hash(entry.getValue()).toString()).append(',');
+      DocValueHash childHash = hash(entry.getValue());
     }
-    sb.append('}');
-    return new DocValueHash(sb.toString());
+
+    return new DocValueHash("{}");
   }
 }

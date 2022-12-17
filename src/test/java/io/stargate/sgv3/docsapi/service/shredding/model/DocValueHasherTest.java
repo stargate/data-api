@@ -52,14 +52,14 @@ public class DocValueHasherTest {
     DocValueHash hash = hasher.hash(doc);
     assertThat(hash).isNotNull();
 
-    // 4 distinct cacheable atomic values
-    assertThat(hasher.atomicHashes).hasSize(4);
-
     // 4 arrays (main array, 3 sub-arrays)
     // Note: unlike with atomic values,
     // structured values are not de-duplicated (JsonNode identity only used to avoid
     // re-processing)
     assertThat(hasher.structuredHashes).hasSize(4);
+
+    // 4 distinct cacheable atomic values
+    assertThat(hasher.atomicHashes).hasSize(4);
   }
 
   @Test
@@ -79,13 +79,13 @@ public class DocValueHasherTest {
     DocValueHash hash = hasher.hash(doc);
     assertThat(hash).isNotNull();
 
-    // 3 distinct cacheable atomic values
-    assertThat(hasher.atomicHashes).hasSize(3);
-
     // 3 documents (main doc, 2 sub-docs)
     // Note: unlike with atomic values,
     // structured values are not de-duplicated (JsonNode identity only used to avoid
     // re-processing)
     assertThat(hasher.structuredHashes).hasSize(3);
+
+    // 3 distinct cacheable atomic values
+    assertThat(hasher.atomicHashes).hasSize(3);
   }
 }

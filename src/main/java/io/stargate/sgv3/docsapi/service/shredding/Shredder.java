@@ -86,6 +86,7 @@ public class Shredder {
 
   private void traverseObject(
       ObjectNode obj, ShredListener callback, JSONPath.Builder pathBuilder) {
+
     Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
