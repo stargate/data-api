@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Helper class used to efficiently calculate {@link DocValueHash} on input documents as part of
@@ -103,10 +105,29 @@ public class DocValueHasher {
    */
 
   private DocValueHash calcArrayHash(ArrayNode n) {
-    return new DocValueHash("[]"); // !!! TODO
+    // !!! TODO: proper implementation: for now create json-ish (but not valid) lookalike
+    //  (and do not yet do MD5 hashing for full value)
+    StringBuilder sb = new StringBuilder();
+    sb.append('[');
+    for (JsonNode element : n) {
+      sb.append(hash(element).toString()).append(',');
+    }
+    sb.append(']');
+    return new DocValueHash(sb.toString());
   }
 
   private DocValueHash calcObjectHash(ObjectNode n) {
-    return new DocValueHash("{}"); // !!! TODO
+    // !!! TODO: proper implementation: for now create json-ish (but not valid) lookalike
+    //  (and do not yet do MD5 hashing for full value)
+    StringBuilder sb = new StringBuilder();
+    sb.append('{');
+    Iterator<Map.Entry<String, JsonNode>> it = n.fields();
+    while (it.hasNext()) {
+      Map.Entry<String, JsonNode> entry = it.next();
+      sb.append(entry.getKey()).append(':');
+      sb.append(hash(entry.getValue()).toString()).append(',');
+    }
+    sb.append('}');
+    return new DocValueHash(sb.toString());
   }
 }
