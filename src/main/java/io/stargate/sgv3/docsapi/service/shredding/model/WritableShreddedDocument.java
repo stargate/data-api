@@ -162,9 +162,7 @@ public record WritableShreddedDocument(
         queryTextValues = new HashMap<>();
       }
       queryTextValues.put(path, text);
-
-      // !!! TODO: actual value, not hash
-      docAtomicFields.put(path, hasher.stringHash(text).toString());
+      docAtomicFields.put(path, hasher.stringValue(text).typedValue());
     }
 
     @Override
@@ -174,8 +172,7 @@ public record WritableShreddedDocument(
         queryNumberValues = new HashMap<>();
       }
       queryNumberValues.put(path, number);
-      // !!! TODO: actual value, not hash
-      docAtomicFields.put(path, hasher.numberHash(number).toString());
+      docAtomicFields.put(path, hasher.numberValue(number).typedValue());
     }
 
     @Override
@@ -185,8 +182,7 @@ public record WritableShreddedDocument(
         queryBoolValues = new HashMap<>();
       }
       queryBoolValues.put(path, value);
-      // !!! TODO: actual value, not hash
-      docAtomicFields.put(path, hasher.booleanHash(value).toString());
+      docAtomicFields.put(path, hasher.booleanValue(value).typedValue());
     }
 
     @Override
@@ -196,8 +192,7 @@ public record WritableShreddedDocument(
         queryNullValues = new HashSet<>();
       }
       queryNullValues.add(path);
-      // !!! TODO: actual value, not hash
-      docAtomicFields.put(path, hasher.nullHash().toString());
+      docAtomicFields.put(path, hasher.nullValue().typedValue());
     }
 
     /*

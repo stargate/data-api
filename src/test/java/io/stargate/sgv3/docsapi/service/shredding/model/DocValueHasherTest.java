@@ -33,12 +33,15 @@ public class DocValueHasherTest {
 
     assertThat(hash).isNotNull();
 
-    // Verify that of 9 atomic values we only get 5 hashes (1 and 2 are repeated;
-    // booleans and nulls are not cached)
-    assertThat(hasher.atomicHashes).hasSize(5);
-
     // Verify that we have 2 structured hashes cached (array, sub-doc and document itself)
     assertThat(hasher.structuredHashes).hasSize(3);
+
+    // Verify that of 9 atomic values we only get 5 hashes (1 and 2 are repeated;
+    // booleans and nulls are not cached)
+    assertThat(hasher.atomics.seenValues).hasSize(5);
+
+    System.err.println("Structured: " + hasher.structuredHashes);
+    System.err.println("Atomic: " + hasher.atomics.seenValues);
   }
 
   @Test
@@ -59,7 +62,7 @@ public class DocValueHasherTest {
     assertThat(hasher.structuredHashes).hasSize(4);
 
     // 4 distinct cacheable atomic values
-    assertThat(hasher.atomicHashes).hasSize(4);
+    assertThat(hasher.atomics.seenValues).hasSize(4);
   }
 
   @Test
@@ -86,6 +89,6 @@ public class DocValueHasherTest {
     assertThat(hasher.structuredHashes).hasSize(3);
 
     // 3 distinct cacheable atomic values
-    assertThat(hasher.atomicHashes).hasSize(3);
+    assertThat(hasher.atomics.seenValues).hasSize(3);
   }
 }

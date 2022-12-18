@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,11 +16,6 @@ import java.util.Map;
  * thread, one instance per processing of a Command.
  */
 public class DocValueHasher {
-  static final DocValueHash HASH_NULL = new DocValueHash("null"); // !!! TODO
-
-  static final DocValueHash HASH_BOOLEAN_FALSE = new DocValueHash("false"); // !!! TODO
-  static final DocValueHash HASH_BOOLEAN_TRUE = new DocValueHash("true"); // !!! TODO
-
   /**
    * Simple reuse cache to avoid re-calculating hashes for nested Arrays and sub-documents. Not used
    * for atomic {@link JsonNode}s (they use cheaper map)
@@ -32,46 +26,36 @@ public class DocValueHasher {
    * Simple reuse cache for non-trivial atomic values: Strings and Numbers (nulls and booleans can
    * be pre-computed)
    */
-  final HashMap<Object, DocValueHash> atomicHashes = new HashMap<>();
+  final AtomicValues atomics = new AtomicValues();
 
   public DocValueHash hash(JsonNode value) {
     return switch (value.getNodeType()) {
       case ARRAY -> arrayHash((ArrayNode) value);
-      case BOOLEAN -> booleanHash(value.booleanValue());
-      case NULL -> nullHash();
-      case NUMBER -> numberHash(value.decimalValue());
+      case BOOLEAN -> booleanValue(value.booleanValue()).hashValue();
+      case NULL -> nullValue().hashValue();
+      case NUMBER -> numberValue(value.decimalValue()).hashValue();
       case OBJECT -> objectHash((ObjectNode) value);
-      case STRING -> stringHash(value.textValue());
+      case STRING -> stringValue(value.textValue()).hashValue();
 
       default -> // case BINARY, MISSING, POJO
       throw new IllegalArgumentException("Unsupported JsonNodeType: " + value.getNodeType());
     };
   }
 
-  public DocValueHash booleanHash(boolean b) {
-    return b ? HASH_BOOLEAN_TRUE : HASH_BOOLEAN_FALSE;
+  public AtomicValue booleanValue(boolean b) {
+    return atomics.booleanValue(b);
   }
 
-  public DocValueHash numberHash(BigDecimal value) {
-    DocValueHash hash = atomicHashes.get(value);
-    if (hash == null) {
-      hash = calcNumberHash(value);
-      atomicHashes.put(value, hash);
-    }
-    return hash;
+  public AtomicValue numberValue(BigDecimal value) {
+    return atomics.numberValue(value);
   }
 
-  public DocValueHash nullHash() {
-    return HASH_NULL;
+  public AtomicValue nullValue() {
+    return atomics.nullValue();
   }
 
-  public DocValueHash stringHash(String value) {
-    DocValueHash hash = atomicHashes.get(value);
-    if (hash == null) {
-      hash = calcStringHash(value);
-      atomicHashes.put(value, hash);
-    }
-    return hash;
+  public AtomicValue stringValue(String str) {
+    return atomics.stringValue(str);
   }
 
   public DocValueHash arrayHash(ArrayNode n) {
@@ -90,20 +74,6 @@ public class DocValueHasher {
       structuredHashes.put(n, hash);
     }
     return hash;
-  }
-
-  /*
-  /**********************************************************************
-  /* Actual hash/digest calculation logic, atomics
-  /**********************************************************************
-   */
-
-  private DocValueHash calcNumberHash(BigDecimal value) {
-    return new DocValueHash(value.toPlainString()); // !!! TODO
-  }
-
-  private DocValueHash calcStringHash(String value) {
-    return new DocValueHash(value); // !!! TODO
   }
 
   /*
