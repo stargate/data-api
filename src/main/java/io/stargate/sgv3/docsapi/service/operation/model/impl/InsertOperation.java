@@ -6,6 +6,7 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -21,6 +22,8 @@ public record InsertOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(StargateBridge bridge) {
     // TODO implement me
-    return Uni.createFrom().item(() -> CommandResult::new);
+    Supplier<CommandResult> supplier =
+        () -> new CommandResult(new CommandResult.ResponseData(Collections.emptyList()));
+    return Uni.createFrom().<Supplier<CommandResult>>item(supplier);
   }
 }

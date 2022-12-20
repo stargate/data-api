@@ -2,6 +2,9 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -44,7 +47,10 @@ class CollectionResourceIntegrationTest {
           .when()
           .post(CollectionResource.BASE_PATH, "database", "collection")
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("errors", is(not(empty())))
+          .body("errors[0].errorCode", is("COMMAND_NOT_IMPLEMENTED"))
+          .body("errors[0].message", is("The command FindOneCommand is not implemented."));
     }
   }
 
