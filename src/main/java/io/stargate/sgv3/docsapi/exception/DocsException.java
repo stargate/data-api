@@ -1,6 +1,7 @@
 package io.stargate.sgv3.docsapi.exception;
 
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.exception.mappers.ThrowableToErrorMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -16,41 +17,45 @@ public class DocsException extends RuntimeException implements Supplier<CommandR
 
   private final ErrorCode errorCode;
 
-  // TODO do we need a cause support, we could create two errors then in the list :)
-
   public DocsException(ErrorCode errorCode) {
-    this.errorCode = errorCode;
+    this(errorCode, null, null);
   }
 
   public DocsException(ErrorCode errorCode, String message) {
-    super(message);
+    this(errorCode, message, null);
+  }
+
+  public DocsException(ErrorCode errorCode, Throwable cause) {
+    this(errorCode, null, cause);
+  }
+
+  public DocsException(ErrorCode errorCode, String message, Throwable cause) {
+    super(message, cause);
     this.errorCode = errorCode;
   }
 
   /** {@inheritDoc} */
   @Override
   public CommandResult get() {
-    return toCommandResult(this);
-  }
-
-  /**
-   * Public util method for translating a {@link DocsException} to {@link CommandResult}.
-   *
-   * @param e Exception
-   * @return CommandResult
-   */
-  public static CommandResult toCommandResult(DocsException e) {
     // resolve message
-    String message = e.getMessage();
+    String message = getMessage();
     if (message == null) {
-      message = e.errorCode.getMessage();
+      message = errorCode.getMessage();
     }
 
     // add error code as error field
-    Map<String, Object> fields = Map.of("errorCode", e.errorCode.name());
+    Map<String, Object> fields = Map.of("errorCode", errorCode.name());
 
     // construct and return
     CommandResult.Error error = new CommandResult.Error(message, fields);
-    return new CommandResult(List.of(error));
+
+    // handle cause as well
+    Throwable cause = getCause();
+    if (null == cause) {
+      return new CommandResult(List.of(error));
+    } else {
+      CommandResult.Error causeError = ThrowableToErrorMapper.getMapperFunction().apply(cause);
+      return new CommandResult(List.of(error, causeError));
+    }
   }
 }

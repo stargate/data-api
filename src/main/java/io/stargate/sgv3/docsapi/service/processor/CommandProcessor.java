@@ -7,7 +7,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.exception.DocsException;
-import io.stargate.sgv3.docsapi.exception.supplier.ThrowableCommandResultSupplier;
+import io.stargate.sgv3.docsapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.resolver.CommandResolverService;
 import java.util.function.Supplier;
