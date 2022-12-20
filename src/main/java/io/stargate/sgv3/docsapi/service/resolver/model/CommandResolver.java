@@ -35,7 +35,7 @@ public interface CommandResolver<C extends Command> {
    * CommandContext} so it knows the db and other contextual info, and as well has all the data it
    * needs.
    *
-   * @param commandContext {@link CommandContext}
+   * @param ctx {@link CommandContext}
    * @param command {@link Command}
    * @return Operation, must no be <code>null</code>
    */
