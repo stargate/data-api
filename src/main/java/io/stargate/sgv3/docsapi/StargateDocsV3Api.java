@@ -70,6 +70,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "insertOne": {
                           "document": {
+                            "_id": "1",
                             "location": "London",
                             "race": {
                               "competitors": 100,
@@ -77,6 +78,60 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                             }
                           }
                         }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "resultRead",
+                  summary = "Read command result",
+                  value =
+                      """
+                      {
+                        "data": {
+                          "docs": [
+                            {
+                               "_id": "1",
+                               "location": "London",
+                               "race": {
+                                 "competitors": 100,
+                                 "start_date": "2022-08-15"
+                               }
+                            },
+                            {
+                               "_id": "2",
+                               "location": "Barcelona",
+                               "race": {
+                                 "competitors": 125,
+                                 "start_date": "2022-09-26"
+                               }
+                            }
+                          ],
+                          "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
+                          "count": 2
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "resultInsert",
+                  summary = "Insert command result",
+                  value =
+                      """
+                      {
+                        "status": {
+                            "insertedIds": ["1", "2"]
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "resultError",
+                  summary = "Error result",
+                  value =
+                      """
+                      {
+                        "errors": [
+                          {
+                            "message": "The command failed because of some specific reason."
+                          }
+                        ]
                       }
                       """),
             }))

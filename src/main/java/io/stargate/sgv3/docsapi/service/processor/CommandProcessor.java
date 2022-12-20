@@ -6,6 +6,8 @@ import io.stargate.bridge.proto.StargateBridge;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.resolver.CommandResolverService;
 import java.util.function.Supplier;
@@ -53,20 +55,29 @@ public class CommandProcessor {
         // resolver can be null, not handled in CommandResolverService for now
         .flatMap(
             resolver -> {
-              // TODO this should rather throw exception that can be trasnformed to the error
-              // stating that the command is not implemented
-              if (null == resolver) {
-                return Uni.createFrom().item(new CommandResult());
-              }
-
               // if we have resolver, resolve operation and execute
               Operation operation = resolver.resolveCommand(commandContext, command);
-              return operation
-                  .execute(stargateBridge) // call supplier get to map to the command result
-                  .onItem()
-                  .ifNotNull()
-                  .transform(Supplier::get);
-            });
-    // TODO if we want to catch errors here and map to CommandResult, this is the place
+              return operation.execute(stargateBridge);
+            })
+
+        // handler failures here
+        .onFailure()
+        .recoverWithItem(
+            t -> {
+              // DocsException is supplier of the CommandResult
+              // so simply return
+              if (t instanceof DocsException docsException) {
+                return docsException;
+              }
+
+              // otherwise use generic for now
+              return new ThrowableCommandResultSupplier(t);
+            })
+
+        // if we have a non-null item
+        // call supplier get to map to the command result
+        .onItem()
+        .ifNotNull()
+        .transform(Supplier::get);
   }
 }
