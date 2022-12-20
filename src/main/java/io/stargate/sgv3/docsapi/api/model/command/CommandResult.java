@@ -31,12 +31,18 @@ public record CommandResult(
     @Schema(
             description =
                 "Status objects, generally describe the side effects of commands, such as the number of updated or inserted documents.",
-            nullable = true)
+            nullable = true,
+            minProperties = 1,
+            properties = {
+              @SchemaProperty(
+                  name = "insertedIds",
+                  description = "IDs of inserted documents for an insert command.",
+                  type = SchemaType.ARRAY,
+                  implementation = String.class,
+                  nullable = true)
+            })
         Map<CommandStatus, Object> status,
-    @Schema(
-            description = "List of errors that occurred during a command execution.",
-            nullable = true)
-        List<Error> errors) {
+    @Schema(nullable = true) List<Error> errors) {
 
   /**
    * Constructor for only specifying the {@link ResponseData}.
@@ -87,6 +93,7 @@ public record CommandResult(
           @Schema(
               description = "Documents that resulted from a command.",
               type = SchemaType.ARRAY,
+              implementation = Object.class,
               minItems = 0)
           List<JsonNode> docs,
       @Schema(description = "Next page state for pagination.", nullable = true)
@@ -121,13 +128,16 @@ public record CommandResult(
    */
   @Schema(
       type = SchemaType.OBJECT,
+      description =
+          "List of errors that occurred during a command execution. Can include additional properties besides the message that is always provided, like `errorCode`, `exceptionClass`, etc.",
       properties = {
         @SchemaProperty(
             name = "message",
             description = "Human-readable error message.",
             implementation = String.class)
       })
-  public record Error(String message, @JsonAnyGetter Map<String, Object> fields) {
+  public record Error(
+      String message, @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields) {
 
     // this is a compact constructor for records
     // ensure message is not set in the fields key

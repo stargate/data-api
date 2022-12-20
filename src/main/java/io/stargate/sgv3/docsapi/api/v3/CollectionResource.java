@@ -24,6 +24,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -61,6 +63,20 @@ public class CollectionResource {
                 @ExampleObject(ref = "findOne"),
                 @ExampleObject(ref = "insertOne"),
               }))
+  @APIResponses(
+      @APIResponse(
+          responseCode = "200",
+          description =
+              "Call successful. Returns result of the command execution. Note that in case of errors, response code remains `HTTP 200`.",
+          content =
+              @Content(
+                  mediaType = MediaType.APPLICATION_JSON,
+                  schema = @Schema(implementation = CommandResult.class),
+                  examples = {
+                    @ExampleObject(ref = "resultRead"),
+                    @ExampleObject(ref = "resultInsert"),
+                    @ExampleObject(ref = "resultError"),
+                  })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid Command command,
