@@ -1,9 +1,8 @@
 package io.stargate.sgv3.docsapi.api.model.command;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.stargate.sgv3.docsapi.api.model.command.serializers.ErrorSerializer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +119,6 @@ public record CommandResult(
    * @param message Error message.
    * @param fields Error fields. Note that they are serialized at the same level as the message.
    */
-  @JsonSerialize(using = ErrorSerializer.class)
   @Schema(
       type = SchemaType.OBJECT,
       properties = {
@@ -129,7 +127,16 @@ public record CommandResult(
             description = "Human-readable error message.",
             implementation = String.class)
       })
-  public record Error(String message, Map<String, Object> fields) {
+  public record Error(String message, @JsonAnyGetter Map<String, Object> fields) {
+
+    // this is a compact constructor for records
+    // ensure message is not set in the fields key
+    public Error {
+      if (null != fields && fields.get("message") != null) {
+        throw new IllegalArgumentException(
+            "Error fields can not contain the reserved message key.");
+      }
+    }
 
     /**
      * Constructor that sets documents only the message.

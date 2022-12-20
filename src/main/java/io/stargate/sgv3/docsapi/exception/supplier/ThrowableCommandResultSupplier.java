@@ -39,8 +39,8 @@ public record ThrowableCommandResultSupplier(Throwable t) implements Supplier<Co
     // resolve message
     CommandResult.Error error = getError(t);
     if (includeCause && t.getCause() != null) {
-      CommandResult.Error casueError = getError(t.getCause());
-      return new CommandResult(List.of(error, casueError));
+      CommandResult.Error cause = getError(t.getCause());
+      return new CommandResult(List.of(error, cause));
     } else {
       return new CommandResult(List.of(error));
     }

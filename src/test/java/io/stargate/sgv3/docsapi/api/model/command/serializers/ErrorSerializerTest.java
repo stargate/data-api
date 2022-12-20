@@ -1,6 +1,7 @@
 package io.stargate.sgv3.docsapi.api.model.command.serializers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -43,14 +44,13 @@ class ErrorSerializerTest {
     }
 
     @Test
-    public void messageFieldIgnored() throws Exception {
-      CommandResult.Error error =
-          new CommandResult.Error("My message.", Map.of("message", "value"));
+    public void messageFieldNotAllowed() throws Exception {
+      Throwable throwable =
+          catchThrowable(() -> new CommandResult.Error("My message.", Map.of("message", "value")));
 
-      String result = objectMapper.writeValueAsString(error);
-
-      assertThat(result).isEqualTo("""
-                    {"message":"My message."}""");
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Error fields can not contain the reserved message key.");
     }
 
     @Test
