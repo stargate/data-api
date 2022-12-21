@@ -36,9 +36,6 @@ public class DocValueHasherTest {
     // Verify that of 9 atomic values we only get 5 hashes (1 and 2 are repeated;
     // booleans and nulls are not cached)
     assertThat(hasher.atomics.seenValues).hasSize(5);
-
-    System.err.println("Structured: " + hasher.structuredHashes);
-    System.err.println("Atomic: " + hasher.atomics.seenValues);
   }
 
   @Test
