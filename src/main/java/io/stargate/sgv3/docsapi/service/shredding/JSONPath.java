@@ -44,8 +44,6 @@ import java.util.Objects;
  * <p>Instances can be sorted; sorting order uses underlying encoded path value.
  */
 public final class JSONPath implements Comparable<JSONPath> {
-  private static final JSONPath ROOT_PATH = new JSONPath("$");
-
   private final String encodedPath;
 
   JSONPath(String encoded) {
@@ -158,9 +156,15 @@ public final class JSONPath implements Comparable<JSONPath> {
     }
 
     public JSONPath build() {
-      // We do allow constructing path for "whole" Object/Array too
+      // "encoded" is null at point where Array or Object value is encountered but
+      // contents not yet traversed. Path will therefore point to the Array/Object itself
+      // and not element/property.
       if (encoded == null) {
-        return (base == null) ? ROOT_PATH : new JSONPath(base);
+        if (base == null) {
+          // Means this is at root Object before any properties: could fail or build "empty":
+          return new JSONPath("");
+        }
+        return new JSONPath(base);
       }
       return new JSONPath(encoded);
     }

@@ -38,14 +38,21 @@ public class JSONPathTest {
     public void rootPropertyPathViaBuilder() {
       JSONPath.Builder b = JSONPath.rootBuilder();
 
-      // Special case first: root builder produces placeholder for root:
-      assertThat(b.build().toString()).isEqualTo("$");
+      // Special case first: should not be used for anything but if it is,
+      // has to result in "empty" (
+      assertThat(b.build().toString()).isEqualTo("");
 
       // But more importantly can handle Object paths
       b.property("a");
       assertThat(b.build().toString()).isEqualTo("a");
       b.property("b2");
       assertThat(b.build().toString()).isEqualTo("b2");
+      b.property("with.dot");
+      assertThat(b.build().toString()).isEqualTo("with\\.dot");
+      b.property("[[bracketed]]");
+      assertThat(b.build().toString()).isEqualTo("\\[\\[bracketed]]");
+      b.property("\\x");
+      assertThat(b.build().toString()).isEqualTo("\\\\x");
     }
 
     @Test
@@ -74,13 +81,17 @@ public class JSONPathTest {
     public void nestedIndexPathViaBuilder() {
       JSONPath.Builder b = JSONPath.rootBuilder();
       b.property("arrays");
-      JSONPath.Builder b3 = b.nestedValueBuilder().index(5).nestedValueBuilder();
-      assertThat(b3.build().toString()).isEqualTo("arrays.[5]");
-      assertThat(b3.index(9).build().toString()).isEqualTo("arrays.[5].[9]");
+      JSONPath.Builder b2 = b.nestedValueBuilder().index(5).nestedValueBuilder();
+      assertThat(b2.build().toString()).isEqualTo("arrays.[5]");
+      assertThat(b2.index(9).build().toString()).isEqualTo("arrays.[5].[9]");
 
       // Builders are stateful so 'b3' has its last configuration that we can use:
-      JSONPath.Builder b4 = b3.nestedValueBuilder().property("leaf").nestedValueBuilder();
-      assertThat(b4.build().toString()).isEqualTo("arrays.[5].[9].leaf");
+      JSONPath.Builder b3 = b2.nestedValueBuilder().property("leaf").nestedValueBuilder();
+      assertThat(b3.build().toString()).isEqualTo("arrays.[5].[9].leaf");
+
+      b.property("arr[0]");
+      b2 = b.nestedValueBuilder().index(3).nestedValueBuilder();
+      assertThat(b2.build().toString()).isEqualTo("arr\\[0].[3]");
     }
   }
 }
