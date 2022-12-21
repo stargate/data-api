@@ -2,13 +2,9 @@ package io.stargate.sgv3.docsapi.service.shredding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Test;
 
-@QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+// Simple unit test with no injection needed:
 public class JSONPathTest {
   @Test
   public void rootPathViaBuilder() {

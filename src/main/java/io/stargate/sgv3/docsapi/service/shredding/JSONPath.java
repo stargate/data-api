@@ -113,25 +113,35 @@ public final class JSONPath implements Comparable<JSONPath> {
     }
 
     public Builder property(String propName) {
-      // Properties trickier since need to escape '.' and '['
-      StringBuilder sb;
+      // Properties trickier since need to escape '.',  '[' and `\`
+      final String encodedProp = encodePropertyName(propName);
+      encoded = (base == null) ? encodedProp : (base + '.' + encodedProp);
+      return this;
+    }
+
+    static String encodePropertyName(String propName) {
+      // First: loop through to see if anything to escape; if not, can return as-is
       final int len = propName.length();
-
-      if (base == null) { // root
-        sb = new StringBuilder(len + 3);
-      } else {
-        sb = new StringBuilder(base.length() + len + 4).append(base).append('.');
+      int i = 0;
+      for (; i < len; ++i) {
+        char c = propName.charAt(i);
+        if (c == '.' || c == '[' || c == '\\') {
+          break;
+        }
       }
-
-      for (int i = 0; i < len; ++i) {
+      // common case: nothing to escape
+      if (i == len) {
+        return propName;
+      }
+      StringBuilder sb = new StringBuilder(len + 3);
+      for (i = 0; i < len; ++i) {
         char c = propName.charAt(i);
         if (c == '.' || c == '[' || c == '\\') {
           sb.append('\\');
         }
         sb.append(c);
       }
-      encoded = sb.toString();
-      return this;
+      return sb.toString();
     }
 
     public Builder index(int index) {
