@@ -79,18 +79,22 @@ public class ShredderTest {
   }
 
   @Test
-  public void docBadJSONType() throws Exception {
+  public void docBadJSONType() {
     Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree("[ 1, 2 ]")));
 
     assertThat(t)
         .isNotNull()
-        .hasMessageContaining("Document to shred must be a JSON Object: instead got ARRAY");
+        .hasMessage(
+            "Bad document type to shred: Document to shred must be a JSON Object, instead got ARRAY");
   }
 
   @Test
   public void docBadDocIdType() {
     Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : [ ] }")));
 
-    assertThat(t).isNotNull().hasMessageContaining("Bad type for '_id' property (ARRAY)");
+    assertThat(t)
+        .isNotNull()
+        .hasMessage(
+            "Bad type for '_id' property: Document Id must be a JSON String, instead got ARRAY");
   }
 }

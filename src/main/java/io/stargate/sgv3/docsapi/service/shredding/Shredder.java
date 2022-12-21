@@ -3,6 +3,8 @@ package io.stargate.sgv3.docsapi.service.shredding;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.Iterator;
@@ -35,8 +37,13 @@ public class Shredder {
     // 13-Dec-2022, tatu: Although we could otherwise allow non-Object documents, requirement
     //    to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
-      throw failure("Document to shred must be a JSON Object: instead got %s", doc.getNodeType());
+      throw new DocsException(
+          ErrorCode.SHRED_BAD_DOCUMENT_TYPE,
+          String.format(
+              "%s: Document to shred must be a JSON Object, instead got %s",
+              ErrorCode.SHRED_BAD_DOCUMENT_TYPE.getMessage(), doc.getNodeType()));
     }
+
     ObjectNode docOb = (ObjectNode) doc;
 
     // We will extract id if there is one; stored separately, removed so we won't process
@@ -48,7 +55,11 @@ public class Shredder {
     // if existence required
     if (idNode != null) {
       if (!idNode.isTextual()) {
-        throw failure("Bad type for '_id' property (%s)", idNode.getNodeType());
+        throw new DocsException(
+            ErrorCode.SHRED_BAD_DOCID_TYPE,
+            String.format(
+                "%s: Document Id must be a JSON String, instead got %s",
+                ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), idNode.getNodeType()));
       }
       id = idNode.asText();
     }
@@ -57,11 +68,6 @@ public class Shredder {
         WritableShreddedDocument.builder(new DocValueHasher(), id, txId);
     traverse(doc, b, JSONPath.rootBuilder());
     return b.build();
-  }
-
-  private RuntimeException failure(String format, Object... args) {
-    // TODO: use proper exception type once we have it
-    throw new RuntimeException(String.format(format, args));
   }
 
   /**
@@ -118,7 +124,10 @@ public class Shredder {
     } else if (value.isNull()) {
       callback.shredNull(pathBuilder.build());
     } else {
-      throw failure("Unrecognized `JsonNode` type: %s", value.getNodeType());
+      throw new DocsException(
+          ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
+          String.format(
+              "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
     }
   }
 }
