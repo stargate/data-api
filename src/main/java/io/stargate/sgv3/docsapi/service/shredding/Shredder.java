@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
-import javax.validation.constraints.NotNull;
 
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
@@ -28,11 +27,11 @@ public class Shredder {
    * @param document {@link JsonNode} to shred.
    * @return WritableShreddedDocument
    */
-  public WritableShreddedDocument shred(@NotNull JsonNode document) {
+  public WritableShreddedDocument shred(JsonNode document) {
     return shred(document, Optional.empty());
   }
 
-  public WritableShreddedDocument shred(@NotNull JsonNode doc, @NotNull Optional<UUID> txId) {
+  public WritableShreddedDocument shred(JsonNode doc, Optional<UUID> txId) {
     // 13-Dec-2022, tatu: Although we could otherwise allow non-Object documents, requirement
     //    to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -43,13 +42,11 @@ public class Shredder {
     // We will extract id if there is one; stored separately, removed so we won't process
     // it, add path or such (since it has specific meaning separate from general properties)
     JsonNode idNode = docOb.remove("_id");
-    final String id;
+    String id = null;
 
     // Cannot require existence as id often auto-generated when inserting: caller has to verify
     // if existence required
-    if (idNode == null) {
-      id = null;
-    } else {
+    if (idNode != null) {
       if (!idNode.isTextual()) {
         throw failure("Bad type for '_id' property (%s)", idNode.getNodeType());
       }

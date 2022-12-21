@@ -20,11 +20,11 @@ import org.junit.jupiter.api.Test;
 public class ShredderTest {
   @Inject ObjectMapper objectMapper;
 
-  private final Shredder shredder = new Shredder();
+  @Inject Shredder shredder;
 
   @Test
   public void simpleShredFromPathExample() throws Exception {
-    final String JSON =
+    final String inputJson =
         """
 { "_id" : "abc",
   "name" : "Bob",
@@ -32,8 +32,8 @@ public class ShredderTest {
   "[extra.stuff]" : true,
   "nullable" : null
 }
-                """;
-    WritableShreddedDocument doc = shredder.shred(objectMapper.readTree(JSON));
+""";
+    WritableShreddedDocument doc = shredder.shred(objectMapper.readTree(inputJson));
     assertThat(doc.id()).isEqualTo("abc");
     List<JSONPath> expPaths =
         Arrays.asList(
@@ -53,7 +53,8 @@ public class ShredderTest {
 
     // Then array info (doc has one array, with 2 elements)
     assertThat(doc.arraySize())
-        .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("values"), Integer.valueOf(2)));
+        .hasSize(1)
+        .containsEntry(JSONPath.fromEncoded("values"), Integer.valueOf(2));
     assertThat(doc.arrayEquals()).hasSize(1);
     assertThat(doc.arrayContains()).hasSize(2);
 
@@ -76,8 +77,8 @@ public class ShredderTest {
 
   @Test
   public void docBadJSONType() throws Exception {
-    final String JSON = "[ 1, 2 ]";
-    Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(JSON)));
+    Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree("[ 1, 2 ]")));
+
     assertThat(t)
         .isNotNull()
         .hasMessageContaining("Document to shred must be a JSON Object: instead got ARRAY");
@@ -85,10 +86,8 @@ public class ShredderTest {
 
   @Test
   public void docBadDocIdType() {
-    final String JSON = """
-{ "_id" : [ ] }
-                """;
-    Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(JSON)));
+    Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : [ ] }")));
+
     assertThat(t).isNotNull().hasMessageContaining("Bad type for '_id' property (ARRAY)");
   }
 }
