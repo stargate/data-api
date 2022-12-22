@@ -44,6 +44,7 @@ import java.util.Objects;
  * <p>Instances can be sorted; sorting order uses underlying encoded path value.
  */
 public final class JSONPath implements Comparable<JSONPath> {
+  /** Encoded representation of the path as String. */
   private final String encodedPath;
 
   JSONPath(String encoded) {
@@ -93,27 +94,35 @@ public final class JSONPath implements Comparable<JSONPath> {
    * (non-shredded) Document.
    */
   public static class Builder {
-    private final String base;
+    /**
+     * Base path to the context node (Array or Object) for which Builder is constructed; or {@code
+     * null} for virtual Root object.
+     */
+    private final String basePath;
 
-    private String encoded;
+    /**
+     * Path to currently traversed child of the context node, or {@code null} after construction but
+     * before traversal of child nodes.
+     */
+    private String childPath;
 
     public Builder(String base) {
-      this.base = base;
+      this.basePath = base;
     }
 
     public Builder nestedValueBuilder() {
-      // Must not be called unless we are pointing to a property or element:0
-      if (encoded == null) {
+      // Must not be called unless we are pointing to a property or element:
+      if (childPath == null) {
         throw new IllegalStateException(
-            "Path '" + build() + "' does not point to property or element");
+            "Path '" + build() + "' does not point to a property or element");
       }
-      return new Builder(encoded);
+      return new Builder(childPath);
     }
 
     public Builder property(String propName) {
       // Properties trickier since need to escape '.',  '[' and `\`
       final String encodedProp = encodePropertyName(propName);
-      encoded = (base == null) ? encodedProp : (base + '.' + encodedProp);
+      childPath = (basePath == null) ? encodedProp : (basePath + '.' + encodedProp);
       return this;
     }
 
@@ -146,27 +155,31 @@ public final class JSONPath implements Comparable<JSONPath> {
       // Indexes are easy as no escaping needed
       StringBuilder sb;
 
-      if (base == null) { // root
+      if (basePath == null) { // root
         sb = new StringBuilder(6);
       } else {
-        sb = new StringBuilder(base).append('.');
+        sb = new StringBuilder(basePath).append('.');
       }
-      encoded = sb.append('[').append(index).append(']').toString();
+      childPath = sb.append('[').append(index).append(']').toString();
       return this;
     }
 
+    /**
+     * Method used to construct path pointing to either the context node (Array, Object) -- if
+     * called before traversal -- or to child node being traversed over.
+     */
     public JSONPath build() {
       // "encoded" is null at point where Array or Object value is encountered but
       // contents not yet traversed. Path will therefore point to the Array/Object itself
       // and not element/property.
-      if (encoded == null) {
-        if (base == null) {
+      if (childPath == null) {
+        if (basePath == null) {
           // Means this is at root Object before any properties: could fail or build "empty":
           return new JSONPath("");
         }
-        return new JSONPath(base);
+        return new JSONPath(basePath);
       }
-      return new JSONPath(encoded);
+      return new JSONPath(childPath);
     }
   }
 }
