@@ -20,8 +20,21 @@ public class DocValueHasherTest {
 
   @Nested
   class ObjectHashing {
+    // First: short enough not to use MD5
     @Test
-    public void testSimpleDocument() throws Exception {
+    public void shortDocument() throws Exception {
+      JsonNode doc = objectMapper.readTree("{\"key\" : \"value\"}");
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.OBJECT);
+      assertThat(hash.usesMD5()).isFalse();
+      // Three lines: header with type-prefix and entry count; one line for key
+      // and one line for type-prefixed value. No trailing linefeed
+      assertThat(hash.hash()).isEqualTo("O1\nkey\nSvalue");
+    }
+
+    @Test
+    public void basicDocument() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -39,9 +52,7 @@ public class DocValueHasherTest {
       assertThat(hash).isNotNull();
       assertThat(hash.type()).isEqualTo(DocValueType.OBJECT);
       // long enough to require MD5 hashing
-      assertThat(hash.usesMD5()).isTrue();
-      // and total length is 22 characters for hash (no prefix)
-      assertThat(hash.hash()).hasSize(MD5Hasher.BASE64_ENCODED_MD5_LEN);
+      assertMD5Base64(hash);
 
       // Verify that we have 2 structured hashes cached (array, sub-doc and document itself)
       assertThat(hasher.structuredHashes).hasSize(3);
@@ -56,22 +67,20 @@ public class DocValueHasherTest {
       JsonNode doc =
           objectMapper.readTree(
               """
-                              { "user": {
-                                "name" : "Bill",
-                                "address": {
-                                   "street" : "Elm Street",
-                                   "zipcode" : 21040
-                                 }
-                              } }
-                              """);
+      { "user": {
+        "name" : "Bill",
+        "address": {
+           "street" : "Elm Street",
+           "zipcode" : 21040
+         }
+      } }
+      """);
       DocValueHasher hasher = new DocValueHasher();
       DocValueHash hash = hasher.hash(doc);
       assertThat(hash).isNotNull();
       assertThat(hash.type()).isEqualTo(DocValueType.OBJECT);
       // long enough to require MD5 hashing
-      assertThat(hash.usesMD5()).isTrue();
-      // and total length is 22 characters for hash (no prefix)
-      assertThat(hash.hash()).hasSize(MD5Hasher.BASE64_ENCODED_MD5_LEN);
+      assertMD5Base64(hash);
 
       // 3 documents (main doc, 2 sub-docs)
       // Note: unlike with atomic values,
@@ -87,7 +96,21 @@ public class DocValueHasherTest {
   @Nested
   class ArrayHashing {
     @Test
-    public void testNestedArray() throws Exception {
+    public void shortArray() throws Exception {
+      // note: while we do not support root-level arrays, hash calculation is
+      // used at every level so we can test it fine:
+      JsonNode doc = objectMapper.readTree("[1, true, null]");
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.ARRAY);
+      assertThat(hash.usesMD5()).isFalse();
+      // Four lines: header with type-prefix and entry count; one line for each
+      // element (type-prefixed value). No trailing linefeed
+      assertThat(hash.hash()).isEqualTo("A3\nN1\nB1\nZ");
+    }
+
+    @Test
+    public void nestedArray() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -98,9 +121,7 @@ public class DocValueHasherTest {
       assertThat(hash).isNotNull();
       assertThat(hash.type()).isEqualTo(DocValueType.ARRAY);
       // long enough to require MD5 hashing
-      assertThat(hash.usesMD5()).isTrue();
-      // and total length is 22 characters for hash (no prefix)
-      assertThat(hash.hash()).hasSize(MD5Hasher.BASE64_ENCODED_MD5_LEN);
+      assertMD5Base64(hash);
 
       // 4 arrays (main array, 3 sub-arrays)
       // Note: unlike with atomic values,

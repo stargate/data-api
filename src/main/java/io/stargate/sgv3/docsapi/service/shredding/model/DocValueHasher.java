@@ -91,16 +91,16 @@ public class DocValueHasher {
 
   DocValueHash calcArrayHash(ArrayNode n) {
     // Array hash consists of header line (type prefix + element count)
-    // followed by one line per element, containing element hash. Lines
-    // separated by linefeed
+    // followed by one line per element, containing element hash.
+    // Lines are separated by linefeeds; no trailing linefeed
     StringBuilder sb = new StringBuilder(10 + 16 * n.size());
 
     // Header line: type prefix ('A') and element length, so f.ex "A13"
-    sb.append(DocValueType.ARRAY.prefix()).append(n.size()).append(LINE_SEPARATOR);
+    sb.append(DocValueType.ARRAY.prefix()).append(n.size());
 
     for (JsonNode element : n) {
       DocValueHash childHash = hash(element);
-      sb.append(childHash.hash()).append(LINE_SEPARATOR);
+      sb.append(LINE_SEPARATOR).append(childHash.hash());
     }
 
     return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
@@ -110,20 +110,20 @@ public class DocValueHasher {
     // Array hash consists of header line (type prefix + element count)
     // followed by two line per element, containing name (NOT path!) on first line
     // and element hash on second.
-    // Lines are separated by linefeeds.
+    // Lines are separated by linefeeds; no trailing linefeed
     StringBuilder sb = new StringBuilder(10 + 24 * n.size());
 
     // Header line: type prefix ('O') and element length, so f.ex "O7"
-    sb.append(DocValueType.ARRAY.prefix()).append(n.size()).append(LINE_SEPARATOR);
+    sb.append(DocValueType.OBJECT.prefix()).append(n.size());
 
     // Actual implementation would actually use iterated over values;
     // we will traverse to exercise caching for tests but not really use:
     Iterator<Map.Entry<String, JsonNode>> it = n.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
-      sb.append(entry.getKey()).append(LINE_SEPARATOR);
+      sb.append(LINE_SEPARATOR).append(entry.getKey());
       DocValueHash childHash = hash(entry.getValue());
-      sb.append(entry.getKey()).append(childHash.hash()).append(LINE_SEPARATOR);
+      sb.append(LINE_SEPARATOR).append(childHash.hash());
     }
 
     return DocValueHash.constructBoundedHash(DocValueType.OBJECT, sb.toString());
