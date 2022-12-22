@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import java.util.Base64;
 import javax.inject.Inject;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -109,5 +111,105 @@ public class DocValueHasherTest {
       // 4 distinct cacheable atomic values
       assertThat(hasher.atomics.seenValues).hasSize(4);
     }
+  }
+
+  @Nested
+  class BooleanHashing {
+    @Test
+    public void testBooleanHashing() throws Exception {
+      JsonNode doc = objectMapper.readTree("true");
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.BOOLEAN);
+      assertThat(hash.usesMD5()).isFalse();
+      assertThat(hash.hash()).isEqualTo("B1");
+    }
+  }
+
+  @Nested
+  class NullHashing {
+    @Test
+    public void testNullHashing() throws Exception {
+      JsonNode doc = objectMapper.readTree("null");
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.NULL);
+      assertThat(hash.usesMD5()).isFalse();
+      assertThat(hash.hash()).isEqualTo("Z");
+    }
+  }
+
+  @Nested
+  class NumberHashing {
+    @Test
+    public void testSmallNumber() throws Exception {
+      JsonNode doc = objectMapper.readTree("25.3");
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.NUMBER);
+      assertThat(hash.usesMD5()).isFalse();
+      assertThat(hash.hash()).isEqualTo("N25.3");
+    }
+
+    @Test
+    public void testLongNumber() throws Exception {
+      final String numStr = "12345678901234567890.1234567890";
+      JsonNode doc = objectMapper.readTree(numStr);
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.NUMBER);
+      assertMD5Base64(hash);
+    }
+  }
+
+  @Nested
+  class StringHashing {
+    @Test
+    public void testSimpleString() throws Exception {
+      JsonNode doc = objectMapper.readTree("\"Some text\"");
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.STRING);
+      assertThat(hash.usesMD5()).isFalse();
+      assertThat(hash.hash()).isEqualTo("SSome text");
+    }
+
+    @Test
+    public void testShortAndLongStrings() throws Exception {
+      final DocValueHasher hasher = new DocValueHasher();
+      for (int i = 1; i < 80; ++i) {
+        String value = RandomStringUtils.randomAlphanumeric(i);
+        JsonNode doc = objectMapper.readTree("\"" + value + "\"");
+        DocValueHash hash = hasher.hash(doc);
+        assertThat(hash).isNotNull();
+        assertThat(hash.type()).isEqualTo(DocValueType.STRING);
+
+        // and here we need to check cutoff point: value + prefix length LESS
+        // than hashed length is encoded without MD5; at or above with MD4
+        if (value.length() < (MD5Hasher.BASE64_ENCODED_MD5_LEN - 1)) {
+          assertThat(hash.usesMD5()).isFalse();
+          assertThat(hash.hash()).isEqualTo("S" + value);
+        } else {
+          assertMD5Base64(hash);
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper method for checking that given String is valid Base64 encoded representation of a
+   * 16-byte value -- presumably MD5 hash (but that can not be validated without knowing input etc)
+   */
+  void assertMD5Base64(DocValueHash hash) {
+    assertThat(hash.usesMD5()).isTrue();
+    String hashedValue = hash.hash();
+    assertThat(hashedValue).hasSize(MD5Hasher.BASE64_ENCODED_MD5_LEN);
+    byte[] md5 = Base64.getDecoder().decode(hashedValue);
+    assertThat(md5).hasSize(16);
   }
 }
