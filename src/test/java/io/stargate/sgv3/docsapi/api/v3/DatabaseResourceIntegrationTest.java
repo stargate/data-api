@@ -8,14 +8,17 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
-class DatabaseResourceIntegrationTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {

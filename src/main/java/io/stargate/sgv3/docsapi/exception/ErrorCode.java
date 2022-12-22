@@ -4,7 +4,9 @@ package io.stargate.sgv3.docsapi.exception;
 public enum ErrorCode {
 
   /** Command error codes. */
-  COMMAND_NOT_IMPLEMENTED("The provided command is not implemented.");
+  COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+
+  CREATE_COLLECTION_FAILED("Create collection failed.");
 
   private final String message;
 

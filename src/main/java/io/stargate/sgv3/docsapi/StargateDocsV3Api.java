@@ -134,6 +134,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                         ]
                       }
                       """),
+              @ExampleObject(
+                  name = "resultCreateCollection",
+                  summary = "Create result",
+                  value =
+                      """
+                      {
+                        "status": {
+                            "ok": 1
+                        }
+                      }
+                      """),
             }))
 public class StargateDocsV3Api extends Application {
 
