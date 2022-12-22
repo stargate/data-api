@@ -9,7 +9,7 @@ public class AtomicValues {
   public AtomicValue stringValue(String value) {
     AtomicValue atomic = seenValues.get(value);
     if (atomic == null) {
-      atomic = AtomicValue.Dynamic.forString(value);
+      atomic = AtomicValue.forString(value);
       seenValues.put(value, atomic);
     }
     return atomic;
@@ -18,17 +18,17 @@ public class AtomicValues {
   public AtomicValue numberValue(BigDecimal value) {
     AtomicValue atomic = seenValues.get(value);
     if (atomic == null) {
-      atomic = AtomicValue.Dynamic.forNumber(value);
+      atomic = AtomicValue.forNumber(value);
       seenValues.put(value, atomic);
     }
     return atomic;
   }
 
   public AtomicValue booleanValue(boolean b) {
-    return b ? AtomicValue.Fixed.FALSE : AtomicValue.Fixed.TRUE;
+    return b ? AtomicValue.TRUE : AtomicValue.FALSE;
   }
 
   public AtomicValue nullValue() {
-    return AtomicValue.Fixed.NULL;
+    return AtomicValue.NULL;
   }
 }

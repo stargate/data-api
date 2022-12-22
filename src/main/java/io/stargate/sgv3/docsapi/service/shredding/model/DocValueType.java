@@ -1,6 +1,6 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
-/** Enumeration for supported Document value types: correspond to accepted JSON types. */
+/** Enumeration for supported Document value types: corresponds to accepted JSON types. */
 public enum DocValueType {
   ARRAY('A', false),
   OBJECT('O', false),

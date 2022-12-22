@@ -16,6 +16,8 @@ import java.util.Map;
  * thread, one instance per processing of a Command.
  */
 public class DocValueHasher {
+  private static final char LINE_SEPARATOR = '\n';
+
   /**
    * Simple reuse cache to avoid re-calculating hashes for nested Arrays and sub-documents. Not used
    * for atomic {@link JsonNode}s (they use cheaper map)
@@ -31,11 +33,11 @@ public class DocValueHasher {
   public DocValueHash hash(JsonNode value) {
     return switch (value.getNodeType()) {
       case ARRAY -> arrayHash((ArrayNode) value);
-      case BOOLEAN -> booleanValue(value.booleanValue()).hashValue();
-      case NULL -> nullValue().hashValue();
-      case NUMBER -> numberValue(value.decimalValue()).hashValue();
+      case BOOLEAN -> booleanValue(value.booleanValue()).hash();
+      case NULL -> nullValue().hash();
+      case NUMBER -> numberValue(value.decimalValue()).hash();
       case OBJECT -> objectHash((ObjectNode) value);
-      case STRING -> stringValue(value.textValue()).hashValue();
+      case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO
       throw new IllegalArgumentException("Unsupported JsonNodeType: " + value.getNodeType());
@@ -82,29 +84,43 @@ public class DocValueHasher {
   /**********************************************************************
    */
 
-  private DocValueHash calcArrayHash(ArrayNode n) {
-    // !!! TODO: proper implementation:
+  DocValueHash calcArrayHash(ArrayNode n) {
+    // Array hash consists of header line (type prefix + element count)
+    // followed by one line per element, containing element hash. Lines
+    // separated by linefeed
+    StringBuilder sb = new StringBuilder(10 + 16 * n.size());
 
-    // Actual implementation would actually use iterated over values;
-    // we will traverse to exercise caching for tests but not really use:
+    // Header line: type prefix ('A') and element length, so f.ex "A13"
+    sb.append(DocValueType.ARRAY.prefix()).append(n.size()).append(LINE_SEPARATOR);
+
     for (JsonNode element : n) {
       DocValueHash childHash = hash(element);
+      sb.append(childHash.hash()).append(LINE_SEPARATOR);
     }
 
-    return new DocValueHash("[]");
+    return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
   }
 
   private DocValueHash calcObjectHash(ObjectNode n) {
-    // !!! TODO: proper implementation:
+    // Array hash consists of header line (type prefix + element count)
+    // followed by two line per element, containing name (NOT path!) on first line
+    // and element hash on second.
+    // Lines are separated by linefeeds.
+    StringBuilder sb = new StringBuilder(10 + 24 * n.size());
+
+    // Header line: type prefix ('O') and element length, so f.ex "O7"
+    sb.append(DocValueType.ARRAY.prefix()).append(n.size()).append(LINE_SEPARATOR);
 
     // Actual implementation would actually use iterated over values;
     // we will traverse to exercise caching for tests but not really use:
     Iterator<Map.Entry<String, JsonNode>> it = n.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
+      sb.append(entry.getKey()).append(LINE_SEPARATOR);
       DocValueHash childHash = hash(entry.getValue());
+      sb.append(entry.getKey()).append(childHash.hash()).append(LINE_SEPARATOR);
     }
 
-    return new DocValueHash("{}");
+    return DocValueHash.constructBoundedHash(DocValueType.OBJECT, sb.toString());
   }
 }

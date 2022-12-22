@@ -4,90 +4,36 @@ import java.math.BigDecimal;
 
 /**
  * Simple immutable value container class used when shredding documents, to contain "full" value as
- * a {@link String} and providing access for getting hash for that value.
+ * a {@link String} and providing access for getting hash for that value. Full value is needed for
+ * reconstructing documents ("de-shredding"), but only for atomic values, not structured (Array,
+ * Object) as latter can be re-created from former.
  *
  * <p>NOTE: not defined as key type or content comparable.
  */
-public abstract class AtomicValue {
-  private final DocValueType type;
+public record AtomicValue(DocValueType type, String typedFullValue, DocValueHash hash) {
+  static final AtomicValue NULL = create(DocValueType.NULL, "");
+  static final AtomicValue FALSE = create(DocValueType.BOOLEAN, "0");
+  static final AtomicValue TRUE = create(DocValueType.BOOLEAN, "1");
 
-  protected AtomicValue(DocValueType type) {
-    this.type = type;
+  public static AtomicValue forString(String str) {
+    // For Strings no changes needed, use default prefix+full-value
+    return create(DocValueType.STRING, str);
   }
 
-  public abstract String typedValue();
+  public static AtomicValue forNumber(BigDecimal num) {
+    // For Numbers just make sure not to use Engineering notation:
+    return create(DocValueType.NUMBER, num.toPlainString());
+  }
 
-  public abstract DocValueHash hashValue();
+  static AtomicValue create(DocValueType type, String fullValue) {
+    String typedFullValue = type.prefix() + fullValue;
+    return new AtomicValue(
+        type, typedFullValue, DocValueHash.constructBoundedHash(type, typedFullValue));
+  }
 
   // Mostly useful trouble-shooting, debug output
   @Override
   public String toString() {
-    return "[Atomic:%c/%s]".formatted(type.prefix(), typedValue());
-  }
-
-  /**
-   * Implementation used for simple static instances that represent {@link Boolean} values and
-   * {@code null}s.
-   */
-  static final class Fixed extends AtomicValue {
-    static final Fixed NULL = new Fixed(DocValueType.NULL, "");
-    static final Fixed FALSE = new Fixed(DocValueType.BOOLEAN, "0");
-    static final Fixed TRUE = new Fixed(DocValueType.BOOLEAN, "1");
-
-    /** For simple fixed types the "full" and "hashed" values are one and same: */
-    private final String typedValue;
-
-    private final DocValueHash hashValue;
-
-    private Fixed(DocValueType type, String value) {
-      super(type);
-      typedValue = type.prefix() + value;
-      hashValue = new DocValueHash(typedValue);
-    }
-
-    @Override
-    public String typedValue() {
-      return typedValue;
-    }
-
-    @Override
-    public DocValueHash hashValue() {
-      return hashValue;
-    }
-  }
-
-  /**
-   * Implementation used for simple static instances that represent {@link String} and {@link
-   * BigDecimal} values.
-   */
-  static final class Dynamic extends AtomicValue {
-    private final String typedFullValue;
-
-    private final DocValueHash hashValue;
-
-    public static Dynamic forString(String str) {
-      return new Dynamic(DocValueType.STRING, str);
-    }
-
-    public static Dynamic forNumber(BigDecimal num) {
-      return new Dynamic(DocValueType.NUMBER, num.toPlainString());
-    }
-
-    Dynamic(DocValueType type, String value) {
-      super(type);
-      typedFullValue = type.prefix() + value;
-      // !!! TODO: actual hashing
-      hashValue = new DocValueHash(typedFullValue);
-    }
-
-    @Override
-    public String typedValue() {
-      return typedFullValue;
-    }
-
-    @Override
-    public DocValueHash hashValue() {
-      return hashValue;
-    }
+    return "[Atomic:%c/%s]".formatted(type.prefix(), typedFullValue());
   }
 }
