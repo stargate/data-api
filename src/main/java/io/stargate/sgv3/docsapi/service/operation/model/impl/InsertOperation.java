@@ -24,7 +24,6 @@ public record InsertOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    // TODO implement me
     QueryOuterClass.Query query = buildInsertQuery();
     final Uni<List<String>> ids =
         Multi.createBy()
