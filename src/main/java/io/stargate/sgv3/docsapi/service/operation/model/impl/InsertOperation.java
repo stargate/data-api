@@ -6,6 +6,8 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
@@ -33,13 +35,19 @@ public record InsertOperation(
             .transformToUniAndConcatenate(doc -> insertDocument(queryExecutor, query, doc))
             .collect()
             .asList();
-    return ids.onItem().transform(insertedIds -> ModifyOperationPage.from(insertedIds, documents));
+    return ids.onFailure()
+        .transform(
+            t -> {
+              return new DocsException(ErrorCode.INSERT_ERROR, t);
+            })
+        .onItem()
+        .transform(insertedIds -> ModifyOperationPage.from(insertedIds, documents));
   }
 
   private static Uni<String> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.writeDocument(query).onItem().transform(result -> doc.key());
+    return queryExecutor.writeDocument(query).onItem().transform(result -> doc.id());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -58,13 +66,13 @@ public record InsertOperation(
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(doc.key()))
+            .addValues(Values.of(doc.id()))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.properties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayEquals())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayContains())))
+            .addValues(Values.of(CustomValueSerializers.getSetValueForString(doc.arrayContains())))
             .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
             .addValues(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))

@@ -1,5 +1,6 @@
 package io.stargate.sgv3.docsapi.api.configuration;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -28,6 +29,10 @@ public class ObjectMapperConfiguration {
   private ObjectMapper createMapper() {
     // enabled:
     // case insensitive enums, so "before" will match to "BEFORE" in an enum
-    return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
+    return JsonMapper.builder()
+        // important for retaining number accuracy!
+        .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+        .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+        .build();
   }
 }
