@@ -38,7 +38,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
             """
                             {
                               "createCollection": {
-                                "name": %s
+                                "name": "%s"
                               }
                             }
                             """,
