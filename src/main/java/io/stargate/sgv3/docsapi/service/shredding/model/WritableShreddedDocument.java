@@ -27,6 +27,8 @@ public record WritableShreddedDocument(
     Optional<UUID> txID,
     List<JsonPath> docFieldOrder,
     Map<JsonPath, String> docAtomicFields,
+    /** !!! TODO: what purpose does this field serve? */
+    Map<JsonPath, Integer> properties,
     Set<JsonPath> existKeys,
     Map<JsonPath, String> subDocEquals,
     Map<JsonPath, Integer> arraySize,
@@ -57,6 +59,8 @@ public record WritableShreddedDocument(
     private final List<JsonPath> docFieldOrder;
 
     private final Map<JsonPath, String> docAtomicFields;
+
+    private Map<JsonPath, Integer> properties;
 
     private final Set<JsonPath> existKeys;
 
@@ -95,6 +99,7 @@ public record WritableShreddedDocument(
           txID,
           docFieldOrder,
           docAtomicFields,
+          _nonNull(properties),
           existKeys,
           _nonNull(subDocEquals),
           _nonNull(arraySize),

@@ -70,16 +70,14 @@ public class ShredderTest {
 
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
-          .isEqualTo(
-              Collections.singletonMap(JsonPath.from("\\[extra\\.stuff]"), Boolean.TRUE));
+          .isEqualTo(Collections.singletonMap(JsonPath.from("\\[extra\\.stuff]"), Boolean.TRUE));
       Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
       expNums.put(JsonPath.from("values.[0]"), BigDecimal.valueOf(1));
       expNums.put(JsonPath.from("values.[1]"), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
           .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
-      assertThat(doc.queryNullValues())
-          .isEqualTo(Collections.singleton(JsonPath.from("nullable")));
+      assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
     }
   }
 
