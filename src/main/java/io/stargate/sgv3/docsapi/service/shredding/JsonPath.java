@@ -61,7 +61,7 @@ public final class JsonPath implements Comparable<JsonPath> {
    * @param encoded
    * @return
    */
-  public static JsonPath fromEncoded(String encoded) {
+  public static JsonPath from(String encoded) {
     return new JsonPath(encoded);
   }
 

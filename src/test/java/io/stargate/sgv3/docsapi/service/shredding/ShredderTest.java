@@ -44,12 +44,12 @@ public class ShredderTest {
       assertThat(doc.id()).isEqualTo("abc");
       List<JsonPath> expPaths =
           Arrays.asList(
-              JsonPath.fromEncoded("name"),
-              JsonPath.fromEncoded("values"),
-              JsonPath.fromEncoded("values.[0]"),
-              JsonPath.fromEncoded("values.[1]"),
-              JsonPath.fromEncoded("\\[extra\\.stuff]"),
-              JsonPath.fromEncoded("nullable"));
+              JsonPath.from("name"),
+              JsonPath.from("values"),
+              JsonPath.from("values.[0]"),
+              JsonPath.from("values.[1]"),
+              JsonPath.from("\\[extra\\.stuff]"),
+              JsonPath.from("nullable"));
 
       // First verify paths
       assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
@@ -61,7 +61,7 @@ public class ShredderTest {
       // Then array info (doc has one array, with 2 elements)
       assertThat(doc.arraySize())
           .hasSize(1)
-          .containsEntry(JsonPath.fromEncoded("values"), Integer.valueOf(2));
+          .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
       assertThat(doc.arrayEquals()).hasSize(1);
       assertThat(doc.arrayContains()).hasSize(2);
 
@@ -71,15 +71,15 @@ public class ShredderTest {
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
           .isEqualTo(
-              Collections.singletonMap(JsonPath.fromEncoded("\\[extra\\.stuff]"), Boolean.TRUE));
+              Collections.singletonMap(JsonPath.from("\\[extra\\.stuff]"), Boolean.TRUE));
       Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
-      expNums.put(JsonPath.fromEncoded("values.[0]"), BigDecimal.valueOf(1));
-      expNums.put(JsonPath.fromEncoded("values.[1]"), BigDecimal.valueOf(2));
+      expNums.put(JsonPath.from("values.[0]"), BigDecimal.valueOf(1));
+      expNums.put(JsonPath.from("values.[1]"), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
-          .isEqualTo(Collections.singletonMap(JsonPath.fromEncoded("name"), "Bob"));
+          .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues())
-          .isEqualTo(Collections.singleton(JsonPath.fromEncoded("nullable")));
+          .isEqualTo(Collections.singleton(JsonPath.from("nullable")));
     }
   }
 
