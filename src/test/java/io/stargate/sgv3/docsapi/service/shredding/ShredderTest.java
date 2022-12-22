@@ -42,14 +42,14 @@ public class ShredderTest {
                       """;
       WritableShreddedDocument doc = shredder.shred(objectMapper.readTree(inputJson));
       assertThat(doc.id()).isEqualTo("abc");
-      List<JSONPath> expPaths =
+      List<JsonPath> expPaths =
           Arrays.asList(
-              JSONPath.fromEncoded("name"),
-              JSONPath.fromEncoded("values"),
-              JSONPath.fromEncoded("values.[0]"),
-              JSONPath.fromEncoded("values.[1]"),
-              JSONPath.fromEncoded("\\[extra\\.stuff]"),
-              JSONPath.fromEncoded("nullable"));
+              JsonPath.fromEncoded("name"),
+              JsonPath.fromEncoded("values"),
+              JsonPath.fromEncoded("values.[0]"),
+              JsonPath.fromEncoded("values.[1]"),
+              JsonPath.fromEncoded("\\[extra\\.stuff]"),
+              JsonPath.fromEncoded("nullable"));
 
       // First verify paths
       assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
@@ -61,7 +61,7 @@ public class ShredderTest {
       // Then array info (doc has one array, with 2 elements)
       assertThat(doc.arraySize())
           .hasSize(1)
-          .containsEntry(JSONPath.fromEncoded("values"), Integer.valueOf(2));
+          .containsEntry(JsonPath.fromEncoded("values"), Integer.valueOf(2));
       assertThat(doc.arrayEquals()).hasSize(1);
       assertThat(doc.arrayContains()).hasSize(2);
 
@@ -71,15 +71,15 @@ public class ShredderTest {
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
           .isEqualTo(
-              Collections.singletonMap(JSONPath.fromEncoded("\\[extra\\.stuff]"), Boolean.TRUE));
-      Map<JSONPath, BigDecimal> expNums = new LinkedHashMap<>();
-      expNums.put(JSONPath.fromEncoded("values.[0]"), BigDecimal.valueOf(1));
-      expNums.put(JSONPath.fromEncoded("values.[1]"), BigDecimal.valueOf(2));
+              Collections.singletonMap(JsonPath.fromEncoded("\\[extra\\.stuff]"), Boolean.TRUE));
+      Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
+      expNums.put(JsonPath.fromEncoded("values.[0]"), BigDecimal.valueOf(1));
+      expNums.put(JsonPath.fromEncoded("values.[1]"), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
-          .isEqualTo(Collections.singletonMap(JSONPath.fromEncoded("name"), "Bob"));
+          .isEqualTo(Collections.singletonMap(JsonPath.fromEncoded("name"), "Bob"));
       assertThat(doc.queryNullValues())
-          .isEqualTo(Collections.singleton(JSONPath.fromEncoded("nullable")));
+          .isEqualTo(Collections.singleton(JsonPath.fromEncoded("nullable")));
     }
   }
 

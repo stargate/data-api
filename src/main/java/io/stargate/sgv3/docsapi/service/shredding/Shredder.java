@@ -66,7 +66,7 @@ public class Shredder {
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), id, txId);
-    traverse(doc, b, JSONPath.rootBuilder());
+    traverse(doc, b, JsonPath.rootBuilder());
     return b.build();
   }
 
@@ -74,7 +74,7 @@ public class Shredder {
    * Main traversal method we need to produce callbacks to passed-in listener; used to separate
    * shredding logic from that of recursive-descent traversal.
    */
-  private void traverse(JsonNode doc, ShredListener callback, JSONPath.Builder pathBuilder) {
+  private void traverse(JsonNode doc, ShredListener callback, JsonPath.Builder pathBuilder) {
     // NOTE: main level is handled bit differently; no callbacks for Objects or Arrays,
     // only for the (rare) case of atomic values. Just traversal.
 
@@ -88,7 +88,7 @@ public class Shredder {
   }
 
   private void traverseObject(
-      ObjectNode obj, ShredListener callback, JSONPath.Builder pathBuilder) {
+      ObjectNode obj, ShredListener callback, JsonPath.Builder pathBuilder) {
 
     Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
     while (it.hasNext()) {
@@ -98,7 +98,7 @@ public class Shredder {
     }
   }
 
-  private void traverseArray(ArrayNode arr, ShredListener callback, JSONPath.Builder pathBuilder) {
+  private void traverseArray(ArrayNode arr, ShredListener callback, JsonPath.Builder pathBuilder) {
     int ix = 0;
     for (JsonNode value : arr) {
       pathBuilder.index(ix++);
@@ -106,7 +106,7 @@ public class Shredder {
     }
   }
 
-  private void traverseValue(JsonNode value, ShredListener callback, JSONPath.Builder pathBuilder) {
+  private void traverseValue(JsonNode value, ShredListener callback, JsonPath.Builder pathBuilder) {
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
       callback.shredObject(pathBuilder, ob);

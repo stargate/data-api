@@ -9,15 +9,15 @@ import java.math.BigDecimal;
  * processing. Callbacks are called in document order when traversing the input document.
  */
 public interface ShredListener {
-  void shredObject(JSONPath.Builder pathBuilder, ObjectNode obj);
+  void shredObject(JsonPath.Builder pathBuilder, ObjectNode obj);
 
-  void shredArray(JSONPath.Builder pathBuilder, ArrayNode arr);
+  void shredArray(JsonPath.Builder pathBuilder, ArrayNode arr);
 
-  void shredText(JSONPath path, String text);
+  void shredText(JsonPath path, String text);
 
-  void shredNumber(JSONPath path, BigDecimal number);
+  void shredNumber(JsonPath path, BigDecimal number);
 
-  void shredBoolean(JSONPath path, boolean value);
+  void shredBoolean(JsonPath path, boolean value);
 
-  void shredNull(JSONPath path);
+  void shredNull(JsonPath path);
 }

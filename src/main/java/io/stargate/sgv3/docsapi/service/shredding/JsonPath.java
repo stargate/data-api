@@ -45,11 +45,11 @@ import java.util.Objects;
  *
  * <p>Instances can be sorted; sorting order uses underlying encoded path value.
  */
-public final class JSONPath implements Comparable<JSONPath> {
+public final class JsonPath implements Comparable<JsonPath> {
   /** Encoded representation of the path as String. */
   private final String encodedPath;
 
-  JSONPath(String encoded) {
+  JsonPath(String encoded) {
     encodedPath = Objects.requireNonNull(encoded, "Null not legal encoded path");
   }
 
@@ -61,8 +61,8 @@ public final class JSONPath implements Comparable<JSONPath> {
    * @param encoded
    * @return
    */
-  public static JSONPath fromEncoded(String encoded) {
-    return new JSONPath(encoded);
+  public static JsonPath fromEncoded(String encoded) {
+    return new JsonPath(encoded);
   }
 
   public static Builder rootBuilder() {
@@ -82,17 +82,17 @@ public final class JSONPath implements Comparable<JSONPath> {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    return (o instanceof JSONPath) && encodedPath.equals(((JSONPath) o).encodedPath);
+    return (o instanceof JsonPath) && encodedPath.equals(((JsonPath) o).encodedPath);
   }
 
   @Override
-  public int compareTo(JSONPath o) {
+  public int compareTo(JsonPath o) {
     // Sorting by lexicographic (~= alphabetic) order of encoded path
     return this.encodedPath.compareTo(o.encodedPath);
   }
 
   /**
-   * Builder that is used for efficient construction of {@link JSONPath}s when traversing a
+   * Builder that is used for efficient construction of {@link JsonPath}s when traversing a
    * (non-shredded) Document.
    */
   public static class Builder {
@@ -169,18 +169,18 @@ public final class JSONPath implements Comparable<JSONPath> {
      * Method used to construct path pointing to either the context node (Array, Object) -- if
      * called before traversal -- or to child node being traversed over.
      */
-    public JSONPath build() {
+    public JsonPath build() {
       // "encoded" is null at point where Array or Object value is encountered but
       // contents not yet traversed. Path will therefore point to the Array/Object itself
       // and not element/property.
       if (childPath == null) {
         if (basePath == null) {
           // Means this is at root Object before any properties: could fail or build "empty":
-          return new JSONPath("");
+          return new JsonPath("");
         }
-        return new JSONPath(basePath);
+        return new JsonPath(basePath);
       }
-      return new JSONPath(childPath);
+      return new JsonPath(childPath);
     }
   }
 }

@@ -3,7 +3,7 @@ package io.stargate.sgv3.docsapi.service.shredding.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv3.docsapi.service.shredding.JSONPath;
+import io.stargate.sgv3.docsapi.service.shredding.JsonPath;
 import io.stargate.sgv3.docsapi.service.shredding.ShredListener;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,17 +25,17 @@ public record WritableShreddedDocument(
     String id,
     /** Optional transaction id used for optimistic locking */
     Optional<UUID> txID,
-    List<JSONPath> docFieldOrder,
-    Map<JSONPath, String> docAtomicFields,
-    Set<JSONPath> existKeys,
-    Map<JSONPath, String> subDocEquals,
-    Map<JSONPath, Integer> arraySize,
-    Map<JSONPath, String> arrayEquals,
+    List<JsonPath> docFieldOrder,
+    Map<JsonPath, String> docAtomicFields,
+    Set<JsonPath> existKeys,
+    Map<JsonPath, String> subDocEquals,
+    Map<JsonPath, Integer> arraySize,
+    Map<JsonPath, String> arrayEquals,
     Set<String> arrayContains,
-    Map<JSONPath, Boolean> queryBoolValues,
-    Map<JSONPath, BigDecimal> queryNumberValues,
-    Map<JSONPath, String> queryTextValues,
-    Set<JSONPath> queryNullValues) {
+    Map<JsonPath, Boolean> queryBoolValues,
+    Map<JsonPath, BigDecimal> queryNumberValues,
+    Map<JsonPath, String> queryTextValues,
+    Set<JsonPath> queryNullValues) {
   public static Builder builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
     return new Builder(hasher, id, txID);
   }
@@ -54,22 +54,22 @@ public record WritableShreddedDocument(
     private final String id;
     private final Optional<UUID> txID;
 
-    private final List<JSONPath> docFieldOrder;
+    private final List<JsonPath> docFieldOrder;
 
-    private final Map<JSONPath, String> docAtomicFields;
+    private final Map<JsonPath, String> docAtomicFields;
 
-    private final Set<JSONPath> existKeys;
+    private final Set<JsonPath> existKeys;
 
-    private Map<JSONPath, String> subDocEquals;
+    private Map<JsonPath, String> subDocEquals;
 
-    private Map<JSONPath, Integer> arraySize;
-    private Map<JSONPath, String> arrayEquals;
+    private Map<JsonPath, Integer> arraySize;
+    private Map<JsonPath, String> arrayEquals;
     private Set<String> arrayContains;
 
-    private Map<JSONPath, Boolean> queryBoolValues;
-    private Map<JSONPath, BigDecimal> queryNumberValues;
-    private Map<JSONPath, String> queryTextValues;
-    private Set<JSONPath> queryNullValues;
+    private Map<JsonPath, Boolean> queryBoolValues;
+    private Map<JsonPath, BigDecimal> queryNumberValues;
+    private Map<JsonPath, String> queryTextValues;
+    private Set<JsonPath> queryNullValues;
 
     public Builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
       this.hasher = hasher;
@@ -106,7 +106,7 @@ public record WritableShreddedDocument(
           _nonNull(queryNullValues));
     }
 
-    private <T> Map<JSONPath, T> _nonNull(Map<JSONPath, T> map) {
+    private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
       return (map == null) ? Collections.emptyMap() : map;
     }
 
@@ -121,8 +121,8 @@ public record WritableShreddedDocument(
      */
 
     @Override
-    public void shredObject(JSONPath.Builder pathBuilder, ObjectNode obj) {
-      final JSONPath path = pathBuilder.build();
+    public void shredObject(JsonPath.Builder pathBuilder, ObjectNode obj) {
+      final JsonPath path = pathBuilder.build();
       addKey(path);
 
       if (subDocEquals == null) {
@@ -132,8 +132,8 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredArray(JSONPath.Builder pathBuilder, ArrayNode arr) {
-      final JSONPath path = pathBuilder.build();
+    public void shredArray(JsonPath.Builder pathBuilder, ArrayNode arr) {
+      final JsonPath path = pathBuilder.build();
       addKey(path);
       if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
@@ -143,7 +143,7 @@ public record WritableShreddedDocument(
       arraySize.put(path, arr.size());
 
       // 16-Dec-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
-      //    is quite unclear: older documents claim it's "JSONPath + content hash" (per
+      //    is quite unclear: older documents claim it's "JsonPath + content hash" (per
       //    element presumably). For now will use that, with space as separator; probably
       //    not what we want but...
 
@@ -156,7 +156,7 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredText(JSONPath path, String text) {
+    public void shredText(JsonPath path, String text) {
       addKey(path);
       if (queryTextValues == null) {
         queryTextValues = new HashMap<>();
@@ -166,7 +166,7 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredNumber(JSONPath path, BigDecimal number) {
+    public void shredNumber(JsonPath path, BigDecimal number) {
       addKey(path);
       if (queryNumberValues == null) {
         queryNumberValues = new HashMap<>();
@@ -176,7 +176,7 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredBoolean(JSONPath path, boolean value) {
+    public void shredBoolean(JsonPath path, boolean value) {
       addKey(path);
       if (queryBoolValues == null) {
         queryBoolValues = new HashMap<>();
@@ -186,7 +186,7 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredNull(JSONPath path) {
+    public void shredNull(JsonPath path) {
       addKey(path);
       if (queryNullValues == null) {
         queryNullValues = new HashSet<>();
@@ -215,7 +215,7 @@ public record WritableShreddedDocument(
      *
      * @param key
      */
-    private void addKey(JSONPath key) {
+    private void addKey(JsonPath key) {
       docFieldOrder.add(key);
       existKeys.add(key);
     }
