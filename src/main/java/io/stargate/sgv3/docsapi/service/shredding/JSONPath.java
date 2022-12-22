@@ -1,5 +1,7 @@
 package io.stargate.sgv3.docsapi.service.shredding;
 
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.util.Objects;
 
 /**
@@ -113,8 +115,7 @@ public final class JSONPath implements Comparable<JSONPath> {
     public Builder nestedValueBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw new IllegalStateException(
-            "Path '" + build() + "' does not point to a property or element");
+        throw new DocsException(ErrorCode.SHRED_INTERNAL_NO_PATH);
       }
       return new Builder(childPath);
     }

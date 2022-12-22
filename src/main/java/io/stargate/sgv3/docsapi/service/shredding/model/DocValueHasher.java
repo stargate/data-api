@@ -3,6 +3,8 @@ package io.stargate.sgv3.docsapi.service.shredding.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -40,7 +42,10 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO
-      throw new IllegalArgumentException("Unsupported JsonNodeType: " + value.getNodeType());
+      throw new DocsException(
+          ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
+          String.format(
+              "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
     };
   }
 

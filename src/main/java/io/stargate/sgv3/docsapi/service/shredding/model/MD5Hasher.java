@@ -1,5 +1,7 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,8 +41,9 @@ public class MD5Hasher {
 
     try {
       md = MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e) { // should never happen
-      throw new RuntimeException(e);
+    } catch (NoSuchAlgorithmException e) {
+      // should never happen but:
+      throw new DocsException(ErrorCode.SHRED_NO_MD5, e);
     }
     byte[] digest = md.digest(value.getBytes(StandardCharsets.UTF_8));
     return BASE64_ENCODER.encodeToString(digest);

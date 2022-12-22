@@ -128,7 +128,7 @@ public record WritableShreddedDocument(
       if (subDocEquals == null) {
         subDocEquals = new HashMap<>();
       }
-      subDocEquals.put(path, hasher.hash(obj).toString());
+      subDocEquals.put(path, hasher.hash(obj).hash());
     }
 
     @Override
@@ -147,11 +147,11 @@ public record WritableShreddedDocument(
       //    element presumably). For now will use that, with space as separator; probably
       //    not what we want but...
 
-      arrayEquals.put(path, hasher.hash(arr).toString());
+      arrayEquals.put(path, hasher.hash(arr).hash());
       for (JsonNode element : arr) {
         // Assuming it's path to array, NOT index, since otherwise containment tricky.
         // Plus atomic values contains entries for in-array atomics anyway
-        arrayContains.add(path + " " + hasher.hash(element).toString());
+        arrayContains.add(path + " " + hasher.hash(element).hash());
       }
     }
 

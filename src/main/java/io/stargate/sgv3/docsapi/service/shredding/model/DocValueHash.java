@@ -1,5 +1,8 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
+// !!! TODO 22-Dec-2022, tatu: As per Ivan's question -- yes, once everything complete
+//    we should see if this wrapper level is needed or not. If not, just use String
+
 /**
  * Value class that represents hash/digest of contents of a Document node (atomic value,
  * sub-document or array).
@@ -12,11 +15,6 @@ package io.stargate.sgv3.docsapi.service.shredding.model;
  * values: this will effectively calculated recursive hash/digest.
  */
 public record DocValueHash(DocValueType type, boolean usesMD5, String hash) {
-  @Override
-  public String toString() {
-    return hash;
-  }
-
   /**
    * Helper method that will construct hash with bounded length (22 characters/bytes or less)
    *
