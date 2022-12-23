@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
@@ -130,11 +130,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
-    @DisabledIfSystemProperty(
-        named = "testing.package.type",
-        matches = "native",
-        disabledReason =
-            "[V2 exception mappers map to ApiError which is not registered for refection](https://github.com/riptano/sgv3-docsapi/issues/8)")
     public void notValidDocumentMissing() {
       String json =
           """
@@ -151,7 +146,9 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(400);
+          .statusCode(200)
+          .body("errors[0].message", is(not(blankString())))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
   }
 
@@ -183,10 +180,23 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(empty())))
+          .body("errors[0].message", is(not(blankString())))
           .body("errors[0].exceptionClass", is("WebApplicationException"))
-          .body("errors[1].message", is(not(empty())))
+          .body("errors[1].message", is(not(blankString())))
           .body("errors[1].exceptionClass", is("JsonParseException"));
+    }
+
+    @Test
+    public void emptyBody() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is(not(blankString())))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
   }
 }
