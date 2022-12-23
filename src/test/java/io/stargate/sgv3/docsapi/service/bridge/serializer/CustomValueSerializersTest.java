@@ -24,7 +24,7 @@ public class CustomValueSerializersTest {
       final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
           to.entrySet().iterator().next();
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
-      assertThat(Values.int_(next.getKey())).isEqualTo(10);
+      assertThat(Values.int_(next.getValue())).isEqualTo(10);
     }
 
     @Test
@@ -35,7 +35,7 @@ public class CustomValueSerializersTest {
       final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
           to.entrySet().iterator().next();
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
-      assertThat(Values.string(next.getKey())).isEqualTo("data1");
+      assertThat(Values.string(next.getValue())).isEqualTo("data1");
     }
 
     @Test
@@ -46,7 +46,7 @@ public class CustomValueSerializersTest {
       final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
           to.entrySet().iterator().next();
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
-      assertThat(Values.bool(next.getKey())).isEqualTo(true);
+      assertThat(Values.bool(next.getValue())).isEqualTo(true);
     }
 
     @Test
@@ -57,7 +57,7 @@ public class CustomValueSerializersTest {
       final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
           to.entrySet().iterator().next();
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
-      assertThat(Values.decimal(next.getKey())).isEqualTo(new BigDecimal(10));
+      assertThat(Values.decimal(next.getValue())).isEqualTo(new BigDecimal(10));
     }
 
     @Test
