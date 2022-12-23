@@ -104,7 +104,8 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("doc1"));
     }
 
     @Test

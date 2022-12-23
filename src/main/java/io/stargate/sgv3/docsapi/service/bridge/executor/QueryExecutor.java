@@ -16,12 +16,14 @@ public class QueryExecutor {
 
   private final QueriesConfig queriesConfig;
 
-  private final StargateRequestInfo requestInfo;
+  private final StargateRequestInfo stargateRequestInfo;
+
+  private static final int PAGE_SIZE = 100;
 
   @Inject
-  public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo requestInfo) {
+  public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
     this.queriesConfig = queriesConfig;
-    this.requestInfo = requestInfo;
+    this.stargateRequestInfo = stargateRequestInfo;
   }
 
   public Uni<QueryOuterClass.ResultSet> writeDocument(QueryOuterClass.Query query) {
@@ -38,18 +40,17 @@ public class QueryExecutor {
     BytesValue pagingStateValue =
         pagingState != null ? BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState))) : null;
 
-    QueryState state = ImmutableQueryState.of(100, pagingStateValue);
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().reads();
     QueryOuterClass.ConsistencyValue.Builder consistencyValue =
         QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
     QueryOuterClass.QueryParameters.Builder params =
         QueryOuterClass.QueryParameters.newBuilder()
             .setConsistency(consistencyValue)
-            .setPageSize(Int32Value.of(state.pageSize()));
+            .setPageSize(Int32Value.of(PAGE_SIZE));
 
     // if we have paging state, set
-    if (null != state.pagingState()) {
-      params.setPagingState(state.pagingState());
+    if (null != pagingStateValue) {
+      params.setPagingState(pagingStateValue);
     }
 
     // final query is same as the original, just with different params
@@ -57,7 +58,7 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial();
 
     // execute
-    return requestInfo
+    return stargateRequestInfo
         .getStargateBridge()
         .executeQuery(finalQuery)
         .map(

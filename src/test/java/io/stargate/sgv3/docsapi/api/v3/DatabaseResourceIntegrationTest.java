@@ -1,6 +1,7 @@
 package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -49,7 +50,8 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .when()
           .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("status.ok", is(1));
     }
 
     @Test
