@@ -76,6 +76,22 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <scope>provided</scope>
+      <version>2.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.javatuples</groupId>
+      <artifactId>javatuples</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
       <groupId>io.stargate</groupId>
       <artifactId>sgv2-quarkus-common</artifactId>
       <version>${stargate.version}</version>
@@ -133,12 +149,19 @@
   </build>
   <profiles>
     <profile>
-      <id>cassandra-40</id>
+      <id>dse-68</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
+        <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>6.8.28</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.coordinator.image>stargateio/coordinator-dse-68</stargate.int-test.coordinator.image>
         <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
+        <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+        <stargate.int-test.cluster.version>6.8</stargate.int-test.cluster.version>
+        <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+        <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
       </properties>
     </profile>
     <profile>
@@ -153,7 +176,14 @@
         <quarkus.package.type>native</quarkus.package.type>
         <quarkus.container-image.name>docsapi-native</quarkus.container-image.name>
         <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
+        <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>6.8.28</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.coordinator.image>stargateio/coordinator-dse-68</stargate.int-test.coordinator.image>
         <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
+        <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+        <stargate.int-test.cluster.version>6.8</stargate.int-test.cluster.version>
+        <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+        <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
       </properties>
     </profile>
   </profiles>

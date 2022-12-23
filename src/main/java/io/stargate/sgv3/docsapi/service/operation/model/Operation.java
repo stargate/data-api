@@ -1,9 +1,9 @@
 package io.stargate.sgv3.docsapi.service.operation.model;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.StargateBridge;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import java.util.function.Supplier;
 
 /**
@@ -29,5 +29,5 @@ public interface Operation {
   /** @return The context of the command responsible for this operation. */
   CommandContext commandContext();
 
-  Uni<Supplier<CommandResult>> execute(StargateBridge bridge);
+  Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor);
 }

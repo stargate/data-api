@@ -4,5 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum CommandStatus {
   @JsonProperty("insertedIds")
-  INSERTED_IDS;
+  INSERTED_IDS,
+  @JsonProperty("ok")
+  CREATE_COLLECTION;
 }

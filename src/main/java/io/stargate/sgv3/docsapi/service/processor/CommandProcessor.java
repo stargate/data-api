@@ -1,13 +1,12 @@
 package io.stargate.sgv3.docsapi.service.processor;
 
-import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.StargateBridge;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.resolver.CommandResolverService;
 import java.util.function.Supplier;
@@ -26,15 +25,14 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class CommandProcessor {
 
-  private final StargateBridge stargateBridge;
+  private final QueryExecutor queryExecutor;
 
   private final CommandResolverService commandResolverService;
 
   @Inject
   public CommandProcessor(
-      @GrpcClient("bridge") StargateBridge stargateBridge,
-      CommandResolverService commandResolverService) {
-    this.stargateBridge = stargateBridge;
+      QueryExecutor queryExecutor, CommandResolverService commandResolverService) {
+    this.queryExecutor = queryExecutor;
     this.commandResolverService = commandResolverService;
   }
 
@@ -57,7 +55,7 @@ public class CommandProcessor {
             resolver -> {
               // if we have resolver, resolve operation and execute
               Operation operation = resolver.resolveCommand(commandContext, command);
-              return operation.execute(stargateBridge);
+              return operation.execute(queryExecutor);
             })
 
         // handler failures here
