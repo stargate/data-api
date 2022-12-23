@@ -36,12 +36,12 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     String json =
         String.format(
             """
-                            {
-                              "createCollection": {
-                                "name": "%s"
-                              }
-                            }
-                            """,
+            {
+              "createCollection": {
+                "name": "%s"
+              }
+            }
+            """,
             collectionName);
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -60,12 +60,12 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void happyPath() {
       String json =
           """
-              {
-                "findOne": {
-                  "sort": ["user.age"]
-                }
-              }
-              """;
+          {
+            "findOne": {
+              "sort": ["user.age"]
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -87,15 +87,15 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void insertDocument() {
       String json =
           """
-                      {
-                        "insertOne": {
-                          "document": {
-                            "_id": "doc1",
-                            "username": "aaron"
-                          }
-                        }
-                      }
-                      """;
+          {
+            "insertOne": {
+              "document": {
+                "_id": "doc1",
+                "username": "aaron"
+              }
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -138,11 +138,11 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void notValidDocumentMissing() {
       String json =
           """
-              {
-                "insertOne": {
-                }
-              }
-              """;
+          {
+            "insertOne": {
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -152,6 +152,25 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(400);
+    }
+  }
+
+  @Nested
+  class ClientErrors {
+
+    @Test
+    public void tokenMissing() {
+      given()
+          .contentType(ContentType.JSON)
+          .body("{}")
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "errors[0].message",
+              is(
+                  "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
     }
   }
 }

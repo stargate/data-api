@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -66,6 +67,25 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(400);
+    }
+  }
+
+  @Nested
+  class ClientErrors {
+
+    @Test
+    public void tokenMissing() {
+      given()
+          .contentType(ContentType.JSON)
+          .body("{}")
+          .when()
+          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body(
+              "errors[0].message",
+              is(
+                  "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
     }
   }
 }
