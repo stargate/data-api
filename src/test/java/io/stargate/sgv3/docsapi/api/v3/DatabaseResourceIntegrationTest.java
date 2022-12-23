@@ -41,6 +41,7 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
                                       }
                                       """,
               "col" + RandomStringUtils.randomNumeric(16));
+      System.out.println("setting json");
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
