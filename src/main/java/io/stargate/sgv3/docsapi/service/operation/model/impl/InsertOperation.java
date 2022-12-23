@@ -70,7 +70,7 @@ public record InsertOperation(
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
             .addValues(Values.of(CustomValueSerializers.getListValue(doc.docFieldOrder())))
-            .addValues(Values.of(CustomValueSerializers.getRawDataValue(doc.docAtomicFields())));
+            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.docAtomicFields())));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 }
