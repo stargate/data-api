@@ -172,5 +172,21 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
               is(
                   "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
     }
+
+    @Test
+    public void malformedBody() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{wrong}")
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is(not(empty())))
+          .body("errors[0].exceptionClass", is("WebApplicationException"))
+          .body("errors[1].message", is(not(empty())))
+          .body("errors[1].exceptionClass", is("JsonParseException"));
+    }
   }
 }

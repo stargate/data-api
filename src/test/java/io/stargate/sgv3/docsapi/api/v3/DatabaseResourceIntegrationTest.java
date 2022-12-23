@@ -2,7 +2,9 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -36,12 +38,12 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
       String json =
           String.format(
               """
-                                      {
-                                        "createCollection": {
-                                          "name": "%s"
-                                        }
-                                      }
-                                      """,
+              {
+                "createCollection": {
+                  "name": "%s"
+                }
+              }
+              """,
               "col" + RandomStringUtils.randomNumeric(16));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -86,6 +88,22 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
               "errors[0].message",
               is(
                   "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
+    }
+
+    @Test
+    public void malformedBody() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{wrong}")
+          .when()
+          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is(not(empty())))
+          .body("errors[0].exceptionClass", is("WebApplicationException"))
+          .body("errors[1].message", is(not(empty())))
+          .body("errors[1].exceptionClass", is("JsonParseException"));
     }
   }
 }
