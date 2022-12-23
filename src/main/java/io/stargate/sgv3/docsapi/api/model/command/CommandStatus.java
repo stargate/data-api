@@ -6,5 +6,5 @@ public enum CommandStatus {
   @JsonProperty("insertedIds")
   INSERTED_IDS,
   @JsonProperty("ok")
-  CREATE_COLLECTION;
+  OK;
 }

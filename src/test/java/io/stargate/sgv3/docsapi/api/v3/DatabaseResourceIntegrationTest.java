@@ -1,8 +1,8 @@
 package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;

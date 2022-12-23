@@ -14,7 +14,11 @@ public enum ErrorCode {
 
   SHRED_NO_MD5("MD5 Hash algorithm not available"),
 
-  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document");
+  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
+
+  CREATE_COLLECTION_FAILED("Create collection failed."),
+
+  INSERT_ERROR("Unable to insert the document");
 
   private final String message;
 
