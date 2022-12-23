@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
@@ -41,7 +42,6 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
                                       }
                                       """,
               "col" + RandomStringUtils.randomNumeric(16));
-      System.out.println("setting json");
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -53,6 +53,11 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
+    @DisabledIfSystemProperty(
+        named = "testing.package.type",
+        matches = "native",
+        disabledReason =
+            "[V2 exception mappers map to ApiError which is not registered for refection](https://github.com/riptano/sgv3-docsapi/issues/8)")
     public void error() {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
