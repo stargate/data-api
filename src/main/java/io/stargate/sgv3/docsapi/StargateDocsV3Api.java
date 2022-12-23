@@ -81,6 +81,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "createCollection",
+                  summary = "`CreateCollection` command",
+                  value =
+                      """
+                            {
+                                "createCollection": {
+                                  "name": "test_collection"
+                                }
+                            }
+                            """),
+              @ExampleObject(
                   name = "resultRead",
                   summary = "Read command result",
                   value =

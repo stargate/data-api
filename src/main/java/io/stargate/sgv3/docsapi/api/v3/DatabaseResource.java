@@ -1,9 +1,9 @@
 package io.stargate.sgv3.docsapi.api.v3;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.api.model.command.SchemaChangeCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv3.docsapi.config.constants.OpenApiConstants;
 import io.stargate.sgv3.docsapi.service.processor.CommandProcessor;
@@ -55,7 +55,7 @@ public class DatabaseResource {
               mediaType = MediaType.APPLICATION_JSON,
               schema = @Schema(anyOf = {CreateCollectionCommand.class}),
               examples = {
-                @ExampleObject(ref = "resultCreateCollection"),
+                @ExampleObject(ref = "createCollection"),
               }))
   @APIResponses(
       @APIResponse(
@@ -72,7 +72,7 @@ public class DatabaseResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid Command command, @PathParam("database") String database) {
+      @NotNull @Valid SchemaChangeCommand command, @PathParam("database") String database) {
 
     // create context
     CommandContext commandContext = new CommandContext(database, null);
