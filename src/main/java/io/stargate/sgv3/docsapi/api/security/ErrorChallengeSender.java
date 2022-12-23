@@ -63,7 +63,6 @@ public class ErrorChallengeSender implements ChallengeSender {
   /** {@inheritDoc} */
   @Override
   public Uni<Boolean> apply(RoutingContext context, ChallengeData challengeData) {
-
     try {
       // try to serialize
       String response = objectMapper.writeValueAsString(commandResult);
@@ -84,7 +83,7 @@ public class ErrorChallengeSender implements ChallengeSender {
       return Uni.createFrom()
           .completionStage(context.response().write(response).map(true).toCompletionStage());
     } catch (JsonProcessingException e) {
-      LOG.error("Unable to serialize API error instance {} to JSON.", commandResult, e);
+      LOG.error("Unable to serialize CommandResult instance {} to JSON.", commandResult, e);
 
       // keep original status in case we failed
       context.response().setStatusCode(challengeData.status);
