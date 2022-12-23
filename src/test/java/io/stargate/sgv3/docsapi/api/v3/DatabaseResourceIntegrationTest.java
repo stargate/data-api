@@ -45,8 +45,8 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .when()
           .body(json)
+          .when()
           .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200);
