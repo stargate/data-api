@@ -38,7 +38,7 @@ public record InsertOperation(
   private static Uni<String> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.writeDocument(query).onItem().transform(result -> doc.id());
+    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {

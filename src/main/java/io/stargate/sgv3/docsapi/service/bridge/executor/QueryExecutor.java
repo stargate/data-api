@@ -7,7 +7,9 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
+import io.stargate.sgv3.docsapi.service.bridge.config.DocumentConfig;
 import java.util.Base64;
+import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -16,51 +18,66 @@ public class QueryExecutor {
 
   private final QueriesConfig queriesConfig;
 
+  private final DocumentConfig documentConfig;
+
   private final StargateRequestInfo stargateRequestInfo;
 
-  private static final int PAGE_SIZE = 100;
-
   @Inject
-  public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
+  public QueryExecutor(
+      QueriesConfig queriesConfig,
+      DocumentConfig documentConfig,
+      StargateRequestInfo stargateRequestInfo) {
     this.queriesConfig = queriesConfig;
+    this.documentConfig = documentConfig;
     this.stargateRequestInfo = stargateRequestInfo;
   }
 
-  public Uni<QueryOuterClass.ResultSet> writeDocument(QueryOuterClass.Query query) {
-    return queryBridge(query, null);
-  }
-
-  public Uni<QueryOuterClass.ResultSet> execute(QueryOuterClass.Query query) {
-    return queryBridge(query, null);
-  }
-
-  private Uni<QueryOuterClass.ResultSet> queryBridge(
-      QueryOuterClass.Query query, String pagingState) {
-    // construct initial state for the query
-    BytesValue pagingStateValue =
-        pagingState != null ? BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState))) : null;
-
+  public Uni<QueryOuterClass.ResultSet> executeRead(
+      QueryOuterClass.Query query, Optional<String> pagingState, Optional<Integer> pageSize) {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().reads();
     QueryOuterClass.ConsistencyValue.Builder consistencyValue =
         QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
     QueryOuterClass.QueryParameters.Builder params =
-        QueryOuterClass.QueryParameters.newBuilder()
-            .setConsistency(consistencyValue)
-            .setPageSize(Int32Value.of(PAGE_SIZE));
-
-    // if we have paging state, set
-    if (null != pagingStateValue) {
-      params.setPagingState(pagingStateValue);
+        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
+    if (pagingState.isPresent()) {
+      params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState.get()))));
     }
 
-    // final query is same as the original, just with different params
-    QueryOuterClass.Query finalQuery =
-        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial();
+    if (pageSize.isPresent()) {
+      params.setPageSize(Int32Value.of(pageSize.get()));
+    } else {
+      params.setPageSize(Int32Value.of(documentConfig.maxPageSize()));
+    }
+    return queryBridge(
+        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
+  }
+
+  public Uni<QueryOuterClass.ResultSet> executeWrite(QueryOuterClass.Query query) {
+    QueryOuterClass.Consistency consistency = queriesConfig.consistency().writes();
+    QueryOuterClass.ConsistencyValue.Builder consistencyValue =
+        QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
+    QueryOuterClass.QueryParameters.Builder params =
+        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
+    return queryBridge(
+        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
+  }
+
+  public Uni<QueryOuterClass.ResultSet> executeSchemaChange(QueryOuterClass.Query query) {
+    QueryOuterClass.Consistency consistency = queriesConfig.consistency().schemaChanges();
+    QueryOuterClass.ConsistencyValue.Builder consistencyValue =
+        QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
+    QueryOuterClass.QueryParameters.Builder params =
+        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
+    return queryBridge(
+        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
+  }
+
+  private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
 
     // execute
     return stargateRequestInfo
         .getStargateBridge()
-        .executeQuery(finalQuery)
+        .executeQuery(query)
         .map(
             response -> {
               // update next state

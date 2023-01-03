@@ -16,7 +16,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final Uni<QueryOuterClass.ResultSet> execute =
-        queryExecutor.execute(getCreateTable(commandContext.database(), name));
+        queryExecutor.executeSchemaChange(getCreateTable(commandContext.database(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -26,7 +26,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
                       getIndexStatements(commandContext.database(), name);
                   List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
                   indexStatements.stream()
-                      .forEach(index -> indexes.add(queryExecutor.execute(index)));
+                      .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
                   return Uni.combine().all().unis(indexes).combinedWith(results -> true);
                 });
     return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
