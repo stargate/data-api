@@ -8,10 +8,7 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv3.docsapi.service.bridge.config.DocumentConfig;
-
-import java.nio.ByteBuffer;
 import java.util.Base64;
-import java.util.List;
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
