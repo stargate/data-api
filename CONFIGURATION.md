@@ -12,7 +12,7 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 * `quarkus.cache.caffeine.keyspace-cache` - property group  for defining the keyspace cache used by [SchemaManager](../sgv2-quarkus-common/src/main/java/io/stargate/sgv2/api/common/schema/SchemaManager.java) (see [Caffeine cache configuration](https://quarkus.io/guides/cache#caffeine-configuration-properties) for all options)
 
 ## Document configuration
-*Configuration for documents and their storage properties, defined by [DocumentConfig.java](src/main/java/io/stargate/sgv2/docsapi/config/DocumentConfig.java).*
+*Configuration for documents and their storage properties, defined by [DocumentConfig.java](src/main/java/io/stargate/sgv3/docsapi/service/bridge/config/DocumentConfig.java).*
 
 | Property                                        | Type     | Default      | Description                                                        |
 |-------------------------------------------------|----------|--------------|--------------------------------------------------------------------|
