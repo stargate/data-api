@@ -9,6 +9,10 @@ stargate:
     global-tags:
       module: sgv3-docsapi
 
+  # disable all sgv2 exception mappers, handled differently
+  exception-mappers:
+    enabled: false
+
 quarkus:
 
   # general app properties
