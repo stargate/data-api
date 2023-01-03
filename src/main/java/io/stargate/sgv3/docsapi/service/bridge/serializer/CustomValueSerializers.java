@@ -11,16 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CustomValueSerializers {
-  public static Map<QueryOuterClass.Value, QueryOuterClass.Value> getRawDataValue(
-      Map<JsonPath, String> from) {
-    final Map<QueryOuterClass.Value, QueryOuterClass.Value> to = new HashMap<>(from.size());
-    for (Map.Entry<JsonPath, String> entry : from.entrySet()) {
-      QueryOuterClass.Value key = Values.of(entry.getKey().toString());
-      QueryOuterClass.Value valueTuple = Values.of(entry.getValue());
-      to.put(key, valueTuple);
-    }
-    return to;
-  }
 
   public static Map<QueryOuterClass.Value, QueryOuterClass.Value> getIntegerMapValues(
       Map<JsonPath, Integer> from) {

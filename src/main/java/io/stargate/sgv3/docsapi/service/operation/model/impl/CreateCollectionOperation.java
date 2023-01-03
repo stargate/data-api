@@ -4,8 +4,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
-import io.stargate.sgv3.docsapi.exception.DocsException;
-import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import java.util.ArrayList;
@@ -18,7 +16,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final Uni<QueryOuterClass.ResultSet> execute =
-        queryExecutor.execute(getCreateTable(commandContext.database(), name));
+        queryExecutor.executeSchemaChange(getCreateTable(commandContext.database(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -28,17 +26,10 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
                       getIndexStatements(commandContext.database(), name);
                   List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
                   indexStatements.stream()
-                      .forEach(index -> indexes.add(queryExecutor.execute(index)));
+                      .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
                   return Uni.combine().all().unis(indexes).combinedWith(results -> true);
                 });
-    return indexResult
-        .onFailure()
-        .transform(
-            t -> {
-              return new DocsException(ErrorCode.CREATE_COLLECTION_FAILED, t);
-            })
-        .onItem()
-        .transform(res -> SchemaChangeResult.from(res));
+    return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {

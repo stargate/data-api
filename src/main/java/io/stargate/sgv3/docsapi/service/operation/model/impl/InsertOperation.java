@@ -6,8 +6,6 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
-import io.stargate.sgv3.docsapi.exception.DocsException;
-import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
@@ -28,26 +26,19 @@ public record InsertOperation(
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildInsertQuery();
     final Uni<List<String>> ids =
-        Multi.createBy()
-            .concatenating()
-            .streams(Multi.createFrom().items(documents.stream()))
+        Multi.createFrom()
+            .items(documents.stream())
             .onItem()
             .transformToUniAndConcatenate(doc -> insertDocument(queryExecutor, query, doc))
             .collect()
             .asList();
-    return ids.onFailure()
-        .transform(
-            t -> {
-              return new DocsException(ErrorCode.INSERT_ERROR, t);
-            })
-        .onItem()
-        .transform(insertedIds -> ModifyOperationPage.from(insertedIds, documents));
+    return ids.onItem().transform(insertedIds -> new ModifyOperationPage(insertedIds, documents));
   }
 
   private static Uni<String> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.writeDocument(query).onItem().transform(result -> doc.id());
+    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -79,7 +70,7 @@ public record InsertOperation(
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
             .addValues(Values.of(CustomValueSerializers.getListValue(doc.docFieldOrder())))
-            .addValues(Values.of(CustomValueSerializers.getRawDataValue(doc.docAtomicFields())));
+            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.docAtomicFields())));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 }
