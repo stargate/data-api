@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -11,10 +10,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,16 +38,16 @@ public record FindOperation(
     implements ReadOperation {
 
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    return getDocuments(queryExecutor)
-        .onItem()
-        .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+  public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
+    return getDocumentsSequence()
+        .sink(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
   }
 
   @Override
-  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+  public QuerySequence<FindResponse> getDocumentsSequence() {
     QueryOuterClass.Query query = buildSelectQuery();
     return findDocument(queryExecutor, query, pagingState, pageSize, readDocument, objectMapper);
+    return findDocumentQuerySequence(query, pagingState, readDocument);
   }
 
   private QueryOuterClass.Query buildSelectQuery() {

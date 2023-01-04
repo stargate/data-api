@@ -1,11 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -14,22 +15,15 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
     implements Operation {
 
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    final Uni<QueryOuterClass.ResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.database(), name));
-    final Uni<Boolean> indexResult =
-        execute
-            .onItem()
-            .transformToUni(
-                res -> {
-                  final List<QueryOuterClass.Query> indexStatements =
-                      getIndexStatements(commandContext.database(), name);
-                  List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
-                  indexStatements.stream()
-                      .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                  return Uni.combine().all().unis(indexes).combinedWith(results -> true);
-                });
-    return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
+  public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
+    QueryOuterClass.Query createTableQuery = getCreateTable(commandContext.database(), name);
+
+    return QuerySequence.query(createTableQuery, QueryOptions.Type.SCHEMA)
+        .then()
+        .queries(
+            res -> getIndexStatements(commandContext.database(), name), QueryOptions.Type.SCHEMA)
+        .then()
+        .sink(res -> new SchemaChangeResult(true));
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {

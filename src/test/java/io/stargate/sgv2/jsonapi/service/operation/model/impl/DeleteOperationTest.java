@@ -13,10 +13,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeTest;
+import io.stargate.sgv3.docsapi.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -32,7 +34,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  @Inject QueryExecutor queryExecutor;
+  @Inject ReactiveQueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
 
   @Nested
@@ -92,7 +94,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =
-          operation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          operation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -143,7 +150,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =
-          operation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          operation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -205,7 +217,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =
-          operation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          operation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -261,7 +278,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper);
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =
-          operation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          operation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(

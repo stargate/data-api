@@ -1,17 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -20,32 +21,12 @@ import java.util.function.Supplier;
  */
 public record DeleteOperation(CommandContext commandContext, ReadOperation readOperation)
     implements ModifyOperation {
-  @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<ReadOperation.FindResponse> docsToDelete = readOperation().getDocuments(queryExecutor);
-    final QueryOuterClass.Query delete = buildDeleteQuery();
     final Uni<List<DocumentId>> ids =
-        docsToDelete
-            .onItem()
-            .transformToMulti(
-                findResponse -> Multi.createFrom().items(findResponse.docs().stream()))
-            .onItem()
-            .transformToUniAndConcatenate(
-                readDocument -> deleteDocument(queryExecutor, delete, readDocument))
-            .collect()
-            .asList();
-    return ids.onItem().transform(DeleteOperationPage::new);
-  }
-
-  private QueryOuterClass.Query buildDeleteQuery() {
-    String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
-    return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(delete, commandContext.database(), commandContext.collection()))
-        .build();
-  }
 
   /**
-   * When delete is run with LWT, applied field is always the first field and in case the
+   * {@inheritDoc}
+   *
+   * <p>When delete is run with LWT, applied field is always the first field and in case the
    * transaction id mismatch the latest transaction id is returned as second field Eg:
    * cassandra@cqlsh:jsonapi> delete from jsonapi.test1 where key = 'doc2' IF tx_id =
    * 13659a90-9361-11ed-92df-515ba7f99655 ;
@@ -57,26 +38,59 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
    * 13659a90-9361-11ed-92df-515ba7f99654 ;
    *
    * <p>[applied] ----------- True
-   *
-   * @param queryExecutor
-   * @param query
-   * @param doc
-   * @return
    */
   private static Uni<DocumentId> deleteDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
-    query = bindDeleteQuery(query, doc);
-    return queryExecutor
-        .executeWrite(query)
-        .onItem()
-        .transformToUni(
-            result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(doc.id());
-              } else {
-                return Uni.createFrom().nothing();
-              }
+  @Override
+  public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
+    QueryOuterClass.Query delete = buildDeleteQuery();
+    QuerySequence<FindResponse> documentsSequence = readOperation().getDocumentsSequence();
+
+    // execute document sequence from read op
+    return documentsSequence
+
+        // then consume results
+        .then()
+        .pipeToSink(
+            findResponse -> {
+              // go through found docs and transform to the delete query for each
+              List<ReadDocument> documents = findResponse.docs();
+              List<QueryOuterClass.Query> queries =
+                  documents.stream().map(doc -> bindDeleteQuery(delete, doc)).toList();
+
+              // create next sequence
+              return QuerySequence.queries(queries, QueryOptions.Type.WRITE)
+
+                  // add handler that returns docs id for success
+                  .<Optional<String>>withHandler(
+                      (result, throwable, index) -> {
+                        if (null == throwable) {
+                          boolean applied = result.getRows(0).getValues(0).getBoolean();
+                          if (applied) {
+                            ReadDocument doc = documents.get(index);
+                            return Optional.of(doc.id());
+                          }
+                        }
+                        return Optional.empty();
+                      })
+
+                  // sink that to result
+                  .sink(
+                      results -> {
+                        List<String> deletedIds =
+                            results.stream()
+                                .filter(Optional::isPresent)
+                                .map(Optional::get)
+                                .toList();
+                        return new DeleteOperationPage(deletedIds);
+                      });
             });
+  }
+
+  private QueryOuterClass.Query buildDeleteQuery() {
+    String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
+    return QueryOuterClass.Query.newBuilder()
+        .setCql(String.format(delete, commandContext.database(), commandContext.collection()))
+        .build();
   }
 
   private static QueryOuterClass.Query bindDeleteQuery(

@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -32,24 +31,21 @@ public class CommandResolverService {
 
   /**
    * @param command {@link Command}
-   * @return Emits the {@link CommandResolver} for the given command if one exists, otherwise emits
-   *     a null item.
+   * @return Return s the {@link CommandResolver} for the given command if one exists, otherwise
+   *     throwns a {@link DocsException}.
    * @param <T> Type of the command
    */
-  public <T extends Command> Uni<CommandResolver<T>> resolverForCommand(T command) {
+  public <T extends Command> CommandResolver<T> resolverForCommand(T command) {
     // try to get from the map of resolvers
-    return Uni.createFrom()
-        .item((CommandResolver<T>) resolvers.get(command.getClass()))
+    CommandResolver<T> resolver = (CommandResolver<T>) resolvers.get(command.getClass());
 
-        // if this results to null, fail here with not implemented
-        .onItem()
-        .ifNull()
-        .failWith(
-            () -> {
-              String msg =
-                  "The command %s is not implemented."
-                      .formatted(command.getClass().getSimpleName());
-              return new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
-            });
+    // if this results to null, fail here with not implemented
+    if (null == resolver) {
+      String msg =
+          "The command %s is not implemented.".formatted(command.getClass().getSimpleName());
+      throw new DocsException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
+    } else {
+      return resolver;
+    }
   }
 }

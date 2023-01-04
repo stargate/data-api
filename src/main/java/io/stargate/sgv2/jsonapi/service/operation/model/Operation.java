@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.util.function.Supplier;
 
 /**
@@ -24,5 +23,7 @@ import java.util.function.Supplier;
  * OperationExecutor}
  */
 public interface Operation {
-  Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor);
+
+  /** @return Returns {@link QuerySequenceSink} that results in {@link CommandResult} supplier. */
+  QuerySequenceSink<Supplier<CommandResult>> getOperationSequence();
 }

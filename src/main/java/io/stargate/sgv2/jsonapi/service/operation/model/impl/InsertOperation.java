@@ -1,16 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv3.docsapi.service.sequencer.MultiQuerySequence;
+import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -23,24 +25,39 @@ public record InsertOperation(
     this(commandContext, List.of(document));
   }
 
-  /** {@inheritDoc} */
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+  public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
+    // build all queries
     QueryOuterClass.Query query = buildInsertQuery();
     final Uni<List<DocumentId>> ids =
-        Multi.createFrom()
-            .items(documents.stream())
-            .onItem()
-            .transformToUniAndConcatenate(doc -> insertDocument(queryExecutor, query, doc))
-            .collect()
-            .asList();
-    return ids.onItem().transform(insertedIds -> new InsertOperationPage(insertedIds, documents));
-  }
+    List<QueryOuterClass.Query> queries =
+        documents.stream().map(doc -> bindInsertValues(query, doc)).toList();
 
-  private static Uni<DocumentId> insertDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
-    query = bindInsertValues(query, doc);
-    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
+    // simple handler that just maps to true/false if case of errors
+    MultiQuerySequence.Handler<Boolean> handler = (result, throwable, index) -> null == throwable;
+
+    // execute queries
+    return ids.onItem().transform(insertedIds -> new InsertOperationPage(insertedIds, documents));
+    return QuerySequence.queries(queries, QueryOptions.Type.WRITE)
+        .withHandler(handler)
+        .then()
+
+        // sink as adding only docs that are inserted
+        .sink(
+            written -> {
+              List<String> writtenIds = new ArrayList<>();
+              List<WritableShreddedDocument> insertDocuments = new ArrayList<>();
+
+              for (int i = 0; i < written.size(); i++) {
+                if (written.get(i)) {
+                  WritableShreddedDocument document = documents.get(i);
+                  writtenIds.add(document.id());
+                  insertDocuments.add(document);
+                }
+              }
+
+              return new ModifyOperationPage(writtenIds, insertDocuments);
+            });
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
