@@ -8,6 +8,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperation;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
@@ -34,7 +37,8 @@ class ObjectMapperConfigurationTest {
               "sort": [
                 "user.name",
                 "-user.age"
-              ]
+              ],
+              "filter": {"username": "aaron"}
             }
           }
           """;
@@ -51,6 +55,36 @@ class ObjectMapperConfigurationTest {
                     .contains(
                         new SortExpression("user.name", true),
                         new SortExpression("user.age", false));
+              });
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              FindOneCommand.class,
+              findOne -> {
+                FilterClause filterClause = findOne.filter();
+                assertThat(filterClause).isNotNull();
+                assertThat(filterClause.comparisonExpressions()).hasSize(1);
+                assertThat(filterClause.comparisonExpressions().get(0).path())
+                    .isEqualTo("username");
+                assertThat(
+                        ((ValueComparisonOperation)
+                                filterClause
+                                    .comparisonExpressions()
+                                    .get(0)
+                                    .filterOperations()
+                                    .get(0))
+                            .operator())
+                    .isEqualTo(ValueComparisonOperator.EQ);
+                assertThat(
+                        ((ValueComparisonOperation)
+                                filterClause
+                                    .comparisonExpressions()
+                                    .get(0)
+                                    .filterOperations()
+                                    .get(0))
+                            .rhsOperand()
+                            .getTypedValue()
+                            .toString())
+                    .isEqualTo("aaron");
               });
     }
 
@@ -69,6 +103,23 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class, findOne -> assertThat(findOne.sortClause()).isNull());
+    }
+
+    @Test
+    public void filterClauseOptional() throws Exception {
+      String json =
+          """
+                  {
+                    "findOne": {
+                    }
+                  }
+                  """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              FindOneCommand.class, findOne -> assertThat(findOne.filter()).isNull());
     }
   }
 

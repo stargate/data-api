@@ -14,7 +14,11 @@ public enum ErrorCode {
 
   SHRED_NO_MD5("MD5 Hash algorithm not available"),
 
-  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document");
+  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
+
+  UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
+
+  FILTER_UNRESOLVABLE("Unable to resolve the filter");
 
   private final String message;
 
