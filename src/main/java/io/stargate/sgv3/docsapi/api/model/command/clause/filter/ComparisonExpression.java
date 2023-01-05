@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotEmpty;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
@@ -16,7 +17,7 @@ import javax.validation.constraints.NotNull;
  */
 public record ComparisonExpression(
     @NotNull(message = "json node path can not be null in filter") String path,
-    List<FilterOperation> filterOperations) {
+    @NotNull List<FilterOperation> filterOperations) {
 
   /**
    * Shortcut to create equals against a literal
