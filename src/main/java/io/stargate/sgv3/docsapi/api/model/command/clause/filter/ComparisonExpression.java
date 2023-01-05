@@ -7,7 +7,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.NotEmpty;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
