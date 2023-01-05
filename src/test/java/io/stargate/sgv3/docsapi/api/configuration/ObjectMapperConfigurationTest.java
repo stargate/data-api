@@ -70,7 +70,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneCommand.class,
               findOne -> {
-                FilterClause filterClause = findOne.filter();
+                FilterClause filterClause = findOne.filterClause();
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.comparisonExpressions()).hasSize(1);
                 assertThat(filterClause.comparisonExpressions())
@@ -110,7 +110,7 @@ class ObjectMapperConfigurationTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              FindOneCommand.class, findOne -> assertThat(findOne.filter()).isNull());
+              FindOneCommand.class, findOne -> assertThat(findOne.filterClause()).isNull());
     }
   }
 
