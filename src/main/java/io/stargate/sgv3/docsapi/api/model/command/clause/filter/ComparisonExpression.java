@@ -1,5 +1,7 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -47,7 +49,11 @@ public record ComparisonExpression(
     if (value instanceof Boolean) {
       return new JsonLiteral<>((Boolean) value, JsonType.BOOLEAN);
     }
-    return new JsonLiteral<>((String) value, JsonType.STRING);
+    if (value instanceof String) {
+      return new JsonLiteral<>((String) value, JsonType.STRING);
+    }
+    throw new DocsException(
+        ErrorCode.FILTER_UNRESOLVABLE, String.format("Unsupported filter value type %s", value));
   }
 
   public List<FilterOperation> match(String matchPath, EnumSet operator, JsonType type) {
