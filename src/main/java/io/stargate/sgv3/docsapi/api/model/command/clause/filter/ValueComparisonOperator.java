@@ -1,6 +1,7 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
-public enum ValueComparisonOperator {
+/** List of value operator that can be used in Filter clause */
+public enum ValueComparisonOperator implements FilterOperator {
   EQ,
   GT,
   GTE,

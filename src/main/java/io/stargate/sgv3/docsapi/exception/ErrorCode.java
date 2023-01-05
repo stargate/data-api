@@ -6,6 +6,8 @@ public enum ErrorCode {
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
+  FILTER_UNRESOLVABLE("Unable to resolve the filter"),
+
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
@@ -16,9 +18,7 @@ public enum ErrorCode {
 
   SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
 
-  UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
-
-  FILTER_UNRESOLVABLE("Unable to resolve the filter");
+  UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type");
 
   private final String message;
 

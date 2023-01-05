@@ -1,16 +1,19 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
+import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.validation.constraints.NotNull;
 
+/**
+ * This object represents conditions based for a json path (node) that need to be tested Spec says
+ * you can do this, compare equals to a literal {"username" : "aaron"} This is a shortcut for
+ * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form so it
+ * is all the same.
+ */
 public record ComparisonExpression(
-    // the node in in the doc we want to test.
-    String path,
-
-    // Spec says you can do this, compare equals to a literal {"username" : "aaron"}
-    // This is a shortcut for {"username" : {"$eq" : "aaron"}}
-    // In here we expand the shortcut into a canonical long form so it is all the same.
+    @NotNull(message = "json node path can not be null in filter") String path,
     List<FilterOperation> filterOperations) {
 
   /**
@@ -18,16 +21,33 @@ public record ComparisonExpression(
    *
    * <p>e.g. {"username" : "aaron"}
    *
-   * @param path
-   * @param value
-   * @return
+   * @param path Json node path
+   * @param value Value returned by the deserializer
+   * @return {@link ComparisonExpression} with equal operator
    */
   public static ComparisonExpression eq(String path, Object value) {
     return new ComparisonExpression(
-        path,
-        List.of(
-            new ValueComparisonOperation(
-                ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.typeForValue(value)))));
+        path, List.of(new ValueComparisonOperation(ValueComparisonOperator.EQ, getLiteral(value))));
+  }
+
+  /**
+   * Create Typed JsonLiteral object for the value
+   *
+   * @param value object came in the request
+   * @return {@link JsonLiteral}
+   */
+  @SuppressWarnings("rawtypes")
+  private static JsonLiteral getLiteral(Object value) {
+    if (value == null) {
+      return new JsonLiteral<>(null, JsonType.NULL);
+    }
+    if (value instanceof BigDecimal) {
+      return new JsonLiteral<>((BigDecimal) value, JsonType.NUMBER);
+    }
+    if (value instanceof Boolean) {
+      return new JsonLiteral<>((Boolean) value, JsonType.BOOLEAN);
+    }
+    return new JsonLiteral<>((String) value, JsonType.STRING);
   }
 
   public List<FilterOperation> match(String matchPath, EnumSet operator, JsonType type) {

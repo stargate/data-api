@@ -1,8 +1,17 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
 import java.util.EnumSet;
+import javax.validation.constraints.NotNull;
 
-public record ValueComparisonOperation(ValueComparisonOperator operator, JsonLiteral rhsOperand)
+/**
+ * This object represents the operator and rhs operand of a filter clause
+ *
+ * @param operator
+ * @param rhsOperand
+ */
+public record ValueComparisonOperation(
+    @NotNull(message = "operator cannot be null") FilterOperator operator,
+    @NotNull(message = "operand cannot be null") JsonLiteral rhsOperand)
     implements FilterOperation {
 
   @Override
@@ -11,7 +20,12 @@ public record ValueComparisonOperation(ValueComparisonOperator operator, JsonLit
   }
 
   @Override
-  public <T> T getTypedValue() {
-    return rhsOperand.getTypedValue();
+  public FilterOperator getOperator() {
+    return operator;
+  }
+
+  @Override
+  public JsonLiteral getOperand() {
+    return rhsOperand;
   }
 }

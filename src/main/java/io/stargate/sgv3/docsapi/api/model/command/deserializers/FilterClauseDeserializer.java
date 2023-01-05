@@ -28,13 +28,15 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
+    if (!filterNode.isObject()) throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
     Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
     List<ComparisonExpression> expressionList = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // TODO: Does not handle logical expressions, they are out of scope
       JsonNode operatorExpression = entry.getValue();
-      assert operatorExpression.isValueNode();
+      if (!operatorExpression.isValueNode())
+        throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
       expressionList.add(ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
     }
     return new FilterClause(expressionList);

@@ -8,13 +8,17 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
+import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,6 +60,12 @@ class ObjectMapperConfigurationTest {
                         new SortExpression("user.name", true),
                         new SortExpression("user.age", false));
               });
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
@@ -63,28 +73,9 @@ class ObjectMapperConfigurationTest {
                 FilterClause filterClause = findOne.filter();
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.comparisonExpressions()).hasSize(1);
-                assertThat(filterClause.comparisonExpressions().get(0).path())
-                    .isEqualTo("username");
-                assertThat(
-                        ((ValueComparisonOperation)
-                                filterClause
-                                    .comparisonExpressions()
-                                    .get(0)
-                                    .filterOperations()
-                                    .get(0))
-                            .operator())
-                    .isEqualTo(ValueComparisonOperator.EQ);
-                assertThat(
-                        ((ValueComparisonOperation)
-                                filterClause
-                                    .comparisonExpressions()
-                                    .get(0)
-                                    .filterOperations()
-                                    .get(0))
-                            .rhsOperand()
-                            .getTypedValue()
-                            .toString())
-                    .isEqualTo("aaron");
+                assertThat(filterClause.comparisonExpressions())
+                    .singleElement()
+                    .isEqualTo(expectedResult);
               });
     }
 

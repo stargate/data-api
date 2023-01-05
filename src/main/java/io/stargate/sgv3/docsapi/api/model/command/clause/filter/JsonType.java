@@ -18,23 +18,4 @@ public enum JsonType {
     this.value = value;
     this.jacksonType = jacksonType;
   }
-
-  /*
-     Return supported Filter Json types for a value
-  */
-  public static JsonType typeForValue(Object value) {
-    if (value instanceof String) {
-      return JsonType.STRING;
-    }
-    if (value instanceof Number) {
-      return JsonType.NUMBER;
-    }
-    if (value instanceof Boolean) {
-      return JsonType.BOOLEAN;
-    }
-    if (value == null) {
-      return JsonType.NULL;
-    }
-    throw new RuntimeException(String.format("Unsupported filter value type %s", value));
-  }
 }
