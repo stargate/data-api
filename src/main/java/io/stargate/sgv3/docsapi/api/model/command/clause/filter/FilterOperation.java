@@ -5,7 +5,7 @@ import java.util.EnumSet;
 public interface FilterOperation {
   public boolean match(EnumSet operator, JsonType type);
 
-  public FilterOperator getOperator();
+  public FilterOperator operator();
 
-  public JsonLiteral getOperand();
+  public JsonLiteral operand();
 }

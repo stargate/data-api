@@ -6,26 +6,16 @@ import javax.validation.constraints.NotNull;
 /**
  * This object represents the operator and rhs operand of a filter clause
  *
- * @param operator
- * @param rhsOperand
+ * @param operator Filter condition operator
+ * @param operand Filter clause operand
  */
 public record ValueComparisonOperation(
     @NotNull(message = "operator cannot be null") FilterOperator operator,
-    @NotNull(message = "operand cannot be null") JsonLiteral rhsOperand)
+    @NotNull(message = "operand cannot be null") JsonLiteral operand)
     implements FilterOperation {
 
   @Override
   public boolean match(EnumSet operator, JsonType type) {
-    return operator.contains(operator) && type.equals(rhsOperand.type());
-  }
-
-  @Override
-  public FilterOperator getOperator() {
-    return operator;
-  }
-
-  @Override
-  public JsonLiteral getOperand() {
-    return rhsOperand;
+    return operator.contains(operator) && type.equals(operand.type());
   }
 }

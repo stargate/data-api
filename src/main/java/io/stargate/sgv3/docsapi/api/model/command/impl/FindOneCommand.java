@@ -12,11 +12,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that finds a single JSON document from a collection.")
 @JsonTypeName("findOne")
 public record FindOneCommand(
-    @Valid @JsonProperty("filter") FilterClause filter,
+    @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause)
     implements ReadCommand, Filterable {
-  @Override
-  public FilterClause getFilter() {
-    return filter;
-  }
+
 }
