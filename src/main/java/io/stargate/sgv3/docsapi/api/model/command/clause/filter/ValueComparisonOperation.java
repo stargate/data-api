@@ -15,7 +15,7 @@ public record ValueComparisonOperation(
     implements FilterOperation {
 
   @Override
-  public boolean match(EnumSet operator, JsonType type) {
-    return operator.contains(operator) && type.equals(operand.type());
+  public boolean match(EnumSet operators, JsonType type) {
+    return operators.contains(operator) && type.equals(operand.type());
   }
 }

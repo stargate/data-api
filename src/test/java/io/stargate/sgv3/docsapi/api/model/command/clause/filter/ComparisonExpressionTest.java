@@ -1,16 +1,12 @@
-package io.stargate.sgv3.docsapi.api.model.command.filter;
+package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperation;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -73,6 +69,41 @@ public class ComparisonExpressionTest {
 
       ComparisonExpression result = ComparisonExpression.eq("nullVal", null);
       assertThat(result).isEqualTo(expectedResult);
+    }
+  }
+
+  @Nested
+  class ComparisonExpressionMatch {
+    @Test
+    public void matchTest() throws Exception {
+      final ComparisonExpression comparisonExpression =
+          new ComparisonExpression(
+              "path",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))));
+
+      List<FilterOperation> match =
+          comparisonExpression.match("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
+      assertThat(match).hasSize(1);
+
+      match =
+          comparisonExpression.match("path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
+      assertThat(match).hasSize(1);
+
+      match =
+          comparisonExpression.match(
+              "differentPath", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
+      assertThat(match).hasSize(0);
+
+      match =
+          comparisonExpression.match(
+              "path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
+      assertThat(match).hasSize(0);
+
+      match =
+          comparisonExpression.match("path", EnumSet.of(ValueComparisonOperator.GT), JsonType.NULL);
+      assertThat(match).hasSize(0);
     }
   }
 }
