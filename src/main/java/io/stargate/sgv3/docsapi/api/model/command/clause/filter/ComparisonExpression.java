@@ -6,17 +6,19 @@ import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
  * you can do this, compare equals to a literal {"username" : "aaron"} This is a shortcut for
- * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form so it
+ * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
  */
 public record ComparisonExpression(
-    @NotNull(message = "json node path can not be null in filter") String path,
-    @NotNull List<FilterOperation> filterOperations) {
+    @NotBlank(message = "json node path can not be null in filter") String path,
+    @Valid @NotEmpty List<FilterOperation> filterOperations) {
 
   /**
    * Shortcut to create equals against a literal
@@ -29,7 +31,8 @@ public record ComparisonExpression(
    */
   public static ComparisonExpression eq(String path, Object value) {
     return new ComparisonExpression(
-        path, List.of(new ValueComparisonOperation(ValueComparisonOperator.EQ, getLiteral(value))));
+        path,
+        List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))));
   }
 
   /**
@@ -38,8 +41,7 @@ public record ComparisonExpression(
    * @param value object came in the request
    * @return {@link JsonLiteral}
    */
-  @SuppressWarnings("rawtypes")
-  private static JsonLiteral getLiteral(Object value) {
+  private static JsonLiteral<?> getLiteral(Object value) {
     if (value == null) {
       return new JsonLiteral<>(null, JsonType.NULL);
     }
@@ -56,7 +58,8 @@ public record ComparisonExpression(
         ErrorCode.FILTER_UNRESOLVABLE, String.format("Unsupported filter value type %s", value));
   }
 
-  public List<FilterOperation> match(String matchPath, EnumSet operator, JsonType type) {
+  public List<FilterOperation> match(
+      String matchPath, EnumSet<? extends FilterOperator> operator, JsonType type) {
     if ("*".equals(matchPath) || matchPath.equals(path)) {
       return filterOperations.stream()
           .filter(a -> a.match(operator, type))

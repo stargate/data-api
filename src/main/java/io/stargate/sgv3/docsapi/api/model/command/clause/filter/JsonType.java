@@ -7,5 +7,5 @@ public enum JsonType {
   STRING,
   NULL,
   SUB_DOC,
-  ARRAY;
+  ARRAY
 }

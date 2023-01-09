@@ -7,5 +7,5 @@ public enum ValueComparisonOperator implements FilterOperator {
   GTE,
   LT,
   LTE,
-  NE;
+  NE
 }

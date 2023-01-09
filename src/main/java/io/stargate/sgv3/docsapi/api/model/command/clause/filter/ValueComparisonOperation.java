@@ -9,13 +9,13 @@ import javax.validation.constraints.NotNull;
  * @param operator Filter condition operator
  * @param operand Filter clause operand
  */
-public record ValueComparisonOperation(
+public record ValueComparisonOperation<T>(
     @NotNull(message = "operator cannot be null") FilterOperator operator,
-    @NotNull(message = "operand cannot be null") JsonLiteral operand)
+    @NotNull(message = "operand cannot be null") JsonLiteral<T> operand)
     implements FilterOperation {
 
   @Override
-  public boolean match(EnumSet operators, JsonType type) {
+  public boolean match(EnumSet<? extends FilterOperator> operators, JsonType type) {
     return operators.contains(operator) && type.equals(operand.type());
   }
 }

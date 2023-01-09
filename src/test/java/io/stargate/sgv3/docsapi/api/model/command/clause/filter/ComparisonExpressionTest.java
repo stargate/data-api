@@ -2,17 +2,12 @@ package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ComparisonExpressionTest {
 
   @Nested
