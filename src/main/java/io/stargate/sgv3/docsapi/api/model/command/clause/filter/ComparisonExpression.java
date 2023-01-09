@@ -18,7 +18,7 @@ import javax.validation.constraints.NotEmpty;
  */
 public record ComparisonExpression(
     @NotBlank(message = "json node path can not be null in filter") String path,
-    @Valid @NotEmpty List<FilterOperation> filterOperations) {
+    @Valid @NotEmpty List<FilterOperation<?>> filterOperations) {
 
   /**
    * Shortcut to create equals against a literal

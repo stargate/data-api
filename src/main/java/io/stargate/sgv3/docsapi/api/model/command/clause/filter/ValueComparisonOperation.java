@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 public record ValueComparisonOperation<T>(
     @NotNull(message = "operator cannot be null") FilterOperator operator,
     @NotNull(message = "operand cannot be null") JsonLiteral<T> operand)
-    implements FilterOperation {
+    implements FilterOperation<T> {
 
   @Override
   public boolean match(EnumSet<? extends FilterOperator> operators, JsonType type) {
