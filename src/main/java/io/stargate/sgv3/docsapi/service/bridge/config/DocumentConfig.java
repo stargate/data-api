@@ -27,8 +27,18 @@ import javax.validation.constraints.Positive;
 public interface DocumentConfig {
 
   /** @return Defines the maximum document page size, defaults to <code>20</code>. */
-  @Max(100)
+  @Max(500)
   @Positive
-  @WithDefault("20")
-  int pageSize();
+  @WithDefault("100")
+  int maxPageSize();
+
+  @Max(500)
+  @Positive
+  @WithDefault("100")
+  int defaultPageSize();
+
+  @Max(Integer.MAX_VALUE)
+  @Positive
+  @WithDefault("1000")
+  int maxLimit();
 }
