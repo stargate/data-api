@@ -3,7 +3,9 @@ package io.stargate.sgv3.docsapi.service.shredding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -40,7 +42,8 @@ public class ShredderTest {
                         "nullable" : null
                       }
                       """;
-      WritableShreddedDocument doc = shredder.shred(objectMapper.readTree(inputJson));
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
       assertThat(doc.id()).isEqualTo("abc");
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -52,11 +55,7 @@ public class ShredderTest {
               JsonPath.from("nullable"));
 
       // First verify paths
-      assertThat(doc.docFieldOrder()).isEqualTo(expPaths);
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
-
-      // Atomic value counts (5 atomic fields, _id not included)
-      assertThat(doc.docAtomicFields()).hasSize(5);
 
       // Then array info (doc has one array, with 2 elements)
       assertThat(doc.arraySize())
@@ -64,6 +63,12 @@ public class ShredderTest {
           .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
       assertThat(doc.arrayEquals()).hasSize(1);
       assertThat(doc.arrayContains()).hasSize(2);
+
+      // Also, the document should be the same, except for removed _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      ObjectNode origJsonMinusId = (ObjectNode) inputDoc.deepCopy();
+      origJsonMinusId.remove("_id");
+      assertThat(jsonFromShredded).isEqualTo(origJsonMinusId);
 
       // Sub-documents (Object values): none in this example
       assertThat(doc.subDocEquals()).hasSize(0);

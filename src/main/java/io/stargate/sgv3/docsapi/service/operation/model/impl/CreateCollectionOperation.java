@@ -47,8 +47,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    query_dbl_values    map<text, decimal>,"
             + "    query_text_values   map<text, text>, "
             + "    query_null_values   set<text>,     "
-            + "    doc_field_order     list<text>, "
-            + "    doc_atomic_fields   map<text,text>,"
+            + "    doc_json            text,"
             + "    PRIMARY KEY (key))";
     return QueryOuterClass.Query.newBuilder()
         .setCql(String.format(createTable, keyspace, table))

@@ -6,15 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv3.docsapi.service.shredding.JsonPath;
 import io.stargate.sgv3.docsapi.service.shredding.ShredListener;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /** The fully shredded document, everything we need to write the document. */
 public record WritableShreddedDocument(
@@ -25,10 +17,9 @@ public record WritableShreddedDocument(
     String id,
     /** Optional transaction id used for optimistic locking */
     Optional<UUID> txID,
-    List<JsonPath> docFieldOrder,
-    Map<JsonPath, String> docAtomicFields,
+    String docJson,
     /** !!! TODO: what purpose does this field serve? */
-    Map<JsonPath, Integer> properties,
+    Map<JsonPath, Integer> docProperties,
     Set<JsonPath> existKeys,
     Map<JsonPath, String> subDocEquals,
     Map<JsonPath, Integer> arraySize,
@@ -38,8 +29,9 @@ public record WritableShreddedDocument(
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
     Set<JsonPath> queryNullValues) {
-  public static Builder builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
-    return new Builder(hasher, id, txID);
+  public static Builder builder(
+      DocValueHasher hasher, String id, Optional<UUID> txID, String docJson) {
+    return new Builder(hasher, id, txID, docJson);
   }
 
   /**
@@ -56,9 +48,7 @@ public record WritableShreddedDocument(
     private final String id;
     private final Optional<UUID> txID;
 
-    private final List<JsonPath> docFieldOrder;
-
-    private final Map<JsonPath, String> docAtomicFields;
+    private final String docJson;
 
     private Map<JsonPath, Integer> properties;
 
@@ -75,16 +65,12 @@ public record WritableShreddedDocument(
     private Map<JsonPath, String> queryTextValues;
     private Set<JsonPath> queryNullValues;
 
-    public Builder(DocValueHasher hasher, String id, Optional<UUID> txID) {
+    public Builder(DocValueHasher hasher, String id, Optional<UUID> txID, String docJson) {
       this.hasher = hasher;
       this.id = id;
       this.txID = txID;
+      this.docJson = Objects.requireNonNull(docJson);
 
-      // Many fields left as null to avoid allocation but some common ones that are
-      // expected to be always needed are pre-allocated
-
-      docFieldOrder = new ArrayList<>();
-      docAtomicFields = new HashMap<>();
       existKeys = new HashSet<>();
     }
 
@@ -97,8 +83,7 @@ public record WritableShreddedDocument(
       return new WritableShreddedDocument(
           id,
           txID,
-          docFieldOrder,
-          docAtomicFields,
+          docJson,
           _nonNull(properties),
           existKeys,
           _nonNull(subDocEquals),
@@ -167,7 +152,6 @@ public record WritableShreddedDocument(
         queryTextValues = new HashMap<>();
       }
       queryTextValues.put(path, text);
-      docAtomicFields.put(path, hasher.stringValue(text).typedFullValue());
     }
 
     @Override
@@ -177,7 +161,6 @@ public record WritableShreddedDocument(
         queryNumberValues = new HashMap<>();
       }
       queryNumberValues.put(path, number);
-      docAtomicFields.put(path, hasher.numberValue(number).typedFullValue());
     }
 
     @Override
@@ -187,7 +170,6 @@ public record WritableShreddedDocument(
         queryBoolValues = new HashMap<>();
       }
       queryBoolValues.put(path, value);
-      docAtomicFields.put(path, hasher.booleanValue(value).typedFullValue());
     }
 
     @Override
@@ -197,7 +179,6 @@ public record WritableShreddedDocument(
         queryNullValues = new HashSet<>();
       }
       queryNullValues.add(path);
-      docAtomicFields.put(path, hasher.nullValue().typedFullValue());
     }
 
     /*
@@ -216,12 +197,11 @@ public record WritableShreddedDocument(
      *   <li>Array element (at any nesting level)
      * </ol>
      *
-     * <p>Method will add path to both {@link #existKeys} and {@link #docFieldOrder}.
+     * <p>Method will add path to {@link #existKeys}.
      *
      * @param key
      */
     private void addKey(JsonPath key) {
-      docFieldOrder.add(key);
       existKeys.add(key);
     }
   }

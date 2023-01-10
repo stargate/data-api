@@ -46,7 +46,7 @@ public class Shredder {
 
     ObjectNode docOb = (ObjectNode) doc;
 
-    // We will extract id if there is one; stored separately, removed so we won't process
+    // We will extract id if there is one; stored separately, removed so that we won't process
     // it, add path or such (since it has specific meaning separate from general properties)
     JsonNode idNode = docOb.remove("_id");
     String id = null;
@@ -64,8 +64,13 @@ public class Shredder {
       id = idNode.asText();
     }
 
+    // We will re-serialize document; gets rid of pretty-printing (if any);
+    // unifies escaping.
+    // NOTE! For now we will remove `_id` if one was included; we may alternatively
+    // want to keep-or-insert it, based on what we really want.
+    final String docJson = docOb.toString();
     final WritableShreddedDocument.Builder b =
-        WritableShreddedDocument.builder(new DocValueHasher(), id, txId);
+        WritableShreddedDocument.builder(new DocValueHasher(), id, txId, docJson);
     traverse(doc, b, JsonPath.rootBuilder());
     return b.build();
   }
