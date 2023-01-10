@@ -3,7 +3,6 @@ package io.stargate.sgv3.docsapi.api.v3;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.blankString;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
@@ -15,6 +14,7 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Before;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,16 +56,19 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   @Nested
   class FindOne {
 
-    @Test
-    public void happyPath() {
+    @Before
+    public void setUp() {
       String json =
           """
-          {
-            "findOne": {
-              "sort": ["user.age"]
-            }
-          }
-          """;
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                }
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -74,10 +77,90 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
+          .statusCode(200);
+
+      json =
+          """
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc2",
+                    "username": "user2"
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+    }
+
+    @Test
+    public void findOneNoFilter() {
+      String json =
+          """
+                {
+                  "findOne": {
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
           .statusCode(200)
-          .body("errors", is(not(empty())))
-          .body("errors[0].errorCode", is("COMMAND_NOT_IMPLEMENTED"))
-          .body("errors[0].message", is("The command FindOneCommand is not implemented."));
+          .body("data", is(not(blankString())));
+    }
+
+    @Test
+    public void findOneById() {
+      String json =
+          """
+                {
+                  "findOne": {
+                    "filter" : {"_id" : "doc1"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(not(blankString())));
+    }
+
+    @Test
+    public void findOneByColumn() {
+      String json =
+          """
+                {
+                  "findOne": {
+                    "filter" : {"username" : "user1"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(not(blankString())));
     }
   }
 

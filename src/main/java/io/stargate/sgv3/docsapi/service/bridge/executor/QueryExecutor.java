@@ -52,10 +52,10 @@ public class QueryExecutor {
     }
 
     if (pageSize.isPresent()) {
-      int page = Math.min(pageSize.get(), documentConfig.pageSize());
+      int page = Math.min(pageSize.get(), documentConfig.maxPageSize());
       params.setPageSize(Int32Value.of(page));
     } else {
-      params.setPageSize(Int32Value.of(documentConfig.pageSize()));
+      params.setPageSize(Int32Value.of(documentConfig.defaultPageSize()));
     }
     return queryBridge(
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
