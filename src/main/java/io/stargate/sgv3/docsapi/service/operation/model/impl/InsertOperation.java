@@ -44,9 +44,9 @@ public record InsertOperation(
   private QueryOuterClass.Query buildInsertQuery() {
     String insert =
         "INSERT INTO %s.%s"
-            + "            (key, tx_id, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, doc_field_order, doc_atomic_fields)"
+            + "            (key, tx_id, doc_json, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
             + "        VALUES"
-            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     return QueryOuterClass.Query.newBuilder()
         .setCql(String.format(insert, commandContext.database(), commandContext.collection()))
         .build();
@@ -58,7 +58,8 @@ public record InsertOperation(
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
             .addValues(Values.of(doc.id()))
-            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.properties())))
+            .addValues(Values.of(doc.docJson()))
+            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
@@ -68,9 +69,7 @@ public record InsertOperation(
             .addValues(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
-            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
-            .addValues(Values.of(CustomValueSerializers.getListValue(doc.docFieldOrder())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.docAtomicFields())));
+            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 }
