@@ -37,6 +37,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
         "CREATE TABLE IF NOT EXISTS %s.%s ("
             + "    key                 text,"
             + "    tx_id               timeuuid, "
+            + "    doc_json            text,"
             + "    doc_properties      map<text, int>,"
             + "    exist_keys          set<text>,"
             + "    sub_doc_equals      set<text>,"
@@ -47,7 +48,6 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    query_dbl_values    map<text, decimal>,"
             + "    query_text_values   map<text, text>, "
             + "    query_null_values   set<text>,     "
-            + "    doc_json            text,"
             + "    PRIMARY KEY (key))";
     return QueryOuterClass.Query.newBuilder()
         .setCql(String.format(createTable, keyspace, table))
