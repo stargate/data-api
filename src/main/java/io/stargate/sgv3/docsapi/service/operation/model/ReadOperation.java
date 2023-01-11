@@ -17,10 +17,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * ReadOperation interface which all find command operations will use. It also provides the
+ * implementation to excute and query and parse the result set as {@link FindResponse}
+ */
 public interface ReadOperation extends Operation {
   static String[] documentColumns = {"key", "tx_id", "doc_json"};
   static String[] documentKeyColumns = {"key", "tx_id"};
 
+  /**
+   * Default implementation to query and parse the result set
+   *
+   * @param queryExecutor
+   * @param query
+   * @param pagingState
+   * @param readDocument This flag is set to false if the read is done to just identify the document
+   *     id and tx_id to perform another DML operation
+   * @param objectMapper
+   * @return
+   */
   default Uni<FindResponse> findDocument(
       QueryExecutor queryExecutor,
       QueryOuterClass.Query query,

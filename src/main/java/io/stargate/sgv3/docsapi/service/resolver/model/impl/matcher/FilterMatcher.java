@@ -14,6 +14,12 @@ import java.util.ListIterator;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+/**
+ * This class matches the filter clauses against the filter match rules defined. The match rules
+ * will be defined in order of preference, so first best match will be used for query processing
+ *
+ * @param <T> should be a {@link Command} type, which also implements {@link Filterable}
+ */
 public class FilterMatcher<T extends Command & Filterable> {
 
   private List<Capture> captures = new ArrayList<>();

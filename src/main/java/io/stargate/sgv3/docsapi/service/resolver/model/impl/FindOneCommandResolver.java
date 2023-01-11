@@ -5,6 +5,7 @@ import io.stargate.sgv3.docsapi.service.resolver.model.impl.matcher.FilterableRe
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 
+/** Resolves the {@link FindOneCommand } */
 @ApplicationScoped
 public class FindOneCommandResolver extends FilterableResolver<FindOneCommand> {
   public FindOneCommandResolver() {

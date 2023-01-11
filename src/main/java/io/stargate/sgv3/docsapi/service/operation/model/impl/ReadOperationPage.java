@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 
+/** FindOperation response implementing the {@link CommandResult} */
 public class ReadOperationPage implements Supplier<CommandResult> {
   @Inject ObjectMapper objectMapper;
 
