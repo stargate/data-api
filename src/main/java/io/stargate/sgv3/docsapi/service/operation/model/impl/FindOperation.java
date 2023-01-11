@@ -24,28 +24,14 @@ import java.util.function.Supplier;
  *
  * <p>Create with a series of filters that are implicitly AND'd together.
  */
-public class FindOperation implements ReadOperation {
-  private final CommandContext commandContext;
-  private final List<DBFilterBase> filters;
-  private final String pagingState;
-  private final int limit;
-  private final boolean readDocument;
-  private final ObjectMapper objectMapper;
-
-  public FindOperation(
-      CommandContext commandContext,
-      List<DBFilterBase> filters,
-      String pagingState,
-      int limit,
-      boolean readDocument,
-      ObjectMapper objectMapper) {
-    this.commandContext = commandContext;
-    this.filters = filters;
-    this.pagingState = pagingState;
-    this.limit = limit;
-    this.readDocument = readDocument;
-    this.objectMapper = objectMapper;
-  }
+public record FindOperation(
+    CommandContext commandContext,
+    List<DBFilterBase> filters,
+    String pagingState,
+    int limit,
+    boolean readDocument,
+    ObjectMapper objectMapper)
+    implements ReadOperation {
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
