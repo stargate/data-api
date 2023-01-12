@@ -178,8 +178,8 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           {
             "insertOne": {
               "document": {
-                "_id": "doc1",
-                "username": "aaron"
+                "_id": "doc3",
+                "username": "user3"
               }
             }
           }
