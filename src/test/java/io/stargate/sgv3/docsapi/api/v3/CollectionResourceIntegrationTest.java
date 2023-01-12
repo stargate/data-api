@@ -15,7 +15,6 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +56,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   @Nested
   class FindOne {
 
-    @Before
+    @BeforeAll
     public void setUp() {
       String json =
           """
