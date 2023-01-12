@@ -42,7 +42,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
   private final boolean findOne;
   private final boolean readDocument;
 
-  @Inject ObjectMapper objectMapper;
+  private @Inject ObjectMapper objectMapper;
 
   public FilterableResolver(boolean findOne, boolean readDocument) {
     this.findOne = findOne;
