@@ -193,7 +193,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc1"));
+          .body("status.insertedIds[0]", is("doc3"));
     }
 
     @Test
