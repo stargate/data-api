@@ -38,26 +38,6 @@ public class CaptureGroupTest {
   class CaptureGroupDBClause {
 
     @Test
-    public void addOnlyFirstCaptures() throws Exception {
-      List<FilterOperation<String>> filters =
-          List.of(
-              new ValueComparisonOperation(
-                  ValueComparisonOperator.EQ, new JsonLiteral("val1", JsonType.STRING)),
-              new ValueComparisonOperation(
-                  ValueComparisonOperator.EQ, new JsonLiteral("val2", JsonType.STRING)));
-      CaptureGroup<String> captureGroup =
-          new CaptureGroup(new HashMap<String, List<FilterOperation<String>>>());
-      captureGroup.withCapture("test", filters);
-      final String[] response = {null};
-      String expected = "test:EQ:val1";
-      captureGroup.consumeFirstCaptures(
-          consumer ->
-              response[0] =
-                  consumer.path() + ":" + consumer.operator().toString() + ":" + consumer.value());
-      assertThat(response[0]).contains(expected);
-    }
-
-    @Test
     public void addAllCaptures() throws Exception {
       List<FilterOperation<String>> filters =
           List.of(

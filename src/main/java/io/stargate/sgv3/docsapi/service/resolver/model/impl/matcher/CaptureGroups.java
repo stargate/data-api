@@ -18,12 +18,16 @@ import java.util.Map;
  * <p>T - The {@link Command} that is filtered against
  */
 public class CaptureGroups<T extends Command> {
-  public final T command;
+  private final T command;
   private final Map<Object, CaptureGroup<?>> groups;
 
   public CaptureGroups(T command) {
     this.command = command;
     this.groups = new HashMap<>();
+  }
+
+  public T command() {
+    return command;
   }
 
   /**

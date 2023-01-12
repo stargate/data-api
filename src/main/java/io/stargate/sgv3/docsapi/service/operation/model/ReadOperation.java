@@ -85,14 +85,4 @@ public interface ReadOperation extends Operation {
   }
 
   public static record FindResponse(List<ReadDocument> docs, String pagingState) {}
-
-  /**
-   * This method not needed once Tatu implements new shredder for document
-   *
-   * @param coll
-   * @return
-   */
-  private int verifyMapLength(QueryOuterClass.Collection coll) {
-    return 0;
-  }
 }

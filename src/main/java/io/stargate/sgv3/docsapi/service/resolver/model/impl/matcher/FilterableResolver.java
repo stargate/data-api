@@ -101,7 +101,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
 
   protected abstract Optional<FilteringOptions> getFilteringOption(T command);
 
-  private <TYPE> Operation findById(CommandContext commandContext, CaptureGroups<T> captures) {
+  private Operation findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<String> idGroup =
@@ -112,7 +112,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
               filters.add(
                   new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, pair.value())));
     }
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command);
+    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
     if (filteringOptions.isPresent()) {
       return new FindOperation(
           commandContext,
@@ -126,7 +126,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
   }
 
   private Operation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command);
+    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
     if (filteringOptions.isPresent()) {
       return new FindOperation(
           commandContext,
@@ -140,7 +140,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
         ErrorCode.FILTER_UNRESOLVABLE, "Options need to be returned for filterable of non findOne");
   }
 
-  private <TYPE> Operation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
+  private Operation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<String> textGroup =
@@ -180,7 +180,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
           pair -> filters.add(new FindOperation.IsNullFilter(pair.path())));
     }
 
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command);
+    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
     if (filteringOptions.isPresent()) {
       return new FindOperation(
           commandContext,

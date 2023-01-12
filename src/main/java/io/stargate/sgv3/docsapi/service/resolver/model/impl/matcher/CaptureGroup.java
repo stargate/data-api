@@ -34,23 +34,6 @@ public record CaptureGroup<TYPE>(Map<String, List<FilterOperation<TYPE>>> captur
         });
   }
 
-  void consumeFirstCaptures(Consumer<CapturePair<TYPE>> consumer) {
-    captures.entrySet().stream()
-        .findFirst()
-        .ifPresent(
-            entry -> {
-              entry.getValue().stream()
-                  .findFirst()
-                  .ifPresent(
-                      operation ->
-                          consumer.accept(
-                              new CapturePair<TYPE>(
-                                  entry.getKey(),
-                                  operation.operator(),
-                                  operation.operand().value())));
-            });
-  }
-
   public void withCapture(String path, List<FilterOperation<TYPE>> capture) {
     captures.put(path, capture);
   }

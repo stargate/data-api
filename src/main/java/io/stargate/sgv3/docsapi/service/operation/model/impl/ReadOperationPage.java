@@ -1,24 +1,14 @@
 package io.stargate.sgv3.docsapi.service.operation.model.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.inject.Inject;
 
 /** FindOperation response implementing the {@link CommandResult} */
-public class ReadOperationPage implements Supplier<CommandResult> {
-  @Inject ObjectMapper objectMapper;
-
-  private List<ReadDocument> docs;
-  private String pagingState;
-
-  public ReadOperationPage(List<ReadDocument> docs, String pagingState) {
-    this.docs = docs;
-    this.pagingState = pagingState;
-  }
+public record ReadOperationPage(List<ReadDocument> docs, String pagingState)
+    implements Supplier<CommandResult> {
 
   @Override
   public CommandResult get() {
