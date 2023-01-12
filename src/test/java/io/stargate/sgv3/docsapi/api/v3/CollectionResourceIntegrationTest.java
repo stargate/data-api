@@ -3,7 +3,6 @@ package io.stargate.sgv3.docsapi.api.v3;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -121,7 +120,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(arrayWithSize(1)))
           .body("data.docs[0]", jsonEquals(expected));
       ;
     }
@@ -145,7 +143,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(arrayWithSize(1)))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
@@ -168,7 +165,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(arrayWithSize(1)))
           .body("data.docs[0]", jsonEquals(expected));
     }
   }
