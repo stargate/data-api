@@ -121,8 +121,8 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(arrayWithSize(1)))
-          .body("data[0]", jsonEquals(expected));
+          .body("data.docs", is(arrayWithSize(1)))
+          .body("data.docs[0]", jsonEquals(expected));
       ;
     }
 
@@ -145,8 +145,8 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(arrayWithSize(1)))
-          .body("data[0]", jsonEquals(expected));
+          .body("data.docs", is(arrayWithSize(1)))
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
@@ -168,8 +168,8 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(arrayWithSize(1)))
-          .body("data[0]", jsonEquals(expected));
+          .body("data.docs", is(arrayWithSize(1)))
+          .body("data.docs[0]", jsonEquals(expected));
     }
   }
 
