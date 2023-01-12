@@ -16,6 +16,7 @@ import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -56,20 +57,20 @@ public record FindOperation(
   }
 
   @Override
-  public String toString() {
-    return "FindOperation{"
-        + "commandContext="
-        + commandContext
-        + ", filters="
-        + filters
-        + ", pagingState='"
-        + pagingState
-        + '\''
-        + ", limit="
-        + limit
-        + ", readDocument="
-        + readDocument
-        + '}';
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    FindOperation that = (FindOperation) o;
+    return limit == that.limit
+        && readDocument == that.readDocument
+        && commandContext.equals(that.commandContext)
+        && filters.equals(that.filters)
+        && pagingState.equals(that.pagingState);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(commandContext, filters, pagingState, limit, readDocument);
   }
 
   /** Base for the DB filters / conditions that we want to update the dynamic query */
@@ -96,19 +97,19 @@ public record FindOperation(
     }
 
     @Override
-    public String toString() {
-      return "MapFilterBase{"
-          + "columnName='"
-          + columnName
-          + '\''
-          + ", key='"
-          + key
-          + '\''
-          + ", operator="
-          + operator
-          + ", value="
-          + value
-          + '}';
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      MapFilterBase<?> that = (MapFilterBase<?>) o;
+      return columnName.equals(that.columnName)
+          && key.equals(that.key)
+          && operator == that.operator
+          && value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(columnName, key, operator, value);
     }
 
     @Override
@@ -163,8 +164,16 @@ public record FindOperation(
     }
 
     @Override
-    public String toString() {
-      return "IDFilter{" + "operator=" + operator + ", value='" + value + '\'' + '}';
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      IDFilter idFilter = (IDFilter) o;
+      return operator == idFilter.operator && value.equals(idFilter.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(operator, value);
     }
 
     @Override
@@ -199,16 +208,18 @@ public record FindOperation(
     }
 
     @Override
-    public String toString() {
-      return "SetFilterBase{"
-          + "columnName='"
-          + columnName
-          + '\''
-          + ", value="
-          + value
-          + ", operator="
-          + operator
-          + '}';
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      SetFilterBase<?> that = (SetFilterBase<?>) o;
+      return columnName.equals(that.columnName)
+          && value.equals(that.value)
+          && operator == that.operator;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(columnName, value, operator);
     }
 
     @Override

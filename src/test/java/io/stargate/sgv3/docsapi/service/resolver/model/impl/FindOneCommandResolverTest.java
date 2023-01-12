@@ -54,7 +54,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOf(FindOperation.class)
           .satisfies(
               op -> {
-                assertThat(op.toString()).isEqualTo(expected.toString());
+                assertThat(op).isEqualTo(expected);
               });
     }
 
@@ -82,7 +82,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOf(FindOperation.class)
           .satisfies(
               op -> {
-                assertThat(op.toString()).isEqualTo(expected.toString());
+                assertThat(op).isEqualTo(expected);
               });
     }
 
@@ -119,7 +119,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOf(FindOperation.class)
           .satisfies(
               op -> {
-                assertThat(op.toString()).isEqualTo(expected.toString());
+                assertThat(op).isEqualTo(expected);
               });
     }
   }
