@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import io.smallrye.mutiny.Uni;
+import io.stargate.bridge.grpc.BytesValues;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.exception.DocsException;
@@ -72,16 +73,10 @@ public interface ReadOperation extends Operation {
   }
 
   private String extractPagingStateFromResultSet(QueryOuterClass.ResultSet rSet) {
-    BytesValue pagingStateOut = rSet.getPagingState();
-    if (pagingStateOut.isInitialized()) {
-      ByteString rawPS = pagingStateOut.getValue();
-      if (!rawPS.isEmpty()) {
-        byte[] b = rawPS.toByteArray();
-        // Could almost use "ByteBufferUtils.toBase64" but need variant that takes 'byte[]'
-        return Base64.getEncoder().encodeToString(b);
+      if (rSet.hasPagingState()) {
+          return BytesValues.toBase64(rSet.getPagingState());
       }
-    }
-    return null;
+      return null;
   }
 
   public static record FindResponse(List<ReadDocument> docs, String pagingState) {}
