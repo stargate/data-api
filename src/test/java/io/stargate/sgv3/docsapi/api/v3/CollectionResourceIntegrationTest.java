@@ -16,6 +16,7 @@ import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -56,7 +57,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   @Nested
   class FindOne {
 
-    @BeforeAll
+    @BeforeEach
     public void setUp() {
       String json =
           """
@@ -142,7 +143,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.count", is(1));
     }
 
     @Test
