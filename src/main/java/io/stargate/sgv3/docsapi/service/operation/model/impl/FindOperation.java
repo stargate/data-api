@@ -65,7 +65,7 @@ public record FindOperation(
         && readDocument == that.readDocument
         && commandContext.equals(that.commandContext)
         && filters.equals(that.filters)
-        && pagingState.equals(that.pagingState);
+        && Objects.equals(pagingState, that.pagingState);
   }
 
   @Override
