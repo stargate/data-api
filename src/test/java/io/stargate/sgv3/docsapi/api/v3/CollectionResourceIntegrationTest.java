@@ -120,7 +120,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.count", is(1));
     }
 
     @Test
@@ -142,7 +142,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1));
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
