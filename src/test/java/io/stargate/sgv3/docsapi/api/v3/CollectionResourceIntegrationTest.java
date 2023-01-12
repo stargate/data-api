@@ -121,7 +121,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-      ;
     }
 
     @Test
