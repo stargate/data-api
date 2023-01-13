@@ -35,7 +35,7 @@ public class ShredderTest {
     @Test
     public void shredSimpleWithId() throws Exception {
       final String inputJson =
-              """
+          """
                       { "_id" : "abc",
                         "name" : "Bob",
                         "values" : [ 1, 2 ],
@@ -47,21 +47,21 @@ public class ShredderTest {
       WritableShreddedDocument doc = shredder.shred(inputDoc);
       assertThat(doc.id()).isEqualTo("abc");
       List<JsonPath> expPaths =
-              Arrays.asList(
-                      JsonPath.from("name"),
-                      JsonPath.from("values"),
-                      JsonPath.from("values.[0]"),
-                      JsonPath.from("values.[1]"),
-                      JsonPath.from("\\[extra\\.stuff]"),
-                      JsonPath.from("nullable"));
+          Arrays.asList(
+              JsonPath.from("name"),
+              JsonPath.from("values"),
+              JsonPath.from("values.[0]"),
+              JsonPath.from("values.[1]"),
+              JsonPath.from("\\[extra\\.stuff]"),
+              JsonPath.from("nullable"));
 
       // First verify paths
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
 
       // Then array info (doc has one array, with 2 elements)
       assertThat(doc.arraySize())
-              .hasSize(1)
-              .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
+          .hasSize(1)
+          .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
       assertThat(doc.arrayEquals()).hasSize(1);
       assertThat(doc.arrayContains()).hasSize(2);
 
@@ -74,20 +74,20 @@ public class ShredderTest {
 
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
-              .isEqualTo(Collections.singletonMap(JsonPath.from("\\[extra\\.stuff]"), Boolean.TRUE));
+          .isEqualTo(Collections.singletonMap(JsonPath.from("\\[extra\\.stuff]"), Boolean.TRUE));
       Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
       expNums.put(JsonPath.from("values.[0]"), BigDecimal.valueOf(1));
       expNums.put(JsonPath.from("values.[1]"), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
-              .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
+          .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
     }
 
     @Test
     public void shredSimpleWithoutId() throws Exception {
       final String inputJson =
-              """
+          """
                       {
                         "age" : 39,
                         "name" : "Chuck"
@@ -99,11 +99,7 @@ public class ShredderTest {
       assertThat(doc.id()).isNotEmpty();
       // should be auto-generated UUID:
       assertThat(UUID.fromString(doc.id())).isNotNull();
-      List<JsonPath> expPaths =
-              Arrays.asList(
-                      JsonPath.from("age"),
-                      JsonPath.from("name")
-                      );
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("age"), JsonPath.from("name"));
 
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
       assertThat(doc.arraySize()).isEmpty();
@@ -121,9 +117,9 @@ public class ShredderTest {
       // Then atomic value containers
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNullValues()).isEmpty();
-      assertThat(doc.queryNumberValues()).isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
-      assertThat(doc.queryTextValues())
-              .isEqualTo(Map.of(JsonPath.from("name"), "Chuck"));
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Chuck"));
     }
   }
 

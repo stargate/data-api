@@ -16,12 +16,12 @@ import javax.enterprise.context.ApplicationScoped;
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
  *
- * <p>Implementation is based on the ideas in the python lab, and extended to do things like make better
- * decisions about when to use a hash and when to use the actual value. i.e. a hash of "a" is a lot
- * longer than "a".
- * <p>
- *  Note that currently document id ({@code _id}) will be auto-generated (using UUID random method)
- *  if incoming JSON does not contain it.
+ * <p>Implementation is based on the ideas in the python lab, and extended to do things like make
+ * better decisions about when to use a hash and when to use the actual value. i.e. a hash of "a" is
+ * a lot longer than "a".
+ *
+ * <p>Note that currently document id ({@code _id}) will be auto-generated (using UUID random
+ * method) if incoming JSON does not contain it.
  */
 @ApplicationScoped
 public class Shredder {
