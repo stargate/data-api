@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.inject.Inject;
 
 /**
  * Base for resolvers that are {@link Filterable}, there are a number of commands like find,
@@ -42,9 +41,10 @@ public abstract class FilterableResolver<T extends Command & Filterable>
   private final boolean findOne;
   private final boolean readDocument;
 
-  private @Inject ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-  public FilterableResolver(boolean findOne, boolean readDocument) {
+  public FilterableResolver(ObjectMapper objectMapper, boolean findOne, boolean readDocument) {
+    this.objectMapper = objectMapper;
     this.findOne = findOne;
     this.readDocument = readDocument;
     matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
