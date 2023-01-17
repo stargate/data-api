@@ -23,13 +23,13 @@ import java.util.function.Consumer;
  */
 public record CaptureGroup<TYPE>(Map<String, List<FilterOperation<TYPE>>> captures) {
 
-  void consumeAllCaptures(Consumer<CapturePair<TYPE>> consumer) {
+  void consumeAllCaptures(Consumer<CaptureExpression<TYPE>> consumer) {
     captures.forEach(
         (key, operations) -> {
           operations.forEach(
               operation ->
                   consumer.accept(
-                      new CapturePair<TYPE>(
+                      new CaptureExpression<TYPE>(
                           key, operation.operator(), operation.operand().value())));
         });
   }
@@ -43,5 +43,5 @@ public record CaptureGroup<TYPE>(Map<String, List<FilterOperation<TYPE>>> captur
    *
    * <p>May also need to expand this to include the operation.
    */
-  public static record CapturePair<TYPE>(String path, FilterOperator operator, TYPE value) {}
+  public static record CaptureExpression<TYPE>(String path, FilterOperator operator, TYPE value) {}
 }

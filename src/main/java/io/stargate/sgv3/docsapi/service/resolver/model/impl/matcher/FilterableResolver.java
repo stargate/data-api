@@ -147,37 +147,43 @@ public abstract class FilterableResolver<T extends Command & Filterable>
         (CaptureGroup<String>) captures.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
     if (textGroup != null) {
       textGroup.consumeAllCaptures(
-          pair ->
+          expression ->
               filters.add(
                   new FindOperation.TextFilter(
-                      pair.path(), FindOperation.MapFilterBase.Operator.EQ, pair.value())));
+                      expression.path(),
+                      FindOperation.MapFilterBase.Operator.EQ,
+                      expression.value())));
     }
 
     final CaptureGroup<Boolean> boolGroup =
         (CaptureGroup<Boolean>) captures.getGroupIfPresent(DYNAMIC_BOOL_GROUP);
     if (boolGroup != null) {
       boolGroup.consumeAllCaptures(
-          pair ->
+          expression ->
               filters.add(
                   new FindOperation.BoolFilter(
-                      pair.path(), FindOperation.MapFilterBase.Operator.EQ, pair.value())));
+                      expression.path(),
+                      FindOperation.MapFilterBase.Operator.EQ,
+                      expression.value())));
     }
 
     final CaptureGroup<BigDecimal> numberGroup =
         (CaptureGroup<BigDecimal>) captures.getGroupIfPresent(DYNAMIC_NUMBER_GROUP);
     if (numberGroup != null) {
       numberGroup.consumeAllCaptures(
-          pair ->
+          expression ->
               filters.add(
                   new FindOperation.NumberFilter(
-                      pair.path(), FindOperation.MapFilterBase.Operator.EQ, pair.value())));
+                      expression.path(),
+                      FindOperation.MapFilterBase.Operator.EQ,
+                      expression.value())));
     }
 
     final CaptureGroup<Object> nullGroup =
         (CaptureGroup<Object>) captures.getGroupIfPresent(DYNAMIC_NULL_GROUP);
     if (nullGroup != null) {
       nullGroup.consumeAllCaptures(
-          pair -> filters.add(new FindOperation.IsNullFilter(pair.path())));
+          expression -> filters.add(new FindOperation.IsNullFilter(expression.path())));
     }
 
     Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
