@@ -23,7 +23,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
     @BeforeEach
     public void setUp() {
       String json =
-              """
+          """
                           {
                             "insertOne": {
                               "document": {
@@ -35,16 +35,16 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
                           """;
 
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-              .then()
-              .statusCode(200);
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
 
       json =
-              """
+          """
                           {
                             "insertOne": {
                               "document": {
@@ -56,13 +56,13 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
                           """;
 
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-              .then()
-              .statusCode(200);
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
     }
 
     @Test
@@ -86,11 +86,11 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
     }
 
     @Test
-    public void findOneById() {
+    public void deleteOneById() {
       String json =
           """
                           {
-                            "findOne": {
+                            "deleteOne": {
                               "filter" : {"_id" : "doc3"}
                             }
                           }
@@ -108,11 +108,11 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
     }
 
     @Test
-    public void findOneByColumn() {
+    public void deleteOneByColumn() {
       String json =
           """
                           {
-                            "findOne": {
+                            "deleteOne": {
                               "filter" : {"username" : "user4"}
                             }
                           }
