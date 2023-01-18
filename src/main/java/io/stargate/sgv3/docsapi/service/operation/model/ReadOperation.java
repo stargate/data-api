@@ -76,5 +76,14 @@ public interface ReadOperation extends Operation {
     return null;
   }
 
+  /**
+   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * used by other commands which needs a document to be read.
+   *
+   * @param queryExecutor
+   * @return
+   */
+  Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
+
   public static record FindResponse(List<ReadDocument> docs, String pagingState) {}
 }

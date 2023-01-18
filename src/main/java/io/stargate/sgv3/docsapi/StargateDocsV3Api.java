@@ -64,6 +64,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "deleteOne",
+                  summary = "`deleteOne` command",
+                  value =
+                      """
+                            {
+                              "deleteOne": {
+                                  "filter": {"user", "name"}
+                              }
+                            }
+                            """),
+              @ExampleObject(
                   name = "insertOne",
                   summary = "`insertOne` command",
                   value =
@@ -133,6 +144,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "resultDelete",
+                  summary = "Delete command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                      "deletedIds": ["1", "2"]
+                                  }
+                                }
+                                """),
               @ExampleObject(
                   name = "resultError",
                   summary = "Error result",

@@ -37,9 +37,15 @@ public record FindOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, readDocument, objectMapper)
+    return getDocuments(queryExecutor)
         .onItem()
         .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+  }
+
+  @Override
+  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+    QueryOuterClass.Query query = buildSelectQuery();
+    return findDocument(queryExecutor, query, pagingState, readDocument, objectMapper);
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
