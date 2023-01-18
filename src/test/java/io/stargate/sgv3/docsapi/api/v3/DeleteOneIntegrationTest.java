@@ -18,53 +18,53 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestBase {
 
-  @BeforeEach
-  public void setUp() {
-    String json =
-        """
-                    {
-                      "insertOne": {
-                        "document": {
-                          "_id": "doc1",
-                          "username": "user1"
-                        }
-                      }
-                    }
-                    """;
-
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200);
-
-    json =
-        """
-                    {
-                      "insertOne": {
-                        "document": {
-                          "_id": "doc2",
-                          "username": "user2"
-                        }
-                      }
-                    }
-                    """;
-
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200);
-  }
-
   @Nested
   class DeleteOne {
+    @BeforeEach
+    public void setUp() {
+      String json =
+              """
+                          {
+                            "insertOne": {
+                              "document": {
+                                "_id": "doc3",
+                                "username": "user3"
+                              }
+                            }
+                          }
+                          """;
+
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+              .then()
+              .statusCode(200);
+
+      json =
+              """
+                          {
+                            "insertOne": {
+                              "document": {
+                                "_id": "doc4",
+                                "username": "user4"
+                              }
+                            }
+                          }
+                          """;
+
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+              .then()
+              .statusCode(200);
+    }
+
     @Test
     public void deleteOneNoFilter() {
       String json =
@@ -91,11 +91,10 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
           """
                           {
                             "findOne": {
-                              "filter" : {"_id" : "doc1"}
+                              "filter" : {"_id" : "doc3"}
                             }
                           }
                           """;
-      String expected = "{\"username\": \"user1\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -105,7 +104,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
           .then()
           .statusCode(200)
           .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
-          .body("status.deletedIds", contains("doc1"));
+          .body("status.deletedIds", contains("doc3"));
     }
 
     @Test
@@ -114,7 +113,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
           """
                           {
                             "findOne": {
-                              "filter" : {"username" : "user2"}
+                              "filter" : {"username" : "user4"}
                             }
                           }
                           """;
@@ -127,7 +126,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
           .then()
           .statusCode(200)
           .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
-          .body("status.deletedIds", contains("doc2"));
+          .body("status.deletedIds", contains("doc4"));
     }
   }
 }
