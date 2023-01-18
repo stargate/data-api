@@ -32,6 +32,28 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
   }
 
+  @Test
+  public final void createCollection() {
+    String json =
+        String.format(
+            """
+            {
+              "createCollection": {
+                "name": "%s"
+              }
+            }
+            """,
+            collectionName);
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+        .then()
+        .statusCode(200);
+  }
+
   @Nested
   class FindOne {
 
@@ -89,6 +111,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
                   }
                 }
                 """;
+      String expected = "{\"username\": \"user1\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -110,7 +133,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
                   }
                 }
                 """;
-      String expected = "{\"_id\":\"doc1\", \"username\": \"user1\"}";
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -132,7 +155,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
                   }
                 }
                 """;
-      String expected = "{\"_id\":\"doc1\", \"username\": \"user1\"}";
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

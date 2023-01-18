@@ -16,9 +16,12 @@ import javax.enterprise.context.ApplicationScoped;
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
  *
- * <p>This will be based on the ideas in the python lab, and extended to do things like make better
- * decisions about when to use a hash and when to use the actual value. i.e. a hash of "a" is a lot
- * longer than "a".
+ * <p>Implementation is based on the ideas from the earlier prototype, and extended to do things
+ * like make better decisions about when to use a hash and when to use the actual value. i.e. a hash
+ * of "a" is a lot longer than "a".
+ *
+ * <p>Note that currently document id ({@code _id}) is auto-generated using UUID random method if
+ * incoming JSON does not contain it (otherwise passed-in {@code _id} is used as-is).
  */
 @ApplicationScoped
 public class Shredder {
@@ -44,21 +47,22 @@ public class Shredder {
               ErrorCode.SHRED_BAD_DOCUMENT_TYPE.getMessage(), doc.getNodeType()));
     }
 
-    ObjectNode docOb = (ObjectNode) doc;
+    // We will extract id if there is one; stored separately, but also included in JSON document
+    // before storing in persistence. Need to make copy to avoid modifying input doc
+    ObjectNode docWithoutId = ((ObjectNode) doc).objectNode().setAll((ObjectNode) doc);
+    JsonNode idNode = docWithoutId.remove("_id");
+    String id;
 
-    // We will extract id if there is one; stored separately, removed so that we won't process
-    // it, add path or such (since it has specific meaning separate from general properties)
-    JsonNode idNode = docOb.remove("_id");
-    String id = null;
-
-    // Cannot require existence as id often auto-generated when inserting: caller has to verify
-    // if existence required
-    if (idNode != null) {
-      if (!idNode.isTextual()) {
+    // We will use `_id`, if passed (but must be JSON String or Number); if not passed,
+    // need to generate
+    if (idNode == null) {
+      id = UUID.randomUUID().toString();
+    } else {
+      if (!idNode.isTextual() && !idNode.isNumber()) {
         throw new DocsException(
             ErrorCode.SHRED_BAD_DOCID_TYPE,
             String.format(
-                "%s: Document Id must be a JSON String, instead got %s",
+                "%s: Document Id must be a JSON String or JSON Number, instead got %s",
                 ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), idNode.getNodeType()));
       }
       id = idNode.asText();
@@ -66,12 +70,17 @@ public class Shredder {
 
     // We will re-serialize document; gets rid of pretty-printing (if any);
     // unifies escaping.
-    // NOTE! For now we will remove `_id` if one was included; we may alternatively
-    // want to keep-or-insert it, based on what we really want.
-    final String docJson = docOb.toString();
+    // NOTE! Since we removed "_id" if it existed (and generated if it didn't),
+    // need to add back. Moreover we want it as the FIRST field anyway so need
+    // to reconstruct document.
+    ObjectNode docWithId = docWithoutId.objectNode(); // simple constructor, not linked
+    docWithId.put("_id", id);
+    docWithId.setAll(docWithoutId);
+
+    final String docJson = docWithId.toString();
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), id, txId, docJson);
-    traverse(doc, b, JsonPath.rootBuilder());
+    traverse(docWithoutId, b, JsonPath.rootBuilder());
     return b.build();
   }
 

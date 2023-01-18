@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ public class ShredderTest {
   @Nested
   class OkCases {
     @Test
-    public void simpleShredFromPathExample() throws Exception {
+    public void shredSimpleWithId() throws Exception {
       final String inputJson =
           """
                       { "_id" : "abc",
@@ -64,11 +65,9 @@ public class ShredderTest {
       assertThat(doc.arrayEquals()).hasSize(1);
       assertThat(doc.arrayContains()).hasSize(2);
 
-      // Also, the document should be the same, except for removed _id:
+      // Also, the document should be the same, including _id:
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
-      ObjectNode origJsonMinusId = (ObjectNode) inputDoc.deepCopy();
-      origJsonMinusId.remove("_id");
-      assertThat(jsonFromShredded).isEqualTo(origJsonMinusId);
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       // Sub-documents (Object values): none in this example
       assertThat(doc.subDocEquals()).hasSize(0);
@@ -83,6 +82,44 @@ public class ShredderTest {
       assertThat(doc.queryTextValues())
           .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
+    }
+
+    @Test
+    public void shredSimpleWithoutId() throws Exception {
+      final String inputJson =
+          """
+                      {
+                        "age" : 39,
+                        "name" : "Chuck"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+
+      assertThat(doc.id()).isNotEmpty();
+      // should be auto-generated UUID:
+      assertThat(UUID.fromString(doc.id())).isNotNull();
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("age"), JsonPath.from("name"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayEquals()).isEmpty();
+      assertThat(doc.arrayContains()).isEmpty();
+      assertThat(doc.subDocEquals()).hasSize(0);
+
+      // Also, the document should be the same, except for added _id:
+      ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
+      JsonNode idNode = jsonFromShredded.remove("_id");
+      assertThat(idNode).isNotNull();
+      assertThat(idNode.textValue()).isEqualTo(doc.id());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Chuck"));
     }
   }
 
@@ -108,7 +145,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, instead got ARRAY")
+              "Bad type for '_id' property: Document Id must be a JSON String or JSON Number, instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
     }
   }
