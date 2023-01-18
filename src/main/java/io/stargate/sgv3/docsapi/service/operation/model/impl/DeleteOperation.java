@@ -46,18 +46,17 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
 
   /**
    * When delete is run with LWT, applied field is always the first field and in case the
-   * transaction id mismatch the latest transaction id is returned as second field
-   * Eg: cassandra@cqlsh:docsapi> delete from docsapi.test1 where key = 'doc2' IF tx_id = 13659a90-9361-11ed-92df-515ba7f99655 ;
+   * transaction id mismatch the latest transaction id is returned as second field Eg:
+   * cassandra@cqlsh:docsapi> delete from docsapi.test1 where key = 'doc2' IF tx_id =
+   * 13659a90-9361-11ed-92df-515ba7f99655 ;
    *
-   *  [applied] | tx_id
-   * -----------+--------------------------------------
-   *      False | 13659a90-9361-11ed-92df-515ba7f99654
+   * <p>[applied] | tx_id -----------+-------------------------------------- False |
+   * 13659a90-9361-11ed-92df-515ba7f99654
    *
-   * cassandra@cqlsh:docsapi> delete from docsapi.test1 where key = 'doc2' IF tx_id = 13659a90-9361-11ed-92df-515ba7f99654 ;
+   * <p>cassandra@cqlsh:docsapi> delete from docsapi.test1 where key = 'doc2' IF tx_id =
+   * 13659a90-9361-11ed-92df-515ba7f99654 ;
    *
-   *  [applied]
-   * -----------
-   *       True
+   * <p>[applied] ----------- True
    *
    * @param queryExecutor
    * @param query
