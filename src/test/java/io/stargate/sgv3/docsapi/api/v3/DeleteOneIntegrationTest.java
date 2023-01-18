@@ -69,11 +69,13 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
     public void deleteOneNoFilter() {
       String json =
           """
-                          {
-                            "deleteOne": {
-                            }
-                          }
-                          """;
+                  {
+                    "deleteOne": {
+                       "filter": {
+                                }
+                    }
+                  }
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
