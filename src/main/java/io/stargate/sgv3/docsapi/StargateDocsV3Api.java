@@ -59,7 +59,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOne": {
                             "sort": ["-race.competitors"],
-                            "filter": {"user", "name"}
+                            "filter": {"username", "user1"}
                         }
                       }
                       """),
