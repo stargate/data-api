@@ -28,15 +28,13 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
         docsToDelete
             .onItem()
             .transformToMulti(
-                findResponse -> {
-                  return Multi.createFrom().items(findResponse.docs().stream());
-                })
+                findResponse -> Multi.createFrom().items(findResponse.docs().stream()))
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> deleteDocument(queryExecutor, delete, readDocument))
             .collect()
             .asList();
-    return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds));
+    return ids.onItem().transform(DeleteOperationPage::new);
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {
