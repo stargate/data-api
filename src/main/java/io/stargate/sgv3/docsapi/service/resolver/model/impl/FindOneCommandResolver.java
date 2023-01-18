@@ -31,7 +31,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   public Operation resolveCommand(CommandContext ctx, FindOneCommand command) {
-    return super.resolve(ctx, command);
+    return resolve(ctx, command);
   }
 
   @Override

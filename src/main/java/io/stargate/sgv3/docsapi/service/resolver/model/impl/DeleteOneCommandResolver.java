@@ -31,7 +31,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
-    ReadOperation readOperation = super.resolve(commandContext, command);
+    ReadOperation readOperation = resolve(commandContext, command);
     return new DeleteOperation(commandContext, readOperation);
   }
 
