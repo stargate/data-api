@@ -56,7 +56,7 @@ public interface ReadOperation extends Operation {
                   document =
                       new ReadDocument(
                           Values.string(row.getValues(0)), // key
-                          Optional.of(Values.uuid(row.getValues(1))), // tx_id
+                          Values.uuid(row.getValues(1)), // tx_id
                           readDocument
                               ? objectMapper.readTree(Values.string(row.getValues(2)))
                               : null);

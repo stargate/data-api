@@ -8,9 +8,8 @@ import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
-import io.stargate.sgv3.docsapi.service.operation.model.Operation;
+import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +23,7 @@ import java.util.Optional;
  *
  * <p>T - type of the command we are resolving
  */
-public abstract class FilterableResolver<T extends Command & Filterable>
-    implements CommandResolver<T> {
+public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private final FilterMatchRules<T> matchRules = new FilterMatchRules<>();
 
@@ -71,11 +69,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
         .compareValues("*", ValueComparisonOperator.EQ, JsonType.NULL);
   }
 
-  @Override
-  public abstract Class<T> getCommandClass();
-
-  @Override
-  public Operation resolveCommand(CommandContext commandContext, T command) {
+  public ReadOperation resolve(CommandContext commandContext, T command) {
     return matchRules.apply(commandContext, command);
   }
 
@@ -103,7 +97,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
 
   protected abstract Optional<FilteringOptions> getFilteringOption(T command);
 
-  private Operation findById(CommandContext commandContext, CaptureGroups<T> captures) {
+  private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<String> idGroup =
@@ -128,7 +122,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
     throw new DocsException(ErrorCode.FILTER_UNRESOLVABLE);
   }
 
-  private Operation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
+  private ReadOperation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
     Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
     if (filteringOptions.isPresent()) {
       return new FindOperation(
@@ -143,7 +137,7 @@ public abstract class FilterableResolver<T extends Command & Filterable>
         ErrorCode.FILTER_UNRESOLVABLE, "Options need to be returned for filterable of non findOne");
   }
 
-  private Operation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
+  private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<String> idGroup =

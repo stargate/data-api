@@ -7,6 +7,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Filterable;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
+import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,7 @@ import java.util.function.BiFunction;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<Operation>>> matchRules =
+  private final List<BiFunction<CommandContext, T, Optional<ReadOperation>>> matchRules =
       new ArrayList<>();
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
@@ -42,7 +43,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      BiFunction<CommandContext, CaptureGroups<T>, Operation> resolveFunction,
+      BiFunction<CommandContext, CaptureGroups<T>, ReadOperation> resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
         new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
@@ -57,7 +58,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public Operation apply(CommandContext commandContext, T command) {
+  public ReadOperation apply(CommandContext commandContext, T command) {
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
@@ -67,7 +68,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   }
 
   @VisibleForTesting
-  protected List<BiFunction<CommandContext, T, Optional<Operation>>> getMatchRules() {
+  protected List<BiFunction<CommandContext, T, Optional<ReadOperation>>> getMatchRules() {
     return matchRules;
   }
 }

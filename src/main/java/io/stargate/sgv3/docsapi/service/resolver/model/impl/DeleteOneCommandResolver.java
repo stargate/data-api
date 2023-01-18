@@ -6,6 +6,7 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.DeleteOperation;
+import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv3.docsapi.service.resolver.model.impl.matcher.FilterableResolver;
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
@@ -16,7 +17,8 @@ import javax.inject.Inject;
  * record to be deleted, Based on the filter condition a record will deleted
  */
 @ApplicationScoped
-public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneCommand> {
+public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneCommand>
+    implements CommandResolver<DeleteOneCommand> {
 
   @Inject
   public DeleteOneCommandResolver(ObjectMapper objectMapper) {
@@ -29,7 +31,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
-    ReadOperation readOperation = (ReadOperation) super.resolveCommand(commandContext, command);
+    ReadOperation readOperation = super.resolve(commandContext, command);
     return new DeleteOperation(commandContext, readOperation);
   }
 

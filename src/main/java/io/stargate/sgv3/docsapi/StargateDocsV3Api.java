@@ -70,7 +70,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       """
                             {
                               "deleteOne": {
-                                  "filter": {"user", "name"}
+                                  "filter": {"username", "user1"}
                               }
                             }
                             """),
