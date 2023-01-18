@@ -3,7 +3,7 @@ package io.stargate.sgv3.docsapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum CommandStatus {
-  @JsonProperty("deleteIds")
+  @JsonProperty("deletedIds")
   DELETED_IDS,
   @JsonProperty("insertedIds")
   INSERTED_IDS,
