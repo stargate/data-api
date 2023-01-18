@@ -11,6 +11,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     type = SchemaType.OBJECT,
     implementation = Object.class,
     example = """
-              {"col1": "val1", "col2", "val"}
+              {"col1": "val1", "col2": "val"}
               """)
 public record FilterClause(List<ComparisonExpression> comparisonExpressions) {}
