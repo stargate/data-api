@@ -12,9 +12,14 @@ import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CollectionResourceIntegrationTestBase extends CqlEnabledIntegrationTestBase {
   protected String collectionName = "col" + RandomStringUtils.randomNumeric(16);
 
@@ -23,7 +28,8 @@ public class CollectionResourceIntegrationTestBase extends CqlEnabledIntegration
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
   }
 
-  @BeforeAll
+  @Test
+  @Order(1)
   public final void createCollection() {
     String json =
         String.format(
