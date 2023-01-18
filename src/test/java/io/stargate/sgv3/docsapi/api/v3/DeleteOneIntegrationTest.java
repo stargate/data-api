@@ -9,87 +9,40 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import org.hamcrest.collection.IsCollectionWithSize;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 @QuarkusIntegrationTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestBase {
-
   @Nested
   class DeleteOne {
-    @BeforeEach
-    public void setUp() {
-      String json =
-          """
-                          {
-                            "insertOne": {
-                              "document": {
-                                "_id": "doc3",
-                                "username": "user3"
-                              }
-                            }
-                          }
-                          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
-      json =
-          """
-                          {
-                            "insertOne": {
-                              "document": {
-                                "_id": "doc4",
-                                "username": "user4"
-                              }
-                            }
-                          }
-                          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-    }
-
     @Test
-    public void deleteOneNoFilter() {
-      String json =
-          """
-                  {
-                    "deleteOne": {
-                       "filter": {
-                                }
-                    }
-                  }
-                  """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)));
-    }
-
-    @Test
+    @Order(1)
     public void deleteOneById() {
       String json =
+          """
+                              {
+                                "insertOne": {
+                                  "document": {
+                                    "_id": "doc3",
+                                    "username": "user3"
+                                  }
+                                }
+                              }
+                              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+      json =
           """
                           {
                             "deleteOne": {
@@ -110,8 +63,30 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
     }
 
     @Test
+    @Order(2)
     public void deleteOneByColumn() {
       String json =
+          """
+                              {
+                                "insertOne": {
+                                  "document": {
+                                    "_id": "doc4",
+                                    "username": "user4"
+                                  }
+                                }
+                              }
+                              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
           """
                           {
                             "deleteOne": {
@@ -129,6 +104,49 @@ public class DeleteOneIntegrationTest extends CollectionResourceIntegrationTestB
           .statusCode(200)
           .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
           .body("status.deletedIds", contains("doc4"));
+    }
+
+    @Test
+    @Order(3)
+    public void deleteOneNoFilter() {
+      String json =
+          """
+                              {
+                                "insertOne": {
+                                  "document": {
+                                    "_id": "doc3",
+                                    "username": "user3"
+                                  }
+                                }
+                              }
+                              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+      json =
+          """
+                      {
+                        "deleteOne": {
+                           "filter": {
+                                    }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)));
     }
   }
 }

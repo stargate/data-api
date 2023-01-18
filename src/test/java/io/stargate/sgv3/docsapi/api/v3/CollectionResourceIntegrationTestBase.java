@@ -12,7 +12,6 @@ import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
@@ -24,7 +23,7 @@ public class CollectionResourceIntegrationTestBase extends CqlEnabledIntegration
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
   }
 
-  @Test
+  @BeforeAll
   public final void createCollection() {
     String json =
         String.format(
