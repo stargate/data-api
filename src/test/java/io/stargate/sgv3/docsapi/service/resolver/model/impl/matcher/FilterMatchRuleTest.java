@@ -13,7 +13,7 @@ import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv3.docsapi.service.operation.model.Operation;
+import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -47,9 +47,14 @@ public class FilterMatchRuleTest {
       FilterMatcher<FindOneCommand> matcher =
           new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
       matcher.capture("CAPTURE 1").compareValues("*", ValueComparisonOperator.EQ, JsonType.STRING);
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, Operation> resolveFunction =
+      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, ReadOperation> resolveFunction =
           (commandContext, captures) -> {
-            return new Operation() {
+            return new ReadOperation() {
+              @Override
+              public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+                return null;
+              }
+
               @Override
               public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
                 return null;
@@ -59,7 +64,7 @@ public class FilterMatchRuleTest {
 
       FilterMatchRule<FindOneCommand> filterMatchRule =
           new FilterMatchRule(matcher, resolveFunction);
-      Optional<Operation> response =
+      Optional<ReadOperation> response =
           filterMatchRule.apply(new CommandContext("database", "collection"), findOneCommand);
       assertThat(response).isPresent();
 
