@@ -69,7 +69,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", ValueComparisonOperator.EQ, JsonType.NULL);
   }
 
-  public ReadOperation resolve(CommandContext commandContext, T command) {
+  protected ReadOperation resolve(CommandContext commandContext, T command) {
     return matchRules.apply(commandContext, command);
   }
 
