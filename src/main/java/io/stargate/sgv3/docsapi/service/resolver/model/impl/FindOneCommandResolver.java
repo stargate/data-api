@@ -20,10 +20,6 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     super(objectMapper, true, true);
   }
 
-  public FindOneCommandResolver() {
-    this(null);
-  }
-
   @Override
   public Class<FindOneCommand> getCommandClass() {
     return FindOneCommand.class;

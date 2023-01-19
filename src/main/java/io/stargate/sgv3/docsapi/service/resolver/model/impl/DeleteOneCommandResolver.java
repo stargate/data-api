@@ -25,10 +25,6 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
     super(objectMapper, true, false);
   }
 
-  public DeleteOneCommandResolver() {
-    this(null);
-  }
-
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
     ReadOperation readOperation = resolve(commandContext, command);
