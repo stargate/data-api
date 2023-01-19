@@ -32,6 +32,6 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   protected Optional<FilteringOptions> getFilteringOption(FindOneCommand command) {
-    return Optional.of(new FilteringOptions(1, null));
+    return Optional.of(new FilteringOptions(1, null, 1));
   }
 }

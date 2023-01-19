@@ -13,7 +13,6 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv3.docsapi.service.bridge.ValidatingStargateBridge;
-import io.stargate.sgv3.docsapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +31,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
   @Inject QueryExecutor queryExecutor;
-  @Inject DocumentConfig documentConfig;
   @Inject ObjectMapper objectMapper;
 
   @Nested
@@ -42,7 +40,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     public void findAll() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 1000);
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 2);
       String doc1 =
           """
               {
@@ -59,7 +57,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(2)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -79,7 +77,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       List.of(Values.of("doc1"), Values.of(UUID.randomUUID()), Values.of(doc1)),
                       List.of(Values.of("doc2"), Values.of(UUID.randomUUID()), Values.of(doc2))));
       FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 1000, true, objectMapper);
+          new FindOperation(commandContext, List.of(), null, 2, 2, true, objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -105,7 +103,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("doc1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -129,6 +127,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
               null,
               1,
+              1,
               true,
               objectMapper);
       final Supplier<CommandResult> execute =
@@ -149,7 +148,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("doc1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -170,6 +169,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               commandContext,
               List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
               null,
+              1,
               1,
               true,
               objectMapper);
@@ -198,7 +198,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -223,6 +223,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   new FindOperation.TextFilter(
                       "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
               null,
+              1,
               1,
               true,
               objectMapper);
@@ -251,7 +252,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -274,6 +275,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   new FindOperation.TextFilter(
                       "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
               null,
+              1,
               1,
               true,
               objectMapper);

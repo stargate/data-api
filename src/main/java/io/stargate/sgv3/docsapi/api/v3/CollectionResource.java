@@ -5,6 +5,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv3.docsapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv3.docsapi.config.constants.OpenApiConstants;
@@ -62,9 +63,10 @@ public class CollectionResource {
               schema =
                   @Schema(
                       anyOf = {
+                        DeleteOneCommand.class,
                         FindOneCommand.class,
-                        InsertOneCommand.class,
-                        DeleteOneCommand.class
+                        FindCommand.class,
+                        InsertOneCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "findOne"),
