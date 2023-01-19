@@ -36,10 +36,15 @@ public record FindOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, readDocument, objectMapper)
+    return getDocuments(queryExecutor)
         .onItem()
         .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+  }
+
+  @Override
+  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+    QueryOuterClass.Query query = buildSelectQuery();
+    return findDocument(queryExecutor, query, pagingState, readDocument, objectMapper);
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
@@ -54,23 +59,6 @@ public record FindOperation(
         .where(conditions)
         .limit(limit)
         .build();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    FindOperation that = (FindOperation) o;
-    return limit == that.limit
-        && readDocument == that.readDocument
-        && commandContext.equals(that.commandContext)
-        && filters.equals(that.filters)
-        && Objects.equals(pagingState, that.pagingState);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(commandContext, filters, pagingState, limit, readDocument);
   }
 
   /** Base for the DB filters / conditions that we want to update the dynamic query */

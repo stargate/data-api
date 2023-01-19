@@ -56,7 +56,7 @@ public interface ReadOperation extends Operation {
                   document =
                       new ReadDocument(
                           Values.string(row.getValues(0)), // key
-                          Optional.of(Values.uuid(row.getValues(1))), // tx_id
+                          Values.uuid(row.getValues(1)), // tx_id
                           readDocument
                               ? objectMapper.readTree(Values.string(row.getValues(2)))
                               : null);
@@ -75,6 +75,15 @@ public interface ReadOperation extends Operation {
     }
     return null;
   }
+
+  /**
+   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * used by other commands which needs a document to be read.
+   *
+   * @param queryExecutor
+   * @return
+   */
+  Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
 
   public static record FindResponse(List<ReadDocument> docs, String pagingState) {}
 }

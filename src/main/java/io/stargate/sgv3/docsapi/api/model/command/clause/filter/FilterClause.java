@@ -9,8 +9,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonDeserialize(using = FilterClauseDeserializer.class)
 @Schema(
     type = SchemaType.OBJECT,
-    implementation = String[].class,
+    implementation = Object.class,
     example = """
-              {"username": "aaron"}
+             {"name": "Aaron", "country": "US"}
               """)
 public record FilterClause(List<ComparisonExpression> comparisonExpressions) {}

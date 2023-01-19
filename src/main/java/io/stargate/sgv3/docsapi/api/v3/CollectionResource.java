@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv3.docsapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv3.docsapi.config.constants.OpenApiConstants;
@@ -58,10 +59,17 @@ public class CollectionResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {FindOneCommand.class, InsertOneCommand.class}),
+              schema =
+                  @Schema(
+                      anyOf = {
+                        FindOneCommand.class,
+                        InsertOneCommand.class,
+                        DeleteOneCommand.class
+                      }),
               examples = {
                 @ExampleObject(ref = "findOne"),
                 @ExampleObject(ref = "insertOne"),
+                @ExampleObject(ref = "deleteOne"),
               }))
   @APIResponses(
       @APIResponse(
@@ -76,6 +84,7 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultRead"),
                     @ExampleObject(ref = "resultInsert"),
                     @ExampleObject(ref = "resultError"),
+                    @ExampleObject(ref = "resultDelete"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(

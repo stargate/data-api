@@ -4,6 +4,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.Filterable;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
+import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -18,10 +19,10 @@ import java.util.function.BiFunction;
  */
 public record FilterMatchRule<T extends Command & Filterable>(
     FilterMatcher<T> matcher,
-    BiFunction<CommandContext, CaptureGroups<T>, Operation> resolveFunction)
-    implements BiFunction<CommandContext, T, Optional<Operation>> {
+    BiFunction<CommandContext, CaptureGroups<T>, ReadOperation> resolveFunction)
+    implements BiFunction<CommandContext, T, Optional<ReadOperation>> {
   @Override
-  public Optional<Operation> apply(CommandContext commandContext, T command) {
+  public Optional<ReadOperation> apply(CommandContext commandContext, T command) {
     return matcher.apply(command).map(captures -> resolveFunction.apply(commandContext, captures));
   }
 }

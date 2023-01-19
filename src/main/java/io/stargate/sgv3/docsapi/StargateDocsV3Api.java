@@ -59,10 +59,21 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOne": {
                             "sort": ["-race.competitors"],
-                            "filter": {"user", "name"}
+                            "filter": {"location": "London"}
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "deleteOne",
+                  summary = "`deleteOne` command",
+                  value =
+                      """
+                            {
+                              "deleteOne": {
+                                  "filter": {"_id": "1"}
+                              }
+                            }
+                            """),
               @ExampleObject(
                   name = "insertOne",
                   summary = "`insertOne` command",
@@ -88,7 +99,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       """
                             {
                                 "createCollection": {
-                                  "name": "test_collection"
+                                  "name": "events"
                                 }
                             }
                             """),
@@ -133,6 +144,17 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "resultDelete",
+                  summary = "Delete command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                      "deletedIds": ["1", "2"]
+                                  }
+                                }
+                                """),
               @ExampleObject(
                   name = "resultError",
                   summary = "Error result",
