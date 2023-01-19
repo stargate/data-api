@@ -62,18 +62,6 @@ public record FindOperation(
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    FindOperation that = (FindOperation) o;
-    return limit == that.limit
-        && readDocument == that.readDocument
-        && commandContext.equals(that.commandContext)
-        && filters.equals(that.filters)
-        && Objects.equals(pagingState, that.pagingState);
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hash(commandContext, filters, pagingState, limit, readDocument);
   }
@@ -210,6 +198,21 @@ public record FindOperation(
       this.columnName = columnName;
       this.value = value;
       this.operator = operator;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      SetFilterBase<?> that = (SetFilterBase<?>) o;
+      return columnName.equals(that.columnName)
+          && value.equals(that.value)
+          && operator == that.operator;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(columnName, value, operator);
     }
 
     @Override
