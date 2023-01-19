@@ -11,7 +11,6 @@ import io.stargate.sgv3.docsapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation.FindResponse;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -86,19 +85,5 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
             .addValues(Values.of(doc.id()))
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DeleteOperation operation = (DeleteOperation) o;
-    return Objects.equals(commandContext, operation.commandContext)
-        && Objects.equals(readOperation, operation.readOperation);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(commandContext, readOperation);
   }
 }

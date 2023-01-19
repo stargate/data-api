@@ -213,21 +213,6 @@ public record FindOperation(
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      SetFilterBase<?> that = (SetFilterBase<?>) o;
-      return columnName.equals(that.columnName)
-          && value.equals(that.value)
-          && operator == that.operator;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(columnName, value, operator);
-    }
-
-    @Override
     public BuiltCondition get() {
       switch (operator) {
         case CONTAINS:
