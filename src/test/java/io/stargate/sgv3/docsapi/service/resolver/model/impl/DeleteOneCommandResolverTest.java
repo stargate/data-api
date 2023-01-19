@@ -38,7 +38,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver().resolveCommand(commandContext, deleteOneCommand);
+          new DeleteOneCommandResolver(objectMapper).resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -69,7 +69,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver().resolveCommand(commandContext, deleteOneCommand);
+          new DeleteOneCommandResolver(objectMapper).resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(commandContext, List.of(), null, 1, false, objectMapper);
       DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
@@ -95,7 +95,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver().resolveCommand(commandContext, deleteOneCommand);
+          new DeleteOneCommandResolver(objectMapper).resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,

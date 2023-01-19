@@ -61,23 +61,6 @@ public record FindOperation(
         .build();
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    FindOperation that = (FindOperation) o;
-    return limit == that.limit
-        && readDocument == that.readDocument
-        && commandContext.equals(that.commandContext)
-        && filters.equals(that.filters)
-        && Objects.equals(pagingState, that.pagingState);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(commandContext, filters, pagingState, limit, readDocument);
-  }
-
   /** Base for the DB filters / conditions that we want to update the dynamic query */
   public abstract static class DBFilterBase implements Supplier<BuiltCondition> {}
 
