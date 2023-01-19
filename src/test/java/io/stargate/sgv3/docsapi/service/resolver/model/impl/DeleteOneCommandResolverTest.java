@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DeleteOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
+  @Inject DeleteOneCommandResolver deleteOneCommandResolver;
 
   @Nested
   class DeleteOneCommandResolveCommand {
@@ -38,8 +39,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver(objectMapper)
-              .resolveCommand(commandContext, deleteOneCommand);
+          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -70,8 +70,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver(objectMapper)
-              .resolveCommand(commandContext, deleteOneCommand);
+          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(commandContext, List.of(), null, 1, false, objectMapper);
       DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
@@ -97,8 +96,7 @@ public class DeleteOneCommandResolverTest {
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
       final Operation operation =
-          new DeleteOneCommandResolver(objectMapper)
-              .resolveCommand(commandContext, deleteOneCommand);
+          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,

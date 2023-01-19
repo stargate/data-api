@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
+  @Inject FindOneCommandResolver findOneCommandResolver;
 
   @Nested
   class FindOneCommandResolveCommand {
@@ -40,8 +41,7 @@ public class FindOneCommandResolverTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
-      final Operation operation =
-          new FindOneCommandResolver(objectMapper).resolve(commandContext, findOneCommand);
+      final Operation operation = findOneCommandResolver.resolve(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(
               commandContext,
@@ -74,8 +74,7 @@ public class FindOneCommandResolverTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
-      final Operation operation =
-          new FindOneCommandResolver(objectMapper).resolve(commandContext, findOneCommand);
+      final Operation operation = findOneCommandResolver.resolve(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(commandContext, List.of(), null, 1, true, objectMapper);
       assertThat(operation)
@@ -103,8 +102,7 @@ public class FindOneCommandResolverTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       final CommandContext commandContext = new CommandContext("database", "collection");
-      final Operation operation =
-          new FindOneCommandResolver(objectMapper).resolve(commandContext, findOneCommand);
+      final Operation operation = findOneCommandResolver.resolve(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(
               commandContext,
