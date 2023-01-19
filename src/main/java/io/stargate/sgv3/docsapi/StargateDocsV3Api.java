@@ -59,7 +59,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOne": {
                             "sort": ["-race.competitors"],
-                            "filter": {"username": "user1"}
+                            "filter": {"location": "London"}
                         }
                       }
                       """),
@@ -70,7 +70,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       """
                             {
                               "deleteOne": {
-                                  "filter": {"username": "user1"}
+                                  "filter": {"_id": "1"}
                               }
                             }
                             """),
@@ -99,7 +99,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       """
                             {
                                 "createCollection": {
-                                  "name": "test_collection"
+                                  "name": "events"
                                 }
                             }
                             """),
