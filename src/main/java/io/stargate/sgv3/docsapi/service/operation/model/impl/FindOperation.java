@@ -61,11 +61,6 @@ public record FindOperation(
         .build();
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(commandContext, filters, pagingState, limit, readDocument);
-  }
-
   /** Base for the DB filters / conditions that we want to update the dynamic query */
   public abstract static class DBFilterBase implements Supplier<BuiltCondition> {}
 
