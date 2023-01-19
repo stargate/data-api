@@ -151,7 +151,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
 
     @Test
     @Order(3)
-    public void findOneById() {
+    public void findById() {
       String json =
           """
                     {
@@ -174,7 +174,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
 
     @Test
     @Order(3)
-    public void findOneByColumn() {
+    public void findByColumn() {
       String json =
           """
                     {

@@ -64,6 +64,19 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "find",
+                  summary = "`find` command",
+                  value =
+                      """
+                      {
+                        "find": {
+                             "sort": ["-race.competitors"],
+                             "filter": {"location": "London"},
+                             "options": {"limit" : 1000, "pageSize": 25, "pagingState" : "Next paging state got from previous page call"}
+                        }
+                      }
+                      """),
+              @ExampleObject(
                   name = "deleteOne",
                   summary = "`deleteOne` command",
                   value =

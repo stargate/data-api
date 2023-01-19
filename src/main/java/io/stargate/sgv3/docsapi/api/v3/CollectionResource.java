@@ -70,6 +70,7 @@ public class CollectionResource {
                       }),
               examples = {
                 @ExampleObject(ref = "findOne"),
+                @ExampleObject(ref = "find"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "deleteOne"),
               }))
