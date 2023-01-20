@@ -126,16 +126,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
-    final CaptureGroup<String> idGroup =
-        (CaptureGroup<String>) captures.getGroupIfPresent(ID_GROUP);
-    if (idGroup != null) {
-      idGroup.consumeAllCaptures(
-          expression ->
-              filters.add(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, expression.value())));
-    }
-
     final CaptureGroup<String> textGroup =
         (CaptureGroup<String>) captures.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
     if (textGroup != null) {
