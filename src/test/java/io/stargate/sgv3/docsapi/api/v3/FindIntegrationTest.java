@@ -58,7 +58,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
   @Nested
   class Find {
     @Test
-    @Order(2)
+    @Order(1)
     public void setUp() {
       String json =
           """
@@ -104,7 +104,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     public void findNoFilter() {
       String json =
           """
@@ -125,7 +125,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     public void findNoFilterWithOptions() {
       String json =
           """
@@ -150,29 +150,9 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     public void findById() {
       String json =
-          """
-                      {
-                        "insertOne": {
-                          "document": {
-                            "_id": "doc3",
-                            "username": "user3"
-                          }
-                        }
-                      }
-                      """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-      json =
           """
                     {
                       "find": {
@@ -180,7 +160,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
                       }
                     }
                     """;
-      String expected = "{\"_id\":\"doc3\", \"username\":\"user3\"}";
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -193,7 +173,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     public void findByColumn() {
       String json =
           """
