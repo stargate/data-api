@@ -38,10 +38,11 @@ public interface ReadOperation extends Operation {
       QueryExecutor queryExecutor,
       QueryOuterClass.Query query,
       String pagingState,
+      int pageSize,
       boolean readDocument,
       ObjectMapper objectMapper) {
     return queryExecutor
-        .executeRead(query, Optional.ofNullable(pagingState), Optional.empty())
+        .executeRead(query, Optional.ofNullable(pagingState), Optional.of(pageSize))
         .onItem()
         .transform(
             rSet -> {

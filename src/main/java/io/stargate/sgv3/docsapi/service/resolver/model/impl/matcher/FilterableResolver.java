@@ -79,27 +79,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return matchRules.apply(commandContext, command);
   }
 
-  protected static final class FilteringOptions {
-    private final int limit;
-    private final String pagingState;
-
-    public FilteringOptions() {
-      this(0, null);
-    }
-
-    public FilteringOptions(int limit, String pagingState) {
-      this.limit = limit;
-      this.pagingState = pagingState;
-    }
-
-    public int getLimit() {
-      return limit;
-    }
-
-    public String getPagingState() {
-      return pagingState;
-    }
-  }
+  public record FilteringOptions(int limit, String pagingState, int pageSize) {}
 
   protected abstract Optional<FilteringOptions> getFilteringOption(T command);
 
@@ -120,8 +100,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       return new FindOperation(
           commandContext,
           filters,
-          filteringOptions.get().pagingState,
-          filteringOptions.get().limit,
+          filteringOptions.get().pagingState(),
+          filteringOptions.get().limit(),
+          filteringOptions.get().pageSize(),
           readDocument,
           objectMapper);
     }
@@ -134,8 +115,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       return new FindOperation(
           commandContext,
           List.of(),
-          filteringOptions.get().pagingState,
-          filteringOptions.get().limit,
+          filteringOptions.get().pagingState(),
+          filteringOptions.get().limit(),
+          filteringOptions.get().pageSize(),
           readDocument,
           objectMapper);
     }
@@ -204,8 +186,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       return new FindOperation(
           commandContext,
           filters,
-          filteringOptions.get().pagingState,
-          filteringOptions.get().limit,
+          filteringOptions.get().pagingState(),
+          filteringOptions.get().limit(),
+          filteringOptions.get().pageSize(),
           readDocument,
           objectMapper);
     }

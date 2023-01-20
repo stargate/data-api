@@ -38,6 +38,6 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   @Override
   protected Optional<FilteringOptions> getFilteringOption(DeleteOneCommand command) {
-    return Optional.of(new FilteringOptions(1, null));
+    return Optional.of(new FilteringOptions(1, null, 1));
   }
 }

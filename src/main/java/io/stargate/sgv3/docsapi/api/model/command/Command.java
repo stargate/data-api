@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.stargate.sgv3.docsapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv3.docsapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
 
@@ -30,8 +31,9 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
     property = "commandName")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CreateCollectionCommand.class),
+  @JsonSubTypes.Type(value = DeleteOneCommand.class),
+  @JsonSubTypes.Type(value = FindCommand.class),
   @JsonSubTypes.Type(value = FindOneCommand.class),
   @JsonSubTypes.Type(value = InsertOneCommand.class),
-  @JsonSubTypes.Type(value = DeleteOneCommand.class),
 })
 public interface Command {}

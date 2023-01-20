@@ -14,7 +14,6 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.CommandStatus;
 import io.stargate.sgv3.docsapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv3.docsapi.service.bridge.ValidatingStargateBridge;
-import io.stargate.sgv3.docsapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +31,6 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
   @Inject QueryExecutor queryExecutor;
-  @Inject DocumentConfig documentConfig;
   @Inject ObjectMapper objectMapper;
 
   @Nested
@@ -46,7 +44,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       UUID tx_id = UUID.randomUUID();
       ValidatingStargateBridge.QueryAssert readAssert =
           withQuery(collectionReadCql, Values.of("doc1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -70,6 +68,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               commandContext,
               List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
               null,
+              1,
               1,
               false,
               objectMapper);
@@ -97,7 +96,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       UUID tx_id = UUID.randomUUID();
       ValidatingStargateBridge.QueryAssert readAssert =
           withQuery(collectionReadCql, Values.of("doc1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -115,6 +114,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               commandContext,
               List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
               null,
+              1,
               1,
               false,
               objectMapper);
@@ -140,7 +140,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -166,6 +166,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   new FindOperation.TextFilter(
                       "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
               null,
+              1,
               1,
               false,
               objectMapper);
@@ -199,7 +200,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
-              .withPageSize(documentConfig.defaultPageSize())
+              .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -222,6 +223,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   new FindOperation.TextFilter(
                       "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
               null,
+              1,
               1,
               false,
               objectMapper);

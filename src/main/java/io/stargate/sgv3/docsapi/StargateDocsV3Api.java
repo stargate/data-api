@@ -58,8 +58,19 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       """
                       {
                         "findOne": {
-                            "sort": ["-race.competitors"],
                             "filter": {"location": "London"}
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "find",
+                  summary = "`find` command",
+                  value =
+                      """
+                      {
+                        "find": {
+                             "filter": {"location": "London"},
+                             "options": {"limit" : 1000, "pageSize": 25, "pagingState" : "Next paging state got from previous page call"}
                         }
                       }
                       """),

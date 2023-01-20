@@ -30,6 +30,7 @@ public record FindOperation(
     List<DBFilterBase> filters,
     String pagingState,
     int limit,
+    int pageSize,
     boolean readDocument,
     ObjectMapper objectMapper)
     implements ReadOperation {
@@ -44,7 +45,7 @@ public record FindOperation(
   @Override
   public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, readDocument, objectMapper);
+    return findDocument(queryExecutor, query, pagingState, pageSize, readDocument, objectMapper);
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
