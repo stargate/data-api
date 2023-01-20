@@ -156,7 +156,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
           """
                     {
                       "find": {
-                        "filter" : {"_id" : "doc3"}
+                        "filter" : {"_id" : "doc1"}
                       }
                     }
                     """;
