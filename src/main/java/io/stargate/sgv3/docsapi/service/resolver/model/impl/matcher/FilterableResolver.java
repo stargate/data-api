@@ -63,8 +63,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     matchRules
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
-        .capture(ID_GROUP)
-        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.STRING)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues("*", ValueComparisonOperator.EQ, JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)

@@ -72,7 +72,6 @@ public class FilterMatcher<T extends Command & Filterable> {
               expressionIter.remove();
               break;
           }
-          break;
         }
       }
     }
