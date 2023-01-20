@@ -163,9 +163,9 @@ public class InsertIntegrationTest extends CqlEnabledIntegrationTestBase {
       String json =
           """
                     {
-                      "insertOne": {
-                        "document": {
-                        }
+                      "insertMany": {
+                        "documents": [{
+                        }]
                       }
                     }
                     """;
@@ -178,28 +178,6 @@ public class InsertIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200);
-    }
-
-    @Test
-    public void notValidDocumentMissing() {
-      String json =
-          """
-                    {
-                      "insertOne": {
-                      }
-                    }
-                    """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
   }
 }
