@@ -56,6 +56,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
   }
 
   @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class Find {
     @Test
     @Order(1)
