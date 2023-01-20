@@ -63,6 +63,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     matchRules
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
+        .capture(ID_GROUP)
+        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.STRING)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues("*", ValueComparisonOperator.EQ, JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
@@ -125,6 +127,16 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
+
+    final CaptureGroup<String> idGroup =
+        (CaptureGroup<String>) captures.getGroupIfPresent(ID_GROUP);
+    if (idGroup != null) {
+      idGroup.consumeAllCaptures(
+          expression ->
+              filters.add(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, expression.value())));
+    }
 
     final CaptureGroup<String> textGroup =
         (CaptureGroup<String>) captures.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
