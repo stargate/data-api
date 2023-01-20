@@ -142,7 +142,7 @@ public class InsertIntegrationTest extends CqlEnabledIntegrationTestBase {
                         {
                           "_id": "doc5",
                           "username": "user5"
-                        },]
+                        }]
                       }
                     }
                     """;
