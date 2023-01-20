@@ -153,14 +153,34 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
     @Order(3)
     public void findById() {
       String json =
+              """
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "doc3",
+                            "username": "user3"
+                          }
+                        }
+                      }
+                      """;
+
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+              .then()
+              .statusCode(200);
+      json =
           """
                     {
                       "find": {
-                        "filter" : {"_id" : "doc1"}
+                        "filter" : {"_id" : "doc3"}
                       }
                     }
                     """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
+      String expected = "{\"_id\":\"doc3\", \"username\":\"user3\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
