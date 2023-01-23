@@ -8,7 +8,6 @@ import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv3.docsapi.service.resolver.model.impl.matcher.FilterableResolver;
-import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -37,7 +36,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   }
 
   @Override
-  protected Optional<FilteringOptions> getFilteringOption(DeleteOneCommand command) {
-    return Optional.of(new FilteringOptions(1, null, 1));
+  protected FilteringOptions getFilteringOption(DeleteOneCommand command) {
+    return new FilteringOptions(1, null, 1);
   }
 }

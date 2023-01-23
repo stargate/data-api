@@ -41,7 +41,7 @@ public class QueryExecutor {
    * @return proto result set
    */
   public Uni<QueryOuterClass.ResultSet> executeRead(
-      QueryOuterClass.Query query, Optional<String> pagingState, Optional<Integer> pageSize) {
+      QueryOuterClass.Query query, Optional<String> pagingState, int pageSize) {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().reads();
     QueryOuterClass.ConsistencyValue.Builder consistencyValue =
         QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
@@ -51,12 +51,8 @@ public class QueryExecutor {
       params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState.get()))));
     }
 
-    if (pageSize.isPresent()) {
-      int page = Math.min(pageSize.get(), documentConfig.maxPageSize());
-      params.setPageSize(Int32Value.of(page));
-    } else {
-      params.setPageSize(Int32Value.of(documentConfig.defaultPageSize()));
-    }
+    int page = Math.min(pageSize, documentConfig.maxPageSize());
+    params.setPageSize(Int32Value.of(page));
     return queryBridge(
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }

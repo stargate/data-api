@@ -25,7 +25,7 @@ public record FindCommand(
               description = "Maximum number of document that can be fetched for the command.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
-          int limit,
+          Integer limit,
       @Valid
           @Schema(
               description = "Next page state for pagination.",
@@ -37,5 +37,5 @@ public record FindCommand(
               description = "Number of document needed per page.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
-          int pageSize) {}
+          Integer pageSize) {}
 }

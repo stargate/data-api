@@ -6,7 +6,6 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv3.docsapi.service.resolver.model.impl.matcher.FilterableResolver;
-import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -31,7 +30,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   }
 
   @Override
-  protected Optional<FilteringOptions> getFilteringOption(FindOneCommand command) {
-    return Optional.of(new FilteringOptions(1, null, 1));
+  protected FilteringOptions getFilteringOption(FindOneCommand command) {
+    return new FilteringOptions(1, null, 1);
   }
 }

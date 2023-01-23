@@ -42,7 +42,7 @@ public interface ReadOperation extends Operation {
       boolean readDocument,
       ObjectMapper objectMapper) {
     return queryExecutor
-        .executeRead(query, Optional.ofNullable(pagingState), Optional.of(pageSize))
+        .executeRead(query, Optional.ofNullable(pagingState), pageSize)
         .onItem()
         .transform(
             rSet -> {

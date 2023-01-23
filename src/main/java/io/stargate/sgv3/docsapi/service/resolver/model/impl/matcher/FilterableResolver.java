@@ -6,14 +6,11 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.Filterable;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
-import io.stargate.sgv3.docsapi.exception.DocsException;
-import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -81,7 +78,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   public record FilteringOptions(int limit, String pagingState, int pageSize) {}
 
-  protected abstract Optional<FilteringOptions> getFilteringOption(T command);
+  protected abstract FilteringOptions getFilteringOption(T command);
 
   private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
@@ -95,34 +92,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                   new FindOperation.IDFilter(
                       FindOperation.IDFilter.Operator.EQ, expression.value())));
     }
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.isPresent()) {
-      return new FindOperation(
-          commandContext,
-          filters,
-          filteringOptions.get().pagingState(),
-          filteringOptions.get().limit(),
-          filteringOptions.get().pageSize(),
-          readDocument,
-          objectMapper);
-    }
-    throw new DocsException(ErrorCode.FILTER_UNRESOLVABLE);
+    FilteringOptions filteringOptions = getFilteringOption(captures.command());
+    return new FindOperation(
+        commandContext,
+        filters,
+        filteringOptions.pagingState(),
+        filteringOptions.limit(),
+        filteringOptions.pageSize(),
+        readDocument,
+        objectMapper);
   }
 
   private ReadOperation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.isPresent()) {
-      return new FindOperation(
-          commandContext,
-          List.of(),
-          filteringOptions.get().pagingState(),
-          filteringOptions.get().limit(),
-          filteringOptions.get().pageSize(),
-          readDocument,
-          objectMapper);
-    }
-    throw new DocsException(
-        ErrorCode.FILTER_UNRESOLVABLE, "Options need to be returned for filterable of non findOne");
+    FilteringOptions filteringOptions = getFilteringOption(captures.command());
+    return new FindOperation(
+        commandContext,
+        List.of(),
+        filteringOptions.pagingState(),
+        filteringOptions.limit(),
+        filteringOptions.pageSize(),
+        readDocument,
+        objectMapper);
   }
 
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
@@ -181,18 +171,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           expression -> filters.add(new FindOperation.IsNullFilter(expression.path())));
     }
 
-    Optional<FilteringOptions> filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.isPresent()) {
-      return new FindOperation(
-          commandContext,
-          filters,
-          filteringOptions.get().pagingState(),
-          filteringOptions.get().limit(),
-          filteringOptions.get().pageSize(),
-          readDocument,
-          objectMapper);
-    }
-    throw new DocsException(
-        ErrorCode.FILTER_UNRESOLVABLE, "Options need to be returned for filterable of non findOne");
+    FilteringOptions filteringOptions = getFilteringOption(captures.command());
+    return new FindOperation(
+        commandContext,
+        filters,
+        filteringOptions.pagingState(),
+        filteringOptions.limit(),
+        filteringOptions.pageSize(),
+        readDocument,
+        objectMapper);
   }
 }
