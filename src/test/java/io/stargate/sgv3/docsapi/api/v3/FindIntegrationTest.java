@@ -67,7 +67,8 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
                     "insertOne": {
                       "document": {
                         "_id": "doc1",
-                        "username": "user1"
+                        "username": "user1",
+                        "active_user" : true
                       }
                     }
                   }
@@ -161,7 +162,7 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
                       }
                     }
                     """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -184,7 +185,30 @@ public class FindIntegrationTest extends CqlEnabledIntegrationTestBase {
                       }
                     }
                     """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\"}";
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByBooleanColumn() {
+      String json =
+          """
+                        {
+                          "find": {
+                            "filter" : {"active_user" : true}
+                          }
+                        }
+                        """;
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

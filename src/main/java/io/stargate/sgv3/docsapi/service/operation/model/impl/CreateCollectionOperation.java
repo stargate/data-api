@@ -44,7 +44,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    array_size          map<text, int>,"
             + "    array_equals        map<text, text>,"
             + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, boolean>,"
+            + "    query_bool_values   map<text, tinyint>,"
             + "    query_dbl_values    map<text, decimal>,"
             + "    query_text_values   map<text, text>, "
             + "    query_null_values   set<text>,     "
@@ -101,10 +101,10 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
 
     String boolQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-    /*statements.add(
-    QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(boolQuery, table, keyspace, table))
-        .build());*/
+    statements.add(
+        QueryOuterClass.Query.newBuilder()
+            .setCql(String.format(boolQuery, table, keyspace, table))
+            .build());
 
     String dblQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex'";

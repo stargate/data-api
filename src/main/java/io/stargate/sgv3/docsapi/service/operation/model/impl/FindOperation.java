@@ -125,9 +125,9 @@ public record FindOperation(
   }
 
   /** Filters db documents based on a boolean field value */
-  public static class BoolFilter extends MapFilterBase<Boolean> {
+  public static class BoolFilter extends MapFilterBase<Byte> {
     public BoolFilter(String path, Operator operator, Boolean value) {
-      super("query_bool_values", path, operator, value);
+      super("query_bool_values", path, operator, (byte) (value ? 1 : 0));
     }
   }
 
@@ -240,8 +240,8 @@ public record FindOperation(
       return Values.of((String) value);
     } else if (value instanceof BigDecimal) {
       return Values.of((BigDecimal) value);
-    } else if (value instanceof Boolean) {
-      return Values.of((Boolean) value);
+    } else if (value instanceof Byte) {
+      return Values.of((Byte) value);
     }
     return Values.of((String) null);
   }

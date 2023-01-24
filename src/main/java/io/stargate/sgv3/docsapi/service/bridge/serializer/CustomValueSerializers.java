@@ -46,7 +46,7 @@ public class CustomValueSerializers {
       Map<JsonPath, Boolean> from) {
     final Map<QueryOuterClass.Value, QueryOuterClass.Value> to = new HashMap<>(from.size());
     for (Map.Entry<JsonPath, Boolean> entry : from.entrySet()) {
-      to.put(Values.of(entry.getKey().toString()), Values.of(entry.getValue()));
+      to.put(Values.of(entry.getKey().toString()), Values.of((byte) (entry.getValue() ? 1 : 0)));
     }
     return to;
   }
