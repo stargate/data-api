@@ -22,7 +22,11 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
-  UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator");
+  UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
+
+  UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
+
+  UNSUPPORTED_UPDATE_OPERATION("Unsupported update operator");
 
   private final String message;
 

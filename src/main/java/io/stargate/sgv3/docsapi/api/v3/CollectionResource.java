@@ -6,6 +6,7 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
@@ -67,6 +68,7 @@ public class CollectionResource {
                         DeleteOneCommand.class,
                         FindOneCommand.class,
                         FindCommand.class,
+                        FindOneAndUpdateCommand.class,
                         InsertOneCommand.class,
                         InsertManyCommand.class
                       }),
