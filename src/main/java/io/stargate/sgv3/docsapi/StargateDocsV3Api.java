@@ -104,6 +104,32 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "insertMany",
+                  summary = "`insertMany` command",
+                  value =
+                      """
+                                    {
+                                      "insertMany": {
+                                        "documents": [{
+                                          "_id": "1",
+                                          "location": "London",
+                                          "race": {
+                                            "competitors": 100,
+                                            "start_date": "2022-08-15"
+                                          }
+                                        },
+                                        {
+                                          "_id": "2",
+                                          "location": "New York",
+                                          "race": {
+                                            "competitors": 150,
+                                            "start_date": "2022-09-15"
+                                          }
+                                        }]
+                                      }
+                                    }
+                                    """),
+              @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
