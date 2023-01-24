@@ -46,7 +46,7 @@ public class CustomValueSerializersTest {
       final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
           to.entrySet().iterator().next();
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
-      assertThat(Values.bool(next.getValue())).isEqualTo(true);
+      assertThat(Values.tinyint(next.getValue())).isEqualTo((byte) 1);
     }
 
     @Test
