@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.api.v3;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -80,6 +81,25 @@ public class InsertIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc3"));
+
+      json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : "doc3"}
+            }
+          }
+          """;
+      String expected = "{\"_id\":\"doc3\", \"username\":\"user3\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
@@ -156,6 +176,25 @@ public class InsertIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4", "doc5"));
+
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "doc4"}
+                  }
+                }
+                """;
+      String expected = "{\"_id\":\"doc4\", \"username\":\"user4\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
