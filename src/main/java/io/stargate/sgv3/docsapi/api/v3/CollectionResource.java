@@ -75,6 +75,7 @@ public class CollectionResource {
               examples = {
                 @ExampleObject(ref = "findOne"),
                 @ExampleObject(ref = "find"),
+                @ExampleObject(ref = "findOneAndUpdate"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "deleteOne"),
@@ -90,6 +91,7 @@ public class CollectionResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultRead"),
+                    @ExampleObject(ref = "resultFindOneAndUpdate"),
                     @ExampleObject(ref = "resultInsert"),
                     @ExampleObject(ref = "resultError"),
                     @ExampleObject(ref = "resultDelete"),

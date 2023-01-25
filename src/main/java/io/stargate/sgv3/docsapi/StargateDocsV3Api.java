@@ -75,6 +75,18 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "findOneAndUpdate",
+                  summary = "`findOneAndUpdate` command",
+                  value =
+                      """
+                      {
+                        "findOneAndUpdate": {
+                            "filter": {"location": "London"},
+                            "update" : {"location" : "New York"}
+                        }
+                      }
+                      """),
+              @ExampleObject(
                   name = "deleteOne",
                   summary = "`deleteOne` command",
                   value =
@@ -167,6 +179,30 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                           ],
                           "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
                           "count": 2
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "resultFindOneAndUpdate",
+                  summary = "`findOneAndUpdate` command result",
+                  value =
+                      """
+                      {
+                        "data": {
+                          "docs": [
+                            {
+                               "_id": "1",
+                               "location": "New York",
+                               "race": {
+                                 "competitors": 100,
+                                 "start_date": "2022-08-15"
+                               }
+                            }
+                          ],
+                          "count": 1,
+                          "status": {
+                            "updatedIds": ["1"]
+                          }
                         }
                       }
                       """),
