@@ -79,7 +79,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "find": {
                                   "filter" : {"_id" : "doc1"},
-                                  "update" : {"active_user", false}
+                                  "update" : {"active_user": false}
                                 }
                               }
                               """;
@@ -104,7 +104,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "find": {
                                   "filter" : {"username" : "user1"},
-                                  "update" : {"new_col", "new_val"}
+                                  "update" : {"new_col": "new_val"}
                                 }
                               }
                               """;
@@ -130,7 +130,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "find": {
                                   "filter" : {"_id" : "doc1"},
-                                  "update" : {"$set : {"active_user", false}}
+                                  "update" : {"$set : {"active_user": false}}
                                 }
                               }
                               """;
@@ -155,7 +155,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "find": {
                                   "filter" : {"username" : "user1"},
-                                  "update" : {"$set : {"new_col", "new_val"}}
+                                  "update" : {"$set : {"new_col": "new_val"}}
                                 }
                               }
                               """;
