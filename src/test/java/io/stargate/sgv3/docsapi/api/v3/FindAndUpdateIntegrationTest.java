@@ -218,7 +218,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                                   "insertOne": {
                                     "document": {
                                       "_id": "doc5",
-                                      "username": "user5"
+                                      "username": "user5",
                                       "unset_col": "val"
                                     }
                                   }
