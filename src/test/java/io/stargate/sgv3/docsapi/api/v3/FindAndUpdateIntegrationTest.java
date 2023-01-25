@@ -79,9 +79,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                                   "insertOne": {
                                     "document": {
                                       "_id": "doc2",
-                                      "username": "user2",
-                                      "active_user" : true
-                                    }
+                                      "username": "user2"                                    }
                                   }
                                 }
                                 """;
@@ -148,7 +146,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "findOneAndUpdate": {
                                   "filter" : {"_id" : "doc3"},
-                                  "update" : {"$set : {"active_user": false}}
+                                  "update" : {"$set" : {"active_user": false}}
                                 }
                               }
                               """;
@@ -174,8 +172,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                                   "insertOne": {
                                     "document": {
                                       "_id": "doc4",
-                                      "username": "user4",
-                                      "active_user" : true
+                                      "username": "user4"
                                     }
                                   }
                                 }
@@ -194,7 +191,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               {
                                 "findOneAndUpdate": {
                                   "filter" : {"username" : "user4"},
-                                  "update" : {"$set : {"new_col": "new_val"}}
+                                  "update" : {"$set" : {"new_col": "new_val"}}
                                 }
                               }
                               """;
@@ -242,7 +239,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                              {
                                 "findOneAndUpdate": {
                                   "filter" : {"_id" : "doc5"},
-                                  "update" : {"$unset : {"unset_col": ""}}
+                                  "update" : {"$unset" : {"unset_col": ""}}
                                 }
                               }
                                   """;
