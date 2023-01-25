@@ -77,7 +77,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String json =
           """
                               {
-                                "find": {
+                                "findOneAndUpdate": {
                                   "filter" : {"_id" : "doc1"},
                                   "update" : {"active_user": false}
                                 }
@@ -102,7 +102,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String json =
           """
                               {
-                                "find": {
+                                "findOneAndUpdate": {
                                   "filter" : {"username" : "user1"},
                                   "update" : {"new_col": "new_val"}
                                 }
@@ -128,7 +128,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String json =
           """
                               {
-                                "find": {
+                                "findOneAndUpdate": {
                                   "filter" : {"_id" : "doc1"},
                                   "update" : {"$set : {"active_user": false}}
                                 }
@@ -153,7 +153,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String json =
           """
                               {
-                                "find": {
+                                "findOneAndUpdate": {
                                   "filter" : {"username" : "user1"},
                                   "update" : {"$set : {"new_col": "new_val"}}
                                 }
@@ -179,7 +179,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String json =
           """
                              {
-                                "find": {
+                                "findOneAndUpdate": {
                                   "filter" : {"_id" : "doc2"},
                                   "update" : {"$unset : {"unset_col": ""}}
                                 }
