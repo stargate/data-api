@@ -82,7 +82,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
-                            "update" : {"set" : {"location" : "New York"}}
+                            "update" : {"$set" : {"location" : "New York"}}
                         }
                       }
                       """),

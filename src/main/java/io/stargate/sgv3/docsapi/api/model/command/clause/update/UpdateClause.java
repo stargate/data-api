@@ -11,6 +11,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     type = SchemaType.OBJECT,
     implementation = Object.class,
     example = """
-             {"name": "Aaron", "country": "US"}
+             {"$set" : {"location": "New York"}
               """)
 public record UpdateClause(List<UpdateOperation> updateOperations) {}
