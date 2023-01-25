@@ -9,11 +9,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue.ValueType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
-import java.math.BigDecimal;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,24 +22,10 @@ public class UpdateClauseDeserializerTest {
   @Inject ObjectMapper objectMapper;
 
   @Nested
-  class Deserialize {
+  class UpdateDeserializer {
 
     @Test
-    public void happyPath() throws Exception {
-      String json = """
-                    {"username": "aaron"}
-                    """;
-
-      UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      final UpdateOperation operation =
-          new UpdateOperation<>(
-              "username", UpdateOperator.SET, new UpdateValue<>("aaron", ValueType.STRING));
-      assertThat(updateClause).isNotNull();
-      assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
-    }
-
-    @Test
-    public void happyPathBsonOperation() throws Exception {
+    public void happyPathUpdateOperation() throws Exception {
       String json =
           """
                     {"$set" : {"username": "aaron", "number" : 40}}
@@ -50,8 +33,8 @@ public class UpdateClauseDeserializerTest {
 
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       final UpdateOperation operation =
-          new UpdateOperation<>(
-              "username", UpdateOperator.SET, new UpdateValue<>("aaron", ValueType.STRING));
+          new UpdateOperation(
+              "username", UpdateOperator.SET, objectMapper.getNodeFactory().textNode("aaron"));
       assertThat(updateClause).isNotNull();
       assertThat(updateClause.updateOperations()).hasSize(2).contains(operation);
     }
@@ -76,12 +59,13 @@ public class UpdateClauseDeserializerTest {
 
     @Test
     public void mustHandleString() throws Exception {
-      String json = """
-                    {"username": "aaron"}
+      String json =
+          """
+                    {"$set" : {"username": "aaron"}}
                     """;
       final UpdateOperation operation =
-          new UpdateOperation<>(
-              "username", UpdateOperator.SET, new UpdateValue<>("aaron", ValueType.STRING));
+          new UpdateOperation(
+              "username", UpdateOperator.SET, objectMapper.getNodeFactory().textNode("aaron"));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
     }
@@ -89,13 +73,11 @@ public class UpdateClauseDeserializerTest {
     @Test
     public void mustHandleNumber() throws Exception {
       String json = """
-                    {"numberType": 40}
+                    {"$set" : {"numberType": 40}}
                     """;
       final UpdateOperation operation =
-          new UpdateOperation<>(
-              "numberType",
-              UpdateOperator.SET,
-              new UpdateValue<>(new BigDecimal(40), ValueType.NUMBER));
+          new UpdateOperation(
+              "numberType", UpdateOperator.SET, objectMapper.getNodeFactory().numberNode(40));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
     }
@@ -103,11 +85,11 @@ public class UpdateClauseDeserializerTest {
     @Test
     public void mustHandleBoolean() throws Exception {
       String json = """
-                    {"boolType": true}
+                    {"$set" : {"boolType": true}}
                     """;
       final UpdateOperation operation =
-          new UpdateOperation<>(
-              "boolType", UpdateOperator.SET, new UpdateValue<>(true, ValueType.BOOLEAN));
+          new UpdateOperation(
+              "boolType", UpdateOperator.SET, objectMapper.getNodeFactory().booleanNode(true));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
     }
@@ -115,7 +97,7 @@ public class UpdateClauseDeserializerTest {
     @Test
     public void unsupportedFilterTypes() {
       String json = """
-                    {"boolType": ["a"]}
+                    {"$set" : {"boolType": ["a"]}}
                     """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, UpdateClause.class));

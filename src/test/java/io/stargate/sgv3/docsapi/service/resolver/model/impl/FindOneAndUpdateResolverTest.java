@@ -33,53 +33,6 @@ public class FindOneAndUpdateResolverTest {
   class FindAndUpdateCommandResolveCommand {
 
     @Test
-    public void idFilterCondition() throws Exception {
-      String json =
-          """
-                            {
-                              "findOneAndUpdate": {
-                                "filter" : {"_id" : "id"},
-                                "update" : {"location" : "New York"}
-                              }
-                            }
-                            """;
-
-      FindOneAndUpdateCommand findOneAndUpdateCommand =
-          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
-      final Operation operation =
-          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
-      ReadOperation readOperation =
-          new FindOperation(
-              commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "id")),
-              null,
-              1,
-              1,
-              true,
-              objectMapper);
-
-      DocumentUpdater documentUpdater =
-          new DocumentUpdater(
-              new UpdateClause(
-                  List.of(
-                      new UpdateOperation<>(
-                          "location",
-                          UpdateOperator.SET,
-                          new UpdateOperation.UpdateValue<>(
-                              "New York", UpdateOperation.UpdateValue.ValueType.STRING)))));
-      ReadAndUpdateOperation expected =
-          new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, shredder);
-      assertThat(operation)
-          .isInstanceOf(ReadAndUpdateOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
-              });
-    }
-
-    @Test
     public void idFilterConditionBsonType() throws Exception {
       String json =
           """
@@ -110,11 +63,10 @@ public class FindOneAndUpdateResolverTest {
           new DocumentUpdater(
               new UpdateClause(
                   List.of(
-                      new UpdateOperation<>(
+                      new UpdateOperation(
                           "location",
                           UpdateOperator.SET,
-                          new UpdateOperation.UpdateValue<>(
-                              "New York", UpdateOperation.UpdateValue.ValueType.STRING)))));
+                          objectMapper.getNodeFactory().textNode("New York")))));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
               commandContext, readOperation, documentUpdater, true, shredder);
@@ -159,11 +111,10 @@ public class FindOneAndUpdateResolverTest {
           new DocumentUpdater(
               new UpdateClause(
                   List.of(
-                      new UpdateOperation<>(
+                      new UpdateOperation(
                           "location",
                           UpdateOperator.SET,
-                          new UpdateOperation.UpdateValue<>(
-                              "New York", UpdateOperation.UpdateValue.ValueType.STRING)))));
+                          objectMapper.getNodeFactory().textNode("New York")))));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
               commandContext, readOperation, documentUpdater, true, shredder);

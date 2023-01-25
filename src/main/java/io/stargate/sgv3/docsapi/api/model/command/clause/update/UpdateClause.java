@@ -13,4 +13,4 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     example = """
              {"name": "Aaron", "country": "US"}
               """)
-public record UpdateClause(List<UpdateOperation<?>> updateOperations) {}
+public record UpdateClause(List<UpdateOperation> updateOperations) {}

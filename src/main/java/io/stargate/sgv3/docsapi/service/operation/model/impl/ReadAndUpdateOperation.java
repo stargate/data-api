@@ -36,13 +36,14 @@ public record ReadAndUpdateOperation(
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> {
+                  JsonNode originalDocument = readDocument.document().deepCopy();
                   JsonNode updatedDocument =
                       documentUpdater().applyUpdates(readDocument.document());
                   WritableShreddedDocument writableShreddedDocument =
                       shredder().shred(updatedDocument, readDocument.txnId());
                   return updatedDocument(queryExecutor, writableShreddedDocument)
                       .onItem()
-                      .transform(v -> new UpdatedDocument(readDocument.id(), updatedDocument));
+                      .transform(v -> new UpdatedDocument(readDocument.id(), originalDocument));
                 })
             .collect()
             .asList();

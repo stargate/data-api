@@ -3,7 +3,7 @@ package io.stargate.sgv3.docsapi.api.model.command.clause.update;
 import java.util.HashMap;
 import java.util.Map;
 
-/** List of update operator that's supported in update. Default operator is SET. */
+/** List of update operator that's supported in update. */
 public enum UpdateOperator {
   SET("$set"),
   UNSET("$unset");

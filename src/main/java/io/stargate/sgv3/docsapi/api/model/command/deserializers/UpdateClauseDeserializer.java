@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue.ValueType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
@@ -33,18 +31,16 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
     Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
-    List<UpdateOperation<?>> expressionList = new ArrayList<>();
+    List<UpdateOperation> expressionList = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       if (entry.getKey().startsWith("$")) {
         // Using aggregation pipeline
         getOperations(entry, expressionList);
       } else {
-        // default is set
-        JsonNode value = entry.getValue();
-        if (!value.isValueNode()) throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
-        expressionList.add(
-            new UpdateOperation(entry.getKey(), UpdateOperator.SET, jsonNodeValue(value)));
+        throw new DocsException(
+            ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
+            "Unsupported update operator " + entry.getKey());
       }
     }
     return new UpdateClause(expressionList);
@@ -58,7 +54,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
    * @return
    */
   private void getOperations(
-      Map.Entry<String, JsonNode> entry, List<UpdateOperation<?>> expressionList) {
+      Map.Entry<String, JsonNode> entry, List<UpdateOperation> expressionList) {
     try {
       UpdateOperator operator = UpdateOperator.getUpdateOperator(entry.getKey());
       if (entry.getValue().isObject()) {
@@ -79,16 +75,13 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
     }
   }
 
-  private static UpdateValue jsonNodeValue(JsonNode node) {
+  private static JsonNode jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:
-        return new UpdateValue<>(node.booleanValue(), ValueType.BOOLEAN);
       case NUMBER:
-        return new UpdateValue<>(node.decimalValue(), ValueType.NUMBER);
       case STRING:
-        return new UpdateValue<>(node.textValue(), ValueType.STRING);
       case NULL:
-        return new UpdateValue<String>(null, ValueType.NULL);
+        return node;
       default:
         throw new DocsException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

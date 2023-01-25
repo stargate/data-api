@@ -47,11 +47,10 @@ public class DocumentUpdaterTest {
           new DocumentUpdater(
               new UpdateClause(
                   List.of(
-                      new UpdateOperation<>(
+                      new UpdateOperation(
                           "location",
                           UpdateOperator.SET,
-                          new UpdateOperation.UpdateValue<>(
-                              "New York", UpdateOperation.UpdateValue.ValueType.STRING)))));
+                          objectMapper.getNodeFactory().textNode("New York")))));
       JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
@@ -86,11 +85,10 @@ public class DocumentUpdaterTest {
           new DocumentUpdater(
               new UpdateClause(
                   List.of(
-                      new UpdateOperation<>(
+                      new UpdateOperation(
                           "new_data",
                           UpdateOperator.SET,
-                          new UpdateOperation.UpdateValue<>(
-                              "data", UpdateOperation.UpdateValue.ValueType.STRING)))));
+                          objectMapper.getNodeFactory().textNode("data")))));
       JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
@@ -101,7 +99,45 @@ public class DocumentUpdaterTest {
     }
 
     @Test
-    public void unsetUpdateNewData() throws Exception {
+    public void setUpdateNumberData() throws Exception {
+      String json =
+          """
+                              {
+                                  "_id": "1",
+                                  "location": "London"
+                              }
+                            """;
+
+      String expected =
+          """
+                              {
+                                  "_id": "1",
+                                  "location": "London",
+                                  "new_data" : 40
+                              }
+                            """;
+
+      JsonNode baseData = objectMapper.readTree(json);
+      JsonNode expectedData = objectMapper.readTree(expected);
+      DocumentUpdater documentUpdater =
+          new DocumentUpdater(
+              new UpdateClause(
+                  List.of(
+                      new UpdateOperation(
+                          "new_data",
+                          UpdateOperator.SET,
+                          objectMapper.getNodeFactory().numberNode(40)))));
+      JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node).isEqualTo(expectedData);
+              });
+    }
+
+    @Test
+    public void unsetUpdateData() throws Exception {
       String json =
           """
                               {
@@ -125,11 +161,10 @@ public class DocumentUpdaterTest {
           new DocumentUpdater(
               new UpdateClause(
                   List.of(
-                      new UpdateOperation<>(
+                      new UpdateOperation(
                           "col",
                           UpdateOperator.UNSET,
-                          new UpdateOperation.UpdateValue<>(
-                              null, UpdateOperation.UpdateValue.ValueType.NULL)))));
+                          objectMapper.getNodeFactory().textNode("")))));
       JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
