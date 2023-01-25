@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public record UpdateOperationPage(
-    List<UpdateOperation.UpdatedDocument> updatedDocuments, boolean returnDocs)
+    List<ReadAndUpdateOperation.UpdatedDocument> updatedDocuments, boolean returnDocs)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {

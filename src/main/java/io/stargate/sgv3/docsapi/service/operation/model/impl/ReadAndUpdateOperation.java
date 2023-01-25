@@ -17,7 +17,7 @@ import io.stargate.sgv3.docsapi.service.updater.DocumentUpdater;
 import java.util.List;
 import java.util.function.Supplier;
 
-public record UpdateOperation(
+public record ReadAndUpdateOperation(
     CommandContext commandContext,
     ReadOperation readOperation,
     DocumentUpdater documentUpdater,

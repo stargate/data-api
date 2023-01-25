@@ -5,7 +5,7 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
-import io.stargate.sgv3.docsapi.service.operation.model.impl.UpdateOperation;
+import io.stargate.sgv3.docsapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv3.docsapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv3.docsapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv3.docsapi.service.shredding.Shredder;
@@ -34,7 +34,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   public Operation resolveCommand(CommandContext ctx, FindOneAndUpdateCommand command) {
     ReadOperation readOperation = resolve(ctx, command);
     DocumentUpdater documentUpdater = new DocumentUpdater(command.updateClause());
-    return new UpdateOperation(ctx, readOperation, documentUpdater, true, shredder);
+    return new ReadAndUpdateOperation(ctx, readOperation, documentUpdater, true, shredder);
   }
 
   @Override

@@ -22,6 +22,12 @@ public record DocumentUpdater(UpdateClause updateClause) {
     return readDocument;
   }
 
+  /**
+   * Based on the value type update the value to the read document
+   *
+   * @param updateOperation
+   * @param updatableObjectNode
+   */
   private void updateDocument(UpdateOperation<?> updateOperation, ObjectNode updatableObjectNode) {
 
     switch (updateOperation.operator()) {

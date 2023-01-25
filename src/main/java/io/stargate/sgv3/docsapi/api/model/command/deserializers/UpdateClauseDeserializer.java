@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
+import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue;
+import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation.UpdateValue.ValueType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateValue;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.ValueType;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.io.IOException;
@@ -60,14 +60,15 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
   private void getOperations(
       Map.Entry<String, JsonNode> entry, List<UpdateOperation<?>> expressionList) {
     try {
-      UpdateOperator operator = UpdateOperator.valueOf(entry.getKey());
+      UpdateOperator operator = UpdateOperator.getUpdateOperator(entry.getKey());
       if (entry.getValue().isObject()) {
         final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
         while (fields.hasNext()) {
           Map.Entry<String, JsonNode> updateField = fields.next();
-          JsonNode value = entry.getValue();
+          JsonNode value = updateField.getValue();
           if (!value.isValueNode()) throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
-          expressionList.add(new UpdateOperation(entry.getKey(), operator, jsonNodeValue(value)));
+          expressionList.add(
+              new UpdateOperation(updateField.getKey(), operator, jsonNodeValue(value)));
         }
       } else {
         throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
