@@ -82,7 +82,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
-                            "update" : {"location" : "New York"}
+                            "update" : {"set" : {"location" : "New York"}}
                         }
                       }
                       """),
@@ -192,7 +192,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                           "docs": [
                             {
                                "_id": "1",
-                               "location": "New York",
+                               "location": "London",
                                "race": {
                                  "competitors": 100,
                                  "start_date": "2022-08-15"
