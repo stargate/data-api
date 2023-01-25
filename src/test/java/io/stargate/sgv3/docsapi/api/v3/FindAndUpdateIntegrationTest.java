@@ -24,20 +24,20 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindAndUpdate {
     @Test
-    @Order(1)
-    public void setUp() {
+    @Order(2)
+    public void findById() {
       String json =
           """
-                            {
-                              "insertOne": {
-                                "document": {
-                                  "_id": "doc1",
-                                  "username": "user1",
-                                  "active_user" : true
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc1",
+                                      "username": "user1",
+                                      "active_user" : true
+                                    }
+                                  }
                                 }
-                              }
-                            }
-                            """;
+                                """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -49,32 +49,6 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200);
 
       json =
-          """
-                            {
-                              "insertOne": {
-                                "document": {
-                                  "_id": "doc2",
-                                  "username": "user2"
-                                  "unset_col": "val"
-                                }
-                              }
-                            }
-                            """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-    }
-
-    @Test
-    @Order(2)
-    public void findById() {
-      String json =
           """
                               {
                                 "findOneAndUpdate": {
@@ -93,7 +67,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.insertedIds[0]", is("doc1"));
+          .body("status.updatedIds[0]", is("doc1"));
     }
 
     @Test
@@ -101,14 +75,36 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     public void findByColumn() {
       String json =
           """
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc2",
+                                      "username": "user2",
+                                      "active_user" : true
+                                    }
+                                  }
+                                }
+                                """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
                               {
                                 "findOneAndUpdate": {
-                                  "filter" : {"username" : "user1"},
+                                  "filter" : {"username" : "user2"},
                                   "update" : {"new_col": "new_val"}
                                 }
                               }
                               """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"new_col\": \"new_val\"}";
+      String expected = "{\"_id\":\"doc2\", \"username\":\"user2\", \"new_col\": \"new_val\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -118,7 +114,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.insertedIds[0]", is("doc1"));
+          .body("status.updatedIds[0]", is("doc2"));
       ;
     }
 
@@ -127,14 +123,36 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     public void findByIdAndSet() {
       String json =
           """
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc3",
+                                      "username": "user3",
+                                      "active_user" : true
+                                    }
+                                  }
+                                }
+                                """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
                               {
                                 "findOneAndUpdate": {
-                                  "filter" : {"_id" : "doc1"},
+                                  "filter" : {"_id" : "doc3"},
                                   "update" : {"$set : {"active_user": false}}
                                 }
                               }
                               """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":false}";
+      String expected = "{\"_id\":\"doc3\", \"username\":\"user3\", \"active_user\":false}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -144,7 +162,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.insertedIds[0]", is("doc1"));
+          .body("status.updatedIds[0]", is("doc3"));
     }
 
     @Test
@@ -152,14 +170,35 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     public void findByColumnAndSet() {
       String json =
           """
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc4",
+                                      "username": "user4",
+                                      "active_user" : true
+                                    }
+                                  }
+                                }
+                                """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+      json =
+          """
                               {
                                 "findOneAndUpdate": {
-                                  "filter" : {"username" : "user1"},
+                                  "filter" : {"username" : "user4"},
                                   "update" : {"$set : {"new_col": "new_val"}}
                                 }
                               }
                               """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"new_col\": \"new_val\"}";
+      String expected = "{\"_id\":\"doc4\", \"username\":\"user4\", \"new_col\": \"new_val\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -169,7 +208,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.insertedIds[0]", is("doc1"));
+          .body("status.updatedIds[0]", is("doc4"));
       ;
     }
 
@@ -178,14 +217,36 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     public void findByIdAndUnset() {
       String json =
           """
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc5",
+                                      "username": "user5"
+                                      "unset_col": "val"
+                                    }
+                                  }
+                                }
+                                """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
                              {
                                 "findOneAndUpdate": {
-                                  "filter" : {"_id" : "doc2"},
+                                  "filter" : {"_id" : "doc5"},
                                   "update" : {"$unset : {"unset_col": ""}}
                                 }
                               }
                                   """;
-      String expected = "{\"_id\":\"doc2\", \"username\":\"user2\"}";
+      String expected = "{\"_id\":\"doc5\", \"username\":\"user5\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -194,7 +255,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.updatedIds[0]", is("doc5"));
     }
   }
 }
