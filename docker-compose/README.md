@@ -65,5 +65,5 @@ Pulling coordinator (stargateio/docsapi:3.0.0-SNAPSHOT)...
 ERROR: manifest for stargateio/docsapi:3.0.0-SNAPSHOT not found: manifest unknown: manifest unknown
 ```
 
-you are trying to deploy a version that is neither publicly available (official release) nor built locally.
+you are trying to deploy a version that is neither publicly available (official release) nor built locally. See the top level [README](../README.md) file for instructions on building the local image. 
 
