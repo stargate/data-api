@@ -4,9 +4,9 @@
 LOGLEVEL=INFO
 
 # Default to images used in project integration tests
-DSETAG="$(../../mvnw -f ../.. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
-SGTAG="v$(../../mvnw -f ../.. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
-JSONTAG="v$(../../mvnw -f ../.. help:evaluate -Dexpression=project.version -q -DforceStdout)"
+DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
+SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
 
 while getopts "qr:t:" opt; do
   case $opt in
