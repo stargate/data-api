@@ -1,0 +1,220 @@
+h1. Document HTTP API Specification
+
+<span id="tableOfContents">
+
+{toc:maxLevel=3}
+
+</span>
+
+h2(#preamble). Preamble
+
+This document specifies the HTTP API for the Document API, how clients can communicate with the service. See the "Document API Query Specification" for details of data modelling and queries. 
+
+The target users for the Document API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM) library such as "Mongoose":https://github.com/Automattic/mongoose. We expect both ODMs and developers not using an ODM to use a client library that manages connections and encoding, and provides a basic idiomatic representation of the Document API. We do not expected developers to construct and make raw requests against the Document API. With that in mind the HTTP API is designed to be processed by a client side driver first, and humans second. 
+
+The HTTP API has the following design principles: 
+
+# *Message Based:* With the exclusion of the endpoint address and client security context, the entire request from a client and response from the server *should* be encapsulated in a single message in the body of the request. As an illustration, it should be possible to easy capture, store, and later send a request message to a different endpoint and compare the response message to the original response. 
+# *Always Respond:* The Document API *should* always send a response message, even in the case of an error, this is a corollary to "Message Based". This means that errors in processing a request, such as authentication errors or a timeout, result in a HTTP @200@ _OK_ response with the error in the body of the message. Exceptions to this will be errors created by intermediate servers between the client and Document API, such as Gateway errors.
+# *Always JSON:* All messages passed between the client and server *must* be valid "JSON":https://www.json.org/ documents.
+
+In general HTTP is treated as a synchronous message passing protocol, rather than taking full advantage of it's features such as in a "REST":https://en.wikipedia.org/wiki/Representational_state_transfer API. The motivations for this decision are: 
+
+# *Traffic Management:* By ensuring the message and the address to deliver it to are clearly separated we can more easily manage client traffic, both in real-time and off-line scenarios. Examples include gateways that multiplex traffic during online migration, shadow deployments for new server versions, capture-and-replay of production traffic for testing, or integration with Change Data Capture (CDC) systems.    
+# *API Portability:* By decoupling networking, encoding, and message delivery / RPC activation ("transport" defined in this HTTP API spec) from service functionality ("features" defined in the "Document API Query Specification") alternative transports may more easily be added. A natural path for the Document API may be to also provide a "gRPC":https://grpc.io/ as the "Stargate":https://stargate.io/ project already provides a gRPC transport for Cassandra's CQL. By not leveraging HTTP verbs or URL path and query patterns we provide a simpler public interface (i.e. a synchronous deliver message with reply) that can easily be replicated. 
+
+
+This approach is informed by both "gRPC":https://grpc.io/ and "GraphQL":https://graphql.org/.
+
+h2(#concepts). High Level Concepts
+
+Clients send a request message to the server over HTTP, and the server sends a response message for each request received. The high level concepts that are used to describe this process are:
+
+* *Endpoints:* The URL address for clients to send request messages. There are two types of endpoints which accept different messages: database and collection endpoints. 
+* *Request Message:* A message from the client to the server requesting the server take some action, such as inserting or finding documents.
+* *Response Message:* A message from the server to the client responding to a specific client message, that includes status information such as affected documents and possibly the actual documents.
+
+h2(#conventions). Conventions 
+
+To aid in specifying the Document API, we will use the following conventions in this document:
+
+* Language rules will be given in a "BNF":http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form -like notation:
+
+bc(syntax). <start> ::= TERMINAL <non-terminal1> <non-terminal1>
+
+* Nonterminal symbols will have @<angle brackets>@.
+* As additional shortcut notations to BNF, we'll use traditional regular expression's symbols (@?@, @+@ and @*@) to signify that a given symbol is optional and/or can be repeated. We'll also allow parentheses to group symbols and the @[<characters>]@ notation to represent any one of @<characters>@.
+* The grammar is provided for documentation purposes and leave some minor details out. 
+* Sample code will be provided in a code block:
+
+bc(sample). SELECT sample_usage FROM cql;  // :)
+
+* References to keywords or API examples text will be shown in a @fixed-width font@. 
+
+h2(#error-handling). Error Handling
+
+The server will always respond with a HTTP @200@ _OK_ status and encode errors in the body of the response.  
+
+Client drivers should be aware of the situations where a request may receive a non @200@ response generated by servers between the client and the Document Service. These errors should be in the @5XX@ range and include:  
+
+#  @500@ Internal Server Error - May be returned by intermediate cache or proxy servers.
+#  @501@ Not Implemented
+#  @502@ Bad Gateway
+#  @503@ Service Unavailable
+#  @504@ Gateway Timeout
+
+All other errors, such as data validation or authorization errors, are encoded in the response message. To avoid doubt these errors are called "soft errors" in this document. 
+
+h2(#endpoints). Endpoints
+
+The HTTP API provides two types of endpoints:
+
+* Database Endpoint: used to send commands which apply to the whole Database, such as listing all the Collections. 
+* Collection Endpoint: used to send commands which apply to a single Collection, such as finding users by age. 
+
+Both endpoints follow these rules:
+
+# All requests *must* use a HTTP @POST@ verb. 
+# Requests *must* supply a @Cassandra-Token@ header *TODO:* Why not just Authorization, current rest API is X-Cassandta-Token, using X is deprecated https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers 
+# Requests *must* be valid JSON documents and specify the @Content-Type:application/json; charset=UTF-8@ header (see "RFC-8259":https://www.rfc-editor.org/rfc/rfc8259.html#page-11)
+# Requests *must* specify the @Accept:application/json; charset=UTF-8@ header 
+
+h3(#database-endpoint). Database Endpoint
+
+The Database Endpoint has the form:
+
+p. _Syntax:_
+
+bc(syntax).. 
+<database-endpoint> ::= <server-address>/<database-name>
+
+<server-address> ::= // Server URI using HTTP(S), scheme://host/path 
+<database-name> :: // TODO Rules for database names
+
+p. _Sample:_
+
+bc(sample).. 
+https://stargate.mycompany.com/my-database
+
+h4(#database-endpoint-errors). Errors
+
+# Requests sent to a Database that was not previously created via administration tools results in a #TODO soft error. 
+
+h3(#collection-endpoint). Collection Endpoint
+
+Collection Endpoint has the form:
+
+p. _Syntax:_
+
+bc(syntax).. 
+<collection-endpoint> ::= <server-address>/<database-name>/<collection-name>
+
+<collection-name> :: // TODO rules for collection names
+
+p. _Sample:_
+
+bc(sample).. 
+https://stargate.mycompany.com/my-database/users
+
+p. Requests sent to a Collection that does not exist (using a valid database name) result in the creation of the Collection and delivery of the message. This may take longer than delivering a message to an existing Collection.
+
+h2(#request-message). Request Message
+
+Request messages contain only a single command. Batch operations such as bulk loading are implementing using commands that support the inclusion of multiple documents in the command. The request message is a single JSON document (a JSON Object) that represents the command to run.
+
+p. _Syntax:_
+
+bc(syntax).. 
+<request-message> ::=  <command>
+
+p. Commands are defined in the "Document API Query Specification" document. For the purpose of this document we are only concerned that they are well formed JSON documents.
+
+p. _Sample:_
+
+bc(sample).. 
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
+
+p. Top level names in the request document other than a command name are ignored, except where specified in this document.
+
+h3(#request-message-errors). Errors
+
+# A request with more than one command results in a #TODO soft error.
+
+h2(#response-message). Response Message
+
+A single JSON format is used for all response messages, though different fields may be present depending on the command. 
+
+p. _Syntax:_
+
+bc(syntax).. 
+<response-message> ::=  (errors (<error>)+)?,    
+                        (status (<command-status>)+)?, 
+                        (data <response-data>)?,
+
+<<error> ::= message <ascii-string>, 
+                    (<error-field>)*
+<error-field> ::= <error-field-name> <error-field-value>
+<error-field-name> ::= <json-string>
+<error-field-value> ::= <json-value>
+
+<command-status> ::= <command-status-name> <command-status-value>
+<command-status-name> ::= <json-string>
+<command-status-value> ::= <json-value>
+
+<response-data> ::= docs (<document>)*, 
+                    (nextPageState <page-state>)?,
+                    (count <document-count>)?
+<page-state> ::= <ascii-string>
+<document-count> ::= <positive-integer>
+
+p. The contents of the @<response-message>@ depend on the command, in general though: 
+
+* A successful command to read documents *must* have @<response-data>@ and *may* have one or more @<command-status>@. 
+* A successful command to insert or update data that does not return documents *must* have one or more @<command-status>@. 
+* A successful command to insert or update data that returns documents *must* have one or more @<command-status>@ and *must* have @<response-data>@.
+* An unsuccessful command *must* have one or more @<error>@'s and no other items.
+
+Error information or additional status, such as the @_id@s of inserted documents, is included by some commands. 
+
+Error responses include one or more @<error-info>@ under the @error@ name. Error info must include a @message@ intended for humans and may include other information.   
+
+@<command-status>@ information generally describes the side effects of commands, such as the number of updated documents or the @_id@s of inserted documents.
+
+@<response-data>@ contains zero or more documents returned from the command, if present @<page-state>@ indicates further results are available. See command details for information on how to use the page state. 
+
+p. _find Sample:_
+
+bc(sample).. 
+{
+    "data" : {
+        "docs" : [
+            {"username" : "aaron"}
+        ] 
+    }
+} 
+
+p. _insertMany Sample:_
+
+bc(sample).. 
+{
+    "status" : {
+        insertedIds : ["doc1", "doc2", "doc3"]
+    }
+} 
+
+p. _insertOne with error Sample:_
+
+bc(sample).. 
+{
+    "errors" : [
+        {"message": "_docID cannot be Null"}
+    ]
+} 
+
+h2(#authn-authz). Authentication and Authorization
+
+# TODO - basically we just use the tokens we have now
