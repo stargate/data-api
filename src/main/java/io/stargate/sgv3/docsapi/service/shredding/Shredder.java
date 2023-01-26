@@ -9,7 +9,6 @@ import io.stargate.sgv3.docsapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
 
@@ -33,10 +32,10 @@ public class Shredder {
    * @return WritableShreddedDocument
    */
   public WritableShreddedDocument shred(JsonNode document) {
-    return shred(document, Optional.empty());
+    return shred(document, null);
   }
 
-  public WritableShreddedDocument shred(JsonNode doc, Optional<UUID> txId) {
+  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
     // 13-Dec-2022, tatu: Although we could otherwise allow non-Object documents, requirement
     //    to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {

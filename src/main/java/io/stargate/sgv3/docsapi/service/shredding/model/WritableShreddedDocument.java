@@ -16,7 +16,7 @@ public record WritableShreddedDocument(
      */
     String id,
     /** Optional transaction id used for optimistic locking */
-    Optional<UUID> txID,
+    UUID txID,
     String docJson,
     /** !!! TODO: what purpose does this field serve? */
     Map<JsonPath, Integer> docProperties,
@@ -29,8 +29,7 @@ public record WritableShreddedDocument(
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
     Set<JsonPath> queryNullValues) {
-  public static Builder builder(
-      DocValueHasher hasher, String id, Optional<UUID> txID, String docJson) {
+  public static Builder builder(DocValueHasher hasher, String id, UUID txID, String docJson) {
     return new Builder(hasher, id, txID, docJson);
   }
 
@@ -46,7 +45,7 @@ public record WritableShreddedDocument(
     private final DocValueHasher hasher;
 
     private final String id;
-    private final Optional<UUID> txID;
+    private final UUID txID;
 
     private final String docJson;
 
@@ -65,7 +64,7 @@ public record WritableShreddedDocument(
     private Map<JsonPath, String> queryTextValues;
     private Set<JsonPath> queryNullValues;
 
-    public Builder(DocValueHasher hasher, String id, Optional<UUID> txID, String docJson) {
+    public Builder(DocValueHasher hasher, String id, UUID txID, String docJson) {
       this.hasher = hasher;
       this.id = id;
       this.txID = txID;

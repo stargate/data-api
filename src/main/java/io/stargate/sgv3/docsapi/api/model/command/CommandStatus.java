@@ -8,5 +8,7 @@ public enum CommandStatus {
   @JsonProperty("insertedIds")
   INSERTED_IDS,
   @JsonProperty("ok")
-  OK;
+  OK,
+  @JsonProperty("updatedIds")
+  UPDATED_IDS;
 }
