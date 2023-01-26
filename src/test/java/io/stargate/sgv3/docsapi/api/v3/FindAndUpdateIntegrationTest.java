@@ -400,7 +400,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                 {
                   "find": {
-                    "filter" : {"_id" : "update_user3"}
+                    "filter" : {"_id" : "update_doc3"}
                   }
                 }
                 """;
