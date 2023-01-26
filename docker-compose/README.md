@@ -1,8 +1,8 @@
-# Docker Compose scripts for Stargate with DSE 6.8
+# Docker Compose scripts for JSONAPI with DSE 6.8
 
-This directory provides two ways to start Stargate with DSE 6.8 using `docker compose`.
+This directory provides two ways to start the JSON API and Stargate coordinator with DSE 6.8 using `docker compose`.
 
-## Stargate with 3-node DSE 6.8 cluster
+## Stargate JSON API with 3-node DSE 6.8 cluster
 
 You can start a simple Stargate configuration with the following command:
 
@@ -20,7 +20,7 @@ You can override the default environment settings in your local shell, or use th
 
 Whether you use the shell script or start `docker compose` directly, you can remove the stack of containers created by executing `docker compose down`.
 
-## Stargate with embedded DSE 6.8 (developer mode)
+## Stargate JSON API with embedded DSE 6.8 in coordinator (developer mode)
 
 This alternate configuration runs the Stargate coordinator node in developer mode, so that no separate Cassandra cluster is required. This can be run with the command:
 
@@ -40,9 +40,7 @@ This configuration is useful for development and testing since it initializes mo
 
 Both convenience scripts support the following options:
 
-* You can specify a released image tag (version) using `-t [VERSION]`. Consult [Docker Hub](https://hub.docker.com/r/stargateio/coordinator-dse-68/tags) for a list of available tags.
-
-* Alternatively, build the snapshot version locally using instructions in the [developer guide](../../DEV_GUIDE.md) and run the script using the `-l` option.
+* You can specify an image tag (version) of the JSON API using `-t [VERSION]`. 
 
 * You can change the default root log level using `-r [LEVEL]` (default `INFO`). Valid values: `ERROR`, `WARN`, `INFO`, `DEBUG`
 
@@ -53,9 +51,9 @@ Both convenience scripts support the following options:
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
  the DSE Docker image tag to use (`DSETAG`), and the Stargate Docker image tag to use (`SGTAG`).
 
-* When using the convenience scripts, the Stargate Docker image (`SGTAG`) used for the `-l` option is the current (snapshot) version as defined in the top level project `pom.xml` file. It can be overridden with the `-t` option on either script:
+* When using the convenience scripts, the Docker image (`JSONTAG`) is the current (snapshot) version as defined in the top level project `pom.xml` file. It can be overridden with the `-t` option on either script:
 
-  `./start_dse_68.sh -t v2.0.1`
+  `./start_dse_68.sh -t v3.0.0`
 
 * Running more than one of these multi-container environments on one host may require changing the port mapping to be changed to avoid conflicts on the host machine.
 
@@ -63,8 +61,8 @@ Both convenience scripts support the following options:
 
 If you see an error like:
 ```
-Pulling coordinator (stargateio/coordinator-dse-68:2.0.1-SNAPSHOT)...
-ERROR: manifest for stargateio/coordinator-dse-68:2.0.1-SNAPSHOT not found: manifest unknown: manifest unknown
+Pulling coordinator (stargateio/docsapi:3.0.0-SNAPSHOT)...
+ERROR: manifest for stargateio/docsapi:3.0.0-SNAPSHOT not found: manifest unknown: manifest unknown
 ```
 
 you are trying to deploy a version that is neither publicly available (official release) nor built locally.
