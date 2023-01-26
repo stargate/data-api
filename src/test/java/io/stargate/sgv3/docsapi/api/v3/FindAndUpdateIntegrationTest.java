@@ -359,7 +359,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
               {
                 "insertOne": {
                   "document": {
-                    "_id": "update_doc2",
+                    "_id": "update_doc3",
                     "username": "update_user3",
                     "unset_col": "val"
                   }
@@ -455,7 +455,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_user4"));
+          .body("status.updatedIds[0]", is("update_doc4"));
 
       String expected =
           "{\"_id\":\"update_doc4\", \"username\":\"update_user4\", \"new_col\": [\"new_val\", \"new_val2\"]}";
@@ -518,7 +518,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_user5"));
+          .body("status.updatedIds[0]", is("update_doc5"));
 
       String expected =
           "{\"_id\":\"update_doc5\", \"username\":\"update_user5\", \"new_col\": {\"sub_doc_col\":\"new_val2\"}}";
