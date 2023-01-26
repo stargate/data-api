@@ -9,6 +9,7 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv3.docsapi.api.model.command.impl.UpdateOneCommand;
 
 /**
  * POJO object (data no behavior) that represents a syntactically and grammatically valid command as
@@ -39,5 +40,6 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
   @JsonSubTypes.Type(value = FindOneAndUpdateCommand.class),
   @JsonSubTypes.Type(value = InsertOneCommand.class),
   @JsonSubTypes.Type(value = InsertManyCommand.class),
+  @JsonSubTypes.Type(value = UpdateOneCommand.class),
 })
 public interface Command {}
