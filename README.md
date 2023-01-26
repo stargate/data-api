@@ -72,7 +72,7 @@ Integration tests are using the [Testcontainers](https://www.testcontainers.org/
 They are separated from the unit tests and are running as part of the `integration-test` and `verify` Maven phases:
 
 ```shell script
-../mvnw integration-test
+./mvnw integration-test
 ```
 
 #### Data store selection
@@ -87,7 +87,7 @@ The available profiles are:
 The required profile can be activated using the `-P` option:
 
 ```shell script
-../mvnw integration-test -P cassandra-311
+./mvnw integration-test -P cassandra-311
 ```
 
 #### Running from IDE
@@ -117,7 +117,7 @@ You'll most likely need to specify the authentication token to use in the tests,
 You can skip the integration tests during the maven build by disabling the `int-tests` profile using the `-DskipITs` property:
 
 ```shell script
-../mvnw verify -DskipITs
+./mvnw verify -DskipITs
 ```
 
 #### Skipping unit tests
@@ -126,7 +126,7 @@ Alternatively you may want to run only integration tests but not unit tests (esp
 This can be achieved using the command:
 
 ```
-../mvnw verify -DskipUnitTests
+./mvnw verify -DskipUnitTests
 ```
 
 #### Troubleshooting failure to run ITs
@@ -180,12 +180,12 @@ If you want to learn more about building native executables, please consult http
 
 You can create a Docker image named `io.stargate/docsapi` using:
 ```shell script
-../mvnw clean package -Dquarkus.container-image.build=true
+./mvnw clean package -Dquarkus.container-image.build=true
 ```
 
 Or, if you want to create a native-runnable Docker image named `io.stargate/docsapi-native` using:
 ```shell script
-../mvnw clean package -Pnative -Dquarkus.native.container-build=true
+./mvnw clean package -Pnative -Dquarkus.native.container-build=true
 ```
 
 If you want to learn more about building container images, please consult [Container images](https://quarkus.io/guides/container-image).
