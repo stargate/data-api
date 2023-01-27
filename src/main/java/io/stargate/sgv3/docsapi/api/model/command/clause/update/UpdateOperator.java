@@ -25,7 +25,7 @@ public enum UpdateOperator {
 
   // Then operators that we recognize but do not (yet) support
 
-  INCR("$incr");
+  INC("$inc");
 
   private String operator;
 

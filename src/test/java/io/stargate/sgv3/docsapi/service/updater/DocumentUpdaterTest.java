@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
@@ -142,6 +143,40 @@ public class DocumentUpdaterTest {
 
   @Nested
   class UpdateDocumentInvalid {
+    @Test
+    public void invalidUpdateOperator() throws Exception {
+      String updateClause = """
+                   {"location": "New York"},
+              """;
+      Throwable t =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(DocsException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
+          .hasMessageStartingWith("Invalid update operator 'location' (must start with '$')");
+    }
+
+    @Test
+    public void unsupportedUpdateOperator() throws Exception {
+      String updateClause = """
+                   {"$inc": { "count" : 5}}
+              """;
+      Throwable t =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(DocsException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
+          .hasMessageStartingWith("Unsupported update operator '$inc'");
+    }
+
     /** Test for ensuring it is not legal to "$set" document id (_id) */
     @Test
     public void invalidSetDocId() throws Exception {
