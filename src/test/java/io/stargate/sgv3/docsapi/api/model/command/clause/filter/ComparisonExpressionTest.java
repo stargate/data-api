@@ -3,6 +3,7 @@ package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +24,20 @@ public class ComparisonExpressionTest {
                       ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))));
 
       ComparisonExpression result = ComparisonExpression.eq("username", "abc");
+      assertThat(result).isEqualTo(expectedResult);
+    }
+
+    @Test
+    public void multiValueComparisonExpression() throws Exception {
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))));
+
+      ComparisonExpression result = new ComparisonExpression("username", new ArrayList<>());
+      result.add(ValueComparisonOperator.EQ, "abc");
       assertThat(result).isEqualTo(expectedResult);
     }
 
