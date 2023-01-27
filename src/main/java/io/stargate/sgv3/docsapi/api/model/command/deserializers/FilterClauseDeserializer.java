@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.io.IOException;
@@ -35,11 +36,46 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // TODO: Does not handle logical expressions, they are out of scope
       JsonNode operatorExpression = entry.getValue();
-      if (!operatorExpression.isValueNode())
-        throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-      expressionList.add(ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
+      if (operatorExpression.isObject()) {
+        expressionList.add(createComparisonExpression(entry));
+      } else {
+        if (!operatorExpression.isValueNode()) {
+          throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
+        }
+        expressionList.add(
+            ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
+      }
     }
     return new FilterClause(expressionList);
+  }
+
+  /**
+   * The key of the entry will be update type like $set, $unset The value of the entry will be
+   * object of field to be updated "$set" : {"field1" : val1, "field2" : val2 }
+   *
+   * @param entry
+   * @return
+   */
+  private ComparisonExpression createComparisonExpression(Map.Entry<String, JsonNode> entry) {
+    ComparisonExpression expression = new ComparisonExpression(entry.getKey(), new ArrayList<>());
+    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
+    while (fields.hasNext()) {
+      Map.Entry<String, JsonNode> updateField = fields.next();
+      try {
+        ValueComparisonOperator operator =
+            ValueComparisonOperator.getComparisonOperator(updateField.getKey());
+        JsonNode value = updateField.getValue();
+        if (!value.isValueNode()) {
+          throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
+        }
+        expression.add(operator, jsonNodeValue(value));
+      } catch (IllegalArgumentException e) {
+        throw new DocsException(
+            ErrorCode.UNSUPPORTED_FILTER_OPERATION,
+            "Unsupported filter operation " + entry.getKey());
+      }
+    }
+    return expression;
   }
 
   private static Object jsonNodeValue(JsonNode node) {

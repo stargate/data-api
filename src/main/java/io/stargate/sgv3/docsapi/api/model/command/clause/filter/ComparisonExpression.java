@@ -36,6 +36,19 @@ public record ComparisonExpression(
   }
 
   /**
+   * Adds a comparison operation
+   *
+   * <p>e.g. {"username" : "aaron"}
+   *
+   * @param path Json node path
+   * @param value Value returned by the deserializer
+   * @return {@link ComparisonExpression} with equal operator
+   */
+  public void add(ValueComparisonOperator operator, Object value) {
+    filterOperations.add(new ValueComparisonOperation<>(operator, getLiteral(value)));
+  }
+
+  /**
    * Create Typed JsonLiteral object for the value
    *
    * @param value object came in the request

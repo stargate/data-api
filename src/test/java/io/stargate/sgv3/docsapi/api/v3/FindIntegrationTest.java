@@ -165,6 +165,53 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
+    public void findWithEqComparisonOperator() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"username" : {"$eq" : "user1"}}
+            }
+          }
+          """;
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithNEComparisonOperator() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"username" : {"$ne" : "user1"}}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "errors[0].message",
+              is("Filter type not supported, unable to resolve to a filtering strategy"));
+    }
+
+    @Test
+    @Order(2)
     public void findByBooleanColumn() {
       String json =
           """

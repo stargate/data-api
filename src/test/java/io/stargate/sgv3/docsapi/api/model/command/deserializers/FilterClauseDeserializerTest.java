@@ -47,6 +47,59 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void eqComparisonOperator() throws Exception {
+      String json = """
+                    {"username": {"$eq" : "aaron"}}
+                    """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
+      assertThat(filterClause).isNotNull();
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void gtComparisonOperator() throws Exception {
+      String json = """
+                    {"username": {"$gt" : 10}}
+                    """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.GT,
+                      new JsonLiteral(new BigDecimal(10), JsonType.NUMBER))));
+      assertThat(filterClause).isNotNull();
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void neComparisonOperator() throws Exception {
+      String json = """
+                    {"username": {"$ne" : 10}}
+                    """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE,
+                      new JsonLiteral(new BigDecimal(10), JsonType.NUMBER))));
+      assertThat(filterClause).isNotNull();
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
     public void mustHandleNull() throws Exception {
       String json = "null";
 
