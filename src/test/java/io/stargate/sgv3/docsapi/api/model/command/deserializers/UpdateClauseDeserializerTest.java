@@ -39,7 +39,7 @@ public class UpdateClauseDeserializerTest {
                   .put("username", "aaron")
                   .put("number", 40));
       assertThat(updateClause).isNotNull();
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
 
     @Test
@@ -57,7 +57,7 @@ public class UpdateClauseDeserializerTest {
                     """;
 
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(0);
+      assertThat(updateClause.buildOperations()).hasSize(0);
     }
 
     @Test
@@ -70,7 +70,7 @@ public class UpdateClauseDeserializerTest {
           SetOperation.construct(
               objectMapper.getNodeFactory().objectNode().put("username", "aaron"));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
 
     @Test
@@ -79,9 +79,9 @@ public class UpdateClauseDeserializerTest {
                     {"$set" : {"numberType": 40}}
                     """;
       final UpdateOperation operation =
-          SetOperation.construct(objectMapper.getNodeFactory().objectNode().put("number", 40));
+          SetOperation.construct(objectMapper.getNodeFactory().objectNode().put("numberType", 40));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
 
     @Test
@@ -92,7 +92,7 @@ public class UpdateClauseDeserializerTest {
       final UpdateOperation operation =
           SetOperation.construct(objectMapper.getNodeFactory().objectNode().put("boolType", true));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class UpdateClauseDeserializerTest {
       final UpdateOperation operation =
           SetOperation.construct((ObjectNode) objectMapper.readTree("{\"arrayType\": [\"a\"]}"));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class UpdateClauseDeserializerTest {
               (ObjectNode)
                   objectMapper.readTree("{\"subDocType\": {\"sub_doc_col\": \"sub_doc_val\"}}"));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
-      assertThat(updateClause.getUpdateOperations()).hasSize(1).contains(operation);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
   }
 }

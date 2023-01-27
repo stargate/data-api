@@ -1,8 +1,10 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class UnsetOperation extends UpdateOperation {
   private List<String> paths;
@@ -18,6 +20,10 @@ public class UnsetOperation extends UpdateOperation {
   @Override
   public void updateDocument(ObjectNode doc) {
     paths.stream().forEach(path -> doc.remove(path));
+  }
+
+  public Set<String> paths() {
+    return new HashSet<>(paths);
   }
 
   // Just needed for tests

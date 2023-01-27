@@ -59,43 +59,4 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
     }
     return new UpdateClause(updateDefs);
   }
-
-  /*
-  private void getOperations(
-      Map.Entry<String, JsonNode> entry, List<UpdateOperation> expressionList) {
-    try {
-      UpdateOperator operator = UpdateOperator.getUpdateOperator(entry.getKey());
-      if (entry.getValue().isObject()) {
-        final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
-        while (fields.hasNext()) {
-          Map.Entry<String, JsonNode> updateField = fields.next();
-          JsonNode value = updateField.getValue();
-          expressionList.add(
-              new UpdateOperation(updateField.getKey(), operator, jsonNodeValue(value)));
-        }
-      } else {
-        throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
-      }
-    } catch (IllegalArgumentException e) {
-      throw new DocsException(
-          ErrorCode.UNSUPPORTED_UPDATE_OPERATION, "Unsupported update operation " + entry.getKey());
-    }
-  }
-
-  private static JsonNode jsonNodeValue(JsonNode node) {
-    switch (node.getNodeType()) {
-      case BOOLEAN:
-      case NUMBER:
-      case STRING:
-      case NULL:
-      case ARRAY:
-      case OBJECT:
-        return node;
-      default:
-        throw new DocsException(
-            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format("Unsupported NodeType %s", node.getNodeType()));
-    }
-  }
-   */
 }

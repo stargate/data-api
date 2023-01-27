@@ -26,7 +26,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
-  UNSUPPORTED_UPDATE_OPERATION("Unsupported update operator"),
+  UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
+
+  UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field");
 
