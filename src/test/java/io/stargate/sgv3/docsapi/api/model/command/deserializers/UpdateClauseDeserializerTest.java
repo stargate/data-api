@@ -1,7 +1,6 @@
 package io.stargate.sgv3.docsapi.api.model.command.deserializers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -10,7 +9,6 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv3.docsapi.exception.DocsException;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -95,13 +93,32 @@ public class UpdateClauseDeserializerTest {
     }
 
     @Test
-    public void unsupportedFilterTypes() {
+    public void mustHandleArray() throws Exception {
       String json = """
-                    {"$set" : {"boolType": ["a"]}}
+                    {"$set" : {"arrayType": ["a"]}}
                     """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, UpdateClause.class));
-      assertThat(throwable).isInstanceOf(DocsException.class);
+      final UpdateOperation operation =
+          new UpdateOperation(
+              "arrayType", UpdateOperator.SET, objectMapper.getNodeFactory().arrayNode(1).add("a"));
+      UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
+      assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
+    }
+
+    @Test
+    public void mustHandleSubdoc() throws Exception {
+      String json =
+          """
+                    {"$set" : {"subDocType": {"sub_doc_col" : "sub_doc_val"}}}}
+                    """;
+
+      final UpdateOperation operation =
+          new UpdateOperation(
+              "subDocType",
+              UpdateOperator.SET,
+              objectMapper.getNodeFactory().objectNode().put("sub_doc_col", "sub_doc_val"));
+      UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
+      assertThat(updateClause.updateOperations()).hasSize(1).contains(operation);
     }
   }
 }

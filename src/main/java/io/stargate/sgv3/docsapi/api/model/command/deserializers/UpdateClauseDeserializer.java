@@ -62,7 +62,6 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
         while (fields.hasNext()) {
           Map.Entry<String, JsonNode> updateField = fields.next();
           JsonNode value = updateField.getValue();
-          if (!value.isValueNode()) throw new DocsException(ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE);
           expressionList.add(
               new UpdateOperation(updateField.getKey(), operator, jsonNodeValue(value)));
         }
@@ -81,6 +80,8 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       case NUMBER:
       case STRING:
       case NULL:
+      case ARRAY:
+      case OBJECT:
         return node;
       default:
         throw new DocsException(

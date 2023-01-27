@@ -10,6 +10,7 @@ import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv3.docsapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv3.docsapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv3.docsapi.config.constants.OpenApiConstants;
 import io.stargate.sgv3.docsapi.service.processor.CommandProcessor;
 import javax.inject.Inject;
@@ -70,15 +71,17 @@ public class CollectionResource {
                         FindCommand.class,
                         FindOneAndUpdateCommand.class,
                         InsertOneCommand.class,
-                        InsertManyCommand.class
+                        InsertManyCommand.class,
+                        UpdateOneCommand.class
                       }),
               examples = {
+                @ExampleObject(ref = "deleteOne"),
                 @ExampleObject(ref = "findOne"),
                 @ExampleObject(ref = "find"),
                 @ExampleObject(ref = "findOneAndUpdate"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "insertMany"),
-                @ExampleObject(ref = "deleteOne"),
+                @ExampleObject(ref = "updateOne"),
               }))
   @APIResponses(
       @APIResponse(
@@ -95,6 +98,7 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultInsert"),
                     @ExampleObject(ref = "resultError"),
                     @ExampleObject(ref = "resultDelete"),
+                    @ExampleObject(ref = "resultUpdateOne"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(

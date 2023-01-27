@@ -87,6 +87,18 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
+                  name = "updateOne",
+                  summary = "`updateOne` command",
+                  value =
+                      """
+                      {
+                      "updateOne": {
+                          "filter": {"location": "London"},
+                          "update" : {"$set" : {"location" : "New York"}}
+                      }
+                    }
+                    """),
+              @ExampleObject(
                   name = "deleteOne",
                   summary = "`deleteOne` command",
                   value =
@@ -206,6 +218,18 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "resultUpdateOne",
+                  summary = "`updateOne` command result",
+                  value =
+                      """
+                      {
+                          "status": {
+                              "updatedIds": ["1"]
+                            }
+                          }
+                        }
+                        """),
               @ExampleObject(
                   name = "resultInsert",
                   summary = "Insert command result",
