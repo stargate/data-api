@@ -7,8 +7,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv3.docsapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
@@ -16,6 +14,7 @@ import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv3.docsapi.service.shredding.Shredder;
+import io.stargate.sgv3.docsapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv3.docsapi.service.updater.DocumentUpdater;
 import java.util.List;
 import javax.inject.Inject;
@@ -59,13 +58,10 @@ public class UpdateOneResolverTest {
               objectMapper);
 
       DocumentUpdater documentUpdater =
-          new DocumentUpdater(
-              new UpdateClause(
-                  List.of(
-                      new UpdateOperation(
-                          "location",
-                          UpdateOperator.SET,
-                          objectMapper.getNodeFactory().textNode("New York")))));
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET,
+                  objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
               commandContext, readOperation, documentUpdater, false, shredder);
@@ -106,13 +102,10 @@ public class UpdateOneResolverTest {
               objectMapper);
 
       DocumentUpdater documentUpdater =
-          new DocumentUpdater(
-              new UpdateClause(
-                  List.of(
-                      new UpdateOperation(
-                          "location",
-                          UpdateOperator.SET,
-                          objectMapper.getNodeFactory().textNode("New York")))));
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET,
+                  objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
               commandContext, readOperation, documentUpdater, false, shredder);

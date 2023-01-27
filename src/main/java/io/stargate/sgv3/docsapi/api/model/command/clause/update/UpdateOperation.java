@@ -1,13 +1,20 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.update;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-/**
- * UpdateOperation represents a unit of data to be updated. A update clause can have list of *
- * UpdateOperation.
- *
- * @param path
- * @param operator
- * @param value
- */
-public record UpdateOperation(String path, UpdateOperator operator, JsonNode value) {}
+/** UpdateOperation represents definition of one of update definitions from {@link UpdateClause} */
+public abstract class UpdateOperation {
+  public abstract void updateDocument(ObjectNode doc);
+
+  protected static List<String> fieldNames(ObjectNode ob) {
+    Iterator<String> it = ob.fieldNames();
+    List<String> fieldNames = new ArrayList<>();
+    while (it.hasNext()) {
+      fieldNames.add(it.next());
+    }
+    return fieldNames;
+  }
+}
