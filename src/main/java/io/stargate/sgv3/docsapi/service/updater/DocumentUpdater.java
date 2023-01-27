@@ -4,38 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperation;
+import java.util.List;
 
-/**
- * Updates the document read from the database with the updates came as part of the request.
- *
- * @param updateClause
- */
-public record DocumentUpdater(UpdateClause updateClause) {
-  public JsonNode applyUpdates(JsonNode readDocument) {
-    ObjectNode updatableObjectNode = ((ObjectNode) readDocument);
-    updateClause
-        .updateOperations()
-        .forEach(updateOperation -> updateDocument(updateOperation, updatableObjectNode));
-    return readDocument;
+/** Updates the document read from the database with the updates came as part of the request. */
+public record DocumentUpdater(List<UpdateOperation> updateOperations) {
+  public static DocumentUpdater construct(UpdateClause updateDef) {
+    return new DocumentUpdater(updateDef.buildOperations());
   }
 
-  /**
-   * Based on the value type update the value to the read document
-   *
-   * @param updateOperation
-   * @param updatableObjectNode
-   */
-  private void updateDocument(UpdateOperation updateOperation, ObjectNode updatableObjectNode) {
-
-    switch (updateOperation.operator()) {
-      case SET -> {
-        updatableObjectNode.set(updateOperation.path(), updateOperation.value());
-        return;
-      }
-      case UNSET -> {
-        updatableObjectNode.remove(updateOperation.path());
-        return;
-      }
-    }
+  public JsonNode applyUpdates(JsonNode readDocument) {
+    ObjectNode docToUpdate = (ObjectNode) readDocument;
+    updateOperations.forEach(u -> u.updateDocument(docToUpdate));
+    return readDocument;
   }
 }

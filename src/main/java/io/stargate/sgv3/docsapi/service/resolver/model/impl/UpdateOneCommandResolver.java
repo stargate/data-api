@@ -33,7 +33,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   @Override
   public Operation resolveCommand(CommandContext ctx, UpdateOneCommand command) {
     ReadOperation readOperation = resolve(ctx, command);
-    DocumentUpdater documentUpdater = new DocumentUpdater(command.updateClause());
+    DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
     return new ReadAndUpdateOperation(ctx, readOperation, documentUpdater, false, shredder);
   }
 
