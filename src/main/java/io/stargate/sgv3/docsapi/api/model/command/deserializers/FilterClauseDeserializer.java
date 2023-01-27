@@ -43,9 +43,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         expressionList.add(createComparisonExpression(entry));
       } else {
         // @TODO: Need to add array value type to this condition
-        if (!operatorExpression.isValueNode()) {
-          throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-        }
         expressionList.add(
             ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
       }
@@ -73,9 +70,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           ValueComparisonOperator.getComparisonOperator(updateField.getKey());
       JsonNode value = updateField.getValue();
       // @TODO: Need to add array and sub-document value type to this condition
-      if (!value.isValueNode()) {
-        throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-      }
       expression.add(operator, jsonNodeValue(value));
     }
     return expression;
