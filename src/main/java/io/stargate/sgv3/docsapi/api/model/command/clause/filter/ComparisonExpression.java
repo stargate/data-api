@@ -21,7 +21,7 @@ public record ComparisonExpression(
     @Valid @NotEmpty List<FilterOperation<?>> filterOperations) {
 
   /**
-   * Shortcut to create equals against a literal
+   * Shortcut to create equals against a literal, mare condition cannot be added using add().
    *
    * <p>e.g. {"username" : "aaron"}
    *

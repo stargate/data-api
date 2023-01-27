@@ -137,6 +137,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
@@ -160,6 +161,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
@@ -183,6 +185,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
@@ -205,9 +208,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body(
-              "errors[0].message",
-              is("Filter type not supported, unable to resolve to a filtering strategy"));
+          .body("errors[0].message", is("Unsupported filter operation $ne"));
     }
 
     @Test
@@ -327,6 +328,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
@@ -350,6 +352,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
   }

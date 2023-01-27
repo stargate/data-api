@@ -23,7 +23,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     super(FilterClause.class);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc} Filter clause can follow short cut {"field" : "value"} instead of {"field" :
+   * {"$eq" : "value"}}
+   */
   @Override
   public FilterClause deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext)
@@ -39,6 +42,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       if (operatorExpression.isObject()) {
         expressionList.add(createComparisonExpression(entry));
       } else {
+        // @TODO: Need to add array value type to this condition
         if (!operatorExpression.isValueNode()) {
           throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
         }
@@ -50,8 +54,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   /**
-   * The key of the entry will be update type like $set, $unset The value of the entry will be
-   * object of field to be updated "$set" : {"field1" : val1, "field2" : val2 }
+   * The filter clause is entry will have field path as key and object type as value. The value can
+   * have multiple operator and condition values.
+   *
+   * <p>Eg 1: {"field" : {"$eq" : "value"}}
+   *
+   * <p>Eg 2: {"field" : {"$gt" : 10, "$lt" : 50}}
    *
    * @param entry
    * @return
@@ -65,6 +73,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         ValueComparisonOperator operator =
             ValueComparisonOperator.getComparisonOperator(updateField.getKey());
         JsonNode value = updateField.getValue();
+        // @TODO: Need to add array and sub-document value type to this condition
         if (!value.isValueNode()) {
           throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
         }
@@ -72,7 +81,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       } catch (IllegalArgumentException e) {
         throw new DocsException(
             ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-            "Unsupported filter operation " + entry.getKey());
+            "Unsupported filter operation " + updateField.getKey());
       }
     }
     return expression;
