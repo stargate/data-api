@@ -11,4 +11,12 @@ public class DocumentUpdaterUtils {
     operMap.put(oper, args);
     return new UpdateClause(operMap);
   }
+
+  public static UpdateClause updateClause(
+      UpdateOperator oper1, ObjectNode args1, UpdateOperator oper2, ObjectNode args2) {
+    EnumMap<UpdateOperator, ObjectNode> operMap = new EnumMap<>(UpdateOperator.class);
+    operMap.put(oper1, args1);
+    operMap.put(oper2, args2);
+    return new UpdateClause(operMap);
+  }
 }

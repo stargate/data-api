@@ -178,5 +178,24 @@ public class DocumentUpdaterTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
     }
+
+    @Test
+    public void invalidSetAndUnsetSameField() throws Exception {
+      Throwable t =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.construct(
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.SET,
+                        (ObjectNode) objectMapper.readTree("{\"setField\":3, \"common\":true}"),
+                        UpdateOperator.UNSET,
+                        (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")));
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(DocsException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasMessage("Update operators '$set' and '$unset' must not refer to same path: 'common'");
+    }
   }
 }

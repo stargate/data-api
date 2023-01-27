@@ -49,6 +49,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
     if ((setOp != null) && (unsetOp != null)) {
       Set<String> paths = setOp.paths();
       paths.retainAll(unsetOp.paths());
+
       if (!paths.isEmpty()) {
         throw new DocsException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
