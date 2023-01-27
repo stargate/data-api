@@ -29,7 +29,7 @@ public record DocumentUpdater(UpdateClause updateClause) {
 
     switch (updateOperation.operator()) {
       case SET -> {
-        updatableObjectNode.put(updateOperation.path(), updateOperation.value());
+        updatableObjectNode.set(updateOperation.path(), updateOperation.value());
         return;
       }
       case UNSET -> {
