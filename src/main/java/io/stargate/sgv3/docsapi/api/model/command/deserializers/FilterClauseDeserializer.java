@@ -69,20 +69,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
-      try {
-        ValueComparisonOperator operator =
-            ValueComparisonOperator.getComparisonOperator(updateField.getKey());
-        JsonNode value = updateField.getValue();
-        // @TODO: Need to add array and sub-document value type to this condition
-        if (!value.isValueNode()) {
-          throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-        }
-        expression.add(operator, jsonNodeValue(value));
-      } catch (IllegalArgumentException e) {
-        throw new DocsException(
-            ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-            "Unsupported filter operation " + updateField.getKey());
+      ValueComparisonOperator operator =
+          ValueComparisonOperator.getComparisonOperator(updateField.getKey());
+      JsonNode value = updateField.getValue();
+      // @TODO: Need to add array and sub-document value type to this condition
+      if (!value.isValueNode()) {
+        throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
       }
+      expression.add(operator, jsonNodeValue(value));
     }
     return expression;
   }

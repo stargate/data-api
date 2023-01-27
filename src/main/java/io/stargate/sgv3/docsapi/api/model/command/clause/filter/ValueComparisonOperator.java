@@ -1,5 +1,7 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,11 @@ public enum ValueComparisonOperator implements FilterOperator {
   }
 
   public static ValueComparisonOperator getComparisonOperator(String operator) {
-    return operatorMap.get(operator);
+    final ValueComparisonOperator valueComparisonOperator = operatorMap.get(operator);
+    if (valueComparisonOperator == null)
+      throw new DocsException(
+          ErrorCode.UNSUPPORTED_FILTER_OPERATION, "Unsupported filter operation " + operator);
+
+    return valueComparisonOperator;
   }
 }

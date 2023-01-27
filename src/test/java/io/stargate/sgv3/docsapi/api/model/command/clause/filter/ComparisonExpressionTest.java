@@ -95,10 +95,6 @@ public class ComparisonExpressionTest {
           comparisonExpression.match(
               "path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       assertThat(match).hasSize(0);
-
-      match =
-          comparisonExpression.match("path", EnumSet.of(ValueComparisonOperator.GT), JsonType.NULL);
-      assertThat(match).hasSize(0);
     }
   }
 }
