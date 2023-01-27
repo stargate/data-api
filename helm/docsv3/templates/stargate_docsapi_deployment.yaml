@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stargate-docsapi
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: stargate-docsapi
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: stargate-docsapi
+  template:
+    metadata:
+      labels:
+        app: stargate-docsapi
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: stargate-docsapi
+            topologyKey: {{ .Values.topologyKey }}
+      initContainers:
+      - name: wait-for-bridge
+        image: busybox
+        command: ["sh", "-c", "until nc -z {{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }} 8091 > /dev/null; do echo Waiting for bridge.; sleep 5;done;"]
+      containers:
+      - name: docsapi
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.probe.readiness.url }}
+            port: {{ .Values.probe.readiness.port }}
+          timeoutSeconds: {{ .Values.probe.readiness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probe.readiness.periodSeconds }}
+          failureThreshold: {{ .Values.probe.readiness.failureThreshold }}
+          initialDelaySeconds: {{ .Values.probe.readiness.initialDelaySeconds }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.probe.liveness.url }}
+            port: {{ .Values.probe.liveness.port }}
+          timeoutSeconds: {{ .Values.probe.liveness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probe.liveness.periodSeconds }}
+          failureThreshold: {{ .Values.probe.liveness.failureThreshold }}
+          initialDelaySeconds: {{ .Values.probe.liveness.initialDelaySeconds }}
+        resources:
+          requests:
+            cpu: {{ .Values.cpu | default 1000 }}m
+            memory: {{ .Values.memory | default 1024 }}Mi
+        env:
+        - name: QUARKUS_GRPC_CLIENTS_BRIDGE_HOST
+          value: "{{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }}"
+        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXRETRIES
+          value: "50"
+        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXDURATION
+          value: "300"
+        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_DELAY
+          value: "10"
