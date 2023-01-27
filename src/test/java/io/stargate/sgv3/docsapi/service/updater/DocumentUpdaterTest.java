@@ -1,6 +1,7 @@
 package io.stargate.sgv3.docsapi.service.updater;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +10,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv3.docsapi.exception.DocsException;
+import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.testutil.DocumentUpdaterUtils;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -140,23 +143,40 @@ public class DocumentUpdaterTest {
   @Nested
   class UpdateDocumentInvalid {
     /** Test for ensuring it is not legal to "$set" document id (_id) */
-    /*
     @Test
     public void invalidSetDocId() throws Exception {
-      JsonNode baseDoc = objectMapper.readTree(BASE_DOC_JSON);
-      DocumentUpdater documentUpdater =
-          DocumentUpdater.construct(
-              DocumentUpdaterUtils.updateClause(
-                  UpdateOperator.SET,
-                  objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
-      Throwable t = catchThrowable(() -> documentUpdater.applyUpdates(baseDoc));
+      Throwable t =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.construct(
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.SET,
+                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
+              });
       assertThat(t)
           .isNotNull()
-          .withFailMessage("Should throw exception on $set of _id")
           .isInstanceOf(DocsException.class)
+          .withFailMessage("Should throw exception on $set of _id")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID + ": $set");
+          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
     }
-     */
+
+    @Test
+    public void invalidUnsetDocId() throws Exception {
+      Throwable t =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.construct(
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.UNSET,
+                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(DocsException.class)
+          .withFailMessage("Should throw exception on $unset of _id")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
+    }
   }
 }

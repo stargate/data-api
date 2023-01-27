@@ -1,7 +1,9 @@
 package io.stargate.sgv3.docsapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -14,7 +16,12 @@ public class UnsetOperation extends UpdateOperation {
   }
 
   public static UnsetOperation construct(ObjectNode args) {
-    return new UnsetOperation(fieldNames(args));
+    Iterator<String> it = args.fieldNames();
+    List<String> fieldNames = new ArrayList<>();
+    while (it.hasNext()) {
+      fieldNames.add(validateSetPath(UpdateOperator.UNSET, it.next()));
+    }
+    return new UnsetOperation(fieldNames);
   }
 
   @Override

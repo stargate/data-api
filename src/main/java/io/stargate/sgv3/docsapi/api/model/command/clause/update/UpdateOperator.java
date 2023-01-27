@@ -33,6 +33,10 @@ public enum UpdateOperator {
     this.operator = operator;
   }
 
+  public String operator() {
+    return operator;
+  }
+
   public UpdateOperation resolveOperation(ObjectNode arguments) {
     throw new DocsException(
         ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
