@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -207,7 +208,8 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(400);
+          .statusCode(200)
+          .body("errors[1].message", startsWith("Unsupported filter operation $ne"));
     }
 
     @Test
