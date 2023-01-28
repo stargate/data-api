@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.io.IOException;
@@ -22,7 +23,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     super(FilterClause.class);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc} Filter clause can follow short cut {"field" : "value"} instead of {"field" :
+   * {"$eq" : "value"}}
+   */
   @Override
   public FilterClause deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext)
@@ -35,11 +39,40 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // TODO: Does not handle logical expressions, they are out of scope
       JsonNode operatorExpression = entry.getValue();
-      if (!operatorExpression.isValueNode())
-        throw new DocsException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-      expressionList.add(ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
+      if (operatorExpression.isObject()) {
+        expressionList.add(createComparisonExpression(entry));
+      } else {
+        // @TODO: Need to add array value type to this condition
+        expressionList.add(
+            ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
+      }
     }
     return new FilterClause(expressionList);
+  }
+
+  /**
+   * The filter clause is entry will have field path as key and object type as value. The value can
+   * have multiple operator and condition values.
+   *
+   * <p>Eg 1: {"field" : {"$eq" : "value"}}
+   *
+   * <p>Eg 2: {"field" : {"$gt" : 10, "$lt" : 50}}
+   *
+   * @param entry
+   * @return
+   */
+  private ComparisonExpression createComparisonExpression(Map.Entry<String, JsonNode> entry) {
+    ComparisonExpression expression = new ComparisonExpression(entry.getKey(), new ArrayList<>());
+    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
+    while (fields.hasNext()) {
+      Map.Entry<String, JsonNode> updateField = fields.next();
+      ValueComparisonOperator operator =
+          ValueComparisonOperator.getComparisonOperator(updateField.getKey());
+      JsonNode value = updateField.getValue();
+      // @TODO: Need to add array and sub-document value type to this condition
+      expression.add(operator, jsonNodeValue(value));
+    }
+    return expression;
   }
 
   private static Object jsonNodeValue(JsonNode node) {

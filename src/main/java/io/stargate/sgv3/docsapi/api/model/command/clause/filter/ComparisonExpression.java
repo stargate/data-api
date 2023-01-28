@@ -21,7 +21,7 @@ public record ComparisonExpression(
     @Valid @NotEmpty List<FilterOperation<?>> filterOperations) {
 
   /**
-   * Shortcut to create equals against a literal
+   * Shortcut to create equals against a literal, mare condition cannot be added using add().
    *
    * <p>e.g. {"username" : "aaron"}
    *
@@ -33,6 +33,19 @@ public record ComparisonExpression(
     return new ComparisonExpression(
         path,
         List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))));
+  }
+
+  /**
+   * Adds a comparison operation
+   *
+   * <p>e.g. {"username" : "aaron"}
+   *
+   * @param path Json node path
+   * @param value Value returned by the deserializer
+   * @return {@link ComparisonExpression} with equal operator
+   */
+  public void add(ValueComparisonOperator operator, Object value) {
+    filterOperations.add(new ValueComparisonOperation<>(operator, getLiteral(value)));
   }
 
   /**

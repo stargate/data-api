@@ -64,7 +64,11 @@ public class FilterMatchRules<T extends Command & Filterable> {
         .filter(Optional::isPresent)
         .map(Optional::get) // unwraps the Optional from the resolver function.
         .findFirst()
-        .orElseThrow(() -> new DocsException(ErrorCode.FILTER_UNRESOLVABLE));
+        .orElseThrow(
+            () ->
+                new DocsException(
+                    ErrorCode.FILTER_UNRESOLVABLE,
+                    "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 
   @VisibleForTesting

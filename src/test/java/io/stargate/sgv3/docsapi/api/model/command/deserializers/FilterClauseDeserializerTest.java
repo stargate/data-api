@@ -47,6 +47,23 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void eqComparisonOperator() throws Exception {
+      String json = """
+                    {"username": {"$eq" : "aaron"}}
+                    """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "username",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
+      assertThat(filterClause).isNotNull();
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
     public void mustHandleNull() throws Exception {
       String json = "null";
 
