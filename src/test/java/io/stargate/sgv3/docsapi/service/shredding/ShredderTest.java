@@ -46,7 +46,7 @@ public class ShredderTest {
                       """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = shredder.shred(inputDoc);
-      assertThat(doc.id()).isEqualTo("abc");
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("abc"));
       List<JsonPath> expPaths =
           Arrays.asList(
               JsonPath.from("name"),
@@ -146,7 +146,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String or JSON Number, instead got ARRAY")
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean or NULL instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
     }
   }

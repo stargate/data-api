@@ -23,7 +23,7 @@ import java.util.UUID;
 public interface DocumentId {
   JsonType type();
 
-  public default JsonNode asJson(ObjectMapper mapper) {
+  default JsonNode asJson(ObjectMapper mapper) {
     return asJson(mapper.getNodeFactory());
   }
 
@@ -32,16 +32,16 @@ public interface DocumentId {
   static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN -> {
-        return BooleanId.valueOf(node.booleanValue());
+        return fromBoolean(node.booleanValue());
       }
       case NULL -> {
-        return NullId.NULL;
+        return fromNull();
       }
       case NUMBER -> {
-        return new NumberId(node.decimalValue());
+        return fromNumber(node.decimalValue());
       }
       case STRING -> {
-        return new StringId(node.textValue());
+        return fromString(node.textValue());
       }
     }
     throw new DocsException(
@@ -51,7 +51,23 @@ public interface DocumentId {
             ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), node.getNodeType()));
   }
 
-  public static DocumentId fromUUID(UUID uuid) {
+  static DocumentId fromBoolean(boolean key) {
+    return BooleanId.valueOf(key);
+  }
+
+  static DocumentId fromNull() {
+    return NullId.NULL;
+  }
+
+  static DocumentId fromNumber(BigDecimal key) {
+    return new NumberId(key);
+  }
+
+  static DocumentId fromString(String key) {
+    return new StringId(key);
+  }
+
+  static DocumentId fromUUID(UUID uuid) {
     return new StringId(uuid.toString());
   }
 
@@ -61,13 +77,7 @@ public interface DocumentId {
   /**********************************************************************
    */
 
-  public static class StringId implements DocumentId {
-    private final String key;
-
-    public StringId(String key) {
-      this.key = key;
-    }
-
+  record StringId(String key) implements DocumentId {
     @Override
     public JsonType type() {
       return JsonType.STRING;
