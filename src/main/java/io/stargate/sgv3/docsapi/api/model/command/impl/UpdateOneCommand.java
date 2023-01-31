@@ -6,6 +6,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Filterable;
 import io.stargate.sgv3.docsapi.api.model.command.ReadCommand;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.update.UpdateClause;
+import javax.annotation.Nullable;
 import javax.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -15,5 +16,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName("updateOne")
 public record UpdateOneCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
-    @Valid @JsonProperty("update") UpdateClause updateClause)
-    implements ReadCommand, Filterable {}
+    @Valid @JsonProperty("update") UpdateClause updateClause,
+    @Nullable @JsonProperty("options") Options options)
+    implements ReadCommand, Filterable {
+  public record Options() {}
+}

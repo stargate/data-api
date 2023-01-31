@@ -6,6 +6,7 @@ import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.Filterable;
 import io.stargate.sgv3.docsapi.api.model.command.ModifyCommand;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
+import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -24,5 +25,8 @@ public record DeleteOneCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterClause filterClause)
-    implements ModifyCommand, Filterable {}
+        FilterClause filterClause,
+    @Nullable @JsonProperty("options") Options options)
+    implements ModifyCommand, Filterable {
+  public record Options() {}
+}
