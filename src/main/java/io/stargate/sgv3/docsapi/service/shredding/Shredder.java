@@ -1,11 +1,14 @@
 package io.stargate.sgv3.docsapi.service.shredding;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv3.docsapi.config.constants.DocumentConstants;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.shredding.model.DocValueHasher;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,6 +27,11 @@ import javax.enterprise.context.ApplicationScoped;
  */
 @ApplicationScoped
 public class Shredder {
+  private final ObjectMapper objectMapper;
+
+  public Shredder(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   /**
    * Shreds a single JSON node into a {@link WritableShreddedDocument} representation.
@@ -50,22 +58,10 @@ public class Shredder {
     // before storing in persistence. Need to make copy to avoid modifying input doc
     ObjectNode docWithoutId = ((ObjectNode) doc).objectNode().setAll((ObjectNode) doc);
     JsonNode idNode = docWithoutId.remove("_id");
-    String id;
 
     // We will use `_id`, if passed (but must be JSON String or Number); if not passed,
     // need to generate
-    if (idNode == null) {
-      id = UUID.randomUUID().toString();
-    } else {
-      if (!idNode.isTextual() && !idNode.isNumber()) {
-        throw new DocsException(
-            ErrorCode.SHRED_BAD_DOCID_TYPE,
-            String.format(
-                "%s: Document Id must be a JSON String or JSON Number, instead got %s",
-                ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), idNode.getNodeType()));
-      }
-      id = idNode.asText();
-    }
+    DocumentId docId = (idNode == null) ? generateDocumentId() : DocumentId.fromJson(idNode);
 
     // We will re-serialize document; gets rid of pretty-printing (if any);
     // unifies escaping.
@@ -73,14 +69,21 @@ public class Shredder {
     // need to add back. Moreover we want it as the FIRST field anyway so need
     // to reconstruct document.
     ObjectNode docWithId = docWithoutId.objectNode(); // simple constructor, not linked
-    docWithId.put("_id", id);
+    docWithId.set(DocumentConstants.Fields.DOC_ID, docId.asJson(objectMapper));
     docWithId.setAll(docWithoutId);
 
     final String docJson = docWithId.toString();
     final WritableShreddedDocument.Builder b =
-        WritableShreddedDocument.builder(new DocValueHasher(), id, txId, docJson);
-    traverse(docWithoutId, b, JsonPath.rootBuilder());
+        WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
+
+    // And now let's traverse the document, _including DocumentId so it will also
+    // be indexed along with other fields.
+    traverse(docWithId, b, JsonPath.rootBuilder());
     return b.build();
+  }
+
+  private DocumentId generateDocumentId() {
+    return DocumentId.fromUUID(UUID.randomUUID());
   }
 
   /**

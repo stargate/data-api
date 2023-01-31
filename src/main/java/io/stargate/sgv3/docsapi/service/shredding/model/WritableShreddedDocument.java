@@ -14,7 +14,7 @@ public record WritableShreddedDocument(
      * Unique id of this document: may be {@code null} when inserting; if so, will be
      * auto-generated.
      */
-    String id,
+    DocumentId id,
     /** Optional transaction id used for optimistic locking */
     UUID txID,
     String docJson,
@@ -29,7 +29,7 @@ public record WritableShreddedDocument(
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
     Set<JsonPath> queryNullValues) {
-  public static Builder builder(DocValueHasher hasher, String id, UUID txID, String docJson) {
+  public static Builder builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
     return new Builder(hasher, id, txID, docJson);
   }
 
@@ -44,7 +44,7 @@ public record WritableShreddedDocument(
      */
     private final DocValueHasher hasher;
 
-    private final String id;
+    private final DocumentId id;
     private final UUID txID;
 
     private final String docJson;
@@ -64,13 +64,13 @@ public record WritableShreddedDocument(
     private Map<JsonPath, String> queryTextValues;
     private Set<JsonPath> queryNullValues;
 
-    public Builder(DocValueHasher hasher, String id, UUID txID, String docJson) {
+    public Builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
       this.hasher = hasher;
       this.id = id;
       this.txID = txID;
       this.docJson = Objects.requireNonNull(docJson);
 
-      existKeys = new HashSet<>();
+      existKeys = new LinkedHashSet<>(); // retain document order
     }
 
     /**

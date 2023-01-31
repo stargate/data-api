@@ -62,7 +62,7 @@ public record ReadAndUpdateOperation(
         .transformToUni(
             result -> {
               if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(writableShreddedDocument.id());
+                return Uni.createFrom().item(writableShreddedDocument.id().toString());
               } else {
                 return Uni.createFrom().nothing();
               }
@@ -104,14 +104,14 @@ public record ReadAndUpdateOperation(
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayEquals())))
-            .addValues(Values.of(CustomValueSerializers.getSetValueForString(doc.arrayContains())))
+            .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
             .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
             .addValues(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
             .addValues(Values.of(doc.docJson()))
-            .addValues(Values.of(doc.id()))
+            .addValues(CustomValueSerializers.getDocumentIdValue(doc.id()))
             .addValues(Values.of(doc.txID()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }

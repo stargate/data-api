@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -45,9 +46,10 @@ public class ShredderTest {
                       """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = shredder.shred(inputDoc);
-      assertThat(doc.id()).isEqualTo("abc");
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("abc"));
       List<JsonPath> expPaths =
           Arrays.asList(
+              JsonPath.from("_id"),
               JsonPath.from("name"),
               JsonPath.from("values"),
               JsonPath.from("values.[0]"),
@@ -80,7 +82,7 @@ public class ShredderTest {
       expNums.put(JsonPath.from("values.[1]"), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
-          .isEqualTo(Collections.singletonMap(JsonPath.from("name"), "Bob"));
+          .isEqualTo(Map.of(JsonPath.from("_id"), "abc", JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
     }
 
@@ -96,10 +98,11 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = shredder.shred(inputDoc);
 
-      assertThat(doc.id()).isNotEmpty();
+      assertThat(doc.id()).isInstanceOf(DocumentId.StringId.class);
       // should be auto-generated UUID:
-      assertThat(UUID.fromString(doc.id())).isNotNull();
-      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("age"), JsonPath.from("name"));
+      assertThat(UUID.fromString(doc.id().toString())).isNotNull();
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("_id"), JsonPath.from("age"), JsonPath.from("name"));
 
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
       assertThat(doc.arraySize()).isEmpty();
@@ -107,11 +110,13 @@ public class ShredderTest {
       assertThat(doc.arrayContains()).isEmpty();
       assertThat(doc.subDocEquals()).hasSize(0);
 
-      // Also, the document should be the same, except for added _id:
+      // Also, the document should be the same, including _id added:
       ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
-      JsonNode idNode = jsonFromShredded.remove("_id");
+      JsonNode idNode = jsonFromShredded.get("_id");
       assertThat(idNode).isNotNull();
-      assertThat(idNode.textValue()).isEqualTo(doc.id());
+      String generatedId = idNode.textValue();
+      assertThat(generatedId).isEqualTo(doc.id().toString());
+      ((ObjectNode) inputDoc).put("_id", generatedId);
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       // Then atomic value containers
@@ -119,7 +124,51 @@ public class ShredderTest {
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryNumberValues())
           .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
-      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Chuck"));
+      assertThat(doc.queryTextValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), generatedId, JsonPath.from("name"), "Chuck"));
+    }
+
+    @Test
+    public void shredSimpleWithBooleanId() throws Exception {
+      final String inputJson =
+          """
+                      { "_id" : true,
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromBoolean(true));
+
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.queryBoolValues()).isEqualTo(Map.of(JsonPath.from("_id"), Boolean.TRUE));
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues()).isEmpty();
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
+    }
+
+    @Test
+    public void shredSimpleWithNumberId() throws Exception {
+      final String inputJson =
+          """
+                      { "_id" : 123,
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
+
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
     }
   }
 
@@ -145,7 +194,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String or JSON Number, instead got ARRAY")
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean or NULL instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
     }
   }

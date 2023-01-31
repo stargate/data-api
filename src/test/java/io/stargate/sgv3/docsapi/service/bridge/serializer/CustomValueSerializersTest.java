@@ -71,7 +71,7 @@ public class CustomValueSerializersTest {
     @Test
     public void getSetValueForString() {
       Set<String> from = Set.of("field1");
-      final Set<QueryOuterClass.Value> to = CustomValueSerializers.getSetValueForString(from);
+      final Set<QueryOuterClass.Value> to = CustomValueSerializers.getStringSetValue(from);
       final QueryOuterClass.Value next = to.iterator().next();
       assertThat(Values.string(next)).isEqualTo("field1");
     }
