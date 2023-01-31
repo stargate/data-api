@@ -18,8 +18,9 @@ h2(#concepts). High Level Concepts
 
 The Document API consists of the following high level concepts that are composed to create a request: 
 
-* *Collection:* A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.  
-* *Document:* A document is a hierarchical "JSON":https://www.json.org/ document with a single reserved @_id@ field. All documents in a collection may have different fields and structure. 
+* *Namespace:* A logical container representing a distinct storage location and query boundary which can contain multiple collections. May map to a keyspace or database.
+* *Collection:* A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.
+* *Document:* A document is a hierarchical "JSON":https://www.json.org/ document with a single reserved @_id@ field. All documents in a collection may have different fields and structure.
 * *Command:* Commands are performed on Collections of Documents. Commands may return zero or more documents from the collection, update or insert zero or more documents, or both. 
 * *Clause:* Clauses are included in operations to control or extend the behavior of an operation. Clauses may be required or optional for an operation, when optional a default behavior is expected.  
 
@@ -50,6 +51,10 @@ bc(sample). SELECT sample_usage FROM cql;
 * References to keywords or API examples text will be shown in a @fixed-width font@. 
 
 Samples of requests, operations, and clauses will be presented and encoded as a JSON document. This is illustrative of a suggested encoding as described in the "Preamble":#preamble   
+
+h2(#namespace). Namespace
+
+*TODO:* define the namespace, it's properties etc . Do we define how to create one ?
 
 h2(#collection). Collection
 

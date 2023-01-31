@@ -30,7 +30,7 @@ h2(#concepts). High Level Concepts
 
 Clients send a request message to the server over HTTP, and the server sends a response message for each request received. The high level concepts that are used to describe this process are:
 
-* *Endpoints:* The URL address for clients to send request messages. There are two types of endpoints which accept different messages: database and collection endpoints. 
+* *Endpoints:* The URL address for clients to send request messages. There are two types of endpoints which accept different messages: namespace and collection endpoints.
 * *Request Message:* A message from the client to the server requesting the server take some action, such as inserting or finding documents.
 * *Response Message:* A message from the server to the client responding to a specific client message, that includes status information such as affected documents and possibly the actual documents.
 
@@ -69,7 +69,7 @@ h2(#endpoints). Endpoints
 
 The HTTP API provides two types of endpoints:
 
-* Database Endpoint: used to send commands which apply to the whole Database, such as listing all the Collections. 
+* Namespace Endpoint: used to send commands which apply to the whole Namespace, such as listing all the Collections.
 * Collection Endpoint: used to send commands which apply to a single Collection, such as finding users by age. 
 
 Both endpoints follow these rules:
@@ -79,26 +79,27 @@ Both endpoints follow these rules:
 # Requests *must* be valid JSON documents and specify the @Content-Type:application/json; charset=UTF-8@ header (see "RFC-8259":https://www.rfc-editor.org/rfc/rfc8259.html#page-11)
 # Requests *must* specify the @Accept:application/json; charset=UTF-8@ header 
 
-h3(#database-endpoint). Database Endpoint
+h3(#namespace-endpoint). Namespace Endpoint
 
-The Database Endpoint has the form:
+The Namespace Endpoint has the form:
 
 p. _Syntax:_
 
 bc(syntax).. 
-<database-endpoint> ::= <server-address>/<database-name>
+<namespace-endpoint> ::= <server-address>/<namespace-name>
 
-<server-address> ::= // Server URI using HTTP(S), scheme://host/path 
-<database-name> :: // TODO Rules for database names
+p.
+<server-address> is a Server URI using HTTP(S), scheme://host/path
+<namespace-name> must begin with an alpha-numeric character and can only contain alpha-numeric characters and underscores.
 
 p. _Sample:_
 
 bc(sample).. 
-https://stargate.mycompany.com/my-database
+https://stargate.mycompany.com/my-namespace
 
-h4(#database-endpoint-errors). Errors
+h4(#namespace-endpoint-errors). Errors
 
-# Requests sent to a Database that was not previously created via administration tools results in a #TODO soft error. 
+# Requests sent to a Namespace that was not previously created via administration tools results in a #TODO soft error.
 
 h3(#collection-endpoint). Collection Endpoint
 
@@ -107,16 +108,17 @@ Collection Endpoint has the form:
 p. _Syntax:_
 
 bc(syntax).. 
-<collection-endpoint> ::= <server-address>/<database-name>/<collection-name>
+<collection-endpoint> ::= <server-address>/<namespace-name>/<collection-name>
 
-<collection-name> :: // TODO rules for collection names
+p.
+<collection-name> must begin with an alpha-numeric character and can only contain alpha-numeric characters and underscores.
 
 p. _Sample:_
 
 bc(sample).. 
-https://stargate.mycompany.com/my-database/users
+https://stargate.mycompany.com/my-namespace/users
 
-p. Requests sent to a Collection that does not exist (using a valid database name) result in the creation of the Collection and delivery of the message. This may take longer than delivering a message to an existing Collection.
+p. Requests sent to a Collection that does not exist (using a valid namespace name) result in the creation of the Collection and delivery of the message. This may take longer than delivering a message to an existing Collection.
 
 h2(#request-message). Request Message
 
