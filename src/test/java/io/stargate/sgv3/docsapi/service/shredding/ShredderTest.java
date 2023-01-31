@@ -122,6 +122,38 @@ public class ShredderTest {
           .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Chuck"));
     }
+
+    @Test
+    public void shredSimpleWithBooleanId() throws Exception {
+      final String inputJson =
+          """
+                      { "_id" : true,
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromBoolean(true));
+
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+    }
+
+    @Test
+    public void shredSimpleWithNumberId() throws Exception {
+      final String inputJson =
+          """
+                      { "_id" : 123,
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
+
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+    }
   }
 
   @Nested
