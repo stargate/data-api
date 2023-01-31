@@ -20,28 +20,16 @@ import java.util.UUID;
  *   <li>null
  * </ul>
  */
-public abstract class DocumentId {
-  protected final JsonType type;
+public interface DocumentId {
+  JsonType type();
 
-  protected DocumentId(JsonType type) {
-    this.type = type;
-  }
-
-  public JsonType type() {
-    return type;
-  }
-
-  public JsonNode asJson(ObjectMapper mapper) {
+  public default JsonNode asJson(ObjectMapper mapper) {
     return asJson(mapper.getNodeFactory());
   }
 
-  public abstract JsonNode asJson(JsonNodeFactory nodeFactory);
+  JsonNode asJson(JsonNodeFactory nodeFactory);
 
-  /** Overridden as abstract to force sub-classes to re-implement */
-  @Override
-  public abstract String toString();
-
-  public static DocumentId fromJson(JsonNode node) {
+  static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN -> {
         return BooleanId.valueOf(node.booleanValue());
@@ -73,12 +61,16 @@ public abstract class DocumentId {
   /**********************************************************************
    */
 
-  public static class StringId extends DocumentId {
+  public static class StringId implements DocumentId {
     private final String key;
 
     public StringId(String key) {
-      super(JsonType.STRING);
       this.key = key;
+    }
+
+    @Override
+    public JsonType type() {
+      return JsonType.STRING;
     }
 
     @Override
@@ -92,12 +84,10 @@ public abstract class DocumentId {
     }
   }
 
-  public static class NumberId extends DocumentId {
-    private final BigDecimal key;
-
-    public NumberId(BigDecimal key) {
-      super(JsonType.NUMBER);
-      this.key = key;
+  record NumberId(BigDecimal key) implements DocumentId {
+    @Override
+    public JsonType type() {
+      return JsonType.NUMBER;
     }
 
     @Override
@@ -111,19 +101,17 @@ public abstract class DocumentId {
     }
   }
 
-  public static class BooleanId extends DocumentId {
-    private final boolean key;
-
+  record BooleanId(boolean key) implements DocumentId {
     private static final BooleanId FALSE = new BooleanId(false);
     private static final BooleanId TRUE = new BooleanId(true);
 
-    private BooleanId(boolean key) {
-      super(JsonType.BOOLEAN);
-      this.key = key;
-    }
-
     public static BooleanId valueOf(boolean b) {
       return b ? TRUE : FALSE;
+    }
+
+    @Override
+    public JsonType type() {
+      return JsonType.BOOLEAN;
     }
 
     @Override
@@ -137,11 +125,12 @@ public abstract class DocumentId {
     }
   }
 
-  public static class NullId extends DocumentId {
+  record NullId() implements DocumentId {
     public static final NullId NULL = new NullId();
 
-    private NullId() {
-      super(JsonType.NULL);
+    @Override
+    public JsonType type() {
+      return JsonType.NULL;
     }
 
     @Override
