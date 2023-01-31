@@ -112,7 +112,7 @@ public class ShredderTest {
       ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
       JsonNode idNode = jsonFromShredded.remove("_id");
       assertThat(idNode).isNotNull();
-      assertThat(idNode.textValue()).isEqualTo(doc.id());
+      assertThat(idNode.textValue()).isEqualTo(doc.id().toString());
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       // Then atomic value containers
