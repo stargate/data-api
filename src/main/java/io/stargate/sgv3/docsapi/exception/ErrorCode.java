@@ -14,6 +14,8 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
 
+  SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
+
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
 
   SHRED_NO_MD5("MD5 Hash algorithm not available"),

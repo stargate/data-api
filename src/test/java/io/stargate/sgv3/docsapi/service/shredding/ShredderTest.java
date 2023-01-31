@@ -187,7 +187,7 @@ public class ShredderTest {
     }
 
     @Test
-    public void docBadDocIdType() {
+    public void docBadDocIdTypeArray() {
       Throwable t =
           catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : [ ] }")));
 
@@ -196,6 +196,17 @@ public class ShredderTest {
           .hasMessage(
               "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean or NULL instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
+    }
+
+    @Test
+    public void docBadDocIdEmptyString() {
+      Throwable t =
+          catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : \"\" }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage("Bad value for '_id' property: empty String not allowed")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
     }
   }
 }

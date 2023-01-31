@@ -57,7 +57,7 @@ public class Shredder {
     // We will extract id if there is one; stored separately, but also included in JSON document
     // before storing in persistence. Need to make copy to avoid modifying input doc
     ObjectNode docWithoutId = ((ObjectNode) doc).objectNode().setAll((ObjectNode) doc);
-    JsonNode idNode = docWithoutId.remove("_id");
+    JsonNode idNode = docWithoutId.remove(DocumentConstants.Fields.DOC_ID);
 
     // We will use `_id`, if passed (but must be JSON String or Number); if not passed,
     // need to generate
