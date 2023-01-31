@@ -75,7 +75,10 @@ public class Shredder {
     final String docJson = docWithId.toString();
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
-    traverse(docWithoutId, b, JsonPath.rootBuilder());
+
+    // And now let's traverse the document, _including DocumentId so it will also
+    // be indexed along with other fields.
+    traverse(docWithId, b, JsonPath.rootBuilder());
     return b.build();
   }
 
