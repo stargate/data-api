@@ -39,7 +39,7 @@ public record InsertOperation(
   private static Uni<String> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
+    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id().toString());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -58,14 +58,14 @@ public record InsertOperation(
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(doc.id()))
+            .addValues(CustomValueSerializers.getDocumentIdValue(doc.id()))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayEquals())))
-            .addValues(Values.of(CustomValueSerializers.getSetValueForString(doc.arrayContains())))
+            .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
             .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
             .addValues(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))

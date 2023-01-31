@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -96,9 +97,9 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = shredder.shred(inputDoc);
 
-      assertThat(doc.id()).isNotEmpty();
+      assertThat(doc.id()).isInstanceOf(DocumentId.StringId.class);
       // should be auto-generated UUID:
-      assertThat(UUID.fromString(doc.id())).isNotNull();
+      assertThat(UUID.fromString(doc.id().toString())).isNotNull();
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("age"), JsonPath.from("name"));
 
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));

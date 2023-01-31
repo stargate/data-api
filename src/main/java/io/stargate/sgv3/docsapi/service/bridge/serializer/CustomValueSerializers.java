@@ -3,6 +3,7 @@ package io.stargate.sgv3.docsapi.service.bridge.serializer;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.service.shredding.JsonPath;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +26,7 @@ public class CustomValueSerializers {
     return from.stream().map(val -> Values.of(val.toString())).collect(Collectors.toSet());
   }
 
-  public static Set<QueryOuterClass.Value> getSetValueForString(Set<String> from) {
+  public static Set<QueryOuterClass.Value> getStringSetValue(Set<String> from) {
     return from.stream().map(val -> Values.of(val)).collect(Collectors.toSet());
   }
 
@@ -58,5 +59,10 @@ public class CustomValueSerializers {
       to.put(Values.of(entry.getKey().toString()), Values.of(entry.getValue()));
     }
     return to;
+  }
+
+  public static QueryOuterClass.Value getDocumentIdValue(DocumentId documentId) {
+    // Temporary implementation until we convert it to Tuple in DB
+    return Values.of(documentId.toString());
   }
 }
