@@ -8,8 +8,10 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv3.docsapi.config.constants.DocumentConstants;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -44,7 +46,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       } else {
         // @TODO: Need to add array value type to this condition
         expressionList.add(
-            ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue())));
+            ComparisonExpression.eq(
+                entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
       }
     }
     return new FilterClause(expressionList);
@@ -70,12 +73,15 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           ValueComparisonOperator.getComparisonOperator(updateField.getKey());
       JsonNode value = updateField.getValue();
       // @TODO: Need to add array and sub-document value type to this condition
-      expression.add(operator, jsonNodeValue(value));
+      expression.add(operator, jsonNodeValue(entry.getKey(), value));
     }
     return expression;
   }
 
-  private static Object jsonNodeValue(JsonNode node) {
+  private static Object jsonNodeValue(String path, JsonNode node) {
+    if (path.equals(DocumentConstants.Fields.DOC_ID)) {
+      return DocumentId.fromJson(node);
+    }
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();

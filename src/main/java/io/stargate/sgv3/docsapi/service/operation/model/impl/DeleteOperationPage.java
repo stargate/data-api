@@ -11,7 +11,7 @@ import java.util.function.Supplier;
  *
  * @param deletedIds - document ids deleted
  */
-public record DeleteOperationPage(List<String> deletedIds) implements Supplier<CommandResult> {
+public record DeleteOperationPage(List<Object> deletedIds) implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
     return new CommandResult(Map.of(CommandStatus.DELETED_IDS, deletedIds));

@@ -69,6 +69,50 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
     }
 
     @Test
+    public void insertDocumentWithNumberId() {
+      String json =
+          """
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": 4,
+                              "username": "user4"
+                            }
+                          }
+                        }
+                        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(4));
+
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : 4}
+                }
+              }
+              """;
+      String expected = "{\"_id\": 4, \"username\":\"user4\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void emptyDocument() {
       String json =
           """
@@ -152,6 +196,73 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
                 }
                 """;
       String expected = "{\"_id\":\"doc4\", \"username\":\"user4\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void insertDocumentWithDifferentTypes() {
+      String json =
+          """
+                        {
+                          "insertMany": {
+                            "documents": [{
+                              "_id": "5",
+                              "username": "user_id_5"
+                            },
+                            {
+                              "_id": 5,
+                              "username": "user_id_5_number"
+                            }]
+                          }
+                        }
+                        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", contains("5", 5));
+
+      json =
+          """
+                    {
+                      "find": {
+                        "filter" : {"_id" : "5"}
+                      }
+                    }
+                    """;
+      String expected = "{\"_id\":\"5\", \"username\":\"user_id_5\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+
+      json =
+          """
+                    {
+                      "find": {
+                        "filter" : {"_id" : "5"}
+                      }
+                    }
+                    """;
+      expected = "{\"_id\":5, \"username\":\"user_id_5_number\"}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

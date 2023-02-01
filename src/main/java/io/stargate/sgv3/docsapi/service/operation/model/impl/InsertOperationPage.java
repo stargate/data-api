@@ -11,8 +11,8 @@ import java.util.function.Supplier;
  * The internal to modification operation results, what were the ID's of the docs we changed and
  * what change.
  */
-public record ModifyOperationPage(
-    List<String> insertedIds, List<WritableShreddedDocument> insertedDocs)
+public record InsertOperationPage(
+    List<Object> insertedIds, List<WritableShreddedDocument> insertedDocs)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {

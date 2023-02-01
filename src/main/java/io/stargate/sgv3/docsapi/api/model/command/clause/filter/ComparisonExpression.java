@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.api.model.command.clause.filter;
 
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -57,6 +58,9 @@ public record ComparisonExpression(
   private static JsonLiteral<?> getLiteral(Object value) {
     if (value == null) {
       return new JsonLiteral<>(null, JsonType.NULL);
+    }
+    if (value instanceof DocumentId) {
+      return new JsonLiteral<>((DocumentId) value, JsonType.DOCUMENT_ID);
     }
     if (value instanceof BigDecimal) {
       return new JsonLiteral<>((BigDecimal) value, JsonType.NUMBER);

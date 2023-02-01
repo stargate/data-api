@@ -61,8 +61,10 @@ public class CustomValueSerializers {
     return to;
   }
 
-  public static QueryOuterClass.Value getDocumentIdValue(DocumentId documentId) {
+  public static List<QueryOuterClass.Value> getDocumentIdValue(DocumentId documentId) {
     // Temporary implementation until we convert it to Tuple in DB
-    return Values.of(documentId.toString());
+    List<QueryOuterClass.Value> tupleValues =
+        List.of(Values.of(documentId.typeId()), Values.of(documentId.toString()));
+    return tupleValues;
   }
 }

@@ -14,6 +14,8 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv3.docsapi.service.bridge.ValidatingStargateBridge;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -62,7 +64,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
@@ -74,8 +76,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(
                   List.of(
-                      List.of(Values.of("doc1"), Values.of(UUID.randomUUID()), Values.of(doc1)),
-                      List.of(Values.of("doc2"), Values.of(UUID.randomUUID()), Values.of(doc2))));
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1)),
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2))));
       FindOperation findOperation =
           new FindOperation(commandContext, List.of(), null, 2, 2, true, objectMapper);
       final Supplier<CommandResult> execute =
@@ -102,13 +114,16 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       }
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("doc1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
@@ -120,11 +135,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(
                   List.of(
-                      List.of(Values.of("doc1"), Values.of(UUID.randomUUID()), Values.of(doc1))));
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -147,13 +169,16 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("doc1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
@@ -167,7 +192,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -203,7 +230,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
@@ -215,7 +242,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(
                   List.of(
-                      List.of(Values.of("doc1"), Values.of(UUID.randomUUID()), Values.of(doc1))));
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -258,7 +290,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
@@ -270,7 +302,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(
                   List.of(
-                      List.of(Values.of("doc1"), Values.of(UUID.randomUUID()), Values.of(doc1))));
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -312,7 +349,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")

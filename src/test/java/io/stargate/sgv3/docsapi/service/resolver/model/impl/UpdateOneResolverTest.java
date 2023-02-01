@@ -14,6 +14,7 @@ import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv3.docsapi.service.shredding.Shredder;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv3.docsapi.service.updater.DocumentUpdater;
 import java.util.List;
@@ -50,7 +51,9 @@ public class UpdateOneResolverTest {
       ReadOperation readOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "id")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
               1,
               1,

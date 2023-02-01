@@ -13,11 +13,11 @@ public record UpdateOperationPage(
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    List<String> updatedIds = new ArrayList<>(updatedDocuments().size());
+    List<Object> updatedIds = new ArrayList<>(updatedDocuments().size());
     List<JsonNode> updatedDocs = new ArrayList<>(updatedDocuments().size());
     updatedDocuments.forEach(
         update -> {
-          updatedIds.add(update.id());
+          updatedIds.add(update.id().value());
           updatedDocs.add(update.document());
         });
     if (returnDocs) {

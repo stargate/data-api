@@ -35,7 +35,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
     String createTable =
         "CREATE TABLE IF NOT EXISTS %s.%s ("
-            + "    key                 text,"
+            + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
             + "    doc_properties      map<text, int>,"
