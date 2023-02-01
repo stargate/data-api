@@ -7,5 +7,6 @@ public enum JsonType {
   STRING,
   NULL,
   SUB_DOC,
-  ARRAY
+  ARRAY,
+  DOCUMENT_ID
 }

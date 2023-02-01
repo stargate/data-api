@@ -10,6 +10,7 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv3.docsapi.service.operation.model.Operation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +47,9 @@ public class FindOneCommandResolverTest {
       FindOperation expected =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "id")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
               1,
               1,

@@ -10,6 +10,7 @@ import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.ReadDocument;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -56,7 +57,7 @@ public interface ReadOperation extends Operation {
                 try {
                   document =
                       new ReadDocument(
-                          Values.string(row.getValues(0)), // key
+                          getDocumentId(row.getValues(0)), // key
                           Values.uuid(row.getValues(1)), // tx_id
                           readDocument
                               ? objectMapper.readTree(Values.string(row.getValues(2)))
@@ -68,6 +69,19 @@ public interface ReadOperation extends Operation {
               }
               return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
             });
+  }
+
+  /**
+   * Database key type is tuple<int, text>, first field is json value type and second field is text
+   *
+   * @param value
+   * @return
+   */
+  default DocumentId getDocumentId(QueryOuterClass.Value value) {
+    QueryOuterClass.Collection coll = value.getCollection();
+    int typeId = Values.tinyint(coll.getElements(0));
+    String documentIdAsText = Values.string(coll.getElements(1));
+    return DocumentId.fromDatabase(typeId, documentIdAsText);
   }
 
   private String extractPagingStateFromResultSet(QueryOuterClass.ResultSet rSet) {

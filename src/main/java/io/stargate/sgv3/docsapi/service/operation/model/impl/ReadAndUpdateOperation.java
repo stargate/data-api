@@ -12,6 +12,7 @@ import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv3.docsapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.shredding.Shredder;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv3.docsapi.service.updater.DocumentUpdater;
 import java.util.List;
@@ -52,7 +53,7 @@ public record ReadAndUpdateOperation(
         .transform(updates -> new UpdateOperationPage(updates, returnDoc()));
   }
 
-  private Uni<String> updatedDocument(
+  private Uni<DocumentId> updatedDocument(
       QueryExecutor queryExecutor, WritableShreddedDocument writableShreddedDocument) {
     final QueryOuterClass.Query updateQuery =
         bindUpdateValues(buildUpdateQuery(), writableShreddedDocument);
@@ -62,7 +63,7 @@ public record ReadAndUpdateOperation(
         .transformToUni(
             result -> {
               if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(writableShreddedDocument.id().toString());
+                return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
                 return Uni.createFrom().nothing();
               }
@@ -111,10 +112,10 @@ public record ReadAndUpdateOperation(
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
             .addValues(Values.of(doc.docJson()))
-            .addValues(CustomValueSerializers.getDocumentIdValue(doc.id()))
+            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.txID()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 
-  record UpdatedDocument(String id, JsonNode document) {}
+  record UpdatedDocument(DocumentId id, JsonNode document) {}
 }
