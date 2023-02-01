@@ -26,20 +26,20 @@ public record InsertOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildInsertQuery();
-    final Uni<List<String>> ids =
+    final Uni<List<Object>> ids =
         Multi.createFrom()
             .items(documents.stream())
             .onItem()
             .transformToUniAndConcatenate(doc -> insertDocument(queryExecutor, query, doc))
             .collect()
             .asList();
-    return ids.onItem().transform(insertedIds -> new ModifyOperationPage(insertedIds, documents));
+    return ids.onItem().transform(insertedIds -> new InsertOperationPage(insertedIds, documents));
   }
 
-  private static Uni<String> insertDocument(
+  private static Uni<Object> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id().toString());
+    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id().value());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -58,7 +58,7 @@ public record InsertOperation(
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(CustomValueSerializers.getDocumentIdValue(doc.id()))
+            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))

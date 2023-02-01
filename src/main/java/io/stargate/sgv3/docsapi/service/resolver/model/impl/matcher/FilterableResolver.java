@@ -8,6 +8,7 @@ import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +55,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .addMatchRule(this::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.STRING);
+        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.DOCUMENT_ID);
 
     // NOTE - can only do eq ops on fields until SAI changes
     matchRules
@@ -83,8 +84,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
-    final CaptureGroup<String> idGroup =
-        (CaptureGroup<String>) captures.getGroupIfPresent(ID_GROUP);
+    final CaptureGroup<DocumentId> idGroup =
+        (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
     if (idGroup != null) {
       idGroup.consumeAllCaptures(
           expression ->
@@ -118,8 +119,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<FindOperation.DBFilterBase> filters = new ArrayList<>();
 
-    final CaptureGroup<String> idGroup =
-        (CaptureGroup<String>) captures.getGroupIfPresent(ID_GROUP);
+    final CaptureGroup<DocumentId> idGroup =
+        (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
     if (idGroup != null) {
       idGroup.consumeAllCaptures(
           expression ->

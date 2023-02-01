@@ -12,7 +12,9 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,9 +147,9 @@ public record FindOperation(
     }
 
     protected final Operator operator;
-    protected final String value;
+    protected final DocumentId value;
 
-    public IDFilter(Operator operator, String value) {
+    public IDFilter(Operator operator, DocumentId value) {
       this.operator = operator;
       this.value = value;
     }
@@ -169,7 +171,8 @@ public record FindOperation(
     public BuiltCondition get() {
       switch (operator) {
         case EQ:
-          return BuiltCondition.of(BuiltCondition.LHS.column("key"), Predicate.EQ, getValue(value));
+          return BuiltCondition.of(
+              BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(value));
         default:
           throw new DocsException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -244,5 +247,9 @@ public record FindOperation(
       return Values.of((Byte) value);
     }
     return Values.of((String) null);
+  }
+
+  private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {
+    return Values.of(CustomValueSerializers.getDocumentIdValue(value));
   }
 }

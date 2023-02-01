@@ -53,7 +53,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
     List<String> queries = new ArrayList<>();
     String create =
         "CREATE TABLE IF NOT EXISTS %s.%s ("
-            + "    key                 text,"
+            + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
             + "    doc_properties      map<text, int>,"

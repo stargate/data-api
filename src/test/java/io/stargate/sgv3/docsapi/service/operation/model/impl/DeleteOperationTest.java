@@ -15,6 +15,8 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandStatus;
 import io.stargate.sgv3.docsapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv3.docsapi.service.bridge.ValidatingStargateBridge;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -43,30 +45,45 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       UUID tx_id = UUID.randomUUID();
       ValidatingStargateBridge.QueryAssert readAssert =
-          withQuery(collectionReadCql, Values.of("doc1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("tx_id")
                           .setType(TypeSpecs.UUID)
                           .build()))
-              .returning(List.of(List.of(Values.of("doc1"), Values.of(tx_id))));
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id))));
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert deleteAssert =
-          withQuery(collectionDeleteCql, Values.of("doc1"), Values.of(tx_id))
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id))
               .returning(List.of(List.of(Values.of(true))));
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -95,7 +112,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       UUID tx_id = UUID.randomUUID();
       ValidatingStargateBridge.QueryAssert readAssert =
-          withQuery(collectionReadCql, Values.of("doc1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -112,7 +132,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.IDFilter(FindOperation.IDFilter.Operator.EQ, "doc1")),
+              List.of(
+                  new FindOperation.IDFilter(
+                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -151,12 +173,22 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("tx_id")
                           .setType(TypeSpecs.UUID)
                           .build()))
-              .returning(List.of(List.of(Values.of("doc1"), Values.of(tx_id))));
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id))));
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert deleteAssert =
-          withQuery(collectionDeleteCql, Values.of("doc1"), Values.of(tx_id))
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id))
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
