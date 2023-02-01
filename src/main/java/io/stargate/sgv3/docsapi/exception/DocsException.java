@@ -18,7 +18,7 @@ public class DocsException extends RuntimeException implements Supplier<CommandR
   private final ErrorCode errorCode;
 
   public DocsException(ErrorCode errorCode) {
-    this(errorCode, null, null);
+    this(errorCode, errorCode.getMessage(), null);
   }
 
   public DocsException(ErrorCode errorCode, String message) {

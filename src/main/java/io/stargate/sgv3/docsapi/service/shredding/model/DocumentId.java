@@ -7,6 +7,7 @@ import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -60,10 +61,15 @@ public interface DocumentId {
   }
 
   static DocumentId fromNumber(BigDecimal key) {
+    key = Objects.requireNonNull(key);
     return new NumberId(key);
   }
 
   static DocumentId fromString(String key) {
+    key = Objects.requireNonNull(key);
+    if (key.isEmpty()) {
+      throw new DocsException(ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+    }
     return new StringId(key);
   }
 
