@@ -258,7 +258,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           """
                     {
                       "find": {
-                        "filter" : {"_id" : "5"}
+                        "filter" : {"_id" : 5}
                       }
                     }
                     """;
