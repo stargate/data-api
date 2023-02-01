@@ -1,6 +1,5 @@
 package io.stargate.sgv3.docsapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
@@ -25,7 +24,7 @@ public record InsertManyCommand(
             implementation = Object.class,
             type = SchemaType.ARRAY)
         List<JsonNode> documents,
-    @Nullable @JsonProperty("options") Options options)
+    @Nullable Options options)
     implements ModifyCommand {
   public record Options() {}
 }

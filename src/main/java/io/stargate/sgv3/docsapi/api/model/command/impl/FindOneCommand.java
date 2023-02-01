@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindOneCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
-    @Nullable @JsonProperty("options") Options options)
+    @Nullable Options options)
     implements ReadCommand, Filterable {
   public record Options() {}
 }

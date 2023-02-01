@@ -26,7 +26,7 @@ public record DeleteOneCommand(
         @Valid
         @JsonProperty("filter")
         FilterClause filterClause,
-    @Nullable @JsonProperty("options") Options options)
+    @Nullable Options options)
     implements ModifyCommand, Filterable {
   public record Options() {}
 }

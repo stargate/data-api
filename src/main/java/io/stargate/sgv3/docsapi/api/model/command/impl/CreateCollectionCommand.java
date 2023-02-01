@@ -1,6 +1,5 @@
 package io.stargate.sgv3.docsapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv3.docsapi.api.model.command.SchemaChangeCommand;
 import javax.annotation.Nullable;
@@ -17,7 +16,7 @@ public record CreateCollectionCommand(
             implementation = Object.class,
             type = SchemaType.OBJECT)
         String name,
-    @Nullable @JsonProperty("options") Options options)
+    @Nullable Options options)
     implements SchemaChangeCommand {
   public record Options() {}
 }
