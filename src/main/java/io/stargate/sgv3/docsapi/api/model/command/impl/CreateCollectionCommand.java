@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv3.docsapi.api.model.command.SchemaChangeCommand;
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -14,5 +15,8 @@ public record CreateCollectionCommand(
             description = "Name of the collection",
             implementation = Object.class,
             type = SchemaType.OBJECT)
-        String name)
-    implements SchemaChangeCommand {}
+        String name,
+    @Nullable Options options)
+    implements SchemaChangeCommand {
+  public record Options() {}
+}

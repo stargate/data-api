@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv3.docsapi.api.model.command.Command;
 import io.stargate.sgv3.docsapi.api.model.command.ModifyCommand;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -22,5 +23,8 @@ public record InsertManyCommand(
             description = "JSON document to insert.",
             implementation = Object.class,
             type = SchemaType.ARRAY)
-        List<JsonNode> documents)
-    implements ModifyCommand {}
+        List<JsonNode> documents,
+    @Nullable Options options)
+    implements ModifyCommand {
+  public record Options() {}
+}
