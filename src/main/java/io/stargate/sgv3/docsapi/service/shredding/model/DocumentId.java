@@ -1,9 +1,11 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.stargate.sgv3.docsapi.config.constants.DocumentConstants;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.math.BigDecimal;
@@ -21,8 +23,12 @@ import java.util.UUID;
  *   <li>null
  * </ul>
  */
+@RegisterForReflection
 public interface DocumentId {
-  JsonType type();
+  int typeId();
+
+  @JsonValue
+  Object value();
 
   default JsonNode asJson(ObjectMapper mapper) {
     return asJson(mapper.getNodeFactory());
@@ -50,6 +56,28 @@ public interface DocumentId {
         String.format(
             "%s: Document Id must be a JSON String, Number, Boolean or NULL instead got %s",
             ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), node.getNodeType()));
+  }
+
+  static DocumentId fromDatabase(int typeId, String documentIdAsText) {
+    switch (DocumentConstants.KeyTypeId.getJsonType(typeId)) {
+      case BOOLEAN -> {
+        return fromBoolean(Boolean.valueOf(documentIdAsText));
+      }
+      case NULL -> {
+        return fromNull();
+      }
+      case NUMBER -> {
+        return fromNumber(new BigDecimal(documentIdAsText));
+      }
+      case STRING -> {
+        return fromString(documentIdAsText);
+      }
+    }
+    throw new DocsException(
+        ErrorCode.SHRED_BAD_DOCID_TYPE,
+        String.format(
+            "%s: Document Id must be a JSON String(1), Number(2), Boolean(3) or NULL(4) instead got %s",
+            ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), typeId));
   }
 
   static DocumentId fromBoolean(boolean key) {
@@ -85,8 +113,13 @@ public interface DocumentId {
 
   record StringId(String key) implements DocumentId {
     @Override
-    public JsonType type() {
-      return JsonType.STRING;
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_STRING;
+    }
+
+    @Override
+    public Object value() {
+      return key();
     }
 
     @Override
@@ -102,8 +135,13 @@ public interface DocumentId {
 
   record NumberId(BigDecimal key) implements DocumentId {
     @Override
-    public JsonType type() {
-      return JsonType.NUMBER;
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_NUMBER;
+    }
+
+    @Override
+    public Object value() {
+      return key();
     }
 
     @Override
@@ -126,8 +164,13 @@ public interface DocumentId {
     }
 
     @Override
-    public JsonType type() {
-      return JsonType.BOOLEAN;
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_BOOLEAN;
+    }
+
+    @Override
+    public Object value() {
+      return key();
     }
 
     @Override
@@ -145,8 +188,13 @@ public interface DocumentId {
     public static final NullId NULL = new NullId();
 
     @Override
-    public JsonType type() {
-      return JsonType.NULL;
+    public Object value() {
+      return null;
+    }
+
+    @Override
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_NULL;
     }
 
     @Override

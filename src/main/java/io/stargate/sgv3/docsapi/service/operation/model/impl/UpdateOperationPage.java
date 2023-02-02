@@ -3,6 +3,7 @@ package io.stargate.sgv3.docsapi.service.operation.model.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.CommandStatus;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,7 @@ public record UpdateOperationPage(
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    List<String> updatedIds = new ArrayList<>(updatedDocuments().size());
+    List<DocumentId> updatedIds = new ArrayList<>(updatedDocuments().size());
     List<JsonNode> updatedDocs = new ArrayList<>(updatedDocuments().size());
     updatedDocuments.forEach(
         update -> {

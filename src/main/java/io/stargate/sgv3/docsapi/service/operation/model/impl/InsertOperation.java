@@ -9,6 +9,7 @@ import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv3.docsapi.service.operation.model.ModifyOperation;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.List;
 import java.util.function.Supplier;
@@ -26,20 +27,20 @@ public record InsertOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildInsertQuery();
-    final Uni<List<String>> ids =
+    final Uni<List<DocumentId>> ids =
         Multi.createFrom()
             .items(documents.stream())
             .onItem()
             .transformToUniAndConcatenate(doc -> insertDocument(queryExecutor, query, doc))
             .collect()
             .asList();
-    return ids.onItem().transform(insertedIds -> new ModifyOperationPage(insertedIds, documents));
+    return ids.onItem().transform(insertedIds -> new InsertOperationPage(insertedIds, documents));
   }
 
-  private static Uni<String> insertDocument(
+  private static Uni<DocumentId> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id().toString());
+    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -58,7 +59,7 @@ public record InsertOperation(
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(CustomValueSerializers.getDocumentIdValue(doc.id()))
+            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))

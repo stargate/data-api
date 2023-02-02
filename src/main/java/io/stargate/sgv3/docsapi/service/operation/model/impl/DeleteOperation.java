@@ -7,9 +7,11 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv3.docsapi.api.model.command.CommandContext;
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv3.docsapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation.FindResponse;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -23,7 +25,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     Uni<FindResponse> docsToDelete = readOperation().getDocuments(queryExecutor);
     final QueryOuterClass.Query delete = buildDeleteQuery();
-    final Uni<List<String>> ids =
+    final Uni<List<DocumentId>> ids =
         docsToDelete
             .onItem()
             .transformToMulti(
@@ -62,7 +64,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
    * @param doc
    * @return
    */
-  private static Uni<String> deleteDocument(
+  private static Uni<DocumentId> deleteDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
     query = bindDeleteQuery(query, doc);
     return queryExecutor
@@ -82,7 +84,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
       QueryOuterClass.Query builtQuery, ReadDocument doc) {
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(doc.id()))
+            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
