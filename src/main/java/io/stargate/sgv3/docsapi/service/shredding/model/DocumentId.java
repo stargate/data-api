@@ -1,11 +1,10 @@
 package io.stargate.sgv3.docsapi.service.shredding.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
-import io.stargate.sgv3.docsapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv3.docsapi.config.constants.DocumentConstants;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
 import java.math.BigDecimal;
@@ -25,6 +24,7 @@ import java.util.UUID;
 public interface DocumentId {
   int typeId();
 
+  @JsonValue
   Object value();
 
   default JsonNode asJson(ObjectMapper mapper) {
@@ -32,16 +32,6 @@ public interface DocumentId {
   }
 
   JsonNode asJson(JsonNodeFactory nodeFactory);
-
-  // This mapped integers are used in keys in the storage layer. Don't change the values in this
-  // map.
-  BiMap<JsonType, Integer> dataTypeMapper =
-      new ImmutableBiMap.Builder<JsonType, Integer>()
-          .put(JsonType.STRING, 1)
-          .put(JsonType.NUMBER, 2)
-          .put(JsonType.BOOLEAN, 3)
-          .put(JsonType.NULL, 4)
-          .build();
 
   static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
@@ -66,7 +56,7 @@ public interface DocumentId {
   }
 
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
-    switch (dataTypeMapper.inverse().get(typeId)) {
+    switch (DocumentConstants.KeyTypeId.getJsonType(typeId)) {
       case BOOLEAN -> {
         return fromBoolean(Boolean.valueOf(documentIdAsText));
       }
@@ -116,7 +106,7 @@ public interface DocumentId {
   record StringId(String key) implements DocumentId {
     @Override
     public int typeId() {
-      return dataTypeMapper.get(JsonType.STRING);
+      return DocumentConstants.KeyTypeId.TYPE_ID_STRING;
     }
 
     @Override
@@ -138,7 +128,7 @@ public interface DocumentId {
   record NumberId(BigDecimal key) implements DocumentId {
     @Override
     public int typeId() {
-      return dataTypeMapper.get(JsonType.NUMBER);
+      return DocumentConstants.KeyTypeId.TYPE_ID_NUMBER;
     }
 
     @Override
@@ -167,7 +157,7 @@ public interface DocumentId {
 
     @Override
     public int typeId() {
-      return dataTypeMapper.get(JsonType.BOOLEAN);
+      return DocumentConstants.KeyTypeId.TYPE_ID_BOOLEAN;
     }
 
     @Override
@@ -196,7 +186,7 @@ public interface DocumentId {
 
     @Override
     public int typeId() {
-      return dataTypeMapper.get(JsonType.NULL);
+      return DocumentConstants.KeyTypeId.TYPE_ID_NULL;
     }
 
     @Override
@@ -206,7 +196,7 @@ public interface DocumentId {
 
     @Override
     public String toString() {
-      return null;
+      return "null";
     }
   }
 }

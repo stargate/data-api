@@ -11,6 +11,7 @@ import io.stargate.sgv3.docsapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv3.docsapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation;
 import io.stargate.sgv3.docsapi.service.operation.model.ReadOperation.FindResponse;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -24,7 +25,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     Uni<FindResponse> docsToDelete = readOperation().getDocuments(queryExecutor);
     final QueryOuterClass.Query delete = buildDeleteQuery();
-    final Uni<List<Object>> ids =
+    final Uni<List<DocumentId>> ids =
         docsToDelete
             .onItem()
             .transformToMulti(
@@ -63,7 +64,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
    * @param doc
    * @return
    */
-  private static Uni<Object> deleteDocument(
+  private static Uni<DocumentId> deleteDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
     query = bindDeleteQuery(query, doc);
     return queryExecutor
@@ -72,7 +73,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
         .transformToUni(
             result -> {
               if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(doc.id().value());
+                return Uni.createFrom().item(doc.id());
               } else {
                 return Uni.createFrom().nothing();
               }
