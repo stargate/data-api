@@ -23,6 +23,7 @@ import java.util.UUID;
  *   <li>null
  * </ul>
  */
+@RegisterForReflection
 public interface DocumentId {
   int typeId();
 
