@@ -37,7 +37,7 @@ Clone this repo to your development machine. Then execute the following commands
 
 ```shell script
 cd helm
-helm install docsv3 docsv3
+helm install jsonapi jsonapi
 ```
 
 Note:
@@ -46,7 +46,7 @@ Note:
 To install with overriden values, you can use the `--set` option as shown below:
 
 ```shell script
-helm install docsv3 docsv3 \
+helm install jsonapi jsonapi \
 --namespace <ENTER_NAMESPACE_HERE> \
 --set sgGrpcBridge.namespace=<SG_GRPC_BRIDGE_NAMESPACE> \
 --set replicaCount=2
