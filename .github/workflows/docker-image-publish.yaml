@@ -51,3 +51,45 @@ jobs:
       - name: Build and push (Amazon ECR)
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{github.sha}}
+
+  # signs docker image with cosign
+  sign:
+    name: Sign image
+    needs: [main]
+    runs-on: ubuntu-latest
+
+    env:
+      # not a newest version, this reflects riptano action target version
+      COSIGN_VERSION: v1.9.0
+      IMAGE_NAME: docsapi
+
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: ${COSIGN_VERSION}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Sign a docker image
+        shell: bash
+        env:
+          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${IMAGE_NAME}:${{github.sha}}
+          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64}}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD}}
+          COSIGN_KEY_FILE: _cosign_key_
+          AUX_KEY: signedby
+          AUX_VALUE: stargate
+        run: |
+          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "=== signing image [$COSIGN_IMAGE] ..."
+          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
