@@ -2,6 +2,7 @@ package io.stargate.sgv3.docsapi.service.operation.model.impl;
 
 import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.api.model.command.CommandStatus;
+import io.stargate.sgv3.docsapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.shredding.model.WritableShreddedDocument;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
  * what change.
  */
 public record InsertOperationPage(
-    List<Object> insertedIds, List<WritableShreddedDocument> insertedDocs)
+    List<DocumentId> insertedIds, List<WritableShreddedDocument> insertedDocs)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {

@@ -98,10 +98,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           .satisfies(
               commandResult -> {
                 assertThat(result.status().get(CommandStatus.DELETED_IDS)).isNotNull();
-                assertThat((List<String>) result.status().get(CommandStatus.DELETED_IDS))
+                assertThat((List<DocumentId>) result.status().get(CommandStatus.DELETED_IDS))
                     .hasSize(1);
-                assertThat((List<String>) result.status().get(CommandStatus.DELETED_IDS))
-                    .contains("doc1");
+                assertThat((List<DocumentId>) result.status().get(CommandStatus.DELETED_IDS))
+                    .contains(DocumentId.fromString("doc1"));
               });
     }
 
@@ -211,10 +211,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           .satisfies(
               commandResult -> {
                 assertThat(result.status().get(CommandStatus.DELETED_IDS)).isNotNull();
-                assertThat((List<String>) result.status().get(CommandStatus.DELETED_IDS))
+                assertThat((List<DocumentId>) result.status().get(CommandStatus.DELETED_IDS))
                     .hasSize(1);
-                assertThat((List<String>) result.status().get(CommandStatus.DELETED_IDS))
-                    .contains("doc1");
+                assertThat((List<DocumentId>) result.status().get(CommandStatus.DELETED_IDS))
+                    .contains(DocumentId.fromString("doc1"));
               });
     }
 
