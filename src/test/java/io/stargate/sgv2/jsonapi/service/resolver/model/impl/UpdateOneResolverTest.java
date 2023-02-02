@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
-
 import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -27,8 +26,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class UpdateOneResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject
-  Shredder shredder;
+  @Inject Shredder shredder;
   @Inject UpdateOneCommandResolver updateOneCommandResolver;
 
   @Nested

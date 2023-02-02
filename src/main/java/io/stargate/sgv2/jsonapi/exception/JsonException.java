@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;

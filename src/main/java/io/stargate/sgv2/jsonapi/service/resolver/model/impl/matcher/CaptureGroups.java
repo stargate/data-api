@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-
 import java.util.HashMap;
 import java.util.Map;
 

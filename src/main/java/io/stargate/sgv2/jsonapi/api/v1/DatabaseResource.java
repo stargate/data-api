@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.SchemaChangeCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
-
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -73,7 +72,7 @@ public class DatabaseResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-          @NotNull @Valid SchemaChangeCommand command, @PathParam("database") String database) {
+      @NotNull @Valid SchemaChangeCommand command, @PathParam("database") String database) {
 
     // create context
     CommandContext commandContext = new CommandContext(database, null);

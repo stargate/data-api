@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -23,8 +22,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject
-  Shredder shredder;
+  @Inject Shredder shredder;
   @Inject InsertManyCommandResolver insertManyCommandResolver;
 
   @Nested

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
-import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

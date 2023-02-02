@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

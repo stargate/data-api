@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.testutil;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-
 import java.util.EnumMap;
 
 public class DocumentUpdaterUtils {

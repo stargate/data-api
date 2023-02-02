@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;

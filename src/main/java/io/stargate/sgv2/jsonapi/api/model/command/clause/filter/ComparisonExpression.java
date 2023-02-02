@@ -1,9 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-
+import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;

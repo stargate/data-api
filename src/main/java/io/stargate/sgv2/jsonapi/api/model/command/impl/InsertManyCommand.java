@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
-
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;

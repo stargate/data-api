@@ -16,8 +16,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
  * POJO object (data no behavior) that represents a syntactically and grammatically valid command as
  * defined in the API spec.
  *
- * <p>The behavior about *how* to run a Command is in the {@link
- * CommandResolver}.
+ * <p>The behavior about *how* to run a Command is in the {@link CommandResolver}.
  *
  * <p>Commands <b>should not</b> include JSON other than for documents we want to insert. They
  * should represent a translate of the API request into an internal representation. e.g. this

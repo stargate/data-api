@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
-import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonException;
 import java.util.Objects;
 
 /**

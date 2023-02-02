@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.api.common.grpc.SourceApiQualifier;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Application;
 import org.eclipse.microprofile.openapi.annotations.Components;

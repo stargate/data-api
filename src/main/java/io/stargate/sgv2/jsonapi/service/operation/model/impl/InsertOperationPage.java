@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -14,7 +13,7 @@ import java.util.function.Supplier;
  * what change.
  */
 public record InsertOperationPage(
-        List<DocumentId> insertedIds, List<WritableShreddedDocument> insertedDocs)
+    List<DocumentId> insertedIds, List<WritableShreddedDocument> insertedDocs)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {

@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-
 import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -22,8 +21,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject
-  DocumentConfig documentConfig;
+  @Inject DocumentConfig documentConfig;
   @Inject FindCommandResolver findCommandResolver;
 
   @Nested

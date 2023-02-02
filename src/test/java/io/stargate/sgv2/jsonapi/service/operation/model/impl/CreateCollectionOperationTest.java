@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -26,8 +25,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  @Inject
-  QueryExecutor queryExecutor;
+  @Inject QueryExecutor queryExecutor;
 
   @Nested
   class CreateCollectionOperationsTest {

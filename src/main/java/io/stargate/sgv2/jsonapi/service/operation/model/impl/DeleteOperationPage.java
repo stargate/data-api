@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;

@@ -4,11 +4,10 @@ import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

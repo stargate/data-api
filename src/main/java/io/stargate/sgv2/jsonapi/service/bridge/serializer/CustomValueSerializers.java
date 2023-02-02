@@ -4,7 +4,6 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;

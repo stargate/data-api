@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
-
 import java.util.List;
 import javax.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;

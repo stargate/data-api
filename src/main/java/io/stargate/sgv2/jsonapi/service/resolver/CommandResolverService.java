@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonException;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import java.util.HashMap;
 import java.util.List;

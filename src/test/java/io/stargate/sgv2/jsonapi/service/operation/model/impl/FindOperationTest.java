@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -33,8 +32,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  @Inject
-  QueryExecutor queryExecutor;
+  @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
 
   @Nested
