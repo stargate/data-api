@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stargate-docsapi
+  name: stargate-jsonapi
   namespace: {{ .Release.Namespace }}
   labels:
-    app: stargate-docsapi
+    app: stargate-jsonapi
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: stargate-docsapi
+      app: stargate-jsonapi
   template:
     metadata:
       labels:
-        app: stargate-docsapi
+        app: stargate-jsonapi
     spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchLabels:
-                app: stargate-docsapi
+                app: stargate-jsonapi
             topologyKey: {{ .Values.topologyKey }}
       initContainers:
       - name: wait-for-bridge
         image: busybox
         command: ["sh", "-c", "until nc -z {{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }} 8091 > /dev/null; do echo Waiting for bridge.; sleep 5;done;"]
       containers:
-      - name: docsapi
+      - name: jsonapi
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
         - containerPort: 8080

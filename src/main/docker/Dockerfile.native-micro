@@ -10,11 +10,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/sgv3-docsapi .
+# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/sgv2-jsonapi .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/sgv3-docsapi
+# docker run -i --rm -p 8080:8080 quarkus/sgv2-jsonapi
 #
 ###
 FROM quay.io/quarkus/quarkus-micro-image:2.0

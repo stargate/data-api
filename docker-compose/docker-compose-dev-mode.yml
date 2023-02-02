@@ -27,7 +27,7 @@ services:
       retries: 10
 
   jsonapi:
-    image: stargateio/docsapi:${JSONTAG}
+    image: stargateio/jsonapi:${JSONTAG}
     depends_on:
       coordinator:
         condition: service_healthy

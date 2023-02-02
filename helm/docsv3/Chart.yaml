@@ -1,6 +1,6 @@
 apiVersion: v2
 name: docsv3
-description: A Helm chart to deploy stargate document API v3
+description: A Helm chart to deploy stargate document API v1
 
 # A chart can be either an 'application' or a 'library' chart.
 #

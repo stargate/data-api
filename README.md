@@ -1,13 +1,11 @@
 # Stargate Docs API
 
-This project implements the stand-alone Docs API microservice for Stargate in version V3.
-Docs API is an HTTP service that gives access to data stored in a Cassandra cluster using JSON Document based interface.
+This project implements the stand-alone JSON API microservice for Stargate.
+JSON API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
 Specifications and design documents for this service are defined in the [stargate/doc-api](https://github.com/stargate/doc-api) repository.
 
-The project depends on the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common) module, which provides common functionality used by all Stargate V2/V3 APIs.
-
-> **IMPORTANT:** This object is not open-source at the moment. Please keep the details confidential.
+The project depends on the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common) module, which provides common functionality used by all Stargate V2 APIs.
 
 ##### Table of Contents
 * [Concepts](#concepts)
@@ -25,7 +23,7 @@ The project depends on the [sgv2-quarkus-common](https://github.com/stargate/sta
 
 ### Shared concepts
 
-Please read the [Stargate Shared Concepts](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/README.md#shared-concepts) in order to get basic concepts shared between all V2/V3 API implementations.
+Please read the [Stargate Shared Concepts](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/README.md#shared-concepts) in order to get basic concepts shared between all V2 API implementations.
 
 ## Configuration properties
 
@@ -172,18 +170,18 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 ./mvnw package -Pnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/sgv3-docsapi-${project.version}-runner`
+You can then execute your native executable with: `./target/sgv2-jsonapi-${project.version}-runner`
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
 
 ### Creating a Docker image
 
-You can create a Docker image named `io.stargate/docsapi` using:
+You can create a Docker image named `io.stargate/jsonapi` using:
 ```shell script
 ./mvnw clean package -Dquarkus.container-image.build=true
 ```
 
-Or, if you want to create a native-runnable Docker image named `io.stargate/docsapi-native` using:
+Or, if you want to create a native-runnable Docker image named `io.stargate/jsonapi-native` using:
 ```shell script
 ./mvnw clean package -Pnative -Dquarkus.native.container-build=true
 ```
@@ -219,6 +217,6 @@ The extension setups the health endpoints under `/stargate/health`.
 [Related guide](https://quarkus.io/guides/openapi-swaggerui)
 
 The OpenAPI definitions are generated and available under `/api/docs/openapi` endpoint.
-The [StargateDocsApi](src/main/java/io/stargate/sgv3/docsapi/StargateDocsApi.java) class defines the `@OpenAPIDefinition` annotation.
+The [StargateJsonApi](src/main/java/io/stargate/sgv2/jsonapi/StargateJsonApi.java) class defines the `@OpenAPIDefinition` annotation.
 This definition defines the default *SecurityScheme* named `Token`, which expects the header based authentication with the HTTP Header `X-Cassandra-Token`.
 The `info` portions of the Open API definitions are set using the `quarkus.smallrye-openapi.info-` configuration properties.

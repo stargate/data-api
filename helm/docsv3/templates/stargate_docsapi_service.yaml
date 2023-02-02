@@ -3,16 +3,16 @@ kind: Service
 metadata:
   namespace: {{ .Release.Namespace }}
   labels:
-    app: stargate-docsapi
-  name: stargate-docsapi
+    app: stargate-jsonapi
+  name: stargate-jsonapi
 spec:
   ports:
-  - name: stargate-docsapi
+  - name: stargate-jsonapi
     port: 8080
     protocol: TCP
     targetPort: 8080
   selector:
-    app: stargate-docsapi
+    app: stargate-jsonapi
   type: ClusterIP
 status:
   loadBalancer: {}

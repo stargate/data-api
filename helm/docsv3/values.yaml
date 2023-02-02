@@ -8,8 +8,8 @@ replicaCount: 1
 # Coordinator or bridge registry and image
 image:
   registry: "gcr.io"
-  repository: "stargateio/docsapi" 
-  tag: "v3"
+  repository: "stargateio/jsonapi"
+  tag: "v1"
 
 # topology key for anti affinity
 topologyKey: "kubernetes.io/hostname"

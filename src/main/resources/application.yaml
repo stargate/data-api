@@ -7,7 +7,7 @@ stargate:
   # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
-      module: sgv3-docsapi
+      module: sgv2-jsonapi
 
   # disable all sgv2 exception mappers, handled differently
   exception-mappers:
@@ -26,13 +26,13 @@ quarkus:
   # HTTP settings
   http:
 
-    # every /v3 path is authenticated by default
+    # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
       proactive: false
       permission:
         default:
-          paths: /v3/*
+          paths: /v1/*
           policy: authenticated
 
   # built-in micrometer properties

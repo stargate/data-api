@@ -1,16 +1,16 @@
 {{ if .Values.autoscaling.enabled }}
-{{ if .Values.docsapi.enabled }}
+{{ if .Values.jsonapi.enabled }}
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: stargate-docsapi-hpa
+  name: stargate-jsonapi-hpa
   labels:
-    app: stargate-docsapi-hpa
+    app: stargate-jsonapi-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: stargate-docsapi
+    name: stargate-jsonapi
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
