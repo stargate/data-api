@@ -111,7 +111,6 @@ public interface DocumentId {
   /**********************************************************************
    */
 
-  @RegisterForReflection
   record StringId(String key) implements DocumentId {
     @Override
     public int typeId() {
@@ -134,7 +133,6 @@ public interface DocumentId {
     }
   }
 
-  @RegisterForReflection
   record NumberId(BigDecimal key) implements DocumentId {
     @Override
     public int typeId() {
@@ -157,7 +155,6 @@ public interface DocumentId {
     }
   }
 
-  @RegisterForReflection
   record BooleanId(boolean key) implements DocumentId {
     private static final BooleanId FALSE = new BooleanId(false);
     private static final BooleanId TRUE = new BooleanId(true);
@@ -187,7 +184,6 @@ public interface DocumentId {
     }
   }
 
-  @RegisterForReflection
   record NullId() implements DocumentId {
     public static final NullId NULL = new NullId();
 
