@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv3.docsapi.config.constants.DocumentConstants;
 import io.stargate.sgv3.docsapi.exception.DocsException;
 import io.stargate.sgv3.docsapi.exception.ErrorCode;
@@ -109,6 +110,7 @@ public interface DocumentId {
   /**********************************************************************
    */
 
+  @RegisterForReflection
   record StringId(String key) implements DocumentId {
     @Override
     public int typeId() {
@@ -131,6 +133,7 @@ public interface DocumentId {
     }
   }
 
+  @RegisterForReflection
   record NumberId(BigDecimal key) implements DocumentId {
     @Override
     public int typeId() {
@@ -153,6 +156,7 @@ public interface DocumentId {
     }
   }
 
+  @RegisterForReflection
   record BooleanId(boolean key) implements DocumentId {
     private static final BooleanId FALSE = new BooleanId(false);
     private static final BooleanId TRUE = new BooleanId(true);
@@ -182,6 +186,7 @@ public interface DocumentId {
     }
   }
 
+  @RegisterForReflection
   record NullId() implements DocumentId {
     public static final NullId NULL = new NullId();
 
