@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +49,7 @@ public class CommandResolverService {
               String msg =
                   "The command %s is not implemented."
                       .formatted(command.getClass().getSimpleName());
-              return new JsonException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
+              return new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
             });
   }
 }

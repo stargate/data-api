@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -47,7 +47,7 @@ public class Shredder {
     // 13-Dec-2022, tatu: Although we could otherwise allow non-Object documents, requirement
     //    to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.SHRED_BAD_DOCUMENT_TYPE,
           String.format(
               "%s: Document to shred must be a JSON Object, instead got %s",
@@ -140,7 +140,7 @@ public class Shredder {
     } else if (value.isNull()) {
       callback.shredNull(pathBuilder.build());
     } else {
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
           String.format(
               "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));

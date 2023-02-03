@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -42,7 +42,7 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
           String.format(
               "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));

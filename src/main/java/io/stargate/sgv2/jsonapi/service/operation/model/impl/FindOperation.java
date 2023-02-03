@@ -10,7 +10,7 @@ import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -112,7 +112,7 @@ public record FindOperation(
               Predicate.EQ,
               getValue(value));
         default:
-          throw new JsonException(
+          throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
               String.format("Unsupported map operation %s on column %s", operator, columnName));
       }
@@ -174,7 +174,7 @@ public record FindOperation(
           return BuiltCondition.of(
               BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(value));
         default:
-          throw new JsonException(
+          throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
               String.format("Unsupported id column operation %s", operator));
       }
@@ -220,7 +220,7 @@ public record FindOperation(
         case CONTAINS:
           return BuiltCondition.of(columnName, Predicate.CONTAINS, getValue(value));
         default:
-          throw new JsonException(
+          throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
               String.format("Unsupported set operation %s on column %s", operator, columnName));
       }

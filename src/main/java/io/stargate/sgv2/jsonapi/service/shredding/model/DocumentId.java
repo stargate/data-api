@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
@@ -51,7 +51,7 @@ public interface DocumentId {
         return fromString(node.textValue());
       }
     }
-    throw new JsonException(
+    throw new JsonApiException(
         ErrorCode.SHRED_BAD_DOCID_TYPE,
         String.format(
             "%s: Document Id must be a JSON String, Number, Boolean or NULL instead got %s",
@@ -73,7 +73,7 @@ public interface DocumentId {
         return fromString(documentIdAsText);
       }
     }
-    throw new JsonException(
+    throw new JsonApiException(
         ErrorCode.SHRED_BAD_DOCID_TYPE,
         String.format(
             "%s: Document Id must be a JSON String(1), Number(2), Boolean(3) or NULL(4) instead got %s",
@@ -96,7 +96,7 @@ public interface DocumentId {
   static DocumentId fromString(String key) {
     key = Objects.requireNonNull(key);
     if (key.isEmpty()) {
-      throw new JsonException(ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+      throw new JsonApiException(ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
     }
     return new StringId(key);
   }

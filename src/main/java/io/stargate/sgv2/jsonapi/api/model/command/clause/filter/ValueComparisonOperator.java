@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public enum ValueComparisonOperator implements FilterOperator {
   public static ValueComparisonOperator getComparisonOperator(String operator) {
     final ValueComparisonOperator valueComparisonOperator = operatorMap.get(operator);
     if (valueComparisonOperator == null)
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.UNSUPPORTED_FILTER_OPERATION, "Unsupported filter operation " + operator);
 
     return valueComparisonOperator;

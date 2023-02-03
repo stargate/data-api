@@ -12,7 +12,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -155,7 +155,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonException.class)
+          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
           .hasMessageStartingWith("Invalid update operator 'location' (must start with '$')");
     }
@@ -172,7 +172,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonException.class)
+          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
           .hasMessageStartingWith("Unsupported update operator '$inc'");
     }
@@ -190,7 +190,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonException.class)
+          .isInstanceOf(JsonApiException.class)
           .withFailMessage("Should throw exception on $set of _id")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
@@ -208,7 +208,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonException.class)
+          .isInstanceOf(JsonApiException.class)
           .withFailMessage("Should throw exception on $unset of _id")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
@@ -228,7 +228,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonException.class)
+          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessage("Update operators '$set' and '$unset' must not refer to same path: 'common'");
     }

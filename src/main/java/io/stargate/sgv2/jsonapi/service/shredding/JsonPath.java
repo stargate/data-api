@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Objects;
 
 /**
@@ -115,7 +115,7 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedValueBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw new JsonException(ErrorCode.SHRED_INTERNAL_NO_PATH);
+        throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
       }
       return new Builder(childPath);
     }

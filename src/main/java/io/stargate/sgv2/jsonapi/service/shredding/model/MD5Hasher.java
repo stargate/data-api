@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +43,7 @@ public class MD5Hasher {
       md = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
       // should never happen but:
-      throw new JsonException(ErrorCode.SHRED_NO_MD5, e);
+      throw new JsonApiException(ErrorCode.SHRED_NO_MD5, e);
     }
     byte[] digest = md.digest(value.getBytes(StandardCharsets.UTF_8));
     return BASE64_ENCODER.encodeToString(digest);

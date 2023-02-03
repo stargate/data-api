@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
@@ -71,7 +71,7 @@ public record ComparisonExpression(
     if (value instanceof String) {
       return new JsonLiteral<>((String) value, JsonType.STRING);
     }
-    throw new JsonException(
+    throw new JsonApiException(
         ErrorCode.FILTER_UNRESOLVABLE, String.format("Unsupported filter value type %s", value));
   }
 

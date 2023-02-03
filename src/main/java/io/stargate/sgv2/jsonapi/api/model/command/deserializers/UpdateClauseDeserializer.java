@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -27,7 +27,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE,
           "Unsupported update data type for UpdateClause (must be JSON Object): "
               + filterNode.getNodeType());
@@ -38,19 +38,19 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String operName = entry.getKey();
       if (!operName.startsWith("$")) {
-        throw new JsonException(
+        throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
             "Invalid update operator '%s' (must start with '$')".formatted(operName));
       }
       UpdateOperator oper = UpdateOperator.getUpdateOperator(operName);
       if (oper == null) {
-        throw new JsonException(
+        throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
             "Unrecognized update operator '%s'".formatted(operName));
       }
       JsonNode operationArg = entry.getValue();
       if (!operationArg.isObject()) {
-        throw new JsonException(
+        throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE,
             "Unsupported update data type for Operator '%s' (must be JSON Object): %s"
                 .formatted(operName, operationArg.getNodeType()));

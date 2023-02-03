@@ -13,23 +13,23 @@ import java.util.function.Supplier;
  * <p>Implements {@link Supplier< CommandResult >} so this exception can be mapped to command result
  * directly.
  */
-public class JsonException extends RuntimeException implements Supplier<CommandResult> {
+public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
 
   private final ErrorCode errorCode;
 
-  public JsonException(ErrorCode errorCode) {
+  public JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
 
-  public JsonException(ErrorCode errorCode, String message) {
+  public JsonApiException(ErrorCode errorCode, String message) {
     this(errorCode, message, null);
   }
 
-  public JsonException(ErrorCode errorCode, Throwable cause) {
+  public JsonApiException(ErrorCode errorCode, Throwable cause) {
     this(errorCode, null, cause);
   }
 
-  public JsonException(ErrorCode errorCode, String message, Throwable cause) {
+  public JsonApiException(ErrorCode errorCode, String message, Throwable cause) {
     super(message, cause);
     this.errorCode = errorCode;
   }

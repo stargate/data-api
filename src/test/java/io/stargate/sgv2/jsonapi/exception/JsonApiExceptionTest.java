@@ -6,14 +6,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class JsonExceptionTest {
+class JsonApiExceptionTest {
 
   @Nested
   class Get {
 
     @Test
     public void happyPath() {
-      JsonException ex = new JsonException(ErrorCode.COMMAND_NOT_IMPLEMENTED);
+      JsonApiException ex = new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED);
 
       CommandResult result = ex.get();
 
@@ -32,8 +32,8 @@ class JsonExceptionTest {
 
     @Test
     public void withCustomMessage() {
-      JsonException ex =
-          new JsonException(ErrorCode.COMMAND_NOT_IMPLEMENTED, "Custom message is more important.");
+      JsonApiException ex =
+          new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, "Custom message is more important.");
 
       CommandResult result = ex.get();
 
@@ -53,7 +53,7 @@ class JsonExceptionTest {
     @Test
     public void withCause() {
       Exception cause = new IllegalArgumentException("Cause message is important");
-      JsonException ex = new JsonException(ErrorCode.COMMAND_NOT_IMPLEMENTED, cause);
+      JsonApiException ex = new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, cause);
 
       CommandResult result = ex.get();
 

@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
-    if (!filterNode.isObject()) throw new JsonException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
+    if (!filterNode.isObject()) throw new JsonApiException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
     Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
     List<ComparisonExpression> expressionList = new ArrayList<>();
     while (fieldIter.hasNext()) {
@@ -92,7 +92,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       case NULL:
         return null;
       default:
-        throw new JsonException(
+        throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
             String.format("Unsupported NodeType %s", node.getNodeType()));
     }

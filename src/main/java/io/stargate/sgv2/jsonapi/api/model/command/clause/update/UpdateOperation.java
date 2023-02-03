@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 
 /**
  * UpdateOperation represents one of update definitions from {@link UpdateClause} (like {@code $set}
@@ -19,7 +19,7 @@ public abstract class UpdateOperation {
    */
   protected static String validateSetPath(UpdateOperator oper, String path) {
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
-      throw new JsonException(
+      throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID,
           ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": " + oper.operator());
     }

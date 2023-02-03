@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.UpdateClauseDeserializer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -51,7 +51,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
       paths.retainAll(unsetOp.paths());
 
       if (!paths.isEmpty()) {
-        throw new JsonException(
+        throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
             "Update operators '$set' and '$unset' must not refer to same path: '%s'"
                 .formatted(paths.iterator().next()));

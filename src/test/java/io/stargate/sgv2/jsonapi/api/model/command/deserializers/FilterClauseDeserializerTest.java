@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.List;
 import javax.inject.Inject;
@@ -136,7 +136,7 @@ public class FilterClauseDeserializerTest {
                     """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable).isInstanceOf(JsonException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
   }
 }

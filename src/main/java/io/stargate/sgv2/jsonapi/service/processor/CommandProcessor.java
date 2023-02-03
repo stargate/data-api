@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.JsonException;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -64,8 +64,8 @@ public class CommandProcessor {
             t -> {
               // DocsException is supplier of the CommandResult
               // so simply return
-              if (t instanceof JsonException jsonException) {
-                return jsonException;
+              if (t instanceof JsonApiException jsonApiException) {
+                return jsonApiException;
               }
 
               // otherwise use generic for now
