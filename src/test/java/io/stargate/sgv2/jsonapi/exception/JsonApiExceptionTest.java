@@ -33,7 +33,8 @@ class JsonApiExceptionTest {
     @Test
     public void withCustomMessage() {
       JsonApiException ex =
-          new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, "Custom message is more important.");
+          new JsonApiException(
+              ErrorCode.COMMAND_NOT_IMPLEMENTED, "Custom message is more important.");
 
       CommandResult result = ex.get();
 
