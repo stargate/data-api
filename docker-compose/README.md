@@ -53,7 +53,7 @@ Both convenience scripts support the following options:
 
 * When using the convenience scripts, the Docker image (`JSONTAG`) is the current (snapshot) version as defined in the top level project `pom.xml` file. It can be overridden with the `-t` option on either script:
 
-  `./start_dse_68.sh -t v3.0.0`
+  `./start_dse_68.sh -t v1.0.0`
 
 * Running more than one of these multi-container environments on one host may require changing the port mapping to be changed to avoid conflicts on the host machine.
 
@@ -61,8 +61,8 @@ Both convenience scripts support the following options:
 
 If you see an error like:
 ```
-Pulling coordinator (stargateio/docsapi:3.0.0-SNAPSHOT)...
-ERROR: manifest for stargateio/docsapi:3.0.0-SNAPSHOT not found: manifest unknown: manifest unknown
+Pulling coordinator (stargateio/jsonapi:1.0.0-SNAPSHOT)...
+ERROR: manifest for stargateio/jsonapi:1.0.0-SNAPSHOT not found: manifest unknown: manifest unknown
 ```
 
 you are trying to deploy a version that is neither publicly available (official release) nor built locally. See the top level [README](../README.md) file for instructions on building the local image. 

@@ -60,11 +60,11 @@ jobs:
         include:
           - type: docker
             profile: ''
-            image: docsapi
+            image: jsonapi
 
           - type: native
             profile: '-Pnative'
-            image: docsapi-native
+            image: jsonapi-native
 
     steps:
       - uses: actions/checkout@v3

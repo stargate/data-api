@@ -7,11 +7,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native -t quarkus/sgv3-docsapi .
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/sgv2-jsonapi .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/sgv3-docsapi
+# docker run -i --rm -p 8080:8080 quarkus/sgv2-jsonapi
 #
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6

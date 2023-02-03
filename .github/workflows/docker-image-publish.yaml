@@ -61,7 +61,7 @@ jobs:
     env:
       # not a newest version, this reflects riptano action target version
       COSIGN_VERSION: v1.9.0
-      IMAGE_NAME: docsapi
+      IMAGE_NAME: jsonapi
 
     steps:
       - name: Install Cosign

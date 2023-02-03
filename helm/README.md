@@ -1,4 +1,4 @@
-# Stargate Document API V3 deployment using Helm
+# Stargate JSON API deployment using Helm
 
 ## Pre-requisites
 
@@ -28,16 +28,16 @@ You'll use the name of ingress class name as the `ingress.ingressClassName` in t
 
 When using ingress, the API service paths need to be set as specified in the table
 
-| API         | Default path when using ingress       |
-|-------------|---------------------------------------|
-| docs-api    | http://localhost/stargate/health/live |
+| API     | Default path when using ingress       |
+|---------|---------------------------------------|
+| jsonapi | http://localhost/stargate/health/live |
 
 ## Helm installation
 Clone this repo to your development machine. Then execute the following commands to install the Stargate Helm chart with default values:
 
 ```shell script
 cd helm
-helm install docsv3 docsv3
+helm install jsonapi jsonapi
 ```
 
 Note:
@@ -46,7 +46,7 @@ Note:
 To install with overriden values, you can use the `--set` option as shown below:
 
 ```shell script
-helm install docsv3 docsv3 \
+helm install jsonapi jsonapi \
 --namespace <ENTER_NAMESPACE_HERE> \
 --set sgGrpcBridge.namespace=<SG_GRPC_BRIDGE_NAMESPACE> \
 --set replicaCount=2

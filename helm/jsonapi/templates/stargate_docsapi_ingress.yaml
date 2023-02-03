@@ -1,0 +1,19 @@
+{{ if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stargate-jsonapi-ingress
+  namespace: {{ .Release.Namespace }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: stargate-jsonapi
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
+{{ end }}
