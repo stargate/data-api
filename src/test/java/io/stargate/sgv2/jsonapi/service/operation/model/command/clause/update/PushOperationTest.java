@@ -7,12 +7,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UnsetOperation;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.PushOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import java.util.Arrays;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,21 +27,15 @@ public class PushOperationTest extends UpdateOperationTestBase {
     public void testSimpleUnsetOfExisting() {
       // Remove 2 of 3 properties:
       UpdateOperation oper =
-          UpdateOperator.UNSET.resolveOperation(
+          UpdateOperator.PUSH.resolveOperation(
               objectFromJson("""
-                    { "a" : 1, "b" : 1 }
+                    { "array" : 1 }
                     """));
-      assertThat(oper)
-          .isInstanceOf(UnsetOperation.class)
-          .hasFieldOrPropertyWithValue("paths", Arrays.asList("a", "b"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
       // Should indicate document being modified
-      ObjectNode doc = defaultTestDocABC();
+      ObjectNode doc = defaultArrayTestDoc();
       assertThat(oper.updateDocument(doc)).isTrue();
-      // and be left with just one property
-      assertThat(doc)
-          .isEqualTo(fromJson("""
-                    { "c" : true }
-                    """));
+      // !!! TODO
     }
 
     @Test
@@ -60,15 +53,15 @@ public class PushOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.PUSH.resolveOperation(
                     objectFromJson(
                         """
-                                        { "a" : 15 }
+                                        { "property" : 15 }
                                         """));
               });
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .withFailMessage("Should throw exception on $unset of _id")
+          .withFailMessage("Should throw exception on $push for non-array")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
+          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
     }
   }
 
