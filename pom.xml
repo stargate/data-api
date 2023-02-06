@@ -11,6 +11,7 @@
   <properties>
     <stargate.version>2.0.7</stargate.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
+    <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
@@ -167,6 +168,7 @@
       <properties>
         <skipITs>false</skipITs>
         <quarkus.package.type>native</quarkus.package.type>
+        <!-- Please update github workflows that build docker images if changing image name -->
         <quarkus.container-image.name>jsonapi-native</quarkus.container-image.name>
         <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
       </properties>
