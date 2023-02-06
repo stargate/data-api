@@ -60,11 +60,9 @@ jobs:
         include:
           - type: docker
             profile: ''
-            image: jsonapi
 
           - type: native
             profile: '-Pnative'
-            image: jsonapi-native
 
     steps:
       - uses: actions/checkout@v3
