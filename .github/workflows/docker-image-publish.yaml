@@ -27,6 +27,17 @@ jobs:
     name: Main
     runs-on: ubuntu-latest
 
+    # matrix props:
+    strategy:
+      matrix:
+        type: [ docker, native ]
+        include:
+          - type: docker
+            profile: ''
+
+          - type: native
+            profile: '-Pnative'
+
     steps:
       - uses: actions/checkout@v3
 
@@ -50,7 +61,7 @@ jobs:
 
       - name: Build and push (Amazon ECR)
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{github.sha}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' ${{ matrix.profile }}
 
   # signs docker image with cosign
   sign:
@@ -58,10 +69,14 @@ jobs:
     needs: [main]
     runs-on: ubuntu-latest
 
+    # matrix props:
+    strategy:
+      matrix:
+        image: [ jsonapi, jsonapi-native ]
+
     env:
       # not a newest version, this reflects riptano action target version
       COSIGN_VERSION: v1.9.0
-      IMAGE_NAME: jsonapi
 
     steps:
       - name: Install Cosign
@@ -83,9 +98,9 @@ jobs:
       - name: Sign a docker image
         shell: bash
         env:
-          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${IMAGE_NAME}:${{github.sha}}
-          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64}}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD}}
+          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:${{ github.sha }}
+          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64 }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_KEY_FILE: _cosign_key_
           AUX_KEY: signedby
           AUX_VALUE: stargate
