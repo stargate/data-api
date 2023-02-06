@@ -28,14 +28,15 @@ jobs:
     runs-on: ubuntu-latest
 
     # matrix props:
-    matrix:
-      type: [ docker, native ]
-      include:
-        - type: docker
-          profile: ''
+    strategy:
+      matrix:
+        type: [ docker, native ]
+        include:
+          - type: docker
+            profile: ''
 
-        - type: native
-          profile: '-Pnative'
+          - type: native
+            profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v3
@@ -69,13 +70,13 @@ jobs:
     runs-on: ubuntu-latest
 
     # matrix props:
-    matrix:
-      image: [ jsonapi, jsonapi-native ]
+    strategy:
+      matrix:
+        image: [ jsonapi, jsonapi-native ]
 
     env:
       # not a newest version, this reflects riptano action target version
       COSIGN_VERSION: v1.9.0
-      IMAGE_NAME: jsonapi
 
     steps:
       - name: Install Cosign
