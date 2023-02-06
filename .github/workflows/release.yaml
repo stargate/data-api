@@ -1,19 +1,19 @@
+# @author Ivan Senic
 # @author Saurabh Verma
-name: Release workflow
+name: Release Workflow
 
 # runs on
-# * pushes and pull requests on the "main"
+# * pushing new tag with 'v' prefix
 # * manual trigger
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v.*'
 
   workflow_dispatch:
     inputs:
       skipPublish:
-        description: 'Skip publishing docker images and JARs to gcr.io?'
+        description: 'Skip publishing docker images to repositories?'
         required: true
         default: true
         type: boolean
@@ -24,8 +24,6 @@ on:
 
 # global env vars, available in all jobs and steps
 env:
-  ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
   MAVEN_OPTS: '-Xmx4g'
 
 jobs:
@@ -38,8 +36,6 @@ jobs:
     outputs:
       release-tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v3
-
       - name: Set reference
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
@@ -62,10 +58,9 @@ jobs:
     steps:
       - name: Create release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{needs.resolve-tag.outputs.release-tag}}
           release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
           draft: false
@@ -76,6 +71,18 @@ jobs:
     name: Publish docker image
     needs: resolve-tag
     runs-on: ubuntu-latest
+
+    # matrix props:
+    strategy:
+      matrix:
+        type: [ docker, native ]
+        include:
+          - type: docker
+            profile: ''
+
+          - type: native
+            profile: '-Pnative'
+
     steps:
       - uses: actions/checkout@v3
 
@@ -85,65 +92,55 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: maven
-      - run: echo "JAVA_17=$JAVA_HOME" >> $GITHUB_ENV
 
-      - name: Setup Maven
+      # only set version here
+      - name: Install
         run: |
-          mkdir -p ~/.m2
-          cat <<EOF > ~/.m2/settings.xml
-          <settings>
-            <servers>
-              <server>
-                <id>artifactory-snapshots</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
-              </server>
-              <server>
-                <id>artifactory-releases</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
-             </server>
-           </servers>
-          </settings>
-          EOF
+          ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
 
-      # We setup Cloud SDK for prod first as we need to push to the prod GAR
-      - id: 'auth-prod'
-        uses: 'google-github-actions/auth@v0'
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          credentials_json: '${{ secrets.GCR_DEVOPS_SERVICE_ACCOUNT_KEY }}'
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          aws-region: us-east-1
 
-      - name: Set up Cloud SDK (Prod)
-        uses: google-github-actions/setup-gcloud@v0
-        with:
-          project_id: stargateio
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Configure Docker
-        # we must specify the GAR_REGION because it's not in the default region handled by configure-docker
-        run: |-
-          gcloud auth configure-docker -q
-
-      - name: Build and push (apis, gcr.io)
+      # downloads and prepares datastax assets
+      - name: Download branding assets
         if: ${{ !inputs.skipPublish }}
-        run: |
-          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
-          docker tag stargateio/docsapi:${{needs.resolve-tag.outputs.release-tag}} gcr.io/stargateio/docsapi:${{needs.resolve-tag.outputs.release-tag}} && docker push gcr.io/stargateio/docsapi:${{needs.resolve-tag.outputs.release-tag}}
+        run : |
+          curl https://www.datastax.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
+          curl https://cdn.sanity.io/files/bbnkhnhl/production/cf8b48832cfd43cdb24aec0e0d1c656e9234b620.zip -o icons.zip
+          unzip -j icons.zip 'Brand\ Icons/astra-square.png' -d ./src/main/resources/META-INF/branding/
+          mv ./src/main/resources/META-INF/branding/astra-square.png ./src/main/resources/META-INF/branding/logo.png
 
-      - name: Build without push (apis, gcr.io)
-        if: ${{ inputs.skipPublish }}
+      # builds image, overwrite the build time props
+      - name: Build and push (Amazon ECR)
+        if: ${{ !inputs.skipPublish }}
+        env:
+          QUARKUS_APPLICATION_NAME: 'Astra DB JSON API'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB JSON API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra-serverless/docs/develop/dev-with-doc.html) for additional information.'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
         run: |
-          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} ${{ matrix.profile }}
 
   # creates a PR for bumping the versions to the next snapshot
   # only executed if we have created the new release
   create-pr:
     name: Version upgrade PR
-    needs: [create-release]
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      # since we only bump the versions, Java 17 only is fine here
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -151,39 +148,18 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Setup Maven
-        run: |
-          mkdir -p ~/.m2
-          cat <<EOF > ~/.m2/settings.xml
-          <settings>
-            <servers>
-              <server>
-                <id>artifactory-snapshots</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
-              </server>
-              <server>
-                <id>artifactory-releases</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
-             </server>
-           </servers>
-          </settings>
-          EOF
-
-      - name: Update version numbers (apis)
+      - name: Update version number
         run: |
           ./mvnw -B -ntp release:update-versions -DautoVersionSubmodules=true versions:commit
           ./mvnw -B -ntp xml-format:xml-format fmt:format
 
-      - name: Rev Version
-        if: success()
-        uses: peter-evans/create-pull-request@v3
+      - name: Version bump PR
+        uses: peter-evans/create-pull-request@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:
         with:
-          commit-message: "Bumping version for next docs api v3 release"
-          title: "Bumping version for next docs api v3 release"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Bumping version for the next jsonapi release"
+          title: "Bumping version for next jsonapi release"
           branch-suffix: "short-commit-hash"
           base: "main"
-          labels: "docsApiV3"
