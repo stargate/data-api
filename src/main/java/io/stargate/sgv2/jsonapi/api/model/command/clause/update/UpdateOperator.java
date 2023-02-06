@@ -10,6 +10,13 @@ import java.util.Map;
 public enum UpdateOperator {
   // First operators that are supported
 
+  PUSH("$push") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return PushOperation.construct(arguments);
+    }
+  },
+
   SET("$set") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {

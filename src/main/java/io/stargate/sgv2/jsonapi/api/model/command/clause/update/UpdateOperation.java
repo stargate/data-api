@@ -10,7 +10,13 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
  * or {@code $unset}): single operation can contain multiple actual changes.
  */
 public abstract class UpdateOperation {
-  public abstract void updateDocument(ObjectNode doc);
+  /**
+   * Method called to apply operation to given document.
+   *
+   * @param doc Document to apply operation to
+   * @return True if document was modified by operation; false if not.
+   */
+  public abstract boolean updateDocument(ObjectNode doc);
 
   /**
    * Shared validation method used by {@code $set} and {@code $unset} operations to ensure they are

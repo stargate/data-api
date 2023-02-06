@@ -27,8 +27,13 @@ public class SetOperation extends UpdateOperation {
   }
 
   @Override
-  public void updateDocument(ObjectNode doc) {
-    additions.forEach(addition -> doc.set(addition.path, addition.value));
+  public boolean updateDocument(ObjectNode doc) {
+    boolean modified = false;
+    for (SetAction addition : additions) {
+      JsonNode prev = doc.replace(addition.path, addition.value);
+      modified |= !Objects.equals(prev, addition.value);
+    }
+    return modified;
   }
 
   public Set<String> paths() {
