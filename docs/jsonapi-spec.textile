@@ -1,4 +1,4 @@
-h1. Document API Query Specification
+h1. JSON API Query Specification
 
 <span id="tableOfContents">
 
@@ -8,15 +8,15 @@ h1. Document API Query Specification
 
 h2(#preamble). Preamble
 
-The target users for the Document API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM) library such as "Mongoose":https://github.com/Automattic/mongoose. The nature of a Document API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via "mquery":https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the Document API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.      
+The target users for the JSON API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM) library such as "Mongoose":https://github.com/Automattic/mongoose. The nature of a JSON API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via "mquery":https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the JSON API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
 
-The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the Document API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs. 
+The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the JSON API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
 
-Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the Document API service with other data services though the use of templates or code to generate a request.
+Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the JSON API service with other data services though the use of templates or code to generate a request.
 
 h2(#concepts). High Level Concepts
 
-The Document API consists of the following high level concepts that are composed to create a request: 
+The JSON API consists of the following high level concepts that are composed to create a request:
 
 * *Namespace:* A logical container representing a distinct storage location and query boundary which can contain multiple collections. May map to a keyspace or database.
 * *Collection:* A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.
@@ -35,7 +35,7 @@ These concepts are grouped together to form a *Request* sent by client software 
 
 h2(#conventions). Conventions 
 
-To aid in specifying the Document API, we will use the following conventions in this document:
+To aid in specifying the JSON API, we will use the following conventions in this document:
 
 * Language rules will be given in a "BNF":http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form -like notation:
 

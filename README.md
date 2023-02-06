@@ -1,9 +1,9 @@
-# Stargate Docs API
+# Stargate JSON API
 
 This project implements the stand-alone JSON API microservice for Stargate.
 JSON API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
-Specifications and design documents for this service are defined in the [stargate/doc-api](https://github.com/stargate/doc-api) repository.
+Specifications and design documents for this service are defined in the [docs](docs) directory.
 
 The project depends on the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common) module, which provides common functionality used by all Stargate V2 APIs.
 

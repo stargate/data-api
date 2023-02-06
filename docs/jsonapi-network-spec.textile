@@ -1,4 +1,4 @@
-h1. Document HTTP API Specification
+h1. JSON HTTP API Specification
 
 <span id="tableOfContents">
 
@@ -8,20 +8,20 @@ h1. Document HTTP API Specification
 
 h2(#preamble). Preamble
 
-This document specifies the HTTP API for the Document API, how clients can communicate with the service. See the "Document API Query Specification" for details of data modelling and queries. 
+This document specifies the HTTP API for the JSON API, how clients can communicate with the service. See the "JSON API Query Specification" for details of data modelling and queries.
 
-The target users for the Document API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM) library such as "Mongoose":https://github.com/Automattic/mongoose. We expect both ODMs and developers not using an ODM to use a client library that manages connections and encoding, and provides a basic idiomatic representation of the Document API. We do not expected developers to construct and make raw requests against the Document API. With that in mind the HTTP API is designed to be processed by a client side driver first, and humans second. 
+The target users for the JSON API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM) library such as "Mongoose":https://github.com/Automattic/mongoose. We expect both ODMs and developers not using an ODM to use a client library that manages connections and encoding, and provides a basic idiomatic representation of the JSON API. We do not expected developers to construct and make raw requests against the JSON API. With that in mind the HTTP API is designed to be processed by a client side driver first, and humans second.
 
 The HTTP API has the following design principles: 
 
 # *Message Based:* With the exclusion of the endpoint address and client security context, the entire request from a client and response from the server *should* be encapsulated in a single message in the body of the request. As an illustration, it should be possible to easy capture, store, and later send a request message to a different endpoint and compare the response message to the original response. 
-# *Always Respond:* The Document API *should* always send a response message, even in the case of an error, this is a corollary to "Message Based". This means that errors in processing a request, such as authentication errors or a timeout, result in a HTTP @200@ _OK_ response with the error in the body of the message. Exceptions to this will be errors created by intermediate servers between the client and Document API, such as Gateway errors.
+# *Always Respond:* The JSON API *should* always send a response message, even in the case of an error, this is a corollary to "Message Based". This means that errors in processing a request, such as authentication errors or a timeout, result in a HTTP @200@ _OK_ response with the error in the body of the message. Exceptions to this will be errors created by intermediate servers between the client and JSON API, such as Gateway errors.
 # *Always JSON:* All messages passed between the client and server *must* be valid "JSON":https://www.json.org/ documents.
 
 In general HTTP is treated as a synchronous message passing protocol, rather than taking full advantage of it's features such as in a "REST":https://en.wikipedia.org/wiki/Representational_state_transfer API. The motivations for this decision are: 
 
 # *Traffic Management:* By ensuring the message and the address to deliver it to are clearly separated we can more easily manage client traffic, both in real-time and off-line scenarios. Examples include gateways that multiplex traffic during online migration, shadow deployments for new server versions, capture-and-replay of production traffic for testing, or integration with Change Data Capture (CDC) systems.    
-# *API Portability:* By decoupling networking, encoding, and message delivery / RPC activation ("transport" defined in this HTTP API spec) from service functionality ("features" defined in the "Document API Query Specification") alternative transports may more easily be added. A natural path for the Document API may be to also provide a "gRPC":https://grpc.io/ as the "Stargate":https://stargate.io/ project already provides a gRPC transport for Cassandra's CQL. By not leveraging HTTP verbs or URL path and query patterns we provide a simpler public interface (i.e. a synchronous deliver message with reply) that can easily be replicated. 
+# *API Portability:* By decoupling networking, encoding, and message delivery / RPC activation ("transport" defined in this HTTP API spec) from service functionality ("features" defined in the "JSON API Query Specification") alternative transports may more easily be added. A natural path for the JSON API may be to also provide a "gRPC":https://grpc.io/ as the "Stargate":https://stargate.io/ project already provides a gRPC transport for Cassandra's CQL. By not leveraging HTTP verbs or URL path and query patterns we provide a simpler public interface (i.e. a synchronous deliver message with reply) that can easily be replicated.
 
 
 This approach is informed by both "gRPC":https://grpc.io/ and "GraphQL":https://graphql.org/.
@@ -36,7 +36,7 @@ Clients send a request message to the server over HTTP, and the server sends a r
 
 h2(#conventions). Conventions 
 
-To aid in specifying the Document API, we will use the following conventions in this document:
+To aid in specifying the JSON API, we will use the following conventions in this document:
 
 * Language rules will be given in a "BNF":http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form -like notation:
 
@@ -129,7 +129,7 @@ p. _Syntax:_
 bc(syntax).. 
 <request-message> ::=  <command>
 
-p. Commands are defined in the "Document API Query Specification" document. For the purpose of this document we are only concerned that they are well formed JSON documents.
+p. Commands are defined in the "JSON API Query Specification" document. For the purpose of this document we are only concerned that they are well formed JSON documents.
 
 p. _Sample:_
 
