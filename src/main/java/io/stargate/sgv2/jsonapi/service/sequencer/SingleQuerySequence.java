@@ -1,18 +1,17 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 import io.stargate.bridge.proto.QueryOuterClass;
-import java.util.List;
 
 /**
- * Interface for a query sequence that executes multiple queries.
+ * Interface for a query sequence that executes a single query.
  *
  * @param <OUT> Type that is the outcome of this sequence part.
  */
-public interface MultiQuerySequence<OUT> extends QuerySequenceWithOptions<List<OUT>> {
+public interface SingleQuerySequence<OUT> extends QuerySequenceWithOptions<OUT> {
 
   /** Default handler, maps to the result itself, and (re-)throws throwable if any. */
   Handler<QueryOuterClass.ResultSet> DEFAULT_HANDLER =
-      (result, throwable, i) -> {
+      (result, throwable) -> {
         if (null != throwable) {
           throw throwable;
         }
@@ -21,14 +20,14 @@ public interface MultiQuerySequence<OUT> extends QuerySequenceWithOptions<List<O
 
   /** {@inheritDoc} */
   @Override
-  default MultiQuerySequence<OUT> withPageSize(int pageSize) {
+  default SingleQuerySequence<OUT> withPageSize(int pageSize) {
     QuerySequenceWithOptions.super.withPageSize(pageSize);
     return this;
   }
 
   /** {@inheritDoc} */
   @Override
-  default MultiQuerySequence<OUT> withPagingState(String pagingState) {
+  default SingleQuerySequence<OUT> withPagingState(String pagingState) {
     QuerySequenceWithOptions.super.withPagingState(pagingState);
     return this;
   }
@@ -42,7 +41,7 @@ public interface MultiQuerySequence<OUT> extends QuerySequenceWithOptions<List<O
    * @param handler New handler.
    * @return Updated instance.
    */
-  <T> MultiQuerySequence<T> withHandler(Handler<T> handler);
+  <T> SingleQuerySequence<T> withHandler(SingleQuerySequence.Handler<T> handler);
 
   /**
    * Query result handler.
@@ -53,13 +52,12 @@ public interface MultiQuerySequence<OUT> extends QuerySequenceWithOptions<List<O
   interface Handler<OUT> {
 
     /**
-     * Handles result of a single query execution, or a throwable.
+     * Handles result of the query execution, or a throwable.
      *
      * @param result Result of the query execution, can be <code>null</code>.
      * @param throwable Throwable being thrown during the execution of the query.
-     * @param index Index of the query to handle.
      * @return Result of the handler.
      */
-    OUT handle(QueryOuterClass.ResultSet result, Throwable throwable, int index) throws Throwable;
+    OUT handle(QueryOuterClass.ResultSet result, Throwable throwable) throws Throwable;
   }
 }

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
+import io.stargate.sgv2.jsonapi.service.sequencer.QuerySequenceSink;
 import java.util.function.Supplier;
 
 /**

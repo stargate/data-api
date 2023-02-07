@@ -1,11 +1,11 @@
-package io.stargate.sgv3.docsapi.service.sequencer.impl;
+package io.stargate.sgv2.jsonapi.service.sequencer.impl;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
-import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
-import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
-import io.stargate.sgv3.docsapi.service.sequencer.ReactiveQuerySequenceExecutor;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.ReactiveQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.sequencer.QuerySequence;
+import io.stargate.sgv2.jsonapi.service.sequencer.QuerySequenceSink;
+import io.stargate.sgv2.jsonapi.service.sequencer.ReactiveQuerySequenceExecutor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

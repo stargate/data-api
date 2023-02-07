@@ -1,4 +1,4 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 /** Represents a sink of the query sequence. */
 public interface QuerySequenceSink<RESULT> {

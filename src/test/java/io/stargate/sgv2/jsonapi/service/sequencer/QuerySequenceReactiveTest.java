@@ -1,4 +1,4 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,8 +24,8 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.bridge.BridgeTest;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.ReactiveQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;

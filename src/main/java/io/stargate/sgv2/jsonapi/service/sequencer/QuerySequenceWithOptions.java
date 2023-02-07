@@ -1,4 +1,4 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 /**
  * Marker for all QuerySequence part that can accept query options.

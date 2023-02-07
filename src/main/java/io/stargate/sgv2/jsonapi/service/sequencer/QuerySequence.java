@@ -1,15 +1,15 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.CommandResultSink;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.EmptyQuerySequence;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.FunctionalQueryPipe;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.FunctionalSink;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.MultiQueryPipe;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.MultiQuerySource;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.SingleQueryPipe;
-import io.stargate.sgv3.docsapi.service.sequencer.impl.SingleQuerySource;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.CommandResultSink;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.EmptyQuerySequence;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.FunctionalQueryPipe;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.FunctionalSink;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.MultiQueryPipe;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.MultiQuerySource;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.SingleQueryPipe;
+import io.stargate.sgv2.jsonapi.service.sequencer.impl.SingleQuerySource;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;

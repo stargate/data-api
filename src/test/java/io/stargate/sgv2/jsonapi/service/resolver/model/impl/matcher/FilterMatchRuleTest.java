@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;

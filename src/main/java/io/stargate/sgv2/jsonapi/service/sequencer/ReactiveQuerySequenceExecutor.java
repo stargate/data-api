@@ -1,7 +1,7 @@
-package io.stargate.sgv3.docsapi.service.sequencer;
+package io.stargate.sgv2.jsonapi.service.sequencer;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.ReactiveQueryExecutor;
 
 /**
  * Marker for reactive execution.

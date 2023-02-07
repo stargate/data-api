@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeTest;
-import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.ReactiveQueryExecutor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;

@@ -14,6 +14,7 @@ package io.stargate.sgv2.jsonapi.service.bridge;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;

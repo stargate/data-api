@@ -1,10 +1,10 @@
-package io.stargate.sgv3.docsapi.service.sequencer.impl;
+package io.stargate.sgv2.jsonapi.service.sequencer.impl;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
-import io.stargate.sgv3.docsapi.service.sequencer.MultiQuerySequence;
-import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.ReactiveQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.sequencer.MultiQuerySequence;
+import io.stargate.sgv2.jsonapi.service.sequencer.QueryOptions;
 import java.util.List;
 
 /**
@@ -16,7 +16,9 @@ import java.util.List;
  * @param <OUT> Output from each query.
  */
 public record MultiQuerySource<OUT>(
-    List<QueryOuterClass.Query> queries, QueryOptions options, Handler<OUT> handler)
+    List<QueryOuterClass.Query> queries,
+    QueryOptions options,
+    MultiQuerySequence.Handler<OUT> handler)
     implements MultiQuerySequence<OUT> {
 
   /** {@inheritDoc} */

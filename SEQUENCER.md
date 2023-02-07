@@ -180,16 +180,15 @@ Here is an example:
 ```java
 import java.util.*;
 
-import io.stargate.*;
-import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv2.jsonapi.service.sequencer.QueryOptions;
 
 class SingleQueryToMultipleQueriesPipe {
 
-    public QuerySequenceSink<Supplier<CommandResult>> sequence()  {
+    public QuerySequenceSink<Supplier<CommandResult>> sequence() {
         QueryOuterClass.Query query1;
-        
+
         return QuerySequence.query(query1, QueryOptions.Type.READ)
-                
+
                 // pipe
                 .then()
                 .queries(resultSet -> {
@@ -198,7 +197,7 @@ class SingleQueryToMultipleQueriesPipe {
                     QueryOuterClass.Query query3;
                     return List.of(query2, query3);
                 }, QueryOptions.Type.WRITE)
-                
+
                 // sink
                 .sink(resultSetList -> {
                     // result handling of query2 & query3
@@ -215,17 +214,16 @@ This allows for fine handling of the query results and decision-making.
 ```java
 import java.util.*;
 
-import io.stargate.*;
-import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
-import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
+import io.stargate.sgv2.jsonapi.service.sequencer.QueryOptions;
+import io.stargate.sgv2.jsonapi.service.sequencer.QuerySequence;
 
 class PipeToSink {
 
-    public QuerySequenceSink<Supplier<CommandResult>> sequence()  {
+    public QuerySequenceSink<Supplier<CommandResult>> sequence() {
         QueryOuterClass.Query query1;
         QueryOuterClass.Query query2;
         List<QueryOuterClass.Query> firstQueries = List.of(query1, query2);
-        
+
         return QuerySequence.queries(firstQueries, QueryOptions.Type.READ)
 
                 // simple handler
@@ -248,9 +246,9 @@ class PipeToSink {
                         QueryOuterClass.Query query4;
                         List<QueryOuterClass.Query> queries = List.of(query3, query4);
                         return QuerySequence.queries(queries, QueryOptions.Type.READ)
-                            .sink(resultSetList -> {
-                                // implement result handing of query3 & query4
-                            });
+                                .sink(resultSetList -> {
+                                    // implement result handing of query3 & query4
+                                });
                     }
                 });
     }

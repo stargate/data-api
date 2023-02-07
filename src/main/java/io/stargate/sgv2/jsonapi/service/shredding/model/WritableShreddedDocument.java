@@ -6,7 +6,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.ShredListener;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /** The fully shredded document, everything we need to write the document. */
 public record WritableShreddedDocument(
