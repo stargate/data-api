@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeTest;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,7 +25,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  @Inject QueryExecutor queryExecutor;
+  @Inject ReactiveQueryExecutor queryExecutor;
 
   @Nested
   class CreateCollectionOperationsTest {
@@ -39,7 +39,12 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           new CreateCollectionOperation(commandContext, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
-          createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          createCollectionOperation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
