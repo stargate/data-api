@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -53,8 +54,13 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
             findResponse -> {
               // go through found docs and transform to the delete query for each
               List<ReadDocument> documents = findResponse.docs();
-              List<QueryOuterClass.Query> queries =
-                  documents.stream().map(doc -> bindDeleteQuery(delete, doc)).toList();
+
+              // create update query per document
+              List<QueryOuterClass.Query> queries = new ArrayList<>();
+              for (ReadDocument document : documents) {
+                QueryOuterClass.Query query = bindDeleteQuery(delete, document);
+                queries.add(query);
+              }
 
               // create next sequence
               return QuerySequence.queries(queries, QueryOptions.Type.WRITE)

@@ -1,13 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -16,8 +13,12 @@ import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public record ReadAndUpdateOperation(
@@ -30,50 +31,65 @@ public record ReadAndUpdateOperation(
 
   @Override
   public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
-    return null;
-  }
-  ;
+    QuerySequence<FindResponse> documentsSequence = readOperation.getDocumentsSequence();
 
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<FindResponse> docsToUpate = Uni.<FindResponse>createFrom().nothing();
-    final Uni<List<UpdatedDocument>> updatedDocuments =
-        docsToUpate
-            .onItem()
-            .transformToMulti(
-                findResponse -> Multi.createFrom().items(findResponse.docs().stream()))
-            .onItem()
-            .transformToUniAndConcatenate(
-                readDocument -> {
-                  JsonNode originalDocument = readDocument.document().deepCopy();
-                  JsonNode updatedDocument =
-                      documentUpdater().applyUpdates(readDocument.document());
-                  WritableShreddedDocument writableShreddedDocument =
-                      shredder().shred(updatedDocument, readDocument.txnId());
-                  return updatedDocument(queryExecutor, writableShreddedDocument)
-                      .onItem()
-                      .transform(v -> new UpdatedDocument(readDocument.id(), originalDocument));
-                })
-            .collect()
-            .asList();
-    return updatedDocuments
-        .onItem()
-        .transform(updates -> new UpdateOperationPage(updates, returnDoc()));
-  }
+    // execute document sequence from read op
+    return documentsSequence
 
-  private Uni<DocumentId> updatedDocument(
-      QueryExecutor queryExecutor, WritableShreddedDocument writableShreddedDocument) {
-    final QueryOuterClass.Query updateQuery =
-        bindUpdateValues(buildUpdateQuery(), writableShreddedDocument);
-    return queryExecutor
-        .executeWrite(updateQuery)
-        .onItem()
-        .transformToUni(
-            result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(writableShreddedDocument.id());
-              } else {
-                return Uni.createFrom().nothing();
+        // then consume results
+        .then()
+        .pipeToSink(
+            findResponse -> {
+              // documents from read op
+              List<ReadDocument> documents = findResponse.docs();
+
+              // create a list of updated queries
+              // build update query
+              QueryOuterClass.Query updateQuery = buildUpdateQuery();
+
+              // create update query per document
+              List<QueryOuterClass.Query> queries = new ArrayList<>();
+              List<JsonNode> updatedNodes = new ArrayList<>();
+              for (ReadDocument document : documents) {
+                JsonNode updated = documentUpdater().applyUpdates(document.document().deepCopy());
+                updatedNodes.add(updated);
+
+                WritableShreddedDocument writableDocument =
+                    shredder().shred(updated, document.txnId());
+                QueryOuterClass.Query query = bindUpdateValues(updateQuery, writableDocument);
+                queries.add(query);
               }
+
+              // execute all updates as write
+              return QuerySequence.queries(queries, QueryOptions.Type.WRITE)
+
+                  // handler in case no exception and applied, return UpdatedDocument
+                  .<Optional<UpdatedDocument>>withHandler(
+                      (result, throwable, index) -> {
+                        if (null == throwable) {
+                          boolean applied = result.getRows(0).getValues(0).getBoolean();
+                          if (applied) {
+                            ReadDocument readDocument = documents.get(index);
+                            JsonNode originalNode = readDocument.document();
+                            JsonNode updatedNode = updatedNodes.get(index);
+                            return Optional.of(
+                                new UpdatedDocument(readDocument.id(), originalNode));
+                          }
+                        }
+                        return Optional.empty();
+                      })
+
+                  // sink results to the UpdateOperationPage
+                  .sink(
+                      results -> {
+                        List<UpdatedDocument> updates =
+                            results.stream()
+                                .filter(Optional::isPresent)
+                                .map(Optional::get)
+                                .toList();
+
+                        return new UpdateOperationPage(updates, returnDoc);
+                      });
             });
   }
 
@@ -102,7 +118,7 @@ public record ReadAndUpdateOperation(
         .build();
   }
 
-  protected static QueryOuterClass.Query bindUpdateValues(
+  private static QueryOuterClass.Query bindUpdateValues(
       QueryOuterClass.Query builtQuery, WritableShreddedDocument doc) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
