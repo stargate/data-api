@@ -22,13 +22,37 @@ public class PushOperation extends UpdateOperation {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
     // We'll collect updates into List since in near future they will be more complicated than
-    // Just path/value pairs (to support "$each")
+    // Just path/value pairs (to support "$each" modifier)
     List<PushAction> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
+      // 06-Feb-2023, tatu: Until "$each" supported, verify that no modifiers included
+      JsonNode value = entry.getValue();
+      String firstModifier = findModifier(value);
+      if (firstModifier != null) {
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
+            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+                + ": $push does not yet support modifiers; trying to use "
+                + firstModifier);
+      }
       updates.add(new PushAction(entry.getKey(), entry.getValue()));
     }
     return new PushOperation(updates);
+  }
+
+  private static String findModifier(JsonNode node) {
+    if (node.isObject()) {
+      // Sigh. Wish things were not returned as iterators by JsonNode...
+      Iterator<String> it = node.fieldNames();
+      while (it.hasNext()) {
+        String name = it.next();
+        if (name.startsWith("$")) {
+          return name;
+        }
+      }
+    }
+    return null;
   }
 
   @Override

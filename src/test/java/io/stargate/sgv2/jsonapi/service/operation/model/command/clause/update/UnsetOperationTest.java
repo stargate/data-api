@@ -76,8 +76,8 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.UNSET.resolveOperation(
                     objectFromJson(
                         """
-                                        { "property" : 1, "_id" : 1 }
-                                        """));
+                                  { "property" : 1, "_id" : 1 }
+                                  """));
               });
       assertThat(e)
           .isNotNull()
