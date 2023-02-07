@@ -30,6 +30,8 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
 
+  UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
+
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),

@@ -85,16 +85,24 @@ public class PushOperationTest extends UpdateOperationTestBase {
     }
 
     // Test to make sure we know to look for "$"-qualifiers even if not yet supporting them?
-    /*
     @Test
     public void testPushWithUnknownModifier() {
-      Exception e = catchException(() -> {});
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.PUSH.resolveOperation(
+                    objectFromJson(
+                        """
+                    { "a" : { "$each" : [ 1, 2, 3 ] } }
+                    """));
+              });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+                  + ": $push does not yet support modifiers; trying to use $each");
     }
-     */
   }
 
   ObjectNode defaultArrayTestDoc() {
