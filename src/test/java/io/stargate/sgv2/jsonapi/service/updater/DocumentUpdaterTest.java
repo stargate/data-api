@@ -163,7 +163,7 @@ public class DocumentUpdaterTest {
     @Test
     public void unsupportedUpdateOperator() throws Exception {
       String updateClause = """
-                   {"$inc": { "count" : 5}}
+                   {"$pullAll": { "count" : 5}}
               """;
       Throwable t =
           catchThrowable(
@@ -174,7 +174,7 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
-          .hasMessageStartingWith("Unsupported update operator '$inc'");
+          .hasMessageStartingWith("Unsupported update operator '$pullAll'");
     }
 
     /** Test for ensuring it is not legal to "$set" document id (_id) */

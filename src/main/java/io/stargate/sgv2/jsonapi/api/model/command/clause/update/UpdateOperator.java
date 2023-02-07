@@ -9,6 +9,12 @@ import java.util.Map;
 /** List of update operator that's supported in update. */
 public enum UpdateOperator {
   // First operators that are supported
+  INC("$inc") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return IncOperation.construct(arguments);
+    }
+  },
 
   PUSH("$push") {
     @Override
@@ -32,7 +38,9 @@ public enum UpdateOperator {
 
   // Then operators that we recognize but do not (yet) support
 
-  INC("$inc");
+  POP("$pop"),
+
+  PULL_ALL("$pullAll");
 
   private String operator;
 

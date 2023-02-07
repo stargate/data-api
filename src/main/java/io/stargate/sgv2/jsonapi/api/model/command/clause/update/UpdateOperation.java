@@ -31,4 +31,25 @@ public abstract class UpdateOperation {
     }
     return path;
   }
+
+  /**
+   * Shared validation method used for update operators that do not accept modifiers: distinction
+   * being that modifiers start with "$" character and properties cannot start with it (root level
+   * path segment cannot start with it).
+   *
+   * @param oper Update operator with which path is associated
+   * @param path Full (dot notation) path
+   * @return Path passed in if valid
+   */
+  protected static String validateNonModifierPath(UpdateOperator oper, String path) {
+    if (path.startsWith("$")) {
+      throw new JsonApiException(
+          ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
+          ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+              + ": "
+              + oper.operator()
+              + " does not support modifiers");
+    }
+    return path;
+  }
 }
