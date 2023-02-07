@@ -8,10 +8,10 @@ import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv3.docsapi.service.sequencer.*;
 import io.stargate.sgv3.docsapi.service.sequencer.MultiQuerySequence;
 import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
-import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,11 +25,9 @@ public record InsertOperation(
     this(commandContext, List.of(document));
   }
 
-  @Override
   public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
     // build all queries
     QueryOuterClass.Query query = buildInsertQuery();
-    final Uni<List<DocumentId>> ids =
     List<QueryOuterClass.Query> queries =
         documents.stream().map(doc -> bindInsertValues(query, doc)).toList();
 
@@ -37,7 +35,6 @@ public record InsertOperation(
     MultiQuerySequence.Handler<Boolean> handler = (result, throwable, index) -> null == throwable;
 
     // execute queries
-    return ids.onItem().transform(insertedIds -> new InsertOperationPage(insertedIds, documents));
     return QuerySequence.queries(queries, QueryOptions.Type.WRITE)
         .withHandler(handler)
         .then()
@@ -45,7 +42,7 @@ public record InsertOperation(
         // sink as adding only docs that are inserted
         .sink(
             written -> {
-              List<String> writtenIds = new ArrayList<>();
+              List<DocumentId> writtenIds = new ArrayList<>();
               List<WritableShreddedDocument> insertDocuments = new ArrayList<>();
 
               for (int i = 0; i < written.size(); i++) {
@@ -56,7 +53,7 @@ public record InsertOperation(
                 }
               }
 
-              return new ModifyOperationPage(writtenIds, insertDocuments);
+              return new InsertOperationPage(writtenIds, insertDocuments);
             });
   }
 

@@ -46,8 +46,7 @@ public record FindOperation(
   @Override
   public QuerySequence<FindResponse> getDocumentsSequence() {
     QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, pageSize, readDocument, objectMapper);
-    return findDocumentQuerySequence(query, pagingState, readDocument);
+    return findDocumentQuerySequence(query, pagingState, pageSize, readDocument);
   }
 
   private QueryOuterClass.Query buildSelectQuery() {

@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.DocumentConfig;
 import java.util.Base64;
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;

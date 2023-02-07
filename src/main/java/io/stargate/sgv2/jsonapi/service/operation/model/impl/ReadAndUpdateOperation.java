@@ -11,10 +11,12 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation.FindResponse;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -27,8 +29,13 @@ public record ReadAndUpdateOperation(
     implements ModifyOperation {
 
   @Override
+  public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
+    return null;
+  }
+  ;
+
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<ReadOperation.FindResponse> docsToUpate = readOperation().getDocuments(queryExecutor);
+    Uni<FindResponse> docsToUpate = Uni.<FindResponse>createFrom().nothing();
     final Uni<List<UpdatedDocument>> updatedDocuments =
         docsToUpate
             .onItem()

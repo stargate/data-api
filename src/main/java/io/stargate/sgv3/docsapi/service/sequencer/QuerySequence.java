@@ -1,7 +1,7 @@
 package io.stargate.sgv3.docsapi.service.sequencer;
 
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.sequencer.impl.CommandResultSink;
 import io.stargate.sgv3.docsapi.service.sequencer.impl.EmptyQuerySequence;
 import io.stargate.sgv3.docsapi.service.sequencer.impl.FunctionalQueryPipe;

@@ -43,7 +43,7 @@ public class CommandResolverService {
     if (null == resolver) {
       String msg =
           "The command %s is not implemented.".formatted(command.getClass().getSimpleName());
-      throw new DocsException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
+      throw new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
     } else {
       return resolver;
     }

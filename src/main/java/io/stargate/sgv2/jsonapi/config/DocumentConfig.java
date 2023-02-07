@@ -15,11 +15,7 @@
  *
  */
 
-<<<<<<< HEAD:src/main/java/io/stargate/sgv2/jsonapi/service/bridge/config/DocumentConfig.java
-package io.stargate.sgv2.jsonapi.service.bridge.config;
-=======
-package io.stargate.sgv3.docsapi.config;
->>>>>>> full sequencer impl squashed:src/main/java/io/stargate/sgv3/docsapi/config/DocumentConfig.java
+package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;

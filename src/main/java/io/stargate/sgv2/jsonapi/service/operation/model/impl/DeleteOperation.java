@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation.FindResponse;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv3.docsapi.service.sequencer.QueryOptions;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
@@ -21,7 +22,6 @@ import java.util.function.Supplier;
  */
 public record DeleteOperation(CommandContext commandContext, ReadOperation readOperation)
     implements ModifyOperation {
-    final Uni<List<DocumentId>> ids =
 
   /**
    * {@inheritDoc}
@@ -39,7 +39,6 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
    *
    * <p>[applied] ----------- True
    */
-  private static Uni<DocumentId> deleteDocument(
   @Override
   public QuerySequenceSink<Supplier<CommandResult>> getOperationSequence() {
     QueryOuterClass.Query delete = buildDeleteQuery();
@@ -61,7 +60,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
               return QuerySequence.queries(queries, QueryOptions.Type.WRITE)
 
                   // add handler that returns docs id for success
-                  .<Optional<String>>withHandler(
+                  .<Optional<DocumentId>>withHandler(
                       (result, throwable, index) -> {
                         if (null == throwable) {
                           boolean applied = result.getRows(0).getValues(0).getBoolean();
@@ -76,7 +75,7 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
                   // sink that to result
                   .sink(
                       results -> {
-                        List<String> deletedIds =
+                        List<DocumentId> deletedIds =
                             results.stream()
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)

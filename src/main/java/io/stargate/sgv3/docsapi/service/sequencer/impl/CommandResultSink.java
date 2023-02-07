@@ -1,7 +1,7 @@
 package io.stargate.sgv3.docsapi.service.sequencer.impl;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv3.docsapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv3.docsapi.service.bridge.executor.ReactiveQueryExecutor;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequence;
 import io.stargate.sgv3.docsapi.service.sequencer.QuerySequenceSink;

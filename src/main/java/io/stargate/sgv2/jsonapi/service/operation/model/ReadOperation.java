@@ -42,11 +42,11 @@ public interface ReadOperation extends Operation {
    *     id and tx_id to perform another DML operation
    * @return Operation sequence that returns FindResponse.
    */
-  default QuerySequence<FindResponse> findDocumentQuerySequence(
-      QueryOuterClass.Query query, String pagingState, boolean readDocument) {
+  default QuerySequence<ReadOperation.FindResponse> findDocumentQuerySequence(
+      QueryOuterClass.Query query, String pagingState, int pageSize, boolean readDocument) {
 
     return QuerySequence.query(query, QueryOptions.Type.READ)
-      int pageSize,
+        .withPageSize(pageSize)
         .withPagingState(pagingState)
         .withHandler(
             (result, throwable) -> {
