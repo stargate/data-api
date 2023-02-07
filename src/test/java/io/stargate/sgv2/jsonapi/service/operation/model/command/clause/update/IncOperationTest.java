@@ -130,7 +130,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                   + ": $inc requires target to be Number");
     }
 
-    // Test to make sure we know to look for "$"-qualifier to help with user errors
+    // Test to make sure we know to look for "$"-modifier to help with user errors
     @Test
     public void testIncWithModifier() {
       Exception e =

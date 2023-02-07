@@ -91,9 +91,6 @@ public class IncOperation extends UpdateOperation {
     return (o instanceof IncOperation) && Objects.equals(this.updates, ((IncOperation) o).updates);
   }
 
-  /**
-   * Value class for per-field update operations: initially simple replacement but will need
-   * different value type soon to allow {@code $each modifier}.
-   */
+  /** Value class for per-field update operations. */
   private record IncAction(String path, NumericNode value) {}
 }
