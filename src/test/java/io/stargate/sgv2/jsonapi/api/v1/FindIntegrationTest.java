@@ -233,7 +233,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors[1].message", startsWith("Unsupported filter operation $ne"));
+          .body("errors[1].message", startsWith("Unsupported filter operator $ne"));
     }
 
     @Test
