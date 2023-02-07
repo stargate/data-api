@@ -540,5 +540,67 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
     }
+
+    @Test
+    @Order(2)
+    public void findByColumnAndPushToArray() {
+      String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": {
+                        "_id": "update_doc6",
+                        "array": [ 2 ]
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+      json =
+          """
+                  {
+                    "updateOne": {
+                      "filter" : {"_id" : "update_doc6"},
+                      "update" : {"$push" : {"array": 13 }}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc6"));
+
+      String expected = "{\"_id\":\"update_doc6\", \"array\": [2, 13]}";
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc6"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
   }
 }
