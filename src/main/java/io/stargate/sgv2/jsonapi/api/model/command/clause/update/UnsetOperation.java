@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,8 +26,13 @@ public class UnsetOperation extends UpdateOperation {
   }
 
   @Override
-  public void updateDocument(ObjectNode doc) {
-    paths.stream().forEach(path -> doc.remove(path));
+  public boolean updateDocument(ObjectNode doc) {
+    boolean modified = false;
+    for (String path : paths) {
+      JsonNode prev = doc.remove(path);
+      modified |= (prev != null);
+    }
+    return modified;
   }
 
   public Set<String> paths() {
