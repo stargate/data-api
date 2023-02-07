@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
@@ -44,7 +45,9 @@ public class FilterMatchRuleTest {
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
           new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
-      matcher.capture("CAPTURE 1").compareValues("*", ValueComparisonOperator.EQ, JsonType.STRING);
+      matcher
+          .capture("CAPTURE 1")
+          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       BiFunction<CommandContext, CaptureGroups<FindOneCommand>, ReadOperation> resolveFunction =
           (commandContext, captures) -> {
             return readOperation;
@@ -57,7 +60,9 @@ public class FilterMatchRuleTest {
       assertThat(response).isPresent();
 
       matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
-      matcher.capture("CAPTURE 1").compareValues("*", ValueComparisonOperator.EQ, JsonType.NULL);
+      matcher
+          .capture("CAPTURE 1")
+          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
       filterMatchRule = new FilterMatchRule(matcher, resolveFunction);
       response =
           filterMatchRule.apply(new CommandContext("database", "collection"), findOneCommand);

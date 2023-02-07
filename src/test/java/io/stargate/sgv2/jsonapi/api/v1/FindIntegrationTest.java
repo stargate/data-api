@@ -192,6 +192,30 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
+    public void findWithExistOperator() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"active_user" : {"$exists" : true}}
+                }
+              }
+              """;
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
     public void findWithNEComparisonOperator() {
       String json =
           """
@@ -209,7 +233,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors[1].message", startsWith("Unsupported filter operation $ne"));
+          .body("errors[1].message", startsWith("Unsupported filter operator $ne"));
     }
 
     @Test
@@ -344,6 +368,30 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                       }
                     }
                     """;
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findOneWithExistsOperator() {
+      String json =
+          """
+                  {
+                    "findOne": {
+                      "filter" : {"active_user" : {"$exists" : true}}
+                    }
+                  }
+                  """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())

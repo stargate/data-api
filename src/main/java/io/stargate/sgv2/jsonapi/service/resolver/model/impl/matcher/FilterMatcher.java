@@ -5,8 +5,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -130,19 +130,6 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
 
     /**
-     * A shortcut for {@link #compareValues(String, ValueComparisonOperator, JsonType)} e.g. <code>
-     *  .eq("_id", JsonType.STRING);
-     * </code>
-     *
-     * @param path
-     * @param type
-     * @return
-     */
-    public FilterMatcher<T> compareValues(
-        String path, ValueComparisonOperator operator, JsonType type) {
-      return compareValues(path, EnumSet.of(operator), type);
-    }
-    /**
      * The path is compared using an operator against a value of a type
      *
      * <p>e.g. <code>
@@ -154,7 +141,7 @@ public class FilterMatcher<T extends Command & Filterable> {
      * @return
      */
     public FilterMatcher<T> compareValues(
-        String path, EnumSet<ValueComparisonOperator> operators, JsonType type) {
+        String path, EnumSet<? extends FilterOperator> operators, JsonType type) {
       this.matchPath = path;
       this.operators = operators;
       this.type = type;

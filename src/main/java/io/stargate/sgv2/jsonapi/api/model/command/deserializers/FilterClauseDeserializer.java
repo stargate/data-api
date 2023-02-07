@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -69,8 +69,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
-      ValueComparisonOperator operator =
-          ValueComparisonOperator.getComparisonOperator(updateField.getKey());
+      FilterOperator operator =
+          FilterOperator.FilterOperatorUtils.getComparisonOperator(updateField.getKey());
       JsonNode value = updateField.getValue();
       // @TODO: Need to add array and sub-document value type to this condition
       expression.add(operator, jsonNodeValue(entry.getKey(), value));

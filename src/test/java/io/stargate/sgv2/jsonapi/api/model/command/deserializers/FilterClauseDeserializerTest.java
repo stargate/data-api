@@ -8,6 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -125,6 +126,22 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void mustHandleExists() throws Exception {
+      String json =
+          """
+                        {"existsPath" : {"$exists": false}}
+                        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "existsPath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ElementComparisonOperator.EXISTS, new JsonLiteral(false, JsonType.BOOLEAN))));
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
     }

@@ -45,7 +45,7 @@ public record ComparisonExpression(
    * @param value Value returned by the deserializer
    * @return {@link ComparisonExpression} with equal operator
    */
-  public void add(ValueComparisonOperator operator, Object value) {
+  public void add(FilterOperator operator, Object value) {
     filterOperations.add(new ValueComparisonOperation<>(operator, getLiteral(value)));
   }
 
