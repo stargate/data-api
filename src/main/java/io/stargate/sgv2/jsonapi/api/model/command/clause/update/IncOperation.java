@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Implementation of {@code $inc} update operation used to modify numeric field values in documents.
+ */
 public class IncOperation extends UpdateOperation {
   private List<IncAction> updates;
 

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/** Implementation of {@code $unset} update operation used to remove fields from documents. */
 public class UnsetOperation extends UpdateOperation {
   private List<String> paths;
 

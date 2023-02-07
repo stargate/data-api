@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/** Implementation of {@code $set} update operation used to assign values to document fields. */
 public class SetOperation extends UpdateOperation {
   private final List<SetAction> additions;
 
