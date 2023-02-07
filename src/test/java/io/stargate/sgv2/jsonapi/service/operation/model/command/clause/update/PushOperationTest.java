@@ -24,22 +24,40 @@ public class PushOperationTest extends UpdateOperationTestBase {
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class happyPath {
     @Test
-    public void testSimpleUnsetOfExisting() {
-      // Remove 2 of 3 properties:
+    public void testSimplePushToExisting() {
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson("""
-                    { "array" : 1 }
+                    { "array" : 32 }
                     """));
       assertThat(oper).isInstanceOf(PushOperation.class);
-      // Should indicate document being modified
       ObjectNode doc = defaultArrayTestDoc();
       assertThat(oper.updateDocument(doc)).isTrue();
-      // !!! TODO
+      ObjectNode expected =
+          objectFromJson("""
+              { "a" : 1, "array" : [ true, 32 ] }
+              """);
+      assertThat(doc).isEqualTo(expected);
     }
 
     @Test
-    public void testSimplePushToNonExisting() {}
+    public void testSimplePushToNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                    { "newArray" : "value" }
+                    """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = defaultArrayTestDoc();
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+              { "a" : 1, "array" : [ true ], "newArray" : [ "value" ] }
+              """);
+      assertThat(doc).isEqualTo(expected);
+    }
   }
 
   @Nested
@@ -47,22 +65,36 @@ public class PushOperationTest extends UpdateOperationTestBase {
   class invalidCases {
     @Test
     public void testPushOnNonArrayProperty() {
+      ObjectNode doc = defaultArrayTestDoc();
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson("""
+                    { "a" : 57 }
+                    """));
       Exception e =
           catchException(
               () -> {
-                UpdateOperator.PUSH.resolveOperation(
-                    objectFromJson(
-                        """
-                                        { "property" : 15 }
-                                        """));
+                oper.updateDocument(doc);
               });
       assertThat(e)
-          .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .withFailMessage("Should throw exception on $push for non-array")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+                  + ": $push requires target to be Array");
+    }
+
+    // Test to make sure we know to look for "$"-qualifiers even if not yet supporting them?
+    /*
+    @Test
+    public void testPushWithUnknownModifier() {
+      Exception e = catchException(() -> {});
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
     }
+     */
   }
 
   ObjectNode defaultArrayTestDoc() {
