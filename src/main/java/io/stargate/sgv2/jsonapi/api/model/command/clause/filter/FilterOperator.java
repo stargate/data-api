@@ -5,11 +5,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This interface will be implemented by Operator enum. Currently {@link ValueComparisonOperator} is
- * only implementation when array and sub doc data type are supported this will have multiple
- * implementation.
- */
+/** This interface will be implemented by Operator enum. */
 public interface FilterOperator {
   String getOperator();
 
@@ -33,7 +29,7 @@ public interface FilterOperator {
       final FilterOperator filterOperator = operatorMap.get(operator);
       if (filterOperator == null)
         throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_OPERATION, "Unsupported filter operation " + operator);
+            ErrorCode.UNSUPPORTED_FILTER_OPERATION, "Unsupported filter operator " + operator);
 
       return filterOperator;
     }
