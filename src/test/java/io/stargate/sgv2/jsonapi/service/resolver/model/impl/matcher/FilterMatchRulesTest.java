@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import java.util.EnumSet;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -52,7 +53,7 @@ public class FilterMatchRulesTest {
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.GREEDY)
           .matcher()
           .capture("TEST1")
-          .compareValues("*", ValueComparisonOperator.EQ, JsonType.STRING);
+          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
       ReadOperation response =
           filterMatchRules.apply(new CommandContext("database", "collection"), findOneCommand);
@@ -103,7 +104,7 @@ public class FilterMatchRulesTest {
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.GREEDY)
           .matcher()
           .capture("TEST1")
-          .compareValues("*", ValueComparisonOperator.EQ, JsonType.STRING);
+          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
       assertThat(filterMatchRules.getMatchRules()).hasSize(2);
     }

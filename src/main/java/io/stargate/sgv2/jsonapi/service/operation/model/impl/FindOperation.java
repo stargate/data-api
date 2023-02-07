@@ -238,6 +238,17 @@ public record FindOperation(
     }
   }
 
+  /**
+   * Filter for document where a field exists
+   *
+   * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
+   */
+  public static class ExistsFilter extends SetFilterBase<String> {
+    public ExistsFilter(String path, boolean existFlag) {
+      super("exist_keys", path, Operator.CONTAINS);
+    }
+  }
+
   private static QueryOuterClass.Value getValue(Object value) {
     if (value instanceof String) {
       return Values.of((String) value);

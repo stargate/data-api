@@ -4,13 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import javax.inject.Inject;
 
@@ -27,14 +31,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private final FilterMatchRules<T> matchRules = new FilterMatchRules<>();
 
   private static final Object ID_GROUP = new Object();
-  private static final Object SINGLE_TEXT_GROUP = new Object();
 
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
   private static final Object DYNAMIC_NULL_GROUP = new Object();
+  private static final Object EXISTS_GROUP = new Object();
 
-  private static final Object EMPTY_GROUP = new Object();
   private final boolean findOne;
   private final boolean readDocument;
 
@@ -55,22 +58,25 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .addMatchRule(this::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.DOCUMENT_ID);
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
 
     // NOTE - can only do eq ops on fields until SAI changes
     matchRules
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", ValueComparisonOperator.EQ, JsonType.STRING)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
         .capture(DYNAMIC_NUMBER_GROUP)
-        .compareValues("*", ValueComparisonOperator.EQ, JsonType.NUMBER)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
-        .compareValues("*", ValueComparisonOperator.EQ, JsonType.STRING)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
-        .compareValues("*", ValueComparisonOperator.EQ, JsonType.BOOLEAN)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.BOOLEAN)
         .capture(DYNAMIC_NULL_GROUP)
-        .compareValues("*", ValueComparisonOperator.EQ, JsonType.NULL);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
+        .capture(EXISTS_GROUP)
+        .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN);
+    ;
   }
 
   protected ReadOperation resolve(CommandContext commandContext, T command) {
@@ -170,6 +176,20 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     if (nullGroup != null) {
       nullGroup.consumeAllCaptures(
           expression -> filters.add(new FindOperation.IsNullFilter(expression.path())));
+    }
+
+    final CaptureGroup<Boolean> existsGroup =
+        (CaptureGroup<Boolean>) captures.getGroupIfPresent(EXISTS_GROUP);
+    if (existsGroup != null) {
+      existsGroup.consumeAllCaptures(
+          expression -> {
+            if (expression.value())
+              filters.add(new FindOperation.ExistsFilter(expression.path(), expression.value()));
+            else
+              throw new JsonApiException(
+                  ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                  "$exists is supported only with true option");
+          });
     }
 
     FilteringOptions filteringOptions = getFilteringOption(captures.command());
