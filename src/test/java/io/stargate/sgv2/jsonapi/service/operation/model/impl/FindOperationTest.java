@@ -460,7 +460,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               true,
               objectMapper);
       final Supplier<CommandResult> execute =
-          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          findOperation
+              .getOperationSequence()
+              .reactive()
+              .execute(queryExecutor)
+              .subscribeAsCompletionStage()
+              .get();
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
