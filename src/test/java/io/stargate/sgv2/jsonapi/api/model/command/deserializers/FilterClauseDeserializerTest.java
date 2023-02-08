@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
@@ -147,9 +148,43 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleAll() throws Exception {
+      String json =
+          """
+                            {"allPath" : {"$all": ["a", "b"]}}
+                            """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "allPath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.ALL,
+                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void mustHandleSize() throws Exception {
+      String json =
+          """
+                            {"sizePath" : {"$size": 2}}
+                            """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "sizePath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(2), JsonType.NUMBER))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
     public void unsupportedFilterTypes() {
       String json = """
-                    {"boolType": ["a"]}
+                    {"boolType": {"a" : "b"}}
                     """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));

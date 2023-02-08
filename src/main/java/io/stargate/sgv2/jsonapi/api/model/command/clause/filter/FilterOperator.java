@@ -19,6 +19,9 @@ public interface FilterOperator {
       for (FilterOperator filterOperator : ElementComparisonOperator.values()) {
         addComparisonOperator(filterOperator);
       }
+      for (FilterOperator filterOperator : ArrayComparisonOperator.values()) {
+        addComparisonOperator(filterOperator);
+      }
     }
 
     private static void addComparisonOperator(FilterOperator filterOperator) {

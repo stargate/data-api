@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -11,6 +12,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -37,6 +39,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
   private static final Object DYNAMIC_NULL_GROUP = new Object();
   private static final Object EXISTS_GROUP = new Object();
+  private static final Object ALL_GROUP = new Object();
+  private static final Object SIZE_GROUP = new Object();
 
   private final boolean findOne;
   private final boolean readDocument;
@@ -65,7 +69,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
@@ -75,8 +79,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(DYNAMIC_NULL_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
         .capture(EXISTS_GROUP)
-        .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN);
-    ;
+        .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
+        .capture(ALL_GROUP)
+        .compareValues("*", EnumSet.of(ArrayComparisonOperator.ALL), JsonType.ARRAY)
+        .capture(SIZE_GROUP)
+        .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER);
   }
 
   protected ReadOperation resolve(CommandContext commandContext, T command) {
@@ -190,6 +197,28 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                   ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
                   "$exists is supported only with true option");
           });
+    }
+
+    final CaptureGroup<List<Object>> allGroups =
+        (CaptureGroup<List<Object>>) captures.getGroupIfPresent(ALL_GROUP);
+    if (allGroups != null) {
+      allGroups.consumeAllCaptures(
+          expression -> {
+            final DocValueHasher docValueHasher = new DocValueHasher();
+            for (Object arrayValue : expression.value()) {
+              filters.add(
+                  new FindOperation.AllFilter(docValueHasher, expression.path(), arrayValue));
+            }
+          });
+    }
+
+    final CaptureGroup<BigDecimal> sizeGroups =
+        (CaptureGroup<BigDecimal>) captures.getGroupIfPresent(ALL_GROUP);
+    if (sizeGroups != null) {
+      sizeGroups.consumeAllCaptures(
+          expression ->
+              filters.add(
+                  new FindOperation.SizeFilter(expression.path(), expression.value().intValue())));
     }
 
     FilteringOptions filteringOptions = getFilteringOption(captures.command());

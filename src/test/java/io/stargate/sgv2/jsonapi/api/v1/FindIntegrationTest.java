@@ -70,6 +70,28 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200);
+
+      json =
+          """
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "doc3",
+                            "username": "user3",
+                            "tags" : ["tag1", "tag2"]
+                          }
+                        }
+                      }
+                      """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
     }
 
     @Test
@@ -90,7 +112,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(2));
+          .body("data.count", is(3));
     }
 
     @Test
@@ -202,6 +224,60 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithAllOperator() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"tags" : {"$all" : ["tag1", "tag2"]}}
+                    }
+                  }
+                  """;
+      String expected =
+          """
+              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2"]}
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithSizeOperator() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"tags" : {"$size" : 2}}
+                    }
+                  }
+                  """;
+      String expected =
+          """
+              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2"]}
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -393,6 +469,60 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                   }
                   """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findOneWithAllOperator() {
+      String json =
+          """
+                  {
+                    "findOne": {
+                      "filter" : {"tags" : {"$all" : ["tag1", "tag2"]}}
+                    }
+                  }
+                  """;
+      String expected =
+          """
+              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2"]}
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findOneWithSizeOperator() {
+      String json =
+          """
+                  {
+                    "findOne": {
+                      "filter" : {"tags" : {"$size" : 2}}
+                    }
+                  }
+                  """;
+      String expected =
+          """
+              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2"]}
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
