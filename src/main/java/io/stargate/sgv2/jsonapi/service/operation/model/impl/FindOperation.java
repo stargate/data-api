@@ -278,14 +278,22 @@ public record FindOperation(
   }
 
   private static String getHashValue(DocValueHasher hasher, String path, Object arrayValue) {
-    if (arrayValue instanceof String) {
-      return path + " " + hasher.stringValue((String) arrayValue).hash().hash();
+    return path + " " + getHash(hasher, arrayValue);
+  }
+
+  private static String getHash(DocValueHasher hasher, Object arrayValue) {
+    if (arrayValue == null) {
+      return hasher.nullValue().hash().hash();
+    } else if (arrayValue instanceof String) {
+      return hasher.stringValue((String) arrayValue).hash().hash();
     } else if (arrayValue instanceof BigDecimal) {
-      return path + " " + hasher.numberValue((BigDecimal) arrayValue).hash().hash();
+      return hasher.numberValue((BigDecimal) arrayValue).hash().hash();
     } else if (arrayValue instanceof Boolean) {
-      return path + " " + hasher.booleanValue((Boolean) arrayValue).hash().hash();
+      return hasher.booleanValue((Boolean) arrayValue).hash().hash();
     }
-    return path + " " + hasher.nullValue().hash().hash();
+    throw new JsonApiException(
+        ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+        String.format("Unsupported filter data type %s", arrayValue.getClass()));
   }
 
   private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {
