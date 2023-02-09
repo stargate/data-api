@@ -6,30 +6,28 @@ import java.util.Objects;
 
 /**
  * Immutable value class used as key for entries in Shredded document representations: constructed
- * from either nested path in input documents (during "shredding"), or when "un-shredding" back to
- * Document from Shredded representations.
+ * from nested path in input documents (during "shredding") to match "dot notation" path used
+ * for query filtering (and possibly projection)
  *
  * <p>Internally path is simply expressed as a {@link String} where segments are separated by comma
  * ({@code "."}) and segments themselves are either:
  *
  * <ul>
- *   <li>Escaped Object property name (see below about escaping)
- *   <li>Decorated Array element index (see below for details)
+ *   <li>Object property name (see below about escaping)
+ *   <li>Array element index (see below for details)
  * </ul>
  *
- * <p>Array element indexes are enclosed in brackets, so the first element's segment would be
- * expressed as String {@code "[0]"}. Property names are included as is -- so property {@code
- * "name"} has segment {@code name} -- with the exception that due to need to distinguish
- * encoding-characters comma and opening bracket, escaping is needed. Backslash character {@code
- * '\\'} is used for escaping, preceding character to escape. Backslash itself also needs escaping.
- * This means that property name like {@code "a.b"} is encoded as {@code "a\\.b"}.
+ * <p>No escaping is used so path itself is ambiguous (segment "1" can mean
+ * either Array index #1 or Object property "1") without context document, but
+ * will NOT be ambiguous when applied to specific target document where context
+ * node's type (Array or Object) is known.
  *
  * <p>As a simple example consider following JSON document:
  *
  * <pre>
  *     { "name" : "Bob",
  *       "values" : [ 1, 2 ],
- *       "[extra.stuff]" : true
+ *       "extra.stuff" : true
  *     }
  * </pre>
  *
@@ -38,9 +36,9 @@ import java.util.Objects;
  * <ul>
  *   <li>{@code "name"}
  *   <li>{@code "values"}
- *   <li>{@code "values.[0]"}
- *   <li>{@code "values.[1]"}
- *   <li>{@code "\\[extra\\.stuff]"}
+ *   <li>{@code "values.0"}
+ *   <li>{@code "values.1"}
+ *   <li>{@code "extra.stuff"}
  * </ul>
  *
  * <p>Instances can be sorted; sorting order uses underlying encoded path value.
@@ -121,35 +119,9 @@ public final class JsonPath implements Comparable<JsonPath> {
     }
 
     public Builder property(String propName) {
-      // Properties trickier since need to escape '.',  '[' and `\`
-      final String encodedProp = encodePropertyName(propName);
-      childPath = (basePath == null) ? encodedProp : (basePath + '.' + encodedProp);
+      // Simple as we no longer apply escaping:
+      childPath = (basePath == null) ? propName : (basePath + '.' + propName);
       return this;
-    }
-
-    static String encodePropertyName(String propName) {
-      // First: loop through to see if anything to escape; if not, can return as-is
-      final int len = propName.length();
-      int i = 0;
-      for (; i < len; ++i) {
-        char c = propName.charAt(i);
-        if (c == '.' || c == '[' || c == '\\') {
-          break;
-        }
-      }
-      // common case: nothing to escape
-      if (i == len) {
-        return propName;
-      }
-      StringBuilder sb = new StringBuilder(len + 3);
-      for (i = 0; i < len; ++i) {
-        char c = propName.charAt(i);
-        if (c == '.' || c == '[' || c == '\\') {
-          sb.append('\\');
-        }
-        sb.append(c);
-      }
-      return sb.toString();
     }
 
     public Builder index(int index) {
@@ -161,7 +133,7 @@ public final class JsonPath implements Comparable<JsonPath> {
       } else {
         sb = new StringBuilder(basePath).append('.');
       }
-      childPath = sb.append('[').append(index).append(']').toString();
+      childPath = sb.append(index).toString();
       return this;
     }
 

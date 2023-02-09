@@ -8,30 +8,6 @@ import org.junit.jupiter.api.Test;
 // Simple unit test with no injection needed:
 public class JsonPathTest {
   @Nested
-  class EncodePropertyName {
-    @Test
-    public void encodePlain() {
-      assertThat(JsonPath.Builder.encodePropertyName("simple")).isEqualTo("simple");
-    }
-
-    @Test
-    public void encodeDots() {
-      assertThat(JsonPath.Builder.encodePropertyName("with.dot")).isEqualTo("with\\.dot");
-      assertThat(JsonPath.Builder.encodePropertyName(".x.y")).isEqualTo("\\.x\\.y");
-    }
-
-    @Test
-    public void encodeIndex() {
-      assertThat(JsonPath.Builder.encodePropertyName("[123]")).isEqualTo("\\[123]");
-    }
-
-    @Test
-    public void encodeOther() {
-      assertThat(JsonPath.Builder.encodePropertyName("a\\b")).isEqualTo("a\\\\b");
-    }
-  }
-
-  @Nested
   class Builder {
 
     @Test
@@ -48,22 +24,20 @@ public class JsonPathTest {
       b.property("b2");
       assertThat(b.build().toString()).isEqualTo("b2");
       b.property("with.dot");
-      assertThat(b.build().toString()).isEqualTo("with\\.dot");
+      assertThat(b.build().toString()).isEqualTo("with.dot");
       b.property("[[bracketed]]");
-      assertThat(b.build().toString()).isEqualTo("\\[\\[bracketed]]");
-      b.property("\\x");
-      assertThat(b.build().toString()).isEqualTo("\\\\x");
+      assertThat(b.build().toString()).isEqualTo("[[bracketed]]");
     }
 
     @Test
     public void rootArrayPathViaBuilder() {
       JsonPath.Builder b = JsonPath.rootBuilder();
       b.index(0);
-      assertThat(b.build().toString()).isEqualTo("[0]");
+      assertThat(b.build().toString()).isEqualTo("0");
       b.index(1);
-      assertThat(b.build().toString()).isEqualTo("[1]");
+      assertThat(b.build().toString()).isEqualTo("1");
       b.index(999);
-      assertThat(b.build().toString()).isEqualTo("[999]");
+      assertThat(b.build().toString()).isEqualTo("999");
     }
 
     @Test
@@ -73,8 +47,8 @@ public class JsonPathTest {
       JsonPath.Builder b2 = b.nestedValueBuilder();
 
       assertThat(b2.property("propX").build().toString()).isEqualTo("props.propX");
-      assertThat(b2.index(12).build().toString()).isEqualTo("props.[12]");
-      assertThat(b2.property("with.dot").build().toString()).isEqualTo("props.with\\.dot");
+      assertThat(b2.index(12).build().toString()).isEqualTo("props.12");
+      assertThat(b2.property("with.dot").build().toString()).isEqualTo("props.with.dot");
     }
 
     @Test
@@ -82,16 +56,16 @@ public class JsonPathTest {
       JsonPath.Builder b = JsonPath.rootBuilder();
       b.property("arrays");
       JsonPath.Builder b2 = b.nestedValueBuilder().index(5).nestedValueBuilder();
-      assertThat(b2.build().toString()).isEqualTo("arrays.[5]");
-      assertThat(b2.index(9).build().toString()).isEqualTo("arrays.[5].[9]");
+      assertThat(b2.build().toString()).isEqualTo("arrays.5");
+      assertThat(b2.index(9).build().toString()).isEqualTo("arrays.5.9");
 
       // Builders are stateful so 'b3' has its last configuration that we can use:
       JsonPath.Builder b3 = b2.nestedValueBuilder().property("leaf").nestedValueBuilder();
-      assertThat(b3.build().toString()).isEqualTo("arrays.[5].[9].leaf");
+      assertThat(b3.build().toString()).isEqualTo("arrays.5.9.leaf");
 
       b.property("arr[0]");
       b2 = b.nestedValueBuilder().index(3).nestedValueBuilder();
-      assertThat(b2.build().toString()).isEqualTo("arr\\[0].[3]");
+      assertThat(b2.build().toString()).isEqualTo("arr[0].3");
     }
   }
 }
