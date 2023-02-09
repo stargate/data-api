@@ -6,8 +6,8 @@ import java.util.Objects;
 
 /**
  * Immutable value class used as key for entries in Shredded document representations: constructed
- * from nested path in input documents (during "shredding") to match "dot notation" path used
- * for query filtering (and possibly projection)
+ * from nested path in input documents (during "shredding") to match "dot notation" path used for
+ * query filtering (and possibly projection)
  *
  * <p>Internally path is simply expressed as a {@link String} where segments are separated by comma
  * ({@code "."}) and segments themselves are either:
@@ -17,10 +17,9 @@ import java.util.Objects;
  *   <li>Array element index (see below for details)
  * </ul>
  *
- * <p>No escaping is used so path itself is ambiguous (segment "1" can mean
- * either Array index #1 or Object property "1") without context document, but
- * will NOT be ambiguous when applied to specific target document where context
- * node's type (Array or Object) is known.
+ * <p>No escaping is used so path itself is ambiguous (segment "1" can mean either Array index #1 or
+ * Object property "1") without context document, but will NOT be ambiguous when applied to specific
+ * target document where context node's type (Array or Object) is known.
  *
  * <p>As a simple example consider following JSON document:
  *
