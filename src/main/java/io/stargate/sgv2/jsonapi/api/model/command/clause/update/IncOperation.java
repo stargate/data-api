@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Implementation of {@code $inc} update operation used to modify numeric field values in documents.
@@ -84,12 +83,6 @@ public class IncOperation extends UpdateOperation {
     // Otherwise use BigInteger to avoid overflows (may optimize in future if necessary;
     // can easily detect int/longs but need to check for overflow)
     return doc.numberNode(nr1.bigIntegerValue().add(nr2.bigIntegerValue()));
-  }
-
-  // Just needed for tests
-  @Override
-  public boolean equals(Object o) {
-    return (o instanceof IncOperation) && Objects.equals(this.updates, ((IncOperation) o).updates);
   }
 
   /** Value class for per-field update operations. */
