@@ -214,15 +214,37 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
-    public void findWithExistOperator() {
+    public void findWithExistFalseOperator() {
       String json =
           """
               {
                 "find": {
-                  "filter" : {"active_user" : {"$exists" : true}}
+                  "filter" : {"active_user" : {"$exists" : false}}
                 }
               }
               """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[1].message", is("$exists is supported only with true option"));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithExistOperator() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"active_user" : {"$exists" : true}}
+                    }
+                  }
+                  """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
