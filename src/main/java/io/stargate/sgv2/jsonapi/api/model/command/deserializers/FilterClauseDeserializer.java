@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -82,6 +83,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (path.equals(DocumentConstants.Fields.DOC_ID)) {
       return DocumentId.fromJson(node);
     }
+    return jsonNodeValue(node);
+  }
+
+  private static Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();
@@ -91,6 +96,15 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         return node.textValue();
       case NULL:
         return null;
+      case ARRAY:
+        {
+          ArrayNode arrayNode = (ArrayNode) node;
+          List<Object> arrayVals = new ArrayList<>(arrayNode.size());
+          for (JsonNode element : arrayNode) {
+            arrayVals.add(jsonNodeValue(element));
+          }
+          return arrayVals;
+        }
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

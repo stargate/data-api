@@ -71,8 +71,12 @@ public record ComparisonExpression(
     if (value instanceof String) {
       return new JsonLiteral<>((String) value, JsonType.STRING);
     }
+    if (value instanceof List) {
+      return new JsonLiteral<>((List<Object>) value, JsonType.ARRAY);
+    }
     throw new JsonApiException(
-        ErrorCode.FILTER_UNRESOLVABLE, String.format("Unsupported filter value type %s", value));
+        ErrorCode.FILTER_UNRESOLVABLE,
+        String.format("Unsupported filter value type %s", value.getClass()));
   }
 
   public List<FilterOperation> match(

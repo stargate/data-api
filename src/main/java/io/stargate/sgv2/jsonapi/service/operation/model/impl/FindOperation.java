@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -249,6 +250,20 @@ public record FindOperation(
     }
   }
 
+  /** Filter for document where all values exists for an array */
+  public static class AllFilter extends SetFilterBase<String> {
+    public AllFilter(DocValueHasher hasher, String path, Object arrayValue) {
+      super("array_contains", getHashValue(hasher, path, arrayValue), Operator.CONTAINS);
+    }
+  }
+
+  /** Filter for document where array has specified number of elements */
+  public static class SizeFilter extends MapFilterBase<Integer> {
+    public SizeFilter(String path, Integer size) {
+      super("array_size", path, Operator.EQ, size);
+    }
+  }
+
   private static QueryOuterClass.Value getValue(Object value) {
     if (value instanceof String) {
       return Values.of((String) value);
@@ -256,8 +271,29 @@ public record FindOperation(
       return Values.of((BigDecimal) value);
     } else if (value instanceof Byte) {
       return Values.of((Byte) value);
+    } else if (value instanceof Integer) {
+      return Values.of((Integer) value);
     }
     return Values.of((String) null);
+  }
+
+  private static String getHashValue(DocValueHasher hasher, String path, Object arrayValue) {
+    return path + " " + getHash(hasher, arrayValue);
+  }
+
+  private static String getHash(DocValueHasher hasher, Object arrayValue) {
+    if (arrayValue == null) {
+      return hasher.nullValue().hash().hash();
+    } else if (arrayValue instanceof String) {
+      return hasher.stringValue((String) arrayValue).hash().hash();
+    } else if (arrayValue instanceof BigDecimal) {
+      return hasher.numberValue((BigDecimal) arrayValue).hash().hash();
+    } else if (arrayValue instanceof Boolean) {
+      return hasher.booleanValue((Boolean) arrayValue).hash().hash();
+    }
+    throw new JsonApiException(
+        ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+        String.format("Unsupported filter data type %s", arrayValue.getClass()));
   }
 
   private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {

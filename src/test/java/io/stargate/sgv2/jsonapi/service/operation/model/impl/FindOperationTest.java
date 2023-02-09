@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeT
 import io.stargate.sgv2.jsonapi.service.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
@@ -372,6 +373,126 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(new FindOperation.ExistsFilter("registration_active", true)),
+              null,
+              1,
+              1,
+              true,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.data()).isNotNull();
+                assertThat(result.data().docs()).hasSize(1);
+              });
+    }
+
+    @Test
+    public void findWithAllFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND array_contains CONTAINS ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                      {
+                            "_id": "doc1",
+                            "username": "user1",
+                            "registration_active" : true,
+                            "tags": ["tag1", "tag2"]
+                          }
+                      """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql, Values.of("tags Stag1"), Values.of("tags Stag2"))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag1"),
+                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag2")),
+              null,
+              1,
+              1,
+              true,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.data()).isNotNull();
+                assertThat(result.data().docs()).hasSize(1);
+              });
+    }
+
+    @Test
+    public void findWithSizeFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_size[?] = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                                          {
+                                                "_id": "doc1",
+                                                "username": "user1",
+                                                "registration_active" : true,
+                                                "tags" : ["tag1","tag2"]
+                                              }
+                                          """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql, Values.of("tags"), Values.of((int) 2))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(new FindOperation.SizeFilter("tags", 2)),
               null,
               1,
               1,
