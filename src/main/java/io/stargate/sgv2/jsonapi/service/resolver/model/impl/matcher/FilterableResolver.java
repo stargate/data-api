@@ -213,7 +213,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
 
     final CaptureGroup<BigDecimal> sizeGroups =
-        (CaptureGroup<BigDecimal>) captures.getGroupIfPresent(ALL_GROUP);
+        (CaptureGroup<BigDecimal>) captures.getGroupIfPresent(SIZE_GROUP);
     if (sizeGroups != null) {
       sizeGroups.consumeAllCaptures(
           expression ->
