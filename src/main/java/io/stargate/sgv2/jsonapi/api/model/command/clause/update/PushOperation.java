@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Implementation of {@code $push} update operation used to append values in array fields of
+ * documents.
+ */
 public class PushOperation extends UpdateOperation {
   private List<PushAction> updates;
 
