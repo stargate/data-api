@@ -82,7 +82,10 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
-                            "update" : {"$set" : {"location" : "New York"}}
+                            "update": {
+                                "$set": {"location": "New York"},
+                                "$inc": {"count": 3}
+                            }
                         }
                       }
                       """),
@@ -94,7 +97,10 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       {
                       "updateOne": {
                           "filter": {"location": "London"},
-                          "update" : {"$set" : {"location" : "New York"}}
+                          "update": {
+                              "$set": {"location": "New York"},
+                              "$push": {"tags": "marathon"}
+                          }
                       }
                     }
                     """),
@@ -122,7 +128,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                             "race": {
                               "competitors": 100,
                               "start_date": "2022-08-15"
-                            }
+                            },
+                            "tags": [ ]
                           }
                         }
                       }
@@ -140,7 +147,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                                           "race": {
                                             "competitors": 100,
                                             "start_date": "2022-08-15"
-                                          }
+                                          },
+                                          "tags" : [ "eu" ]
                                         },
                                         {
                                           "_id": "2",
@@ -148,7 +156,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                                           "race": {
                                             "competitors": 150,
                                             "start_date": "2022-09-15"
-                                          }
+                                          },
+                                          "tags": [ "us" ]
                                         }]
                                       }
                                     }
@@ -178,7 +187,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                                "race": {
                                  "competitors": 100,
                                  "start_date": "2022-08-15"
-                               }
+                               },
+                               "tags": [ "eu" ]
                             },
                             {
                                "_id": "2",
@@ -186,7 +196,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                                "race": {
                                  "competitors": 125,
                                  "start_date": "2022-09-26"
-                               }
+                               },
+                               "tags": [ "us" ]
                             }
                           ],
                           "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
@@ -204,11 +215,13 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                           "docs": [
                             {
                                "_id": "1",
-                               "location": "London",
+                               "location": "New York",
                                "race": {
                                  "competitors": 100,
                                  "start_date": "2022-08-15"
-                               }
+                               },
+                               "tags": [ "eu" ],
+                               "count": 3
                             }
                           ],
                           "count": 1,
