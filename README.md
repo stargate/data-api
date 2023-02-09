@@ -50,8 +50,12 @@ Note that this project uses Java 17, please ensure that you have the target JDK 
 
 You can run your application in dev mode that enables live coding using:
 ```shell script
+docker run -d --rm -e CLUSTER_NAME=dse-cluster -e CLUSTER_VERSION=6.8 -e ENABLE_AUTH=true -e DEVELOPER_MODE=true -e DS_LICENSE=accept -e DSE=true -p 8081:8081 -p 8091:8091 -p 9042:9042 stargateio/coordinator-dse-68:v2
+
 ./mvnw compile quarkus:dev
 ```
+
+The command above will first spin the single Stargate DSE coordinator in dev that the API would communicate to.
 
 > **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/stargate/dev/.
 
