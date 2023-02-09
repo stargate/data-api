@@ -68,7 +68,7 @@ public class IncOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $inc requires target to be Number; value at '"
                 + path
-                + " of type "
+                + "' of type "
                 + oldValue.getNodeType());
       }
     }

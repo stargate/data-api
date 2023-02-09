@@ -122,16 +122,16 @@ public class IncOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void testIncOnNonNumberProperty() {
+    public void testIncOnStringProperty() {
       ObjectNode doc =
           objectFromJson(
               """
-                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
+                    { "integer" : 1, "fp" : 0.25, "prop" : "some text"  }
                     """);
       UpdateOperation oper =
           UpdateOperator.INC.resolveOperation(
               objectFromJson("""
-                    { "text" : 57 }
+                    { "prop" : 57 }
                     """));
       Exception e =
           catchException(
@@ -143,7 +143,33 @@ public class IncOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $inc requires target to be Number");
+                  + ": $inc requires target to be Number; value at 'prop' of type STRING");
+    }
+
+    // One odd case: explicit "null" is invalid target
+    @Test
+    public void testIncOnExplicitNullProperty() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                            { "prop" : null  }
+                            """);
+      UpdateOperation oper =
+          UpdateOperator.INC.resolveOperation(
+              objectFromJson("""
+                    { "prop" : 3 }
+                    """));
+      Exception e =
+          catchException(
+              () -> {
+                oper.updateDocument(doc);
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+                  + ": $inc requires target to be Number; value at 'prop' of type NULL");
     }
 
     // Test to make sure we know to look for "$"-modifier to help with user errors
