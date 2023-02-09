@@ -39,7 +39,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(name = "Documents", description = "Executes document commands against a single collection.")
+@Tag(ref = "Documents")
 public class CollectionResource {
 
   public static final String BASE_PATH = "/v1/{database}/{collection}";

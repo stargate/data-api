@@ -15,10 +15,18 @@ import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @OpenAPIDefinition(
     // note that info is defined via the properties
     info = @Info(title = "", version = ""),
+    tags = {
+      @Tag(
+          name = "Documents",
+          description = "Executes document commands against a single collection."),
+      @Tag(name = "Databases", description = "Executes database commands."),
+      @Tag(name = "General", description = "Executes general commands.")
+    },
     components =
         @Components(
 
@@ -154,6 +162,34 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                                     }
                                     """),
               @ExampleObject(
+                  name = "createDatabase",
+                  summary = "`CreateDatabase` command",
+                  value =
+                      """
+                            {
+                                "createDatabase": {
+                                  "name": "cycling"
+                                }
+                            }
+                            """),
+              @ExampleObject(
+                  name = "createDatabaseWithReplication",
+                  summary = "`CreateDatabase` command with replication",
+                  value =
+                      """
+                            {
+                                "createDatabase": {
+                                  "name": "cycling",
+                                  "options": {
+                                    "replication": {
+                                       "class": "SimpleStrategy",
+                                       "replication_factor": 3
+                                    }
+                                  }
+                                }
+                            }
+                            """),
+              @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
@@ -266,7 +302,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
                       }
                       """),
               @ExampleObject(
-                  name = "resultCreateCollection",
+                  name = "resultCreate",
                   summary = "Create result",
                   value =
                       """

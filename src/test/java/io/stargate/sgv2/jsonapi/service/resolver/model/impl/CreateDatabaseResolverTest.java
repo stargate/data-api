@@ -27,12 +27,12 @@ class CreateDatabaseResolverTest {
     public void noOptions() throws Exception {
       String json =
           """
-                    {
-                      "createDatabase": {
-                        "name" : "red_star_belgrade"
-                      }
-                    }
-                    """;
+            {
+              "createDatabase": {
+                "name" : "red_star_belgrade"
+              }
+            }
+            """;
 
       CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
       Operation result = resolver.resolveCommand(null, command);
@@ -43,7 +43,7 @@ class CreateDatabaseResolverTest {
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1 }");
+                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
               });
     }
 
@@ -51,17 +51,17 @@ class CreateDatabaseResolverTest {
     public void simpleStrategy() throws Exception {
       String json =
           """
-                    {
-                      "createDatabase": {
-                        "name" : "red_star_belgrade",
-                        "options": {
-                            "replication": {
-                                "class": "SimpleStrategy"
-                            }
-                        }
-                      }
+            {
+              "createDatabase": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "SimpleStrategy"
                     }
-                    """;
+                }
+              }
+            }
+            """;
 
       CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
       Operation result = resolver.resolveCommand(null, command);
@@ -72,7 +72,7 @@ class CreateDatabaseResolverTest {
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1 }");
+                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
               });
     }
 
@@ -80,18 +80,18 @@ class CreateDatabaseResolverTest {
     public void simpleStrategyWithReplication() throws Exception {
       String json =
           """
-                    {
-                      "createDatabase": {
-                        "name" : "red_star_belgrade",
-                        "options": {
-                            "replication": {
-                                "class": "SimpleStrategy",
-                                "replication_factor": 2
-                            }
-                        }
-                      }
+            {
+              "createDatabase": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "SimpleStrategy",
+                        "replication_factor": 2
                     }
-                    """;
+                }
+              }
+            }
+            """;
 
       CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
       Operation result = resolver.resolveCommand(null, command);
@@ -102,7 +102,69 @@ class CreateDatabaseResolverTest {
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 2 }");
+                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 2}");
+              });
+    }
+
+    @Test
+    public void networkTopologyStrategy() throws Exception {
+      String json =
+          """
+            {
+              "createDatabase": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "Boston": 2,
+                        "Berlin": 3
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      Operation result = resolver.resolveCommand(null, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateDatabaseOperation.class,
+              op -> {
+                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.replicationMap())
+                    .isIn(
+                        "{'class': 'NetworkTopologyStrategy', 'Boston': 2, 'Berlin': 3}",
+                        "{'class': 'NetworkTopologyStrategy', 'Berlin': 3, 'Boston': 2}");
+              });
+    }
+
+    @Test
+    public void networkTopologyStrategyNoDataCenter() throws Exception {
+      // allow, fail on the coordinator
+      String json =
+          """
+            {
+              "createDatabase": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy"
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      Operation result = resolver.resolveCommand(null, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateDatabaseOperation.class,
+              op -> {
+                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");
               });
     }
   }

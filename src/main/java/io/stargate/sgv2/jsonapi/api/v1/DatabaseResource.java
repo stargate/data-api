@@ -33,7 +33,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(name = "Databases", description = "Executes database commands.")
+@Tag(ref = "Databases")
 public class DatabaseResource {
 
   public static final String BASE_PATH = "/v1/{database}";
@@ -67,7 +67,7 @@ public class DatabaseResource {
                   mediaType = MediaType.APPLICATION_JSON,
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
-                    @ExampleObject(ref = "resultCreateCollection"),
+                    @ExampleObject(ref = "resultCreate"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

@@ -30,7 +30,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(name = "General", description = "Executes general commands.")
+@Tag(ref = "General")
 public class GeneralResource {
 
   public static final String BASE_PATH = "/v1";
@@ -50,6 +50,7 @@ public class GeneralResource {
               schema = @Schema(anyOf = {CreateDatabaseCommand.class}),
               examples = {
                 @ExampleObject(ref = "createDatabase"),
+                @ExampleObject(ref = "createDatabaseWithReplication"),
               }))
   @APIResponses(
       @APIResponse(
@@ -61,7 +62,7 @@ public class GeneralResource {
                   mediaType = MediaType.APPLICATION_JSON,
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
-                    @ExampleObject(ref = "resultCreateDatabase"),
+                    @ExampleObject(ref = "resultCreate"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

@@ -16,7 +16,7 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
 
   // default if omitted
   private static final String DEFAULT_REPLICATION_MAP =
-      "{'class': 'SimpleStrategy', 'replication_factor': 1 }";
+      "{'class': 'SimpleStrategy', 'replication_factor': 1}";
 
   /** {@inheritDoc} */
   @Override
@@ -51,7 +51,7 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
     StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
     if (null != options) {
       for (Map.Entry<String, Integer> dcEntry : options.entrySet()) {
-        map.append(", \"%s\": %d".formatted(dcEntry.getKey(), dcEntry.getValue()));
+        map.append(", '%s': %d".formatted(dcEntry.getKey(), dcEntry.getValue()));
       }
     }
     map.append("}");
@@ -65,6 +65,6 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
     }
 
     Integer replicationFactor = options.getOrDefault("replication_factor", 1);
-    return "{'class': 'SimpleStrategy', 'replication_factor': " + replicationFactor + " }";
+    return "{'class': 'SimpleStrategy', 'replication_factor': " + replicationFactor + "}";
   }
 }

@@ -16,17 +16,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a namespace (database).")
 @JsonTypeName("createDatabase")
 public record CreateDatabaseCommand(
-    @NotBlank(message = "Database name must be specified.")
-        @Size(max = 48, message = "Database name must have maximum of 48 characters.")
-        @Schema(description = "Name of the database")
-        String name,
+    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the database") String name,
     @Nullable @Valid CreateDatabaseCommand.Options options)
     implements GeneralCommand {
 
   @Schema(
       name = "CreateDatabaseCommand.Options",
       description = "Options for creating a new database.")
-  public record Options(@Valid Replication replication) {}
+  public record Options(@Nullable @Valid Replication replication) {}
 
   /**
    * Replication options for the create namespace.
@@ -38,9 +35,10 @@ public record CreateDatabaseCommand(
    *     center with replication.
    */
   @Schema(description = "Cassandra based replication settings.")
-  // no record due to the @JsonAnySetter
+  // no record due to the @JsonAnySetter, see
+  // https://github.com/FasterXML/jackson-databind/issues/562
   public static class Replication {
-    @NotNull
+    @NotNull()
     @Pattern(regexp = "SimpleStrategy|NetworkTopologyStrategy")
     @JsonProperty("class")
     private String strategy;
