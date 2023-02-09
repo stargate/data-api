@@ -231,7 +231,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors[1].message", is("$exists is supported only with true option"));
+          .body("errors[0].message", is("$exists is supported only with true option"));
     }
 
     @Test
@@ -500,6 +500,28 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                     }
                   }
                   """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
+                          {
+                            "insertOne": {
+                              "document": {
+                                "_id": "doc3",
+                                "username": "user3",
+                                "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true]
+                              }
+                            }
+                          }
+                          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
