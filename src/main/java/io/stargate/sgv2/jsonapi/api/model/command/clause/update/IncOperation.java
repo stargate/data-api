@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -14,9 +13,11 @@ import java.util.Objects;
 
 /**
  * Implementation of {@code $inc} update operation used to modify numeric field values in documents.
+ * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/inc/} for full
+ * explanation.
  */
 public class IncOperation extends UpdateOperation {
-  private List<IncAction> updates;
+  private final List<IncAction> updates;
 
   private IncOperation(List<IncAction> updates) {
     this.updates = updates;
@@ -53,14 +54,15 @@ public class IncOperation extends UpdateOperation {
       if (oldValue == null) { // No such property? Add number
         doc.set(path, toAdd);
         modified = true;
-      } else if (oldValue.isNumber()) { // Already numeric? Add
-        // One special case, however: can (and should) skip plain old zero
+      } else if (oldValue.isNumber()) { // Otherwise, if existing number, can modify
+        // One minor optimization: plain old zero won't change value so can avoid
+        // unnecessary mutation.
         if (toAdd.isFloatingPointNumber() || !toAdd.canConvertToInt() || toAdd.intValue() != 0) {
           JsonNode newValue = addNumbers(doc, (NumericNode) oldValue, toAdd);
           doc.set(path, newValue);
           modified |= !newValue.equals(oldValue);
         }
-      } else { // Something else? fail
+      } else { // Non-number existing value? Fail
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
@@ -77,7 +79,6 @@ public class IncOperation extends UpdateOperation {
   private JsonNode addNumbers(ObjectNode doc, NumericNode nr1, NumericNode nr2) {
     // If either floating-point, handle as BigDecimal
     if (nr1.isFloatingPointNumber() || nr2.isFloatingPointNumber()) {
-      JsonNodeCreator cr = doc;
       return doc.numberNode(nr1.decimalValue().add(nr2.decimalValue()));
     }
     // Otherwise use BigInteger to avoid overflows (may optimize in future if necessary;

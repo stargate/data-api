@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class IncOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPath {
+  class HappyPath {
     @Test
     public void testSimpleIncOfExisting() {
       UpdateOperation oper =
@@ -35,7 +35,11 @@ public class IncOperationTest extends UpdateOperationTestBase {
                     }
                     """));
       assertThat(oper).isInstanceOf(IncOperation.class);
-      ObjectNode doc = defaultIncTestDoc();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
+                    """);
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
@@ -55,7 +59,11 @@ public class IncOperationTest extends UpdateOperationTestBase {
                     { "number" : -123456 }
                     """));
       assertThat(oper).isInstanceOf(IncOperation.class);
-      ObjectNode doc = defaultIncTestDoc();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
+                    """);
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
@@ -75,7 +83,11 @@ public class IncOperationTest extends UpdateOperationTestBase {
                                 { "integer" : 0, "fp" : 0 }
                                 """));
       assertThat(oper).isInstanceOf(IncOperation.class);
-      ObjectNode doc = defaultIncTestDoc();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
+                    """);
       assertThat(oper.updateDocument(doc)).isFalse();
       ObjectNode expected =
           objectFromJson(
@@ -89,7 +101,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class invalidCases {
+  class InvalidCases {
     @Test
     public void testIncWithNonNumberParam() {
       Exception e =
@@ -111,7 +123,11 @@ public class IncOperationTest extends UpdateOperationTestBase {
 
     @Test
     public void testIncOnNonNumberProperty() {
-      ObjectNode doc = defaultIncTestDoc();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
+                    """);
       UpdateOperation oper =
           UpdateOperator.INC.resolveOperation(
               objectFromJson("""
@@ -149,12 +165,5 @@ public class IncOperationTest extends UpdateOperationTestBase {
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $inc does not support modifiers");
     }
-  }
-
-  ObjectNode defaultIncTestDoc() {
-    return objectFromJson(
-        """
-                    { "integer" : 1, "fp" : 0.25, "text" : "value"  }
-                    """);
   }
 }
