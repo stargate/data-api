@@ -56,7 +56,13 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                     "insertOne": {
                       "document": {
                         "_id": "doc2",
-                        "username": "user2"
+                        "username": "user2",
+                        "subdoc" : {
+                           "id" : "abc"
+                        },
+                        "array" : [
+                            "value1"
+                        ]
                       }
                     }
                   }
@@ -200,6 +206,56 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           }
           """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithEqSubDoc() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"subdoc.id" : {"$eq" : "abc"}}
+                }
+              }
+              """;
+      String expected =
+          "{\"_id\":\"doc2\", \"username\":\"user2\", \"subdoc\":{\"id\":\"abc\"},\"array\":[\"value1\"]}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithEqArrayElement() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"array.0" : {"$eq" : "value1"}}
+                }
+              }
+              """;
+      String expected =
+          "{\"_id\":\"doc2\", \"username\":\"user2\", \"subdoc\":{\"id\":\"abc\"},\"array\":[\"value1\"]}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
