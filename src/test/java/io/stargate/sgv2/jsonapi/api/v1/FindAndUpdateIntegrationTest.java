@@ -606,7 +606,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     @Test
     @Order(2)
     public void findByColumnAndInc() {
-      String json =
+      String doc =
           """
                       {
                         "insertOne": {
@@ -621,32 +621,32 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(doc)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200);
-      json =
+      String updateJson =
           """
                       {
                         "updateOne": {
                           "filter" : {"_id" : "update_doc_inc"},
-                          "update" : {"$inc" : {"number": -4 }}
+                          "update" : {"$inc" : {"number": -4, "newProp" : 0.25 }}
                         }
                       }
                       """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(updateJson)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
           .body("status.updatedIds[0]", is("update_doc_inc"));
 
-      String expected = "{\"_id\":\"update_doc_inc\", \"number\": 119 }";
-      json =
+      String expectedDoc = "{\"_id\":\"update_doc_inc\", \"number\": 119, \"newProp\": 0.25 }";
+      String findJson =
           """
                       {
                         "find": {
@@ -657,12 +657,12 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(findJson)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expectedDoc));
     }
   }
 }

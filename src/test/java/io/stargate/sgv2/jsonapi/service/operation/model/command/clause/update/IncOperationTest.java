@@ -44,8 +44,8 @@ public class IncOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-              { "integer" : 6, "fp" : -0.25, "text" : "value"   }
-              """);
+                    { "integer" : 6, "fp" : -0.25, "text" : "value"   }
+                    """);
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
@@ -150,10 +150,9 @@ public class IncOperationTest extends UpdateOperationTestBase {
     @Test
     public void testIncOnExplicitNullProperty() {
       ObjectNode doc =
-          objectFromJson(
-              """
-                            { "prop" : null  }
-                            """);
+          objectFromJson("""
+                    { "prop" : null  }
+                    """);
       UpdateOperation oper =
           UpdateOperator.INC.resolveOperation(
               objectFromJson("""
@@ -181,8 +180,8 @@ public class IncOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.INC.resolveOperation(
                     objectFromJson(
                         """
-                    { "$each" : 5 }
-                    """));
+                        { "$each" : 5 }
+                        """));
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
