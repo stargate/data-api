@@ -157,15 +157,53 @@ public class PushOperationTest extends UpdateOperationTestBase {
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson(
                   """
-                                      { "newArray" : { "$each" : [ -50, "abc" ] } }
-                                        """));
+                            { "newArray" : { "$each" : [ -50, "abc" ] } }
+                              """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
+                        { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
+                        """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachNestedArray() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                              { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                              """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ null ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                            { "a" : 1, "array" : [ null, [ 1, 2 ], [ 3 ] ] }
+                            """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachNestedArrayNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                                    { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                                    """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"x\" : 1 }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                              { "x" : 1, "array" : [ [ 1, 2 ], [ 3 ] ] }
                               """);
       assertThat(doc).isEqualTo(expected);
     }
