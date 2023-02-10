@@ -120,6 +120,27 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200);
+
+      json =
+          """
+                {
+                  "insertOne": {
+                    "document": {
+                      "_id": "doc5",
+                      "username": "user5",
+                      "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                    }
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
     }
 
     @Test
@@ -140,7 +161,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(4));
+          .body("data.count", is(5));
     }
 
     @Test
@@ -466,6 +487,91 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                         }
                       }
                       """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(0));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithEqSubdocumentShortcut() {
+      String json =
+          """
+                              {
+                                "find": {
+                                  "filter" : {"sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
+                                }
+                              }
+                              """;
+      String expected =
+          """
+                {
+                  "_id": "doc4",
+                  "username": "user4",
+                  "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithEqSubdocument() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": false } } } }
+                    }
+                  }
+                  """;
+      String expected =
+          """
+                {
+                  "_id": "doc4",
+                  "username": "user4",
+                  "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findWithEqSubdocumentNoMatch() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": true } } } }
+                    }
+                  }
+                  """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

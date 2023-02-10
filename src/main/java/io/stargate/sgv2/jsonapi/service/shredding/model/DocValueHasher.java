@@ -107,7 +107,7 @@ public class DocValueHasher {
     return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
   }
 
-  public DocValueHash arrayHash(List<Object> arrayData) {
+  private DocValueHash arrayHash(List<Object> arrayData) {
     // Array hash consists of header line (type prefix + element count)
     // followed by one line per element, containing element hash.
     // Lines are separated by linefeeds; no trailing linefeed
@@ -117,18 +117,7 @@ public class DocValueHasher {
     sb.append(DocValueType.ARRAY.prefix()).append(arrayData.size());
 
     for (Object arrayValue : arrayData) {
-      DocValueHash childHash = null;
-      if (arrayValue == null) {
-        childHash = nullValue().hash();
-      } else if (arrayValue instanceof String) {
-        childHash = stringValue((String) arrayValue).hash();
-      } else if (arrayValue instanceof BigDecimal) {
-        childHash = numberValue((BigDecimal) arrayValue).hash();
-      } else if (arrayValue instanceof Boolean) {
-        childHash = booleanValue((Boolean) arrayValue).hash();
-      } else if (arrayValue instanceof List) {
-        childHash = arrayHash((List<Object>) arrayValue);
-      }
+      DocValueHash childHash = getHash(arrayValue);
       sb.append(LINE_SEPARATOR).append(childHash.hash());
     }
     return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
@@ -155,5 +144,47 @@ public class DocValueHasher {
     }
 
     return DocValueHash.constructBoundedHash(DocValueType.OBJECT, sb.toString());
+  }
+
+  private DocValueHash objectHash(Map<String, Object> n) {
+    // Array hash consists of header line (type prefix + element count)
+    // followed by two line per element, containing name (NOT path!) on first line
+    // and element hash on second.
+    // Lines are separated by linefeeds; no trailing linefeed
+    StringBuilder sb = new StringBuilder(10 + 24 * n.size());
+
+    // Header line: type prefix ('O') and element length, so f.ex "O7"
+    sb.append(DocValueType.OBJECT.prefix()).append(n.size());
+
+    // Actual implementation would actually use iterated over values;
+    // we will traverse to exercise caching for tests but not really use:
+    Iterator<Map.Entry<String, Object>> it = n.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<String, Object> entry = it.next();
+      sb.append(LINE_SEPARATOR).append(entry.getKey());
+      DocValueHash childHash = getHash(entry.getValue());
+      sb.append(LINE_SEPARATOR).append(childHash.hash());
+    }
+
+    return DocValueHash.constructBoundedHash(DocValueType.OBJECT, sb.toString());
+  }
+
+  public DocValueHash getHash(Object value) {
+    if (value == null) {
+      return nullValue().hash();
+    } else if (value instanceof String) {
+      return stringValue((String) value).hash();
+    } else if (value instanceof BigDecimal) {
+      return numberValue((BigDecimal) value).hash();
+    } else if (value instanceof Boolean) {
+      return booleanValue((Boolean) value).hash();
+    } else if (value instanceof List) {
+      return arrayHash((List<Object>) value);
+    } else if (value instanceof Map) {
+      return objectHash((Map<String, Object>) value);
+    }
+    throw new JsonApiException(
+        ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+        String.format("Unsupported filter data type %s", value.getClass()));
   }
 }
