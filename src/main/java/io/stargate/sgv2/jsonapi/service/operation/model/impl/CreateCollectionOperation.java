@@ -40,7 +40,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    doc_json            text,"
             + "    doc_properties      map<text, int>,"
             + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      set<text>,"
+            + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
             + "    array_equals        map<text, text>,"
             + "    array_contains      set<text>,"
@@ -72,7 +72,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             .build());
 
     String subDocEquals =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (sub_doc_equals) USING 'StorageAttachedIndex'";
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (entries(sub_doc_equals)) USING 'StorageAttachedIndex'";
     statements.add(
         QueryOuterClass.Query.newBuilder()
             .setCql(String.format(subDocEquals, table, keyspace, table))

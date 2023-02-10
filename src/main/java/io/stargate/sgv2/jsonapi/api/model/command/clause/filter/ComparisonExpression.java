@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -41,7 +42,6 @@ public record ComparisonExpression(
    *
    * <p>e.g. {"username" : "aaron"}
    *
-   * @param path Json node path
    * @param value Value returned by the deserializer
    * @return {@link ComparisonExpression} with equal operator
    */
@@ -73,6 +73,9 @@ public record ComparisonExpression(
     }
     if (value instanceof List) {
       return new JsonLiteral<>((List<Object>) value, JsonType.ARRAY);
+    }
+    if (value instanceof Map) {
+      return new JsonLiteral<>((Map<String, Object>) value, JsonType.SUB_DOC);
     }
     throw new JsonApiException(
         ErrorCode.FILTER_UNRESOLVABLE,
