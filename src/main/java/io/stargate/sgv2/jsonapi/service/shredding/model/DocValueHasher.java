@@ -156,8 +156,6 @@ public class DocValueHasher {
     // Header line: type prefix ('O') and element length, so f.ex "O7"
     sb.append(DocValueType.OBJECT.prefix()).append(n.size());
 
-    // Actual implementation would actually use iterated over values;
-    // we will traverse to exercise caching for tests but not really use:
     Iterator<Map.Entry<String, Object>> it = n.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry<String, Object> entry = it.next();
