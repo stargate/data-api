@@ -265,14 +265,17 @@ public record FindOperation(
     }
   }
 
-  /** Filter for document where array matches the array in request */
+  /** Filter for document where array matches (data in same order) as the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
       super("array_equals", path, Operator.EQ, getHash(hasher, arrayData));
     }
   }
 
-  /** Filter for document where field is subdocument and matches the filter sub document */
+  /**
+   * Filter for document where field is subdocument and matches (same subfield in same order) the
+   * filter sub document
+   */
   public static class SubDocEqualsFilter extends MapFilterBase<String> {
     public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
       super("sub_doc_equals", path, Operator.EQ, getHash(hasher, subDocData));
