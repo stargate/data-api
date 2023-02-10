@@ -67,8 +67,9 @@ public class PushOperation extends UpdateOperation {
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                + ": $push only supports $each currently; trying to use "
-                + modifier);
+                + ": $push only supports $each currently; trying to use '"
+                + modifier
+                + "'");
       }
       // And argument for $each must be an Array
       eachArg = entry.getValue();
