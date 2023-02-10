@@ -264,6 +264,13 @@ public record FindOperation(
     }
   }
 
+  /** Filter for document where array has specified number of elements */
+  public static class ArrayEqualsFilter extends MapFilterBase<String> {
+    public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
+      super("array_equals", path, Operator.EQ, getHash(hasher, arrayData));
+    }
+  }
+
   private static QueryOuterClass.Value getValue(Object value) {
     if (value instanceof String) {
       return Values.of((String) value);
@@ -290,6 +297,8 @@ public record FindOperation(
       return hasher.numberValue((BigDecimal) arrayValue).hash().hash();
     } else if (arrayValue instanceof Boolean) {
       return hasher.booleanValue((Boolean) arrayValue).hash().hash();
+    } else if (arrayValue instanceof List) {
+      return hasher.arrayHash((List<Object>) arrayValue).hash();
     }
     throw new JsonApiException(
         ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

@@ -464,8 +464,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                                                 "tags" : ["tag1","tag2"]
                                               }
                                           """;
+
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("tags"), Values.of((int) 2))
+          withQuery(collectionReadCql, Values.of("tags"), Values.of(2))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -493,6 +494,68 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(new FindOperation.SizeFilter("tags", 2)),
+              null,
+              1,
+              1,
+              true,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.data()).isNotNull();
+                assertThat(result.data().docs()).hasSize(1);
+              });
+    }
+
+    @Test
+    public void findWithArrayEqualFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_equals[?] = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                      {
+                            "_id": "doc1",
+                            "username": "user1",
+                            "registration_active" : true,
+                            "tags" : ["tag1","tag2"]
+                          }
+                      """;
+      final String hash = new DocValueHasher().arrayHash(List.of("tag1", "tag2")).hash();
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new FindOperation.ArrayEqualsFilter(
+                      new DocValueHasher(), "tags", List.of("tag1", "tag2"))),
               null,
               1,
               1,
