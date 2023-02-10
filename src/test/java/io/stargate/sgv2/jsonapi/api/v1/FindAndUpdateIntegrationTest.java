@@ -540,31 +540,22 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
     }
+  }
 
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateOneWithPush {
     @Test
     @Order(2)
-    public void findByColumnAndPushToArray() {
-      String json =
+    public void findByColumnAndPush() {
+      insertDoc(
           """
                   {
-                    "insertOne": {
-                      "document": {
-                        "_id": "update_doc_push",
-                        "array": [ 2 ]
-                      }
-                    }
+                    "_id": "update_doc_push",
+                    "array": [ 2 ]
                   }
-                  """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-      json =
+                  """);
+      String json =
           """
                   {
                     "updateOne": {
@@ -586,12 +577,12 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String expected = "{\"_id\":\"update_doc_push\", \"array\": [2, 13]}";
       json =
           """
-                  {
-                    "find": {
-                      "filter" : {"_id" : "update_doc_push"}
-                    }
-                  }
-                  """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "update_doc_push"}
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -605,27 +596,77 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
 
     @Test
     @Order(2)
-    public void findByColumnAndInc() {
-      String doc =
+    public void findByColumnAndPushWithEach() {
+      insertDoc(
           """
-                      {
-                        "insertOne": {
-                          "document": {
-                            "_id": "update_doc_inc",
-                            "number": 123
+                  {
+                    "_id": "update_doc_push_each",
+                    "array": [ 1 ]
+                  }
+                  """);
+      String json =
+          """
+                  {
+                    "updateOne": {
+                      "filter" : {"_id" : "update_doc_push_each"},
+                      "update" : {
+                          "$push" : {
+                             "array": { "$each" : [ 2, 3 ] },
+                             "newArray": { "$each" : [ true ] }
                           }
-                        }
-                      }
-                      """;
-
+                       }
+                    }
+                  }
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(doc)
+          .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_push_each"));
+
+      String expected =
+          """
+            { "_id":"update_doc_push_each",
+              "array": [1, 2, 3],
+              "newArray": [true] }
+            """;
+      json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : "update_doc_push_each"}
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateOneWithInc {
+    @Test
+    @Order(2)
+    public void findByColumnAndInc() {
+      insertDoc(
+          """
+                     {
+                        "_id": "update_doc_inc",
+                        "number": 123
+                      }
+                      """);
       String updateJson =
           """
                       {
@@ -648,12 +689,12 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String expectedDoc = "{\"_id\":\"update_doc_inc\", \"number\": 119, \"newProp\": 0.25 }";
       String findJson =
           """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "update_doc_inc"}
+                        {
+                          "find": {
+                            "filter" : {"_id" : "update_doc_inc"}
+                          }
                         }
-                      }
-                      """;
+                        """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -664,5 +705,26 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
     }
+  }
+
+  private void insertDoc(String docJson) {
+    String doc =
+        """
+                {
+                  "insertOne": {
+                    "document": %s
+                  }
+                }
+                """
+            .formatted(docJson);
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(doc)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200);
   }
 }
