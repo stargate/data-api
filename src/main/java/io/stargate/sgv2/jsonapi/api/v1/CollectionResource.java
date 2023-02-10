@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -39,7 +39,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(name = "Documents", description = "Executes document commands against a single collection.")
+@Tag(ref = "Documents")
 public class CollectionResource {
 
   public static final String BASE_PATH = "/v1/{database}/{collection}";
@@ -102,7 +102,7 @@ public class CollectionResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid Command command,
+      @NotNull @Valid CollectionCommand command,
       @PathParam("database") String database,
       @PathParam("collection") String collection) {
 
