@@ -21,11 +21,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     // note that info is defined via the properties
     info = @Info(title = "", version = ""),
     tags = {
+      @Tag(name = "General", description = "Executes general commands."),
+      @Tag(name = "Databases", description = "Executes database commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),
-      @Tag(name = "Databases", description = "Executes database commands."),
-      @Tag(name = "General", description = "Executes general commands.")
     },
     components =
         @Components(
