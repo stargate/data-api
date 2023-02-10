@@ -41,6 +41,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object EXISTS_GROUP = new Object();
   private static final Object ALL_GROUP = new Object();
   private static final Object SIZE_GROUP = new Object();
+  private static final Object ARRAY_EQUALS = new Object();
 
   private final boolean findOne;
   private final boolean readDocument;
@@ -83,7 +84,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ALL_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.ALL), JsonType.ARRAY)
         .capture(SIZE_GROUP)
-        .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER);
+        .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
+        .capture(ARRAY_EQUALS)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY);
   }
 
   protected ReadOperation resolve(CommandContext commandContext, T command) {
@@ -219,6 +222,16 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           expression ->
               filters.add(
                   new FindOperation.SizeFilter(expression.path(), expression.value().intValue())));
+    }
+
+    final CaptureGroup<List<Object>> arrayEqualsGroups =
+        (CaptureGroup<List<Object>>) captures.getGroupIfPresent(ARRAY_EQUALS);
+    if (arrayEqualsGroups != null) {
+      arrayEqualsGroups.consumeAllCaptures(
+          expression ->
+              filters.add(
+                  new FindOperation.ArrayEqualsFilter(
+                      new DocValueHasher(), expression.path(), expression.value())));
     }
 
     FilteringOptions filteringOptions = getFilteringOption(captures.command());

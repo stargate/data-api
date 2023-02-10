@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -103,6 +104,33 @@ public class DocValueHasher {
       sb.append(LINE_SEPARATOR).append(childHash.hash());
     }
 
+    return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
+  }
+
+  public DocValueHash arrayHash(List<Object> arrayData) {
+    // Array hash consists of header line (type prefix + element count)
+    // followed by one line per element, containing element hash.
+    // Lines are separated by linefeeds; no trailing linefeed
+    StringBuilder sb = new StringBuilder(10 + 16 * arrayData.size());
+
+    // Header line: type prefix ('A') and element length, so f.ex "A13"
+    sb.append(DocValueType.ARRAY.prefix()).append(arrayData.size());
+
+    for (Object arrayValue : arrayData) {
+      DocValueHash childHash = null;
+      if (arrayValue == null) {
+        childHash = nullValue().hash();
+      } else if (arrayValue instanceof String) {
+        childHash = stringValue((String) arrayValue).hash();
+      } else if (arrayValue instanceof BigDecimal) {
+        childHash = numberValue((BigDecimal) arrayValue).hash();
+      } else if (arrayValue instanceof Boolean) {
+        childHash = booleanValue((Boolean) arrayValue).hash();
+      } else if (arrayValue instanceof List) {
+        childHash = arrayHash((List<Object>) arrayValue);
+      }
+      sb.append(LINE_SEPARATOR).append(childHash.hash());
+    }
     return DocValueHash.constructBoundedHash(DocValueType.ARRAY, sb.toString());
   }
 

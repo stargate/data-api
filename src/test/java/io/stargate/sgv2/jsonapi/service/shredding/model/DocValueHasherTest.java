@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
@@ -110,6 +113,25 @@ public class DocValueHasherTest {
     }
 
     @Test
+    public void shortArrayComparator() throws Exception {
+      // note: while we do not support root-level arrays, hash calculation is
+      // used at every level so we can test it fine:
+      JsonNode doc = objectMapper.readTree("[1, true, null]");
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      List<Object> arrayData = new ArrayList<>();
+      arrayData.add(new BigDecimal(1));
+      arrayData.add(true);
+      arrayData.add(null);
+      DocValueHash hashFromList = new DocValueHasher().arrayHash(arrayData);
+      assertThat(hash).isNotNull();
+      assertThat(hashFromList).isNotNull();
+      // Four lines: header with type-prefix and entry count; one line for each
+      // element (type-prefixed value). No trailing linefeed
+      assertThat(hash.hash()).isEqualTo(hashFromList.hash());
+    }
+
+    @Test
     public void nestedArray() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
@@ -131,6 +153,25 @@ public class DocValueHasherTest {
 
       // 4 distinct cacheable atomic values
       assertThat(hasher.atomics.seenValues).hasSize(4);
+    }
+
+    @Test
+    public void nestedArrayComparator() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                                      [ [ 1, 2, true ], [ "abc" ], ["abc" ] ]
+                                      """);
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+
+      List<Object> arrayData =
+          List.of(
+              List.of(new BigDecimal(1), new BigDecimal(2), true), List.of("abc"), List.of("abc"));
+      DocValueHash hashFromList = new DocValueHasher().arrayHash(arrayData);
+      assertThat(hashFromList).isNotNull();
+      assertThat(hash.hash()).isEqualTo(hashFromList.hash());
     }
   }
 
