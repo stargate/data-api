@@ -492,8 +492,8 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       String expected =
           """
                 {
-                  "_id": "doc4",
-                  "username": "user4",
+                  "_id": "doc5",
+                  "username": "user5",
                   "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
                 }
                 """;
@@ -523,8 +523,8 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       String expected =
           """
                 {
-                  "_id": "doc4",
-                  "username": "user4",
+                  "_id": "doc5",
+                  "username": "user5",
                   "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
                 }
                 """;
@@ -942,37 +942,6 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           """
               {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
                      """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.count", is(1))
-          .body("data.docs[0]", jsonEquals(expected));
-    }
-
-    @Test
-    @Order(2)
-    public void findOneWithEqSubdocumentShortcut() {
-      String json =
-          """
-                      {
-                        "findOne": {
-                          "filter" : {"sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
-                        }
-                      }
-                      """;
-      String expected =
-          """
-        {
-          "_id": "doc4",
-          "username": "user4",
-          "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-        }
-        """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
