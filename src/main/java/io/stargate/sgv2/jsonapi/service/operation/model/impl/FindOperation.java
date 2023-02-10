@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -264,10 +265,17 @@ public record FindOperation(
     }
   }
 
-  /** Filter for document where array has specified number of elements */
+  /** Filter for document where array matches the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
       super("array_equals", path, Operator.EQ, getHash(hasher, arrayData));
+    }
+  }
+
+  /** Filter for document where field is subdocument and matches the filter sub document */
+  public static class SubDocEqualsFilter extends MapFilterBase<String> {
+    public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
+      super("sub_doc_equals", path, Operator.EQ, getHash(hasher, subDocData));
     }
   }
 
@@ -289,20 +297,7 @@ public record FindOperation(
   }
 
   private static String getHash(DocValueHasher hasher, Object arrayValue) {
-    if (arrayValue == null) {
-      return hasher.nullValue().hash().hash();
-    } else if (arrayValue instanceof String) {
-      return hasher.stringValue((String) arrayValue).hash().hash();
-    } else if (arrayValue instanceof BigDecimal) {
-      return hasher.numberValue((BigDecimal) arrayValue).hash().hash();
-    } else if (arrayValue instanceof Boolean) {
-      return hasher.booleanValue((Boolean) arrayValue).hash().hash();
-    } else if (arrayValue instanceof List) {
-      return hasher.arrayHash((List<Object>) arrayValue).hash();
-    }
-    throw new JsonApiException(
-        ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-        String.format("Unsupported filter data type %s", arrayValue.getClass()));
+    return hasher.getHash(arrayValue).hash();
   }
 
   private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {

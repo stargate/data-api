@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -16,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -70,8 +72,18 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
-      FilterOperator operator =
-          FilterOperator.FilterOperatorUtils.getComparisonOperator(updateField.getKey());
+      FilterOperator operator = null;
+      try {
+        operator = FilterOperator.FilterOperatorUtils.getComparisonOperator(updateField.getKey());
+      } catch (JsonApiException exception) {
+        // If getComparisonOperator returns an exception, check for subdocument equality condition,
+        // this will happen when shortcut is used "filter" : { "size" : { "w": 21, "h": 14} }
+        if (updateField.getKey().startsWith("$")) {
+          throw exception;
+        } else {
+          return ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue()));
+        }
+      }
       JsonNode value = updateField.getValue();
       // @TODO: Need to add array and sub-document value type to this condition
       expression.add(operator, jsonNodeValue(entry.getKey(), value));
@@ -104,6 +116,17 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             arrayVals.add(jsonNodeValue(element));
           }
           return arrayVals;
+        }
+      case OBJECT:
+        {
+          ObjectNode objectNode = (ObjectNode) node;
+          Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
+          final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+          while (fields.hasNext()) {
+            final Map.Entry<String, JsonNode> nextField = fields.next();
+            values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
+          }
+          return values;
         }
       default:
         throw new JsonApiException(
