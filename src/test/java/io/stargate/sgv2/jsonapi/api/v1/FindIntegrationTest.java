@@ -956,6 +956,37 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
+    public void findOneWithEqSubdocumentShortcut() {
+      String json =
+          """
+                      {
+                        "findOne": {
+                          "filter" : {"sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
+                        }
+                      }
+                      """;
+      String expected =
+          """
+        {
+          "_id": "doc4",
+          "username": "user4",
+          "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
     public void findOneWithSizeOperator() {
       String json =
           """
