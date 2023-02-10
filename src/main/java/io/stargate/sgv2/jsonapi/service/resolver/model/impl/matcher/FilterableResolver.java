@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -42,6 +43,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ALL_GROUP = new Object();
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
+  private static final Object SUB_DOC_EQUALS = new Object();
 
   private final boolean findOne;
   private final boolean readDocument;
@@ -86,7 +88,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(SIZE_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
         .capture(ARRAY_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY)
+        .capture(SUB_DOC_EQUALS)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC);
   }
 
   protected ReadOperation resolve(CommandContext commandContext, T command) {
@@ -231,6 +235,16 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           expression ->
               filters.add(
                   new FindOperation.ArrayEqualsFilter(
+                      new DocValueHasher(), expression.path(), expression.value())));
+    }
+
+    final CaptureGroup<Map<String, Object>> subDocEqualsGroups =
+        (CaptureGroup<Map<String, Object>>) captures.getGroupIfPresent(SUB_DOC_EQUALS);
+    if (subDocEqualsGroups != null) {
+      subDocEqualsGroups.consumeAllCaptures(
+          expression ->
+              filters.add(
+                  new FindOperation.SubDocEqualsFilter(
                       new DocValueHasher(), expression.path(), expression.value())));
     }
 

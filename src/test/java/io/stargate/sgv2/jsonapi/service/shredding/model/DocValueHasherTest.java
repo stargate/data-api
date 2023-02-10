@@ -10,7 +10,9 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
@@ -123,7 +125,7 @@ public class DocValueHasherTest {
       arrayData.add(new BigDecimal(1));
       arrayData.add(true);
       arrayData.add(null);
-      DocValueHash hashFromList = new DocValueHasher().arrayHash(arrayData);
+      DocValueHash hashFromList = new DocValueHasher().getHash(arrayData);
       assertThat(hash).isNotNull();
       assertThat(hashFromList).isNotNull();
       // Four lines: header with type-prefix and entry count; one line for each
@@ -169,9 +171,37 @@ public class DocValueHasherTest {
       List<Object> arrayData =
           List.of(
               List.of(new BigDecimal(1), new BigDecimal(2), true), List.of("abc"), List.of("abc"));
-      DocValueHash hashFromList = new DocValueHasher().arrayHash(arrayData);
+      DocValueHash hashFromList = new DocValueHasher().getHash(arrayData);
       assertThat(hashFromList).isNotNull();
       assertThat(hash.hash()).isEqualTo(hashFromList.hash());
+    }
+  }
+
+  @Nested
+  class SubDocHashing {
+    @Test
+    public void subDocComparator() throws Exception {
+      // note: while we do not support root-level arrays, hash calculation is
+      // used at every level so we can test it fine:
+      String document =
+          """
+                  {"a1" : 5, "b1" : { "a2" : "abc", "b2" : true}}
+                  """;
+      JsonNode doc = objectMapper.readTree(document);
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      Map<String, Object> values = new LinkedHashMap<>();
+      values.put("a1", new BigDecimal(5));
+      Map<String, Object> innerValues = new LinkedHashMap<>();
+      innerValues.put("a2", "abc");
+      innerValues.put("b2", true);
+      values.put("b1", innerValues);
+      DocValueHash hashFromMap = new DocValueHasher().getHash(values);
+      assertThat(hash).isNotNull();
+      assertThat(hashFromMap).isNotNull();
+      // Four lines: header with type-prefix and entry count; one line for each
+      // element (type-prefixed value). No trailing linefeed
+      assertThat(hash.hash()).isEqualTo(hashFromMap.hash());
     }
   }
 

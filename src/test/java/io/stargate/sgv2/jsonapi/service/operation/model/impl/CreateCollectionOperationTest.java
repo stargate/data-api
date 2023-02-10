@@ -58,7 +58,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    doc_json            text,"
             + "    doc_properties      map<text, int>,"
             + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      set<text>,"
+            + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
             + "    array_equals        map<text, text>,"
             + "    array_contains      set<text>,"
@@ -75,7 +75,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (exist_keys) USING 'StorageAttachedIndex'"
             .formatted(collection, database, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (sub_doc_equals) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (entries(sub_doc_equals)) USING 'StorageAttachedIndex'"
             .formatted(collection, database, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex'"
