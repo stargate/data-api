@@ -99,6 +99,27 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200);
+
+      json =
+          """
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc4",
+                    "indexedObject" : { "0": "value_0", "1": "value_1" }
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
     }
 
     @Test
@@ -119,7 +140,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(3));
+          .body("data.count", is(4));
     }
 
     @Test
@@ -246,6 +267,37 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
+    public void findWithEqSubDocWithIndex() {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"indexedObject.1" : {"$eq" : "value_1"}}
+                    }
+                  }
+                  """;
+      String expected =
+          """
+                  {
+                      "_id": "doc4",
+                      "indexedObject" : { "0": "value_0", "1": "value_1" }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
     public void findWithEqArrayElement() {
       String json =
           """
@@ -256,7 +308,14 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
       String expected =
-          "{\"_id\":\"doc2\", \"username\":\"user2\", \"subdoc\":{\"id\":\"abc\"},\"array\":[\"value1\"]}";
+          """
+              {
+                "_id": "doc2",
+                "username": "user2",
+                "subdoc": {"id": "abc"},
+                "array": ["value1"]
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
