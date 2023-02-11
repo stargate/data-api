@@ -122,7 +122,7 @@ public class PushOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $push requires target to be Array; value at '"
                 + path
-                + " of type "
+                + "' of type "
                 + node.getNodeType());
       }
       // Regular add or $each?
@@ -146,9 +146,6 @@ public class PushOperation extends UpdateOperation {
         && Objects.equals(this.updates, ((PushOperation) o).updates);
   }
 
-  /**
-   * Value class for per-field update operations: initially simple replacement but will need
-   * different value type soon to allow {@code $each modifier}.
-   */
+  /** Value class for per-field update operations. */
   private record PushAction(String path, JsonNode value, boolean each) {}
 }
