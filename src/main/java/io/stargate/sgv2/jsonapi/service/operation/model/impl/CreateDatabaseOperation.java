@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.function.Supplier;
 
 /**
- * Operation that creates a new Cassandra keyspace that serves as a namespace (database) for the
+ * Operation that creates a new Cassandra keyspace that serves as a namespace (namespace) for the
  * JSON API.
  *
  * @param name Name of the namespace to create.

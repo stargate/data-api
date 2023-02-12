@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     info = @Info(title = "", version = ""),
     tags = {
       @Tag(name = "General", description = "Executes general commands."),
-      @Tag(name = "Databases", description = "Executes database commands."),
+      @Tag(name = "Databases", description = "Executes namespace commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),
@@ -43,10 +43,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
             parameters = {
               @Parameter(
                   in = ParameterIn.PATH,
-                  name = "database",
+                  name = "namespace",
                   required = true,
                   schema = @Schema(implementation = String.class, pattern = "\\w+"),
-                  description = "The database where the collection is located.",
+                  description = "The namespace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,

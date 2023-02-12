@@ -45,7 +45,7 @@ public class UpdateOneResolverTest {
                             """;
 
       UpdateOneCommand updateOneCommand = objectMapper.readValue(json, UpdateOneCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           updateOneCommandResolver.resolveCommand(commandContext, updateOneCommand);
       ReadOperation readOperation =
@@ -89,7 +89,7 @@ public class UpdateOneResolverTest {
                             """;
 
       UpdateOneCommand updateOneCommand = objectMapper.readValue(json, UpdateOneCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           updateOneCommandResolver.resolveCommand(commandContext, updateOneCommand);
       ReadOperation readOperation =

@@ -16,13 +16,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a namespace (database).")
 @JsonTypeName("createDatabase")
 public record CreateDatabaseCommand(
-    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the database") String name,
+    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the namespace") String name,
     @Nullable @Valid CreateDatabaseCommand.Options options)
     implements GeneralCommand {
 
   @Schema(
       name = "CreateDatabaseCommand.Options",
-      description = "Options for creating a new database.")
+      description = "Options for creating a new namespace.")
   public record Options(@Nullable @Valid Replication replication) {}
 
   /**

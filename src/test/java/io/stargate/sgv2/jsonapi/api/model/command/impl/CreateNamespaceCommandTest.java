@@ -16,7 +16,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class CreateDatabaseCommandTest {
+class CreateNamespaceCommandTest {
 
   @Inject ObjectMapper objectMapper;
 

@@ -56,7 +56,7 @@ public class CollectionResource {
       description = "Executes a single command against a collection.")
   @Parameters(
       value = {
-        @Parameter(name = "database", ref = "database"),
+        @Parameter(name = "namespace", ref = "namespace"),
         @Parameter(name = "collection", ref = "collection")
       })
   @RequestBody(
