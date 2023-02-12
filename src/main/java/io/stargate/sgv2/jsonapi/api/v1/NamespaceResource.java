@@ -72,7 +72,7 @@ public class NamespaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-          @NotNull @Valid NamespaceCommand command, @PathParam("namespace") String namespace) {
+      @NotNull @Valid NamespaceCommand command, @PathParam("namespace") String namespace) {
 
     // create context
     CommandContext commandContext = new CommandContext(namespace, null);
