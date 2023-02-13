@@ -16,6 +16,13 @@ public enum UpdateOperator {
     }
   },
 
+  POP("$pop") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return PopOperation.construct(arguments);
+    }
+  },
+
   PUSH("$push") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
@@ -37,8 +44,6 @@ public enum UpdateOperator {
   },
 
   // Then operators that we recognize but do not (yet) support
-
-  POP("$pop"),
 
   PULL_ALL("$pullAll");
 

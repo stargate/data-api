@@ -543,6 +543,76 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
   }
 
   @Nested
+  class UpdateOneWithPop {
+    @Test
+    @Order(2)
+    public void findByColumnAndPop() {
+      // Let's test 4 valid pop operations:
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_pop",
+                        "array1": [ 1, 2, 3 ],
+                        "array2": [ 4, 5, 6 ],
+                        "array3": [ ]
+                      }
+                      """);
+      String updateBody =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_pop"},
+                          "update" : {
+                            "$pop" : {
+                              "array1": 1,
+                              "array2": -1,
+                              "array3": 1,
+                              "array4": -1
+                              }
+                          }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateBody)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_pop"));
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_pop"}
+                    }
+                  }
+                  """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                      {
+                        "_id": "update_doc_pop",
+                        "array1": [ 1, 2 ],
+                        "array2": [ 5, 6 ],
+                        "array3": [ ]
+                      }
+                      """));
+    }
+  }
+
+  @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class UpdateOneWithPush {
     @Test
