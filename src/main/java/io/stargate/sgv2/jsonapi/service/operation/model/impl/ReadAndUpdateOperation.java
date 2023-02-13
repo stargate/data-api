@@ -91,7 +91,7 @@ public record ReadAndUpdateOperation(
             + "        IF "
             + "            tx_id = ?";
     return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(update, commandContext.database(), commandContext.collection()))
+        .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
         .build();
   }
 

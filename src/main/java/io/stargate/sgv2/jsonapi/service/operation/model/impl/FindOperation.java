@@ -60,7 +60,7 @@ public record FindOperation(
     return new QueryBuilder()
         .select()
         .column(readDocument ? documentColumns : documentKeyColumns)
-        .from(commandContext.database(), commandContext.collection())
+        .from(commandContext.namespace(), commandContext.collection())
         .where(conditions)
         .limit(limit)
         .build();

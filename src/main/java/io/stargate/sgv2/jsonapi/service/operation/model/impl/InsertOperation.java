@@ -50,7 +50,7 @@ public record InsertOperation(
             + "        VALUES"
             + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(insert, commandContext.database(), commandContext.collection()))
+        .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
         .build();
   }
 

@@ -39,7 +39,7 @@ public class FindCommandResolverTest {
                 """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
       FindOperation expected =
           new FindOperation(
@@ -71,7 +71,7 @@ public class FindCommandResolverTest {
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
@@ -107,7 +107,7 @@ public class FindCommandResolverTest {
               """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
@@ -133,7 +133,7 @@ public class FindCommandResolverTest {
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =

@@ -1,18 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateDatabaseCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateDatabaseOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateNamespaceOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import java.util.Map;
 import javax.enterprise.context.ApplicationScoped;
 
 /**
- * Command resolver for {@link CreateDatabaseCommand}. Responsible for creating the replication map.
+ * Command resolver for {@link CreateNamespaceCommand}. Responsible for creating the replication
+ * map.
  */
 @ApplicationScoped
-public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCommand> {
+public class CreateNamespaceResolver implements CommandResolver<CreateNamespaceCommand> {
 
   // default if omitted
   private static final String DEFAULT_REPLICATION_MAP =
@@ -20,24 +21,24 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
 
   /** {@inheritDoc} */
   @Override
-  public Class<CreateDatabaseCommand> getCommandClass() {
-    return CreateDatabaseCommand.class;
+  public Class<CreateNamespaceCommand> getCommandClass() {
+    return CreateNamespaceCommand.class;
   }
 
   /** {@inheritDoc} */
   @Override
-  public Operation resolveCommand(CommandContext ctx, CreateDatabaseCommand command) {
+  public Operation resolveCommand(CommandContext ctx, CreateNamespaceCommand command) {
     String replicationMap = getReplicationMap(command.options());
-    return new CreateDatabaseOperation(command.name(), replicationMap);
+    return new CreateNamespaceOperation(command.name(), replicationMap);
   }
 
   // resolve the replication map
-  private String getReplicationMap(CreateDatabaseCommand.Options options) {
+  private String getReplicationMap(CreateNamespaceCommand.Options options) {
     if (null == options) {
       return DEFAULT_REPLICATION_MAP;
     }
 
-    CreateDatabaseCommand.Replication replication = options.replication();
+    CreateNamespaceCommand.Replication replication = options.replication();
     if ("NetworkTopologyStrategy".equals(replication.strategy())) {
       return networkTopologyStrategyMap(replication);
     } else {
@@ -45,7 +46,7 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
     }
   }
 
-  private static String networkTopologyStrategyMap(CreateDatabaseCommand.Replication replication) {
+  private static String networkTopologyStrategyMap(CreateNamespaceCommand.Replication replication) {
     Map<String, Integer> options = replication.strategyOptions();
 
     StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
@@ -58,7 +59,7 @@ public class CreateDatabaseResolver implements CommandResolver<CreateDatabaseCom
     return map.toString();
   }
 
-  private static String simpleStrategyMap(CreateDatabaseCommand.Replication replication) {
+  private static String simpleStrategyMap(CreateNamespaceCommand.Replication replication) {
     Map<String, Integer> options = replication.strategyOptions();
     if (null == options || options.isEmpty()) {
       return DEFAULT_REPLICATION_MAP;

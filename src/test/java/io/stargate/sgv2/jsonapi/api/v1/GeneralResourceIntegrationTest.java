@@ -37,14 +37,14 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   }
 
   @Nested
-  class CreateDatabase {
+  class CreateNamespace {
 
     @Test
     public final void happyPath() {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
               "name": "%s"
             }
           }
@@ -67,7 +67,7 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
               "name": "%s"
             }
           }
@@ -90,7 +90,7 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
       String json =
           """
               {
-                "createDatabase": {
+                "createNamespace": {
                   "name": "%s",
                   "options": {
                     "replication": {
@@ -119,7 +119,7 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
       String json =
           """
               {
-                "createDatabase": {
+                "createNamespace": {
                 }
               }
               """;

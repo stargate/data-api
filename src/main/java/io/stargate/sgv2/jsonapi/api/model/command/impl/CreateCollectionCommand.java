@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.DatabaseCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -17,6 +17,6 @@ public record CreateCollectionCommand(
             type = SchemaType.OBJECT)
         String name,
     @Nullable Options options)
-    implements DatabaseCommand {
+    implements NamespaceCommand {
   public record Options() {}
 }
