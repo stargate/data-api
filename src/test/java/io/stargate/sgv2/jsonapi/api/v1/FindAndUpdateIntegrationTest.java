@@ -557,7 +557,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                         "array3": [ ]
                       }
                       """);
-      String json =
+      String updateBody =
           """
                       {
                         "updateOne": {
@@ -576,40 +576,39 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(updateBody)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
           .body("status.updatedIds[0]", is("update_doc_pop"));
 
-      String expected =
-          """
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_pop"}
+                    }
+                  }
+                  """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
                       {
                         "_id": "update_doc_pop",
                         "array1": [ 1, 2 ],
                         "array2": [ 5, 6 ],
                         "array3": [ ]
                       }
-                      """;
-
-      json =
-          """
-                          {
-                            "find": {
-                              "filter" : {"_id" : "update_doc_pop"}
-                            }
-                          }
-                          """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+                      """));
     }
   }
 
