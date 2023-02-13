@@ -30,13 +30,13 @@ class CreateNamespaceCommandTest {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
             }
           }
           """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
-      Set<ConstraintViolation<CreateDatabaseCommand>> result = validator.validate(command);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -49,15 +49,15 @@ class CreateNamespaceCommandTest {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
               "name": "%s"
             }
           }
           """
               .formatted(RandomStringUtils.randomAlphabetic(49));
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
-      Set<ConstraintViolation<CreateDatabaseCommand>> result = validator.validate(command);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -70,7 +70,7 @@ class CreateNamespaceCommandTest {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
               "name": "red_star_belgrade",
               "options": {
                 "replication": {
@@ -80,8 +80,8 @@ class CreateNamespaceCommandTest {
           }
           """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
-      Set<ConstraintViolation<CreateDatabaseCommand>> result = validator.validate(command);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -94,7 +94,7 @@ class CreateNamespaceCommandTest {
       String json =
           """
           {
-            "createDatabase": {
+            "createNamespace": {
               "name": "red_star_belgrade",
               "options": {
                 "replication": {
@@ -105,8 +105,8 @@ class CreateNamespaceCommandTest {
           }
           """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
-      Set<ConstraintViolation<CreateDatabaseCommand>> result = validator.validate(command);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()

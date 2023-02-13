@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     info = @Info(title = "", version = ""),
     tags = {
       @Tag(name = "General", description = "Executes general commands."),
-      @Tag(name = "Databases", description = "Executes namespace commands."),
+      @Tag(name = "Namespaces", description = "Executes namespace commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),
@@ -171,23 +171,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     }
                                     """),
               @ExampleObject(
-                  name = "createDatabase",
-                  summary = "`CreateDatabase` command",
+                  name = "createNamespace",
+                  summary = "`CreateNamespace` command",
                   value =
                       """
                             {
-                                "createDatabase": {
+                                "createNamespace": {
                                   "name": "cycling"
                                 }
                             }
                             """),
               @ExampleObject(
-                  name = "createDatabaseWithReplication",
-                  summary = "`CreateDatabase` command with replication",
+                  name = "createNamespaceWithReplication",
+                  summary = "`CreateNamespace` command with replication",
                   value =
                       """
                             {
-                                "createDatabase": {
+                                "createNamespace": {
                                   "name": "cycling",
                                   "options": {
                                     "replication": {
