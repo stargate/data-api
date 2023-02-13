@@ -561,6 +561,28 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .body("data.docs[0]", jsonEquals(expected));
     }
 
+    @Order(2)
+    public void findWithEqSubdocumentOrderChangeNoMatch() {
+      String json =
+          """
+                        {
+                          "find": {
+                            "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "d": false, "c": "v1" } } } }
+                          }
+                        }
+                        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(0));
+    }
+
     @Test
     @Order(2)
     public void findWithEqSubdocumentNoMatch() {
