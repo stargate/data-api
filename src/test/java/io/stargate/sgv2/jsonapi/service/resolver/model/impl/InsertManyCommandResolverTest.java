@@ -49,7 +49,7 @@ public class InsertManyCommandResolverTest {
           """;
 
       InsertManyCommand insertManyCommand = objectMapper.readValue(json, InsertManyCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           insertManyCommandResolver.resolveCommand(commandContext, insertManyCommand);
       List<WritableShreddedDocument> shreddedDocuments =

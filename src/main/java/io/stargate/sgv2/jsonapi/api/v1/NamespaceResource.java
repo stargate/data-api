@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.DatabaseCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
@@ -29,26 +29,26 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
 
-@Path(DatabaseResource.BASE_PATH)
+@Path(NamespaceResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(ref = "Databases")
-public class DatabaseResource {
+@Tag(ref = "Namespaces")
+public class NamespaceResource {
 
-  public static final String BASE_PATH = "/v1/{database}";
+  public static final String BASE_PATH = "/v1/{namespace}";
 
   private final CommandProcessor commandProcessor;
 
   @Inject
-  public DatabaseResource(CommandProcessor commandProcessor) {
+  public NamespaceResource(CommandProcessor commandProcessor) {
     this.commandProcessor = commandProcessor;
   }
 
   @Operation(
       summary = "Execute command",
       description = "Executes a single command against a collection.")
-  @Parameters(value = {@Parameter(name = "database", ref = "database")})
+  @Parameters(value = {@Parameter(name = "namespace", ref = "namespace")})
   @RequestBody(
       content =
           @Content(
@@ -72,10 +72,10 @@ public class DatabaseResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid DatabaseCommand command, @PathParam("database") String database) {
+      @NotNull @Valid NamespaceCommand command, @PathParam("namespace") String namespace) {
 
     // create context
-    CommandContext commandContext = new CommandContext(database, null);
+    CommandContext commandContext = new CommandContext(namespace, null);
 
     // call processor
     return commandProcessor

@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestInstance;
 @QuarkusIntegrationTest
 @QuarkusTestResource(StargateTestResource.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
+class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {
@@ -49,7 +49,7 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200);
     }
@@ -64,7 +64,7 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
           .body(
@@ -80,7 +80,7 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
-          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
@@ -95,7 +95,7 @@ class DatabaseResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .when()
-          .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))

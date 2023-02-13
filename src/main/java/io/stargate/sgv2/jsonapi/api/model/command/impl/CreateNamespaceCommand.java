@@ -13,16 +13,16 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates a namespace (database).")
-@JsonTypeName("createDatabase")
-public record CreateDatabaseCommand(
-    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the database") String name,
-    @Nullable @Valid CreateDatabaseCommand.Options options)
+@Schema(description = "Command that creates a namespace.")
+@JsonTypeName("createNamespace")
+public record CreateNamespaceCommand(
+    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the namespace") String name,
+    @Nullable @Valid CreateNamespaceCommand.Options options)
     implements GeneralCommand {
 
   @Schema(
-      name = "CreateDatabaseCommand.Options",
-      description = "Options for creating a new database.")
+      name = "CreateNamespaceCommand.Options",
+      description = "Options for creating a new namespace.")
   public record Options(@Nullable @Valid Replication replication) {}
 
   /**

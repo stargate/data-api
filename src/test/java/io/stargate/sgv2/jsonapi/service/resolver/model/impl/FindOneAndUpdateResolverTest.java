@@ -46,7 +46,7 @@ public class FindOneAndUpdateResolverTest {
 
       FindOneAndUpdateCommand findOneAndUpdateCommand =
           objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
       ReadOperation readOperation =
@@ -91,7 +91,7 @@ public class FindOneAndUpdateResolverTest {
 
       FindOneAndUpdateCommand findOneAndUpdateCommand =
           objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      final CommandContext commandContext = new CommandContext("database", "collection");
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
           findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
       ReadOperation readOperation =

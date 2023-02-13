@@ -42,7 +42,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{database}/{collection}";
+  public static final String BASE_PATH = "/v1/{namespace}/{collection}";
 
   private final CommandProcessor commandProcessor;
 
@@ -56,7 +56,7 @@ public class CollectionResource {
       description = "Executes a single command against a collection.")
   @Parameters(
       value = {
-        @Parameter(name = "database", ref = "database"),
+        @Parameter(name = "namespace", ref = "namespace"),
         @Parameter(name = "collection", ref = "collection")
       })
   @RequestBody(
@@ -103,11 +103,11 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("database") String database,
+      @PathParam("namespace") String namespace,
       @PathParam("collection") String collection) {
 
     // create context
-    CommandContext commandContext = new CommandContext(database, collection);
+    CommandContext commandContext = new CommandContext(namespace, collection);
 
     // call processor
     return commandProcessor
