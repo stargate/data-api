@@ -42,7 +42,7 @@ public abstract class UpdateOperation {
    * @return Path passed in if valid
    */
   protected static String validateNonModifierPath(UpdateOperator oper, String path) {
-    if (path.startsWith("$")) {
+    if (looksLikeModifier(path)) {
       throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
           ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
@@ -51,5 +51,9 @@ public abstract class UpdateOperation {
               + " does not support modifiers");
     }
     return path;
+  }
+
+  protected static boolean looksLikeModifier(String path) {
+    return path.startsWith("$");
   }
 }
