@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateDatabaseCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import javax.inject.Inject;
@@ -47,10 +47,10 @@ public class GeneralResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {CreateDatabaseCommand.class}),
+              schema = @Schema(anyOf = {CreateNamespaceCommand.class}),
               examples = {
-                @ExampleObject(ref = "createDatabase"),
-                @ExampleObject(ref = "createDatabaseWithReplication"),
+                @ExampleObject(ref = "createNamespace"),
+                @ExampleObject(ref = "createNamespaceWithReplication"),
               }))
   @APIResponses(
       @APIResponse(

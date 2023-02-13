@@ -45,7 +45,7 @@ public class CollectionResourceBaseIntegrationTest extends CqlEnabledIntegration
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(DatabaseResource.BASE_PATH, keyspaceId.asInternal())
+        .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
         .then()
         .statusCode(200);
   }

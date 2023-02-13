@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
     }
   }
 
-  private List<String> getAllQueryString(String database, String collection) {
+  private List<String> getAllQueryString(String namespace, String collection) {
     List<String> queries = new ArrayList<>();
     String create =
         "CREATE TABLE IF NOT EXISTS %s.%s ("
@@ -67,37 +67,37 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    query_text_values   map<text, text>, "
             + "    query_null_values   set<text>,     "
             + "    PRIMARY KEY (key))";
-    queries.add(create.formatted(database, collection));
+    queries.add(create.formatted(namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_doc_properties ON %s.%s (entries(doc_properties)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (exist_keys) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (entries(sub_doc_equals)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_equals ON %s.%s (entries(array_equals)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON %s.%s (array_contains) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON %s.%s (entries(query_text_values)) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON %s.%s (query_null_values) USING 'StorageAttachedIndex'"
-            .formatted(collection, database, collection));
+            .formatted(collection, namespace, collection));
     return queries;
   }
 }

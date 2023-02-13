@@ -6,19 +6,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateDatabaseCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateDatabaseOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateNamespaceOperation;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class CreateDatabaseResolverTest {
+class CreateNamespaceResolverTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject CreateDatabaseResolver resolver;
+  @Inject CreateNamespaceResolver resolver;
 
   @Nested
   class ResolveCommand {
@@ -28,18 +28,18 @@ class CreateDatabaseResolverTest {
       String json =
           """
             {
-              "createDatabase": {
+              "createNamespace": {
                 "name" : "red_star_belgrade"
               }
             }
             """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Operation result = resolver.resolveCommand(null, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateDatabaseOperation.class,
+              CreateNamespaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -52,7 +52,7 @@ class CreateDatabaseResolverTest {
       String json =
           """
             {
-              "createDatabase": {
+              "createNamespace": {
                 "name" : "red_star_belgrade",
                 "options": {
                     "replication": {
@@ -63,12 +63,12 @@ class CreateDatabaseResolverTest {
             }
             """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Operation result = resolver.resolveCommand(null, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateDatabaseOperation.class,
+              CreateNamespaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -81,7 +81,7 @@ class CreateDatabaseResolverTest {
       String json =
           """
             {
-              "createDatabase": {
+              "createNamespace": {
                 "name" : "red_star_belgrade",
                 "options": {
                     "replication": {
@@ -93,12 +93,12 @@ class CreateDatabaseResolverTest {
             }
             """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Operation result = resolver.resolveCommand(null, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateDatabaseOperation.class,
+              CreateNamespaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -111,7 +111,7 @@ class CreateDatabaseResolverTest {
       String json =
           """
             {
-              "createDatabase": {
+              "createNamespace": {
                 "name" : "red_star_belgrade",
                 "options": {
                     "replication": {
@@ -124,12 +124,12 @@ class CreateDatabaseResolverTest {
             }
             """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Operation result = resolver.resolveCommand(null, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateDatabaseOperation.class,
+              CreateNamespaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -145,7 +145,7 @@ class CreateDatabaseResolverTest {
       String json =
           """
             {
-              "createDatabase": {
+              "createNamespace": {
                 "name" : "red_star_belgrade",
                 "options": {
                     "replication": {
@@ -156,12 +156,12 @@ class CreateDatabaseResolverTest {
             }
             """;
 
-      CreateDatabaseCommand command = objectMapper.readValue(json, CreateDatabaseCommand.class);
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Operation result = resolver.resolveCommand(null, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateDatabaseOperation.class,
+              CreateNamespaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");

@@ -77,5 +77,5 @@ jobs:
       # run the int tests
       - name: Integration Test
         run: |
-          ./mvnw -B -ntp verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
 
