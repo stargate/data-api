@@ -30,28 +30,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
   }
 
-  @Test
-  public final void createCollection() {
-    String json =
-        String.format(
-            """
-            {
-              "createCollection": {
-                "name": "%s"
-              }
-            }
-            """,
-            collectionName);
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
-        .then()
-        .statusCode(200);
-  }
-
   @Nested
   class ClientErrors {
 
