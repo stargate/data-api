@@ -61,7 +61,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.of(key)),
               Predicate.EQ,
-              getValue(value));
+              getGrpcValue(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -169,7 +169,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public BuiltCondition get() {
       switch (operator) {
         case CONTAINS:
-          return BuiltCondition.of(columnName, Predicate.CONTAINS, getValue(value));
+          return BuiltCondition.of(columnName, Predicate.CONTAINS, getGrpcValue(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -231,7 +231,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-  private static QueryOuterClass.Value getValue(Object value) {
+  private static QueryOuterClass.Value getGrpcValue(Object value) {
     if (value instanceof String) {
       return Values.of((String) value);
     } else if (value instanceof BigDecimal) {
@@ -244,6 +244,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     return Values.of((String) null);
   }
 
+  /**
+   * @param hasher
+   * @param path Path value is prefixed to the hash value of arrays.
+   * @param arrayValue
+   * @return
+   */
   private static String getHashValue(DocValueHasher hasher, String path, Object arrayValue) {
     return path + " " + getHash(hasher, arrayValue);
   }
