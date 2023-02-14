@@ -46,20 +46,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  private final boolean findOne;
-  private final boolean readDocument;
-
   private final ObjectMapper objectMapper;
 
   protected FilterableResolver() {
-    this(null, false, false);
+    this(null);
   }
 
   @Inject
-  public FilterableResolver(ObjectMapper objectMapper, boolean findOne, boolean readDocument) {
+  public FilterableResolver(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
-    this.findOne = findOne;
-    this.readDocument = readDocument;
     matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
 
     matchRules
@@ -98,7 +93,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return matchRules.apply(commandContext, command);
   }
 
-  public record FilteringOptions(int limit, String pagingState, int pageSize) {}
+  public record FilteringOptions(
+      int limit, String pagingState, int pageSize, FindOperation.ReadType readType) {}
 
   protected abstract FilteringOptions getFilteringOption(T command);
 
@@ -121,7 +117,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filteringOptions.pagingState(),
         filteringOptions.limit(),
         filteringOptions.pageSize(),
-        readDocument,
+        filteringOptions.readType(),
         objectMapper);
   }
 
@@ -133,7 +129,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filteringOptions.pagingState(),
         filteringOptions.limit(),
         filteringOptions.pageSize(),
-        readDocument,
+        filteringOptions.readType(),
         objectMapper);
   }
 
@@ -256,7 +252,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filteringOptions.pagingState(),
         filteringOptions.limit(),
         filteringOptions.pageSize(),
-        readDocument,
+        filteringOptions.readType(),
         objectMapper);
   }
 }

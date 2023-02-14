@@ -13,6 +13,7 @@ import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -91,7 +92,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
       FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 2, 2, true, objectMapper);
+          new FindOperation(
+              commandContext, List.of(), null, 2, 2, FindOperation.ReadType.DOCUMENT, objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -152,7 +154,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -200,7 +202,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -259,7 +261,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -319,7 +321,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -377,7 +379,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -438,7 +440,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -498,7 +500,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -560,7 +562,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -622,7 +624,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -674,7 +676,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -684,6 +686,115 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               commandResult -> {
                 assertThat(result.data()).isNotNull();
                 assertThat(result.data().docs()).hasSize(0);
+              });
+    }
+
+    @Test
+    public void countWithNoFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql)
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("count")
+                          .setType(TypeSpecs.INT)
+                          .build()))
+              .returning(List.of(List.of(Values.of(5))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(),
+              null,
+              Integer.MAX_VALUE,
+              1,
+              FindOperation.ReadType.COUNT,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(5);
+              });
+    }
+
+    @Test
+    public void countWithDynamic() throws Exception {
+      String collectionReadCql =
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE query_text_values[?] = ?"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("count")
+                          .setType(TypeSpecs.INT)
+                          .build()))
+              .returning(List.of(List.of(Values.of(2))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              null,
+              Integer.MAX_VALUE,
+              1,
+              FindOperation.ReadType.COUNT,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(2);
+              });
+    }
+
+    @Test
+    public void countWithDynamicNoMatch() throws Exception {
+      String collectionReadCql =
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE query_text_values[?] = ?"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql, Values.of("username"), Values.of("user_all"))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("count")
+                          .setType(TypeSpecs.INT)
+                          .build()))
+              .returning(List.of(List.of(Values.of(0))));
+      FindOperation findOperation =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")),
+              null,
+              Integer.MAX_VALUE,
+              1,
+              FindOperation.ReadType.COUNT,
+              objectMapper);
+      final Supplier<CommandResult> execute =
+          findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(0);
               });
     }
   }

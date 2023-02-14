@@ -51,7 +51,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -82,7 +82,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -113,7 +113,13 @@ public class FindCommandResolverTest {
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(
-              commandContext, List.of(), "dlavjhvbavkjbna", 10, 5, true, objectMapper);
+              commandContext,
+              List.of(),
+              "dlavjhvbavkjbna",
+              10,
+              5,
+              FindOperation.ReadType.DOCUMENT,
+              objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -146,7 +152,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)

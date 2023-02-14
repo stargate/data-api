@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import javax.enterprise.context.ApplicationScoped;
@@ -21,7 +22,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   @Inject
   public DeleteOneCommandResolver(ObjectMapper objectMapper) {
-    super(objectMapper, true, false);
+    super(objectMapper);
   }
 
   @Override
@@ -37,6 +38,6 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   @Override
   protected FilteringOptions getFilteringOption(DeleteOneCommand command) {
-    return new FilteringOptions(1, null, 1);
+    return new FilteringOptions(1, null, 1, FindOperation.ReadType.KEY);
   }
 }
