@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -52,8 +53,8 @@ public class UpdateOneResolverTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
               1,
               1,
@@ -96,8 +97,8 @@ public class UpdateOneResolverTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "col", FindOperation.MapFilterBase.Operator.EQ, "val")),
+                  new DBFilterBase.TextFilter(
+                      "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               null,
               1,
               1,

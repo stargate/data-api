@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -102,7 +103,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   protected abstract FilteringOptions getFilteringOption(T command);
 
   private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
-    List<FindOperation.DBFilterBase> filters = new ArrayList<>();
+    List<DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
@@ -110,8 +111,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       idGroup.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, expression.value())));
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, expression.value())));
     }
     FilteringOptions filteringOptions = getFilteringOption(captures.command());
     return new FindOperation(
@@ -137,7 +138,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
-    List<FindOperation.DBFilterBase> filters = new ArrayList<>();
+    List<DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
@@ -145,8 +146,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       idGroup.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, expression.value())));
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, expression.value())));
     }
 
     final CaptureGroup<String> textGroup =
@@ -155,9 +156,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       textGroup.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.TextFilter(
+                  new DBFilterBase.TextFilter(
                       expression.path(),
-                      FindOperation.MapFilterBase.Operator.EQ,
+                      DBFilterBase.MapFilterBase.Operator.EQ,
                       expression.value())));
     }
 
@@ -167,9 +168,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       boolGroup.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.BoolFilter(
+                  new DBFilterBase.BoolFilter(
                       expression.path(),
-                      FindOperation.MapFilterBase.Operator.EQ,
+                      DBFilterBase.MapFilterBase.Operator.EQ,
                       expression.value())));
     }
 
@@ -179,9 +180,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       numberGroup.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.NumberFilter(
+                  new DBFilterBase.NumberFilter(
                       expression.path(),
-                      FindOperation.MapFilterBase.Operator.EQ,
+                      DBFilterBase.MapFilterBase.Operator.EQ,
                       expression.value())));
     }
 
@@ -189,7 +190,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         (CaptureGroup<Object>) captures.getGroupIfPresent(DYNAMIC_NULL_GROUP);
     if (nullGroup != null) {
       nullGroup.consumeAllCaptures(
-          expression -> filters.add(new FindOperation.IsNullFilter(expression.path())));
+          expression -> filters.add(new DBFilterBase.IsNullFilter(expression.path())));
     }
 
     final CaptureGroup<Boolean> existsGroup =
@@ -198,7 +199,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       existsGroup.consumeAllCaptures(
           expression -> {
             if (expression.value())
-              filters.add(new FindOperation.ExistsFilter(expression.path(), expression.value()));
+              filters.add(new DBFilterBase.ExistsFilter(expression.path(), expression.value()));
             else
               throw new JsonApiException(
                   ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
@@ -214,7 +215,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             final DocValueHasher docValueHasher = new DocValueHasher();
             for (Object arrayValue : expression.value()) {
               filters.add(
-                  new FindOperation.AllFilter(docValueHasher, expression.path(), arrayValue));
+                  new DBFilterBase.AllFilter(docValueHasher, expression.path(), arrayValue));
             }
           });
     }
@@ -225,7 +226,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       sizeGroups.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.SizeFilter(expression.path(), expression.value().intValue())));
+                  new DBFilterBase.SizeFilter(expression.path(), expression.value().intValue())));
     }
 
     final CaptureGroup<List<Object>> arrayEqualsGroups =
@@ -234,7 +235,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       arrayEqualsGroups.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.ArrayEqualsFilter(
+                  new DBFilterBase.ArrayEqualsFilter(
                       new DocValueHasher(), expression.path(), expression.value())));
     }
 
@@ -244,7 +245,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       subDocEqualsGroups.consumeAllCaptures(
           expression ->
               filters.add(
-                  new FindOperation.SubDocEqualsFilter(
+                  new DBFilterBase.SubDocEqualsFilter(
                       new DocValueHasher(), expression.path(), expression.value())));
     }
 

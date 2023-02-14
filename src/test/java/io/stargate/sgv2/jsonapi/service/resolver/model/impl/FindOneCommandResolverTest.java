@@ -9,6 +9,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
@@ -48,8 +49,8 @@ public class FindOneCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
               1,
               1,
@@ -114,8 +115,8 @@ public class FindOneCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "col", FindOperation.MapFilterBase.Operator.EQ, "val")),
+                  new DBFilterBase.TextFilter(
+                      "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               null,
               1,
               1,

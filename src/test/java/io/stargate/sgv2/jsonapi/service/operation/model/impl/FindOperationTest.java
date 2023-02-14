@@ -147,8 +147,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -195,8 +195,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -254,8 +254,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,
@@ -314,8 +314,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.BoolFilter(
-                      "registration_active", FindOperation.MapFilterBase.Operator.EQ, true)),
+                  new DBFilterBase.BoolFilter(
+                      "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true)),
               null,
               1,
               1,
@@ -373,7 +373,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.ExistsFilter("registration_active", true)),
+              List.of(new DBFilterBase.ExistsFilter("registration_active", true)),
               null,
               1,
               1,
@@ -433,8 +433,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag1"),
-                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag2")),
+                  new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"),
+                  new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2")),
               null,
               1,
               1,
@@ -494,7 +494,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.SizeFilter("tags", 2)),
+              List.of(new DBFilterBase.SizeFilter("tags", 2)),
               null,
               1,
               1,
@@ -555,7 +555,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.ArrayEqualsFilter(
+                  new DBFilterBase.ArrayEqualsFilter(
                       new DocValueHasher(), "tags", List.of("tag1", "tag2"))),
               null,
               1,
@@ -617,7 +617,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.SubDocEqualsFilter(
+                  new DBFilterBase.SubDocEqualsFilter(
                       new DocValueHasher(), "sub_doc", Map.of("col", "val"))),
               null,
               1,
@@ -669,8 +669,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,

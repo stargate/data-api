@@ -82,8 +82,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -133,8 +133,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
@@ -195,8 +195,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,
@@ -252,8 +252,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,
