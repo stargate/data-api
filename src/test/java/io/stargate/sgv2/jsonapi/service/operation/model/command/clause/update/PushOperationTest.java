@@ -22,21 +22,23 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class PushOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPath {
+  class BasicPushHappyPath {
     @Test
     public void testSimplePushToExisting() {
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
-              objectFromJson("""
-                    { "array" : 32 }
-                    """));
+              objectFromJson(
+                  """
+                              { "array" : 32 }
+                              """));
       assertThat(oper).isInstanceOf(PushOperation.class);
-      ObjectNode doc = defaultArrayTestDoc();
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
-          objectFromJson("""
-              { "a" : 1, "array" : [ true, 32 ] }
-              """);
+          objectFromJson(
+              """
+                      { "a" : 1, "array" : [ true, 32 ] }
+                      """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -46,31 +48,32 @@ public class PushOperationTest extends UpdateOperationTestBase {
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson(
                   """
-                    { "newArray" : "value" }
-                    """));
+                                      { "newArray" : "value" }
+                                      """));
       assertThat(oper).isInstanceOf(PushOperation.class);
-      ObjectNode doc = defaultArrayTestDoc();
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-              { "a" : 1, "array" : [ true ], "newArray" : [ "value" ] }
-              """);
+                              { "a" : 1, "array" : [ true ], "newArray" : [ "value" ] }
+                              """);
       assertThat(doc).isEqualTo(expected);
     }
   }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class invalidCases {
+  class BasicPushInvalidCases {
     @Test
     public void testPushOnNonArrayProperty() {
-      ObjectNode doc = defaultArrayTestDoc();
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
-              objectFromJson("""
-                    { "a" : 57 }
-                    """));
+              objectFromJson(
+                  """
+                              { "a" : 57 }
+                              """));
       Exception e =
           catchException(
               () -> {
@@ -93,22 +96,161 @@ public class PushOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.PUSH.resolveOperation(
                     objectFromJson(
                         """
-                    { "a" : { "$each" : [ 1, 2, 3 ] } }
-                    """));
+                                                { "a" : { "$sort" : { "field": 1 } } }
+                                                """));
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessage(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $push does not yet support modifiers; trying to use $each");
+                  + ": $push only supports $each currently; trying to use '$sort'");
+    }
+
+    // Modifiers, if any, must be "under" field name, not at main level (and properties
+    // cannot have names starting with "$")
+    @Test
+    public void testPushWithMisplacedModifier() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.PUSH.resolveOperation(
+                    objectFromJson(
+                        """
+                                        { "$each" : [ 1, 2 ] }
+                                        """));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+                  + ": $push requires field names at main level, found modifier: $each");
     }
   }
 
-  ObjectNode defaultArrayTestDoc() {
-    return objectFromJson(
-        """
-                    { "a" : 1, "array" : [ true ] }
-                    """);
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class PushWithEachHappyCases {
+    @Test
+    public void withEachToExisting() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                                      { "array" : { "$each" : [ 17, false ] } }
+                                      """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                              { "a" : 1, "array" : [ true, 17, false ] }
+                              """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachToNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                            { "newArray" : { "$each" : [ -50, "abc" ] } }
+                              """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                        { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
+                        """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachNestedArray() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                              { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                              """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ null ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                            { "a" : 1, "array" : [ null, [ 1, 2 ], [ 3 ] ] }
+                            """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachNestedArrayNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                                    { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                                    """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"x\" : 1 }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                              { "x" : 1, "array" : [ [ 1, 2 ], [ 3 ] ] }
+                              """);
+      assertThat(doc).isEqualTo(expected);
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class PushWithEachInvalidCases {
+    // Argument for "$each" must be an Array
+    @Test
+    public void nonArrayParamForEach() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.PUSH.resolveOperation(
+                    objectFromJson(
+                        """
+                                      { "array" : { "$each" : 365 } }
+                              """));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+                  + ": $push modifier $each requires ARRAY argument, found: NUMBER");
+    }
+
+    // If there is one modifier for given field, all Object properties must be (supported)
+    // modifiers:
+    @Test
+    public void nonModifierParamForEach() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.PUSH.resolveOperation(
+                    objectFromJson(
+                        """
+                                      { "array" : { "$each" : [ 1, 2, 3 ], "value" : 3 } }
+                              """));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+                  + ": $push only supports $each currently; trying to use 'value'");
+    }
   }
 }
