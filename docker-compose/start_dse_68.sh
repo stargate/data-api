@@ -35,6 +35,6 @@ export DSETAG
 export SGTAG
 export JSONTAG
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSON"
+echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONTAG"
 
-docker-compose up -d
+docker-compose up -d --wait
