@@ -87,7 +87,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              false,
+              FindOperation.ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -138,7 +138,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              false,
+              FindOperation.ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -200,7 +200,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              false,
+              FindOperation.ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -257,7 +257,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              false,
+              FindOperation.ReadType.KEY,
               objectMapper);
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =

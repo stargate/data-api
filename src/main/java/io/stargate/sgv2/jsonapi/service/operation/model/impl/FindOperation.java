@@ -25,7 +25,7 @@ public record FindOperation(
     String pagingState,
     int limit,
     int pageSize,
-    boolean readDocument,
+    ReadType readType,
     ObjectMapper objectMapper)
     implements ReadOperation {
 
@@ -33,13 +33,24 @@ public record FindOperation(
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return getDocuments(queryExecutor)
         .onItem()
-        .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+        .transform(docs -> new ReadOperationPage(docs.docs(), docs.count(), docs.pagingState()));
   }
 
   @Override
   public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, pageSize, readDocument, objectMapper);
+    switch (readType) {
+      case DOCUMENT -> {
+        return findDocument(queryExecutor, query, pagingState, pageSize, true, objectMapper);
+      }
+      case KEY -> {
+        return findDocument(queryExecutor, query, pagingState, pageSize, false, objectMapper);
+      }
+      case COUNT -> {
+        return countDocuments(queryExecutor, query);
+      }
+    }
+    return null;
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
@@ -47,12 +58,35 @@ public record FindOperation(
     for (DBFilterBase filter : filters) {
       conditions.add(filter.get());
     }
-    return new QueryBuilder()
-        .select()
-        .column(readDocument ? documentColumns : documentKeyColumns)
-        .from(commandContext.namespace(), commandContext.collection())
-        .where(conditions)
-        .limit(limit)
-        .build();
+    switch (readType) {
+      case DOCUMENT:
+      case KEY:
+        {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(conditions)
+              .limit(limit)
+              .build();
+        }
+      case COUNT:
+        {
+          return new QueryBuilder()
+              .select()
+              .count("key")
+              .as("count")
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(conditions)
+              .build();
+        }
+    }
+    return null;
+  }
+
+  public enum ReadType {
+    DOCUMENT,
+    KEY,
+    COUNT
   }
 }

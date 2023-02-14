@@ -54,7 +54,7 @@ public class FindOneCommandResolverTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -83,7 +83,8 @@ public class FindOneCommandResolverTest {
       final Operation operation =
           findOneCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
-          new FindOperation(commandContext, List.of(), null, 1, 1, true, objectMapper);
+          new FindOperation(
+              commandContext, List.of(), null, 1, 1, FindOperation.ReadType.DOCUMENT, objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -120,7 +121,7 @@ public class FindOneCommandResolverTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)

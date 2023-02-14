@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -10,28 +10,31 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableRe
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-/** Resolves the {@link FindOneCommand } */
+/** Resolves the {@link CountCommand } */
 @ApplicationScoped
-public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
-    implements CommandResolver<FindOneCommand> {
-
+public class CountCommandResolver extends FilterableResolver<CountCommand>
+    implements CommandResolver<CountCommand> {
   @Inject
-  public FindOneCommandResolver(ObjectMapper objectMapper) {
+  public CountCommandResolver(ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
-  @Override
-  public Class<FindOneCommand> getCommandClass() {
-    return FindOneCommand.class;
+  public CountCommandResolver() {
+    this(null);
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, FindOneCommand command) {
+  public Class<CountCommand> getCommandClass() {
+    return CountCommand.class;
+  }
+
+  @Override
+  public Operation resolveCommand(CommandContext ctx, CountCommand command) {
     return resolve(ctx, command);
   }
 
   @Override
-  protected FilteringOptions getFilteringOption(FindOneCommand command) {
-    return new FilteringOptions(1, null, 1, FindOperation.ReadType.DOCUMENT);
+  protected FilteringOptions getFilteringOption(CountCommand command) {
+    return new FilteringOptions(Integer.MAX_VALUE, null, 1, FindOperation.ReadType.COUNT);
   }
 }

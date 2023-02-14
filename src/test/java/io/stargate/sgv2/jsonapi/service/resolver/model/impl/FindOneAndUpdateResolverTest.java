@@ -59,7 +59,7 @@ public class FindOneAndUpdateResolverTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
 
       DocumentUpdater documentUpdater =
@@ -104,7 +104,7 @@ public class FindOneAndUpdateResolverTest {
               null,
               1,
               1,
-              true,
+              FindOperation.ReadType.DOCUMENT,
               objectMapper);
 
       DocumentUpdater documentUpdater =

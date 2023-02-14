@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
@@ -312,6 +313,30 @@ class ObjectMapperConfigurationTest {
                 assertThat(documents).hasSize(2);
                 final InsertManyCommand.Options options = insertManyCommand.options();
                 assertThat(options).isNotNull();
+              });
+    }
+  }
+
+  @Nested
+  class Count {
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+                  {
+                    "count": {
+                      "filter" : {"username" : "user1"}
+                    }
+                  }
+                  """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CountCommand.class,
+              countCommand -> {
+                FilterClause filterClause = countCommand.filterClause();
+                assertThat(filterClause).isNotNull();
               });
     }
   }

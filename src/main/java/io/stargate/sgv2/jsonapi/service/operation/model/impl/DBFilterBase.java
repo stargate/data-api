@@ -169,11 +169,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public BuiltCondition get() {
       switch (operator) {
         case CONTAINS:
-<<<<<<< HEAD
-          return BuiltCondition.of(columnName, Predicate.CONTAINS, getValue(value));
-=======
           return BuiltCondition.of(columnName, Predicate.CONTAINS, getGrpcValue(value));
->>>>>>> 58f7f5b15cad102b7390a94ddaeef8787f7156ef
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
