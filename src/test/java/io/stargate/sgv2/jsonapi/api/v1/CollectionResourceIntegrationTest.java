@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -62,6 +63,28 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .body("errors[0].exceptionClass", is("WebApplicationException"))
           .body("errors[1].message", is(not(blankString())))
           .body("errors[1].exceptionClass", is("JsonParseException"));
+    }
+
+    @Test
+    public void unknownCommand() {
+      String json =
+          """
+                  {
+                    "unknownCommand": {
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
+          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
     }
 
     @Test
