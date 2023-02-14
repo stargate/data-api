@@ -73,7 +73,7 @@ public interface ReadOperation extends Operation {
   }
 
   /**
-   * Default implementation to query and parse the result set
+   * Default implementation to run count query and parse the result set
    *
    * @param queryExecutor
    * @param query
