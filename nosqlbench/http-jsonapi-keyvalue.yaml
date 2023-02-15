@@ -30,7 +30,6 @@ bindings:
   rw_value: Hash(); <<valdist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
 
 blocks:
-  # TODO schema creation not yet addressed by JSON API Spec
   schema:
     ops:
       create-namespace:
@@ -43,28 +42,28 @@ blocks:
         body: |
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_crud_basic>>"
+              "name": "<<namespace:jsonapi_keyvalue>>"
             }
           }
 
       # TODO schema deletion not yet addressed by JSON API Spec
-      delete-collection:
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
-        ok-status: "[2-4][0-9][0-9]"
-        body: |
-          {
-            "deleteCollection": {
-              "name": "<<collection:docs_collection>>"
-            }
-          }
+      #delete-collection:
+      #  method: POST
+      #  uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+      #  Accept: "application/json"
+      #  X-Cassandra-Request-Id: "{request_id}"
+      #  X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+      #  ok-status: "[2-4][0-9][0-9]"
+      #  body: |
+      #    {
+      #      "deleteCollection": {
+      #        "name": "<<collection:docs_collection>>"
+      #      }
+      #    }
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
@@ -80,7 +79,7 @@ blocks:
     ops:
       rampup-insert:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
@@ -101,7 +100,7 @@ blocks:
     ops:
       main-select:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
@@ -116,7 +115,7 @@ blocks:
           
       main-write:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"

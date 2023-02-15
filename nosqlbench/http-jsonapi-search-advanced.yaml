@@ -163,7 +163,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -185,7 +185,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -210,7 +210,7 @@ blocks:
                 },
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -241,7 +241,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -281,7 +281,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -330,7 +330,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -379,7 +379,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -403,7 +403,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -425,7 +425,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -450,7 +450,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -481,7 +481,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -521,7 +521,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -570,7 +570,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -619,7 +619,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }

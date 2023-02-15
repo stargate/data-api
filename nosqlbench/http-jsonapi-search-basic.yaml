@@ -7,7 +7,6 @@ description: |
   Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8080).
 
 scenarios:
-  # TODO schema creation not yet addressed by JSON API Spec
   schema:                 run driver=http tags==block:schema threads==<<threads:1>> cycles==UNDEF
   rampup:
     write:                run driver=http tags==name:"rampup-put.*" cycles===TEMPLATE(docscount,10000000) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
@@ -48,7 +47,6 @@ bindings:
   additional_fields: ListSizedStepped(<<docpadding:0>>,Template("\"{}\":{}",Identity(),Identity())); ToString(); ReplaceAll('\[\"', ',\"'); ReplaceAll('\[', ''); ReplaceAll('\]', '') -> String
 
 blocks:
-  # TODO schema creation not yet addressed by JSON API Spec
   schema:
     ops:
       create-namespace:
@@ -151,7 +149,7 @@ blocks:
                 "match3" : {"$eq":true}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }        
@@ -171,7 +169,7 @@ blocks:
                 "match1" : {"$lt":1}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -192,7 +190,7 @@ blocks:
                 "match2" : {"$eq":"true"}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -215,7 +213,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -238,7 +236,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -260,7 +258,7 @@ blocks:
                 "match3" : {"$eq":true}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -280,7 +278,7 @@ blocks:
                 "match1" : {"$lt":1}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -301,7 +299,7 @@ blocks:
                 "match2" : {"$eq":"true"}
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -324,7 +322,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
@@ -347,7 +345,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,3>> 
+                "pageSize": <<page_size,20>> 
               }
             }
           }
