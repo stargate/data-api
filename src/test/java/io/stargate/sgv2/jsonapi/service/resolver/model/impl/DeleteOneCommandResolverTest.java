@@ -9,6 +9,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -51,7 +52,7 @@ public class DeleteOneCommandResolverTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
       DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
       assertThat(operation)
@@ -77,8 +78,7 @@ public class DeleteOneCommandResolverTest {
       final Operation operation =
           deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
-          new FindOperation(
-              commandContext, List.of(), null, 1, 1, FindOperation.ReadType.KEY, objectMapper);
+          new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.KEY, objectMapper);
       DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
@@ -112,7 +112,7 @@ public class DeleteOneCommandResolverTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
       DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
       assertThat(operation)

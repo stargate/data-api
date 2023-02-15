@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -40,6 +40,6 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
 
   @Override
   protected FilteringOptions getFilteringOption(FindOneAndUpdateCommand command) {
-    return new FilteringOptions(1, null, 1, FindOperation.ReadType.DOCUMENT);
+    return new FilteringOptions(1, null, 1, ReadType.DOCUMENT);
   }
 }

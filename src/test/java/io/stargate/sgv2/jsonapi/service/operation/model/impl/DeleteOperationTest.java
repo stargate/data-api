@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
@@ -87,7 +88,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -138,7 +139,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -200,7 +201,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
@@ -257,7 +258,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              FindOperation.ReadType.KEY,
+              ReadType.KEY,
               objectMapper);
       DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
       final Supplier<CommandResult> execute =

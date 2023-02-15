@@ -67,29 +67,7 @@ public interface ReadOperation extends Operation {
                 }
                 documents.add(document);
               }
-              return new FindResponse(
-                  documents, documents.size(), extractPagingStateFromResultSet(rSet));
-            });
-  }
-
-  /**
-   * Default implementation to run count query and parse the result set
-   *
-   * @param queryExecutor
-   * @param query
-   * @return
-   */
-  default Uni<FindResponse> countDocuments(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query) {
-    return queryExecutor
-        .executeRead(query, Optional.empty(), 1)
-        .onItem()
-        .transform(
-            rSet -> {
-              QueryOuterClass.Row row = rSet.getRows(0); // For count there will be only one row
-              int count =
-                  Values.int_(row.getValues(0)); // Count value will be the first column value
-              return new FindResponse(null, count, null);
+              return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
             });
   }
 
@@ -112,6 +90,26 @@ public interface ReadOperation extends Operation {
     }
     return null;
   }
+  /**
+   * Default implementation to run count query and parse the result set
+   *
+   * @param queryExecutor
+   * @param query
+   * @return
+   */
+  default Uni<CountResponse> countDocuments(
+      QueryExecutor queryExecutor, QueryOuterClass.Query query) {
+    return queryExecutor
+        .executeRead(query, Optional.empty(), 1)
+        .onItem()
+        .transform(
+            rSet -> {
+              QueryOuterClass.Row row = rSet.getRows(0); // For count there will be only one row
+              int count =
+                  Values.int_(row.getValues(0)); // Count value will be the first column value
+              return new CountResponse(count);
+            });
+  }
 
   /**
    * A operation method which can return FindResponse instead of CommandResult. This method will be
@@ -122,5 +120,7 @@ public interface ReadOperation extends Operation {
    */
   Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
 
-  public static record FindResponse(List<ReadDocument> docs, int count, String pagingState) {}
+  record FindResponse(List<ReadDocument> docs, String pagingState) {}
+
+  record CountResponse(int count) {}
 }

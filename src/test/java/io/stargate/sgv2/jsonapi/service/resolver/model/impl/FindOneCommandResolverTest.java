@@ -9,6 +9,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -54,7 +55,7 @@ public class FindOneCommandResolverTest {
               null,
               1,
               1,
-              FindOperation.ReadType.DOCUMENT,
+              ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -83,8 +84,7 @@ public class FindOneCommandResolverTest {
       final Operation operation =
           findOneCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
-          new FindOperation(
-              commandContext, List.of(), null, 1, 1, FindOperation.ReadType.DOCUMENT, objectMapper);
+          new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.DOCUMENT, objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -121,7 +121,7 @@ public class FindOneCommandResolverTest {
               null,
               1,
               1,
-              FindOperation.ReadType.DOCUMENT,
+              ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)

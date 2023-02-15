@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import javax.enterprise.context.ApplicationScoped;
@@ -32,6 +32,6 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   protected FilteringOptions getFilteringOption(FindOneCommand command) {
-    return new FilteringOptions(1, null, 1, FindOperation.ReadType.DOCUMENT);
+    return new FilteringOptions(1, null, 1, ReadType.DOCUMENT);
   }
 }

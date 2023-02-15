@@ -10,7 +10,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -93,8 +95,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return matchRules.apply(commandContext, command);
   }
 
-  public record FilteringOptions(
-      int limit, String pagingState, int pageSize, FindOperation.ReadType readType) {}
+  public record FilteringOptions(int limit, String pagingState, int pageSize, ReadType readType) {}
 
   protected abstract FilteringOptions getFilteringOption(T command);
 
@@ -111,26 +112,34 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                       DBFilterBase.IDFilter.Operator.EQ, expression.value())));
     }
     FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    return new FindOperation(
-        commandContext,
-        filters,
-        filteringOptions.pagingState(),
-        filteringOptions.limit(),
-        filteringOptions.pageSize(),
-        filteringOptions.readType(),
-        objectMapper);
+    if (filteringOptions.readType() == ReadType.COUNT) {
+      return new CountOperation(commandContext, filters);
+    } else {
+      return new FindOperation(
+          commandContext,
+          filters,
+          filteringOptions.pagingState(),
+          filteringOptions.limit(),
+          filteringOptions.pageSize(),
+          filteringOptions.readType(),
+          objectMapper);
+    }
   }
 
   private ReadOperation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
     FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    return new FindOperation(
-        commandContext,
-        List.of(),
-        filteringOptions.pagingState(),
-        filteringOptions.limit(),
-        filteringOptions.pageSize(),
-        filteringOptions.readType(),
-        objectMapper);
+    if (filteringOptions.readType() == ReadType.COUNT) {
+      return new CountOperation(commandContext, List.of());
+    } else {
+      return new FindOperation(
+          commandContext,
+          List.of(),
+          filteringOptions.pagingState(),
+          filteringOptions.limit(),
+          filteringOptions.pageSize(),
+          filteringOptions.readType(),
+          objectMapper);
+    }
   }
 
   private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
@@ -246,13 +255,17 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
 
     FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    return new FindOperation(
-        commandContext,
-        filters,
-        filteringOptions.pagingState(),
-        filteringOptions.limit(),
-        filteringOptions.pageSize(),
-        filteringOptions.readType(),
-        objectMapper);
+    if (filteringOptions.readType() == ReadType.COUNT) {
+      return new CountOperation(commandContext, filters);
+    } else {
+      return new FindOperation(
+          commandContext,
+          filters,
+          filteringOptions.pagingState(),
+          filteringOptions.limit(),
+          filteringOptions.pageSize(),
+          filteringOptions.readType(),
+          objectMapper);
+    }
   }
 }

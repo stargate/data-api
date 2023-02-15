@@ -1,15 +1,16 @@
-package io.stargate.sgv2.jsonapi.service.operation.model.impl;
+package io.stargate.sgv2.jsonapi.service.operation.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -20,31 +21,15 @@ import java.util.function.Supplier;
  *
  * <p>Create with a series of filters that are implicitly AND'd together.
  */
-public record FindOperation(
-    CommandContext commandContext,
-    List<DBFilterBase> filters,
-    String pagingState,
-    int limit,
-    int pageSize,
-    ReadType readType,
-    ObjectMapper objectMapper)
+public record CountOperation(CommandContext commandContext, List<DBFilterBase> filters)
     implements ReadOperation {
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    return getDocuments(queryExecutor)
-        .onItem()
-        .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
-  }
-
-  @Override
-  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
     QueryOuterClass.Query query = buildSelectQuery();
-    if (ReadType.DOCUMENT == readType) {
-      return findDocument(queryExecutor, query, pagingState, pageSize, true, objectMapper);
-    } else {
-      return findDocument(queryExecutor, query, pagingState, pageSize, false, objectMapper);
-    }
+    return countDocuments(queryExecutor, query)
+        .onItem()
+        .transform(docs -> new CountOperationPage(docs.count()));
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
@@ -54,10 +39,15 @@ public record FindOperation(
     }
     return new QueryBuilder()
         .select()
-        .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+        .count("key")
+        .as("count")
         .from(commandContext.namespace(), commandContext.collection())
         .where(conditions)
-        .limit(limit)
         .build();
+  }
+
+  @Override
+  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+    return Uni.createFrom().failure(new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION));
   }
 }
