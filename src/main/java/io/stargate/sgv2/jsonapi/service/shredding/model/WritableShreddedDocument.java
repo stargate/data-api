@@ -127,20 +127,18 @@ public record WritableShreddedDocument(
       if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
         arrayEquals = new HashMap<>();
-        arrayContains = new HashSet<>();
       }
       arraySize.put(path, arr.size());
 
-      // 16-Dec-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
-      //    is quite unclear: older documents claim it's "JsonPath + content hash" (per
-      //    element presumably). For now will use that, with space as separator; probably
-      //    not what we want but...
+      // 15-Feb-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
+      //    is less clear: we will use definition of "Path + content hash" with space
+      //    as separator
 
       arrayEquals.put(path, hasher.hash(arr).hash());
       for (JsonNode element : arr) {
         // Assuming it's path to array, NOT index, since otherwise containment tricky.
         // Plus atomic values contains entries for in-array atomics anyway
-        arrayContains.add(path + " " + hasher.hash(element).hash());
+        addArrayContains(path, element);
       }
     }
 
@@ -202,6 +200,22 @@ public record WritableShreddedDocument(
      */
     private void addKey(JsonPath key) {
       existKeys.add(key);
+    }
+
+    /**
+     * Helper method used to add a single entry in "arrayCantains" Set: this is either an actual
+     * Array element OR single atomic value. Both cases are needed to support Mongo's
+     * "atomic-or-array-element" filtering.
+     *
+     * @param path Path to either Array that contains Element (but not index!) OR to an Atomic value
+     *     not directly enclosed in an array.
+     * @param element Actual value matching the path
+     */
+    private void addArrayContains(JsonPath path, JsonNode element) {
+      if (arrayContains == null) {
+        arrayContains = new HashSet<>();
+      }
+      arrayContains.add(path + " " + hasher.hash(element).hash());
     }
   }
 }
