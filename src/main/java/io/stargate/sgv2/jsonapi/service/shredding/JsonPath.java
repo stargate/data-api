@@ -62,6 +62,10 @@ public final class JsonPath implements Comparable<JsonPath> {
     return new JsonPath(encoded);
   }
 
+  /**
+   * Factory method for constructing root-level {@link Builder}: assumes Object context (root level
+   * always implicit Object in Mongoose)
+   */
   public static Builder rootBuilder() {
     return new Builder(null);
   }
@@ -105,28 +109,60 @@ public final class JsonPath implements Comparable<JsonPath> {
      */
     private String childPath;
 
+    /** Flag that indicates that the currently pointed-to path is to an array element */
+    private final boolean inArray;
+
     public Builder(String base) {
-      this.basePath = base;
+      this(base, false);
     }
 
-    public Builder nestedValueBuilder() {
+    Builder(String base, boolean inArray) {
+      this.basePath = base;
+      this.inArray = inArray;
+    }
+
+    public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
         throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
       }
-      return new Builder(childPath);
+      return new Builder(childPath, true);
+    }
+
+    public Builder nestedObjectBuilder() {
+      // Must not be called unless we are pointing to a property or element:
+      if (childPath == null) {
+        throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
+      }
+      return new Builder(childPath, false);
+    }
+
+    /**
+     * Accessor for checking whether path being built points directly to an array element
+     * (regardless of whether contained in Array further up).
+     *
+     * @return True if the path being built points to an array element; false otherwise (Object
+     *     property or root value)
+     */
+    public boolean isArrayElement() {
+      return inArray;
     }
 
     public Builder property(String propName) {
-      // Simple as we no longer apply escaping:
+      if (inArray) {
+        throw new IllegalStateException(
+            "Cannot add property '" + propName + "' when in array context: " + build());
+      }
       childPath = (basePath == null) ? propName : (basePath + '.' + propName);
       return this;
     }
 
     public Builder index(int index) {
-      // Indexes are easy as no escaping needed
+      if (!inArray) {
+        throw new IllegalStateException(
+            "Cannot add index (" + index + ") when not in array context: " + build());
+      }
       StringBuilder sb;
-
       if (basePath == null) { // root
         sb = new StringBuilder(6);
       } else {

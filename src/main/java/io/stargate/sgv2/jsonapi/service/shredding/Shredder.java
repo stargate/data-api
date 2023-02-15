@@ -126,11 +126,11 @@ public class Shredder {
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
       callback.shredObject(pathBuilder, ob);
-      traverseObject(ob, callback, pathBuilder.nestedValueBuilder());
+      traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
     } else if (value.isArray()) {
       ArrayNode arr = (ArrayNode) value;
       callback.shredArray(pathBuilder, arr);
-      traverseArray(arr, callback, pathBuilder.nestedValueBuilder());
+      traverseArray(arr, callback, pathBuilder.nestedArrayBuilder());
     } else if (value.isTextual()) {
       callback.shredText(pathBuilder.build(), value.textValue());
     } else if (value.isNumber()) {
