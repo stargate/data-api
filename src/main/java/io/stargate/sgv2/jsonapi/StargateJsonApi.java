@@ -71,6 +71,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "countDocuments",
+                  summary = "`countDocuments` command",
+                  value =
+                      """
+                            {
+                              "countDocuments": {
+                                  "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
+                              }
+                            }
+                            """),
+              @ExampleObject(
                   name = "find",
                   summary = "`find` command",
                   value =
@@ -209,6 +220,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                             }
                             """),
+              @ExampleObject(
+                  name = "resultCount",
+                  summary = "countDocuments command result",
+                  value =
+                      """
+                                    {
+                                      "status": {
+                                        "counted_documents": 2
+                                      }
+                                    }
+                                    """),
               @ExampleObject(
                   name = "resultRead",
                   summary = "Read command result",

@@ -41,15 +41,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                 }
                                 """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
+      insert(json);
       json =
           """
                                 {
@@ -68,14 +60,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                 }
                                 """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -91,14 +76,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                     }
                                     """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -112,14 +90,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                             }
                             """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -134,6 +105,10 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
 
+      insert(json);
+    }
+
+    private void insert(String json) {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
