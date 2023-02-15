@@ -128,17 +128,14 @@ public record WritableShreddedDocument(
         arraySize = new HashMap<>();
         arrayEquals = new HashMap<>();
       }
+      // arrayEquals (full array contents hash) and arraySize are simple to generate
       arraySize.put(path, arr.size());
-
-      // 15-Feb-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
-      //    is less clear: we will use definition of "Path + content hash" with space
-      //    as separator
-
       arrayEquals.put(path, hasher.hash(arr).hash());
+
+      // But arrayContains is bit different: must use path to array (not elements);
+      // and for atomics need to avoid generating twice
       for (JsonNode element : arr) {
-        // Assuming it's path to array, NOT index, since otherwise containment tricky.
-        // Plus atomic values contains entries for in-array atomics anyway
-        addArrayContains(path, element);
+        addArrayContains(path, hasher.hash(element));
       }
     }
 
@@ -149,6 +146,10 @@ public record WritableShreddedDocument(
         queryTextValues = new HashMap<>();
       }
       queryTextValues.put(path, text);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      if (!path.isArrayElement()) {
+        addArrayContains(path, hasher.stringValue(text).hash());
+      }
     }
 
     @Override
@@ -158,6 +159,10 @@ public record WritableShreddedDocument(
         queryNumberValues = new HashMap<>();
       }
       queryNumberValues.put(path, number);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      if (!path.isArrayElement()) {
+        addArrayContains(path, hasher.numberValue(number).hash());
+      }
     }
 
     @Override
@@ -167,6 +172,10 @@ public record WritableShreddedDocument(
         queryBoolValues = new HashMap<>();
       }
       queryBoolValues.put(path, value);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      if (!path.isArrayElement()) {
+        addArrayContains(path, hasher.booleanValue(value).hash());
+      }
     }
 
     @Override
@@ -176,6 +185,10 @@ public record WritableShreddedDocument(
         queryNullValues = new HashSet<>();
       }
       queryNullValues.add(path);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      if (!path.isArrayElement()) {
+        addArrayContains(path, hasher.nullValue().hash());
+      }
     }
 
     /*
@@ -209,13 +222,16 @@ public record WritableShreddedDocument(
      *
      * @param path Path to either Array that contains Element (but not index!) OR to an Atomic value
      *     not directly enclosed in an array.
-     * @param element Actual value matching the path
+     * @param elementHash Hash of value matching the path
      */
-    private void addArrayContains(JsonPath path, JsonNode element) {
-      if (arrayContains == null) {
-        arrayContains = new HashSet<>();
+    private void addArrayContains(JsonPath path, DocValueHash elementHash) {
+      // Do not add doc id field (we do not support Structured doc ids)
+      if (!path.isDocumentId()) {
+        if (arrayContains == null) {
+          arrayContains = new HashSet<>();
+        }
+        arrayContains.add(path + " " + elementHash.hash());
       }
-      arrayContains.add(path + " " + hasher.hash(element).hash());
     }
   }
 }

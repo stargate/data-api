@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Objects;
@@ -46,20 +47,22 @@ public final class JsonPath implements Comparable<JsonPath> {
   /** Encoded representation of the path as String. */
   private final String encodedPath;
 
-  JsonPath(String encoded) {
+  /** Whether path points to an element of an array ({@code true}) or not. */
+  private final boolean arrayElement;
+
+  JsonPath(String encoded, boolean arrayElement) {
     encodedPath = Objects.requireNonNull(encoded, "Null not legal encoded path");
+    this.arrayElement = arrayElement;
   }
 
-  /**
-   * Factory method that may be called to construct an instance from pre-encoded Path String (one
-   * where character that must be escaped have been properly escpaed). Method does NOT verify that
-   * escaping has been done correctly; caller is assumed to have ensured that.
-   *
-   * @param encoded
-   * @return
-   */
+  /** Factory method only used for testing. */
   public static JsonPath from(String encoded) {
-    return new JsonPath(encoded);
+    return from(encoded, false);
+  }
+
+  /** Factory method only used for testing. */
+  public static JsonPath from(String encoded, boolean arrayElement) {
+    return new JsonPath(encoded, arrayElement);
   }
 
   /**
@@ -68,6 +71,18 @@ public final class JsonPath implements Comparable<JsonPath> {
    */
   public static Builder rootBuilder() {
     return new Builder(null);
+  }
+
+  /** @return Whether path points to an array element or not */
+  public boolean isArrayElement() {
+    return arrayElement;
+  }
+
+  /**
+   * Convenience method for checking whether this path is {@code _id} (document primary key) or not
+   */
+  public boolean isDocumentId() {
+    return DocumentConstants.Fields.DOC_ID.equals(encodedPath);
   }
 
   @Override
@@ -83,7 +98,11 @@ public final class JsonPath implements Comparable<JsonPath> {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    return (o instanceof JsonPath) && encodedPath.equals(((JsonPath) o).encodedPath);
+    if (o instanceof JsonPath) {
+      JsonPath other = (JsonPath) o;
+      return (arrayElement == other.arrayElement) && encodedPath.equals(other.encodedPath);
+    }
+    return false;
   }
 
   @Override
@@ -183,11 +202,11 @@ public final class JsonPath implements Comparable<JsonPath> {
       if (childPath == null) {
         if (basePath == null) {
           // Means this is at root Object before any properties: could fail or build "empty":
-          return new JsonPath("");
+          return new JsonPath("", false);
         }
-        return new JsonPath(basePath);
+        return new JsonPath(basePath, inArray);
       }
-      return new JsonPath(childPath);
+      return new JsonPath(childPath, inArray);
     }
   }
 }
