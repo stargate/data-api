@@ -140,9 +140,7 @@ public final class JsonPath implements Comparable<JsonPath> {
       this.inArray = inArray;
     }
 
-    /**
-     * Factory method used to construct a builder for elements of an Array value
-     */
+    /** Factory method used to construct a builder for elements of an Array value */
     public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
@@ -151,9 +149,7 @@ public final class JsonPath implements Comparable<JsonPath> {
       return new Builder(childPath, true);
     }
 
-    /**
-     * Factory method used to construct a builder for properties of an Object value
-     */
+    /** Factory method used to construct a builder for properties of an Object value */
     public Builder nestedObjectBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {

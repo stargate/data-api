@@ -123,22 +123,23 @@ public class Shredder {
   }
 
   private void traverseValue(JsonNode value, ShredListener callback, JsonPath.Builder pathBuilder) {
+    final JsonPath path = pathBuilder.build();
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
-      callback.shredObject(pathBuilder, ob);
+      callback.shredObject(path, ob);
       traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
     } else if (value.isArray()) {
       ArrayNode arr = (ArrayNode) value;
-      callback.shredArray(pathBuilder, arr);
+      callback.shredArray(path, arr);
       traverseArray(arr, callback, pathBuilder.nestedArrayBuilder());
     } else if (value.isTextual()) {
-      callback.shredText(pathBuilder.build(), value.textValue());
+      callback.shredText(path, value.textValue());
     } else if (value.isNumber()) {
-      callback.shredNumber(pathBuilder.build(), value.decimalValue());
+      callback.shredNumber(path, value.decimalValue());
     } else if (value.isBoolean()) {
-      callback.shredBoolean(pathBuilder.build(), value.booleanValue());
+      callback.shredBoolean(path, value.booleanValue());
     } else if (value.isNull()) {
-      callback.shredNull(pathBuilder.build());
+      callback.shredNull(path);
     } else {
       throw new JsonApiException(
           ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,

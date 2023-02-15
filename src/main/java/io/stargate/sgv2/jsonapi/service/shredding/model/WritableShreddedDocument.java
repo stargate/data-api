@@ -110,8 +110,7 @@ public record WritableShreddedDocument(
      */
 
     @Override
-    public void shredObject(JsonPath.Builder pathBuilder, ObjectNode obj) {
-      final JsonPath path = pathBuilder.build();
+    public void shredObject(JsonPath path, ObjectNode obj) {
       addKey(path);
 
       if (subDocEquals == null) {
@@ -121,8 +120,7 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredArray(JsonPath.Builder pathBuilder, ArrayNode arr) {
-      final JsonPath path = pathBuilder.build();
+    public void shredArray(JsonPath path, ArrayNode arr) {
       addKey(path);
       if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
