@@ -19,10 +19,6 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
     super(objectMapper);
   }
 
-  public CountDocumentsCommandResolver() {
-    this(null);
-  }
-
   @Override
   public Class<CountDocumentsCommands> getCommandClass() {
     return CountDocumentsCommands.class;

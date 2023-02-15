@@ -25,10 +25,6 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     this.documentConfig = documentConfig;
   }
 
-  public FindCommandResolver() {
-    this(null, null);
-  }
-
   @Override
   public Class<FindCommand> getCommandClass() {
     return FindCommand.class;

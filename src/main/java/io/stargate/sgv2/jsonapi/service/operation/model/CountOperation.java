@@ -16,10 +16,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Full dynamic query generation for any of the types of filtering we can do against the the db
- * table.
- *
- * <p>Create with a series of filters that are implicitly AND'd together.
+ * Operation that returns count of documents based on the filter condition. Written with the
+ * assumption that all variables to be indexed.
  */
 public record CountOperation(CommandContext commandContext, List<DBFilterBase> filters)
     implements ReadOperation {

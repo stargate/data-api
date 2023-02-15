@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
-/** Read type specifies what data needs to be returned as part of the response */
+/**
+ * Read type specifies what data needs to be read and returned as part of the response for
+ * operations
+ */
 public enum ReadType {
   /**
    * Return documents and transaction id which satisfies the filter conditions as part of response
