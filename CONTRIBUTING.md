@@ -3,7 +3,7 @@
 When contributing to this repository, please first discuss the change you wish to make via issue,
 email, or any other method with the owners of this repository before making a change. 
 
-Please note we have a [Code of Conduct](CODE_OF_CONDUCT.md), please follow it in all your interactions with the project.
+Please note we have a [Code of Conduct](https://github.com/stargate/stargate/blob/main/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project.
 
 ## <a name="issue"></a> Found an Issue?
 If you find a bug in the source code or a mistake in the documentation, you can help us by
