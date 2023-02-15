@@ -168,7 +168,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                     {
-                      "count": {
+                      "countDocuments": {
                         "filter" : {"username" : "user1"}
                       }
                     }
