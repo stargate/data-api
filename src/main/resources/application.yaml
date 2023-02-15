@@ -47,6 +47,8 @@ quarkus:
         # we need to define uri templating on our own for now
         # note that order is important
         match-patterns: |
+          /v1/[^/]+=/v1/{namespace},
+          /v1/.+/.+=/v1/{namespace}/{collection}
 
   # adapt path of the open api definitions
   smallrye-openapi:
