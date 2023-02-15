@@ -147,7 +147,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                       {
-                        "count": {
+                        "countDocuments": {
                         }
                       }
                     """;
@@ -190,7 +190,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                   {
-                                    "count": {
+                                    "countDocuments": {
                                       "filter" : {"username" : {"$eq" : "user1"}}
                                     }
                                   }
@@ -212,7 +212,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                       {
-                                        "count": {
+                                        "countDocuments": {
                                           "filter" : {"subdoc.id" : {"$eq" : "abc"}}
                                         }
                                       }
@@ -234,7 +234,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                           {
-                                            "count": {
+                                            "countDocuments": {
                                               "filter" : {"indexedObject.1" : {"$eq" : "value_1"}}
                                             }
                                           }
@@ -257,7 +257,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                       {
-                                        "count": {
+                                        "countDocuments": {
                                           "filter" : {"array.0" : {"$eq" : "value1"}}
                                         }
                                       }
@@ -280,7 +280,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                       {
-                                        "count": {
+                                        "countDocuments": {
                                           "filter" : {"active_user" : {"$exists" : false}}
                                         }
                                       }
@@ -302,7 +302,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                           {
-                                            "count": {
+                                            "countDocuments": {
                                               "filter" : {"active_user" : {"$exists" : true}}
                                             }
                                           }
@@ -324,7 +324,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                           {
-                                            "count": {
+                                            "countDocuments": {
                                               "filter" : {"tags" : {"$all" : ["tag1", "tag2"]}}
                                             }
                                           }
@@ -346,7 +346,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                               {
-                                                "count": {
+                                                "countDocuments": {
                                                   "filter" : {"tags" : {"$all" : ["tag1", "tag1234567890123456789012345"]}}
                                                 }
                                               }
@@ -368,7 +368,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                               {
-                                                "count": {
+                                                "countDocuments": {
                                                   "filter" : {"tags" : {"$all" : ["tag1", 1, true, null]}}
                                                 }
                                               }
@@ -390,7 +390,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                               {
-                                                "count": {
+                                                "countDocuments": {
                                                   "filter" : {"tags" : {"$all" : ["tag1", 2, true, null]}}
                                                 }
                                               }
@@ -412,7 +412,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                 {
-                                                  "count": {
+                                                  "countDocuments": {
                                                     "filter" : {"sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
                                                   }
                                                 }
@@ -435,7 +435,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                     {
-                                      "count": {
+                                      "countDocuments": {
                                         "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": false } } } }
                                       }
                                     }
@@ -457,7 +457,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                   {
-                                    "count": {
+                                    "countDocuments": {
                                       "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "d": false, "c": "v1" } } } }
                                     }
                                   }
@@ -480,7 +480,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                     {
-                                      "count": {
+                                      "countDocuments": {
                                         "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": true } } } }
                                       }
                                     }
@@ -503,7 +503,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                           {
-                                            "count": {
+                                            "countDocuments": {
                                               "filter" : {"tags" : {"$size" : 6}}
                                             }
                                           }
@@ -526,7 +526,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                               {
-                                                "count": {
+                                                "countDocuments": {
                                                   "filter" : {"tags" : {"$size" : 1}}
                                                 }
                                               }
@@ -548,7 +548,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                   {
-                                                    "count": {
+                                                    "countDocuments": {
                                                       "filter" : {"tags" : {"$eq" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true]}}
                                                     }
                                                   }
@@ -569,7 +569,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                   {
-                                                    "count": {
+                                                    "countDocuments": {
                                                       "filter" : {"nestedArray" : {"$eq" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}}
                                                     }
                                                   }
@@ -591,7 +591,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                   {
-                                                    "count": {
+                                                    "countDocuments": {
                                                       "filter" : {"tags" : {"$eq" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1]}}
                                                     }
                                                   }
@@ -612,7 +612,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                   {
-                                                    "count": {
+                                                    "countDocuments": {
                                                       "filter" : {"nestedArray" : {"$eq" : [["tag1", "tag2"], ["tag1234567890123456789012345", null], ["abc"]]}}
                                                     }
                                                   }
@@ -634,7 +634,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                       {
-                                        "count": {
+                                        "countDocuments": {
                                           "filter" : {"username" : {"$ne" : "user1"}}
                                         }
                                       }
@@ -656,7 +656,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
       String json =
           """
                                                 {
-                                                  "count": {
+                                                  "countDocuments": {
                                                     "filter" : {"active_user" : true}
                                                   }
                                                 }

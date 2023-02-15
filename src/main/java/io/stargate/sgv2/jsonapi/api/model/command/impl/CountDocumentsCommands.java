@@ -12,8 +12,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     description =
         "Command that returns count of documents in a collection based on the collection.")
-@JsonTypeName("count")
-public record CountCommand(
+@JsonTypeName("countDocuments")
+public record CountDocumentsCommands(
     @Valid @JsonProperty("filter") FilterClause filterClause, @Valid @Nullable Options options)
     implements ReadCommand, Filterable {
 

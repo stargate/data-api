@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
@@ -67,7 +67,7 @@ public class CollectionResource {
               schema =
                   @Schema(
                       anyOf = {
-                        CountCommand.class,
+                        CountDocumentsCommands.class,
                         DeleteOneCommand.class,
                         FindOneCommand.class,
                         FindCommand.class,

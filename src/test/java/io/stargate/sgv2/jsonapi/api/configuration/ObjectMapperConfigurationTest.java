@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
@@ -324,7 +324,7 @@ class ObjectMapperConfigurationTest {
       String json =
           """
                   {
-                    "count": {
+                    "countDocuments": {
                       "filter" : {"username" : "user1"}
                     }
                   }
@@ -333,7 +333,7 @@ class ObjectMapperConfigurationTest {
       Command result = objectMapper.readValue(json, Command.class);
       assertThat(result)
           .isInstanceOfSatisfying(
-              CountCommand.class,
+              CountDocumentsCommands.class,
               countCommand -> {
                 FilterClause filterClause = countCommand.filterClause();
                 assertThat(filterClause).isNotNull();

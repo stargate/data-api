@@ -71,12 +71,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "count",
-                  summary = "`count` command",
+                  name = "countDocuments",
+                  summary = "`countDocuments` command",
                   value =
                       """
                             {
-                              "count": {
+                              "countDocuments": {
                                   "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
                               }
                             }
@@ -222,7 +222,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             """),
               @ExampleObject(
                   name = "resultCount",
-                  summary = "Count command result",
+                  summary = "countDocuments command result",
                   value =
                       """
                                     {
