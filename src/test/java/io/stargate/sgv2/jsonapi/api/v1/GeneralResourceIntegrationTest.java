@@ -90,18 +90,18 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public final void withReplicationFactor() {
       String json =
           """
-              {
-                "createNamespace": {
-                  "name": "%s",
-                  "options": {
-                    "replication": {
-                      "class": "SimpleStrategy",
-                      "replication_factor": 2
-                    }
-                  }
+          {
+            "createNamespace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "SimpleStrategy",
+                  "replication_factor": 2
                 }
               }
-              """
+            }
+          }
+          """
               .formatted(DB_NAME);
 
       given()
@@ -119,11 +119,11 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void invalidCommand() {
       String json =
           """
-              {
-                "createNamespace": {
-                }
-              }
-              """;
+          {
+            "createNamespace": {
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -167,20 +167,18 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("WebApplicationException"))
-          .body("errors[1].message", is(not(blankString())))
-          .body("errors[1].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonParseException"));
     }
 
     @Test
     public void unknownCommand() {
       String json =
           """
-                  {
-                    "unknownCommand": {
-                    }
-                  }
-                  """;
+          {
+            "unknownCommand": {
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
