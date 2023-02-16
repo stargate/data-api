@@ -221,6 +221,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             }
                             """),
               @ExampleObject(
+                  name = "deleteCollection",
+                  summary = "`DeleteCollection` command",
+                  value =
+                      """
+                            {
+                                "deleteCollection": {
+                                  "name": "events"
+                                }
+                            }
+                            """),
+              @ExampleObject(
                   name = "resultCount",
                   summary = "countDocuments command result",
                   value =
