@@ -22,6 +22,15 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     // NOTE: we can only do eq until SAI indexes are updated , waiting for >, < etc
     public enum Operator {
+      /**
+       * This represents eq to be run against map type index columns like array_size, sub_doc_equals
+       * and array_equals.
+       */
+      MAP_EQUALS,
+      /**
+       * This represents eq operation for array element or automic value operation against
+       * array_contains
+       */
       EQ
     }
 
@@ -29,6 +38,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final String key;
     private final DBFilterBase.MapFilterBase.Operator operator;
     private final T value;
+
+    /**
+     * Atomic values are added to the array_contains field to support $eq on both atomic value and
+     * array element
+     */
+    private static final String DATA_CONTAINS = "array_contains";
 
     protected MapFilterBase(
         String columnName, String key, MapFilterBase.Operator operator, T value) {
@@ -59,6 +74,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case EQ:
           return BuiltCondition.of(
+              DATA_CONTAINS,
+              Predicate.CONTAINS,
+              getGrpcValue(getHashValue(new DocValueHasher(), key, value)));
+        case MAP_EQUALS:
+          return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.of(key)),
               Predicate.EQ,
               getGrpcValue(value));
@@ -78,9 +98,9 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /** Filters db documents based on a boolean field value */
-  public static class BoolFilter extends MapFilterBase<Byte> {
+  public static class BoolFilter extends MapFilterBase<Boolean> {
     public BoolFilter(String path, Operator operator, Boolean value) {
-      super("query_bool_values", path, operator, (byte) (value ? 1 : 0));
+      super("query_bool_values", path, operator, value);
     }
   }
 
@@ -210,14 +230,14 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** Filter for document where array has specified number of elements */
   public static class SizeFilter extends MapFilterBase<Integer> {
     public SizeFilter(String path, Integer size) {
-      super("array_size", path, Operator.EQ, size);
+      super("array_size", path, Operator.MAP_EQUALS, size);
     }
   }
 
   /** Filter for document where array matches (data in same order) as the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
-      super("array_equals", path, Operator.EQ, getHash(hasher, arrayData));
+      super("array_equals", path, Operator.MAP_EQUALS, getHash(hasher, arrayData));
     }
   }
 
@@ -227,7 +247,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    */
   public static class SubDocEqualsFilter extends MapFilterBase<String> {
     public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
-      super("sub_doc_equals", path, Operator.EQ, getHash(hasher, subDocData));
+      super("sub_doc_equals", path, Operator.MAP_EQUALS, getHash(hasher, subDocData));
     }
   }
 

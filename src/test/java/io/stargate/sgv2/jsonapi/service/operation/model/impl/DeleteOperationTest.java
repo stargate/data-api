@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
@@ -159,10 +160,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
     public void deleteWithDynamic() throws Exception {
       UUID tx_id = UUID.randomUUID();
       String collectionReadCql =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -222,7 +225,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void deleteWithNoResult() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -232,7 +235,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                                    }
                                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(

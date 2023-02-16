@@ -67,10 +67,16 @@ public class ShredderTest {
       assertThat(doc.arrayEquals()).hasSize(1);
 
       // We have 2 from array, plus 3 main level properties (_id excluded)
-      assertThat(doc.arrayContains()).hasSize(5);
+      assertThat(doc.arrayContains()).hasSize(7);
       assertThat(doc.arrayContains())
           .containsExactlyInAnyOrder(
-              "name SBob", "values N1", "values N2", "[extra.stuff] B1", "nullable Z");
+              "name SBob",
+              "values N1",
+              "values N2",
+              "[extra.stuff] B1",
+              "nullable Z",
+              "values.0 N1",
+              "values.1 N2");
 
       // Also, the document should be the same, including _id:
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());

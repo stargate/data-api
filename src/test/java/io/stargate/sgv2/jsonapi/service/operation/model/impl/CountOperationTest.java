@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -65,10 +66,12 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void countWithDynamic() throws Exception {
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE query_text_values[?] = ?"
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -97,10 +100,12 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void countWithDynamicNoMatch() throws Exception {
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE query_text_values[?] = ?"
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user_all"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user_all").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(

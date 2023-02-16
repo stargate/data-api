@@ -217,7 +217,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithDynamic() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -227,7 +227,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       }
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -276,7 +278,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_bool_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -287,7 +289,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                               }
                           """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("registration_active"), Values.of((byte) 1))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("registration_active " + new DocValueHasher().getHash(true).hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -639,7 +643,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithNoResult() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -649,7 +653,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       }
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
