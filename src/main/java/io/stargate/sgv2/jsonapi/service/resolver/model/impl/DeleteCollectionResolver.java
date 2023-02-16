@@ -7,9 +7,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteCollectionOpe
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import javax.enterprise.context.ApplicationScoped;
 
-/**
- * Resolver for the {@link DeleteCollectionCommand}.
- */
+/** Resolver for the {@link DeleteCollectionCommand}. */
 @ApplicationScoped
 public class DeleteCollectionResolver implements CommandResolver<DeleteCollectionCommand> {
   @Override
