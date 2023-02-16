@@ -7,25 +7,23 @@ import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * Full dynamic query generation for any of the types of filtering we can do against the the db
- * table.
- *
- * <p>Create with a series of filters that are implicitly AND'd together.
- */
+/** Operation that returns the documents or its key based on the filter condition. */
 public record FindOperation(
     CommandContext commandContext,
     List<DBFilterBase> filters,
     String pagingState,
     int limit,
     int pageSize,
-    boolean readDocument,
+    ReadType readType,
     ObjectMapper objectMapper)
     implements ReadOperation {
 
@@ -38,8 +36,23 @@ public record FindOperation(
 
   @Override
   public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
-    QueryOuterClass.Query query = buildSelectQuery();
-    return findDocument(queryExecutor, query, pagingState, pageSize, readDocument, objectMapper);
+    switch (readType) {
+      case DOCUMENT:
+      case KEY:
+        {
+          QueryOuterClass.Query query = buildSelectQuery();
+          return findDocument(
+              queryExecutor,
+              query,
+              pagingState,
+              pageSize,
+              ReadType.DOCUMENT == readType,
+              objectMapper);
+        }
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_OPERATION, "Unsupported find operation read type " + readType);
+    }
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
@@ -49,7 +62,7 @@ public record FindOperation(
     }
     return new QueryBuilder()
         .select()
-        .column(readDocument ? documentColumns : documentKeyColumns)
+        .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
         .from(commandContext.namespace(), commandContext.collection())
         .where(conditions)
         .limit(limit)

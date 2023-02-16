@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -28,28 +29,6 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-  }
-
-  @Test
-  public final void createCollection() {
-    String json =
-        String.format(
-            """
-            {
-              "createCollection": {
-                "name": "%s"
-              }
-            }
-            """,
-            collectionName);
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
-        .then()
-        .statusCode(200);
   }
 
   @Nested
@@ -81,9 +60,29 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("WebApplicationException"))
-          .body("errors[1].message", is(not(blankString())))
-          .body("errors[1].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonParseException"));
+    }
+
+    @Test
+    public void unknownCommand() {
+      String json =
+          """
+                  {
+                    "unknownCommand": {
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
+          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
     }
 
     @Test

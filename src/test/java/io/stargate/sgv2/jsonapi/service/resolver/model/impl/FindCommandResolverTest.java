@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -51,7 +52,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -82,7 +83,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -113,7 +114,7 @@ public class FindCommandResolverTest {
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(
-              commandContext, List.of(), "dlavjhvbavkjbna", 10, 5, true, objectMapper);
+              commandContext, List.of(), "dlavjhvbavkjbna", 10, 5, ReadType.DOCUMENT, objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -146,7 +147,7 @@ public class FindCommandResolverTest {
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)

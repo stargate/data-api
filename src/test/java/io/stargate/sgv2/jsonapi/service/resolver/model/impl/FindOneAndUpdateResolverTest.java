@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
@@ -59,7 +60,7 @@ public class FindOneAndUpdateResolverTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
 
       DocumentUpdater documentUpdater =
@@ -104,7 +105,7 @@ public class FindOneAndUpdateResolverTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
 
       DocumentUpdater documentUpdater =

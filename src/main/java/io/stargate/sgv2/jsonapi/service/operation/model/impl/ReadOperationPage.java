@@ -9,7 +9,6 @@ import java.util.function.Supplier;
 /** FindOperation response implementing the {@link CommandResult} */
 public record ReadOperationPage(List<ReadDocument> docs, String pagingState)
     implements Supplier<CommandResult> {
-
   @Override
   public CommandResult get() {
     final List<JsonNode> jsonNodes = new ArrayList<>();

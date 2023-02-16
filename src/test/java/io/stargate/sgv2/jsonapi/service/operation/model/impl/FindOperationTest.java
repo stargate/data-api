@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
@@ -91,7 +92,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
       FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 2, 2, true, objectMapper);
+          new FindOperation(commandContext, List.of(), null, 2, 2, ReadType.DOCUMENT, objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -152,7 +153,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -200,7 +201,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -259,7 +260,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -319,7 +320,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -377,7 +378,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -438,7 +439,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -498,7 +499,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -560,7 +561,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -622,7 +623,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -674,7 +675,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();

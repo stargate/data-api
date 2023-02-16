@@ -26,6 +26,8 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
+  UNSUPPORTED_OPERATION("Unsupported operation class"),
+
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
