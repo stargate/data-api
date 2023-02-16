@@ -31,20 +31,20 @@ class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   }
 
   @Nested
-  class PostCommand {
+  class CreateCollection {
 
     @Test
     public void happyPath() {
       String json =
-          String.format(
-              """
-              {
-                "createCollection": {
-                  "name": "%s"
-                }
-              }
-              """,
-              "col" + RandomStringUtils.randomNumeric(16));
+          """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted("col" + RandomStringUtils.randomNumeric(16));
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -52,7 +52,107 @@ class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .when()
           .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+  }
+
+  @Nested
+  class DeleteCollection {
+
+    @Test
+    public void happyPath() {
+      String collection = RandomStringUtils.randomAlphabetic(16);
+
+      // first create
+      String createJson =
+          """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(collection);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createJson)
+          .when()
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // then delete
+      String json =
+          """
+          {
+            "deleteCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(collection);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void notExisting() {
+      String collection = RandomStringUtils.randomAlphabetic(16);
+
+      // delete not existing
+      String json =
+          """
+          {
+            "deleteCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(collection);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void invalidCommand() {
+      String json =
+          """
+          {
+            "deleteCollection": {
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is(not(blankString())))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
   }
 
@@ -92,11 +192,11 @@ class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void unknownCommand() {
       String json =
           """
-                  {
-                    "unknownCommand": {
-                    }
-                  }
-                  """;
+          {
+            "unknownCommand": {
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
