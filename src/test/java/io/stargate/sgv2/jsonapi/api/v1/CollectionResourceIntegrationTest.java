@@ -60,9 +60,7 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("WebApplicationException"))
-          .body("errors[1].message", is(not(blankString())))
-          .body("errors[1].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonParseException"));
     }
 
     @Test
