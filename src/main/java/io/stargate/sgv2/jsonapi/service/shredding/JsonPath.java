@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Objects;
@@ -46,24 +47,42 @@ public final class JsonPath implements Comparable<JsonPath> {
   /** Encoded representation of the path as String. */
   private final String encodedPath;
 
-  JsonPath(String encoded) {
+  /** Whether path points to an element of an array ({@code true}) or not. */
+  private final boolean arrayElement;
+
+  JsonPath(String encoded, boolean arrayElement) {
     encodedPath = Objects.requireNonNull(encoded, "Null not legal encoded path");
+    this.arrayElement = arrayElement;
+  }
+
+  /** Factory method only used for testing. */
+  public static JsonPath from(String encoded) {
+    return from(encoded, false);
+  }
+
+  /** Factory method only used for testing. */
+  public static JsonPath from(String encoded, boolean arrayElement) {
+    return new JsonPath(encoded, arrayElement);
   }
 
   /**
-   * Factory method that may be called to construct an instance from pre-encoded Path String (one
-   * where character that must be escaped have been properly escpaed). Method does NOT verify that
-   * escaping has been done correctly; caller is assumed to have ensured that.
-   *
-   * @param encoded
-   * @return
+   * Factory method for constructing root-level {@link Builder}: assumes Object context (root level
+   * always implicit Object in Mongoose)
    */
-  public static JsonPath from(String encoded) {
-    return new JsonPath(encoded);
-  }
-
   public static Builder rootBuilder() {
     return new Builder(null);
+  }
+
+  /** @return Whether path points to an array element or not */
+  public boolean isArrayElement() {
+    return arrayElement;
+  }
+
+  /**
+   * Convenience method for checking whether this path is {@code _id} (document primary key) or not
+   */
+  public boolean isDocumentId() {
+    return DocumentConstants.Fields.DOC_ID.equals(encodedPath);
   }
 
   @Override
@@ -79,7 +98,11 @@ public final class JsonPath implements Comparable<JsonPath> {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    return (o instanceof JsonPath) && encodedPath.equals(((JsonPath) o).encodedPath);
+    if (o instanceof JsonPath) {
+      JsonPath other = (JsonPath) o;
+      return (arrayElement == other.arrayElement) && encodedPath.equals(other.encodedPath);
+    }
+    return false;
   }
 
   @Override
@@ -105,28 +128,62 @@ public final class JsonPath implements Comparable<JsonPath> {
      */
     private String childPath;
 
+    /** Flag that indicates that the currently pointed-to path is to an array element */
+    private final boolean inArray;
+
     public Builder(String base) {
-      this.basePath = base;
+      this(base, false);
     }
 
-    public Builder nestedValueBuilder() {
+    Builder(String base, boolean inArray) {
+      this.basePath = base;
+      this.inArray = inArray;
+    }
+
+    /** Factory method used to construct a builder for elements of an Array value */
+    public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
         throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
       }
-      return new Builder(childPath);
+      return new Builder(childPath, true);
+    }
+
+    /** Factory method used to construct a builder for properties of an Object value */
+    public Builder nestedObjectBuilder() {
+      // Must not be called unless we are pointing to a property or element:
+      if (childPath == null) {
+        throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
+      }
+      return new Builder(childPath, false);
+    }
+
+    /**
+     * Accessor for checking whether path being built points directly to an array element
+     * (regardless of whether contained in Array further up).
+     *
+     * @return True if the path being built points to an array element; false otherwise (Object
+     *     property or root value)
+     */
+    public boolean isArrayElement() {
+      return inArray;
     }
 
     public Builder property(String propName) {
-      // Simple as we no longer apply escaping:
+      if (inArray) {
+        throw new IllegalStateException(
+            "Cannot add property '" + propName + "' when in array context: " + build());
+      }
       childPath = (basePath == null) ? propName : (basePath + '.' + propName);
       return this;
     }
 
     public Builder index(int index) {
-      // Indexes are easy as no escaping needed
+      if (!inArray) {
+        throw new IllegalStateException(
+            "Cannot add index (" + index + ") when not in array context: " + build());
+      }
       StringBuilder sb;
-
       if (basePath == null) { // root
         sb = new StringBuilder(6);
       } else {
@@ -147,11 +204,11 @@ public final class JsonPath implements Comparable<JsonPath> {
       if (childPath == null) {
         if (basePath == null) {
           // Means this is at root Object before any properties: could fail or build "empty":
-          return new JsonPath("");
+          return new JsonPath("", false);
         }
-        return new JsonPath(basePath);
+        return new JsonPath(basePath, inArray);
       }
-      return new JsonPath(childPath);
+      return new JsonPath(childPath, inArray);
     }
   }
 }
