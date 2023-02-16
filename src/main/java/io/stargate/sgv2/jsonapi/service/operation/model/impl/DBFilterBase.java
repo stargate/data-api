@@ -22,7 +22,15 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     // NOTE: we can only do eq until SAI indexes are updated , waiting for >, < etc
     public enum Operator {
+      /**
+       * This represents eq to be run against map type index columns like array_size, sub_doc_equals
+       * and array_equals.
+       */
       MAP_EQUALS,
+      /**
+       * This represents eq operation for array element or automic value operation against
+       * array_contains
+       */
       EQ
     }
 
