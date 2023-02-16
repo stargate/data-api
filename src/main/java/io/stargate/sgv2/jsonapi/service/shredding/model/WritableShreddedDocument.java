@@ -145,9 +145,9 @@ public record WritableShreddedDocument(
       }
       queryTextValues.put(path, text);
       // Only add if NOT directly in array (because if so, containing array has already added)
-      if (!path.isArrayElement()) {
-        addArrayContains(path, hasher.stringValue(text).hash());
-      }
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.stringValue(text).hash());
+      // }
     }
 
     @Override
@@ -158,9 +158,9 @@ public record WritableShreddedDocument(
       }
       queryNumberValues.put(path, number);
       // Only add if NOT directly in array (because if so, containing array has already added)
-      if (!path.isArrayElement()) {
-        addArrayContains(path, hasher.numberValue(number).hash());
-      }
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.numberValue(number).hash());
+      // }
     }
 
     @Override
@@ -171,9 +171,9 @@ public record WritableShreddedDocument(
       }
       queryBoolValues.put(path, value);
       // Only add if NOT directly in array (because if so, containing array has already added)
-      if (!path.isArrayElement()) {
-        addArrayContains(path, hasher.booleanValue(value).hash());
-      }
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.booleanValue(value).hash());
+      // }
     }
 
     @Override
@@ -184,9 +184,9 @@ public record WritableShreddedDocument(
       }
       queryNullValues.add(path);
       // Only add if NOT directly in array (because if so, containing array has already added)
-      if (!path.isArrayElement()) {
-        addArrayContains(path, hasher.nullValue().hash());
-      }
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.nullValue().hash());
+      // }
     }
 
     /*
