@@ -56,6 +56,7 @@ public class NamespaceResource {
               schema = @Schema(anyOf = {CreateCollectionCommand.class}),
               examples = {
                 @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "deleteCollection"),
               }))
   @APIResponses(
       @APIResponse(

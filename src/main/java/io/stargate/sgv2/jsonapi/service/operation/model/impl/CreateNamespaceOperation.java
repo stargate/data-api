@@ -18,7 +18,7 @@ public record CreateNamespaceOperation(String name, String replicationMap) imple
 
   // simple pattern for the cql
   private static final String CREATE_KEYSPACE_CQL =
-      "CREATE KEYSPACE IF NOT EXISTS \"%s\" WITH REPLICATION = %s;\n";
+      "CREATE KEYSPACE IF NOT EXISTS \"%s\" WITH REPLICATION = %s;";
 
   /** {@inheritDoc} */
   @Override
