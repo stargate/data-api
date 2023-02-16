@@ -722,6 +722,65 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
     }
+
+    @Test
+    @Order(2)
+    public void findByColumnAndPushWithEachAndPosition() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_push_each_position",
+                        "array": [ 1, 2, 3 ]
+                      }
+                      """);
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_push_each_position"},
+                          "update" : {
+                              "$push" : {
+                                 "array": { "$each" : [ 4, 5 ], "$position" : 2 },
+                                 "newArray": { "$each" : [ 1, 2, 3 ], "$position" : -999 }
+                              }
+                           }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_push_each_position"));
+
+      String expected =
+          """
+                { "_id":"update_doc_push_each_position",
+                  "array": [1, 2, 4, 5, 3],
+                  "newArray": [1, 2, 3] }
+                """;
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "update_doc_push_each_position"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
   }
 
   @Nested
