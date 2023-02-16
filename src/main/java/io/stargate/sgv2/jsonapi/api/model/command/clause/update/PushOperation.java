@@ -25,8 +25,6 @@ public class PushOperation extends UpdateOperation {
   public static PushOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    // We'll collect updates into List since in near future they will be more complicated than
-    // Just path/value pairs (to support "$each" modifier)
     List<PushAction> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
@@ -54,7 +52,7 @@ public class PushOperation extends UpdateOperation {
 
   private static PushAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We know there is at least one modifier; and if so, all must be modifiers.
-    // For now we only support "$each"
+    // We support basic "$each" with optional "$position":
     JsonNode eachArg = null;
     Integer position = null;
 
@@ -64,7 +62,6 @@ public class PushOperation extends UpdateOperation {
       final String modifier = entry.getKey();
       final JsonNode arg = entry.getValue();
 
-      // Support $each and $position
       switch (modifier) {
         case "$each":
           eachArg = arg;
