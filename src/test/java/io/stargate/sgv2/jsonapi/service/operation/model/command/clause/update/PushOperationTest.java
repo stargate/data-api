@@ -259,6 +259,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
   class PushWithPositionHappyCases {
     @Test
     public void withEachToExistingPositive() {
+      // First case: insert between 1st and 2nd elements
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : 1 } }"));
@@ -267,10 +268,21 @@ public class PushOperationTest extends UpdateOperationTestBase {
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"array\": [ 1, true, false, 2, 3, 4 ] }");
       assertThat(doc).isEqualTo(expected);
+
+      // And then try to append way past end; legal, just appends normally
+      oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : 999 } }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      expected = objectFromJson("{ \"array\": [ 1, 2, 3, 4, true, false ] }");
+      assertThat(doc).isEqualTo(expected);
     }
 
     @Test
     public void withEachToExistingNegative() {
+      // First with "insert before the last entry"
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : -1 } }"));
@@ -278,6 +290,16 @@ public class PushOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
       assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"array\": [ 1, 2, 3, true, false, 4 ] }");
+      assertThat(doc).isEqualTo(expected);
+
+      // And then way before beginning (valid, just gets truncated to index #0)
+      oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : -999 } }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
+      assertThat(oper.updateDocument(doc)).isTrue();
+      expected = objectFromJson("{ \"array\": [ true, false, 1, 2, 3, 4 ] }");
       assertThat(doc).isEqualTo(expected);
     }
 

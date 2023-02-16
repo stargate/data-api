@@ -150,8 +150,23 @@ public class PushOperation extends UpdateOperation {
       }
       // Regular add or $each?
       if (update.each) {
-        for (JsonNode element : toAdd) {
-          array.add(element);
+        // $position?
+        if (update.position != null) {
+          int ix = (int) update.position;
+          // Negative index is offset from the end, -1 being "before the last"
+          if (ix < 0) {
+            ix = Math.max(0, ix + array.size());
+          } else {
+            ix = Math.min(ix, array.size());
+          }
+          // ArrayNode.insert() can handle offsets [0..len]
+          for (JsonNode element : toAdd) {
+            array.insert(ix++, element);
+          }
+        } else {
+          for (JsonNode element : toAdd) {
+            array.add(element);
+          }
         }
       } else {
         array.add(toAdd);
