@@ -138,6 +138,27 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
 
       json =
           """
+                    {
+                      "insertOne": {
+                        "document": {
+                          "_id": "duplicate",
+                          "username": "different_user_name"
+                        }
+                      }
+                    }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is("Document already exists with the _id: duplicate"));
+
+      json =
+          """
                   {
                     "find": {
                       "filter" : {"_id" : "duplicate"}
@@ -154,27 +175,6 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-
-      json =
-          """
-                {
-                  "insertOne": {
-                    "document": {
-                      "_id": "duplicate",
-                      "username": "user4"
-                    }
-                  }
-                }
-                """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors[0].message", is("Document already exists with the _id: duplicate"));
     }
 
     @Test
