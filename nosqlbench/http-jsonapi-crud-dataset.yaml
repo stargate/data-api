@@ -44,7 +44,6 @@ blocks:
             }
           }
 
-      # TODO schema deletion not yet addressed by JSON API Spec
       delete-collection:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
@@ -52,7 +51,6 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
-        ok-status: "[2-4][0-9][0-9]"
         body: |
           {
             "deleteCollection": {
