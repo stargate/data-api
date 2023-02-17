@@ -155,6 +155,17 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
 
+      json =
+          """
+                {
+                  "insertOne": {
+                    "document": {
+                      "_id": "duplicate",
+                      "username": "user4"
+                    }
+                  }
+                }
+                """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
