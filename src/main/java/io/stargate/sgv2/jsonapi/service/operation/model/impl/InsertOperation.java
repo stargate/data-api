@@ -6,6 +6,8 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -40,7 +42,19 @@ public record InsertOperation(
   private static Uni<DocumentId> insertDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
     query = bindInsertValues(query, doc);
-    return queryExecutor.executeWrite(query).onItem().transform(result -> doc.id());
+    return queryExecutor
+        .executeWrite(query)
+        .onItem()
+        .transform(
+            result -> {
+              if (result.getRows(0).getValues(0).getBoolean()) {
+                return doc.id();
+              } else {
+                throw new JsonApiException(
+                    ErrorCode.DOCUMENT_ALREADY_EXISTS,
+                    String.format("Document already exists with the _id: %s", doc.id()));
+              }
+            });
   }
 
   private QueryOuterClass.Query buildInsertQuery() {
@@ -48,7 +62,7 @@ public record InsertOperation(
         "INSERT INTO %s.%s"
             + "            (key, tx_id, doc_json, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
             + "        VALUES"
-            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
     return QueryOuterClass.Query.newBuilder()
         .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
         .build();
