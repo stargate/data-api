@@ -113,6 +113,71 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
     }
 
     @Test
+    public void insertDuplicateDocument() {
+      String json =
+          """
+                            {
+                              "insertOne": {
+                                "document": {
+                                  "_id": "duplicate",
+                                  "username": "user4"
+                                }
+                              }
+                            }
+                            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("duplicate"));
+
+      json =
+          """
+                    {
+                      "insertOne": {
+                        "document": {
+                          "_id": "duplicate",
+                          "username": "different_user_name"
+                        }
+                      }
+                    }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].message", is("Document already exists with the _id: duplicate"));
+
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "duplicate"}
+                    }
+                  }
+                  """;
+      String expected = "{\"_id\": \"duplicate\", \"username\":\"user4\"}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void emptyDocument() {
       String json =
           """
