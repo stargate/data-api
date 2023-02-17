@@ -21,8 +21,8 @@ import java.util.Optional;
  * implementation to excute and query and parse the result set as {@link FindResponse}
  */
 public interface ReadOperation extends Operation {
-  static String[] documentColumns = {"key", "tx_id", "doc_json"};
-  static String[] documentKeyColumns = {"key", "tx_id"};
+  String[] documentColumns = {"key", "tx_id", "doc_json"};
+  String[] documentKeyColumns = {"key", "tx_id"};
 
   /**
    * Default implementation to query and parse the result set
@@ -90,6 +90,26 @@ public interface ReadOperation extends Operation {
     }
     return null;
   }
+  /**
+   * Default implementation to run count query and parse the result set
+   *
+   * @param queryExecutor
+   * @param query
+   * @return
+   */
+  default Uni<CountResponse> countDocuments(
+      QueryExecutor queryExecutor, QueryOuterClass.Query query) {
+    return queryExecutor
+        .executeRead(query, Optional.empty(), 1)
+        .onItem()
+        .transform(
+            rSet -> {
+              QueryOuterClass.Row row = rSet.getRows(0); // For count there will be only one row
+              int count =
+                  Values.int_(row.getValues(0)); // Count value will be the first column value
+              return new CountResponse(count);
+            });
+  }
 
   /**
    * A operation method which can return FindResponse instead of CommandResult. This method will be
@@ -100,5 +120,7 @@ public interface ReadOperation extends Operation {
    */
   Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
 
-  public static record FindResponse(List<ReadDocument> docs, String pagingState) {}
+  record FindResponse(List<ReadDocument> docs, String pagingState) {}
+
+  record CountResponse(int count) {}
 }

@@ -52,8 +52,8 @@ public class ShredderTest {
               JsonPath.from("_id"),
               JsonPath.from("name"),
               JsonPath.from("values"),
-              JsonPath.from("values.0"),
-              JsonPath.from("values.1"),
+              JsonPath.from("values.0", true),
+              JsonPath.from("values.1", true),
               JsonPath.from("[extra.stuff]"),
               JsonPath.from("nullable"));
 
@@ -65,7 +65,18 @@ public class ShredderTest {
           .hasSize(1)
           .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
       assertThat(doc.arrayEquals()).hasSize(1);
-      assertThat(doc.arrayContains()).hasSize(2);
+
+      // We have 2 from array, plus 3 main level properties (_id excluded)
+      assertThat(doc.arrayContains()).hasSize(7);
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder(
+              "name SBob",
+              "values N1",
+              "values N2",
+              "[extra.stuff] B1",
+              "nullable Z",
+              "values.0 N1",
+              "values.1 N2");
 
       // Also, the document should be the same, including _id:
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
@@ -78,8 +89,8 @@ public class ShredderTest {
       assertThat(doc.queryBoolValues())
           .isEqualTo(Collections.singletonMap(JsonPath.from("[extra.stuff]"), Boolean.TRUE));
       Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
-      expNums.put(JsonPath.from("values.0"), BigDecimal.valueOf(1));
-      expNums.put(JsonPath.from("values.1"), BigDecimal.valueOf(2));
+      expNums.put(JsonPath.from("values.0", true), BigDecimal.valueOf(1));
+      expNums.put(JsonPath.from("values.1", true), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
           .isEqualTo(Map.of(JsonPath.from("_id"), "abc", JsonPath.from("name"), "Bob"));
@@ -107,7 +118,8 @@ public class ShredderTest {
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
       assertThat(doc.arraySize()).isEmpty();
       assertThat(doc.arrayEquals()).isEmpty();
-      assertThat(doc.arrayContains()).isEmpty();
+      // 2 non-doc-id main-level properties with hashes:
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("age N39", "name SChuck");
       assertThat(doc.subDocEquals()).hasSize(0);
 
       // Also, the document should be the same, including _id added:
@@ -143,6 +155,12 @@ public class ShredderTest {
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayEquals()).isEmpty();
+      // 1 non-doc-id main-level property
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
+      assertThat(doc.subDocEquals()).hasSize(0);
+
       assertThat(doc.queryBoolValues()).isEqualTo(Map.of(JsonPath.from("_id"), Boolean.TRUE));
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryNumberValues()).isEmpty();
@@ -163,6 +181,12 @@ public class ShredderTest {
 
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayEquals()).isEmpty();
+      // 1 non-doc-id main-level property
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
+      assertThat(doc.subDocEquals()).hasSize(0);
 
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNullValues()).isEmpty();

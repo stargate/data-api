@@ -6,6 +6,8 @@ public enum ErrorCode {
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
+  DOCUMENT_ALREADY_EXISTS("Document already exists with the id"),
+
   DOCUMENT_UNPARSEABLE("Unable to parse the document"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
@@ -25,6 +27,8 @@ public enum ErrorCode {
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
+
+  UNSUPPORTED_OPERATION("Unsupported operation class"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 

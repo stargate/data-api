@@ -110,8 +110,7 @@ public record WritableShreddedDocument(
      */
 
     @Override
-    public void shredObject(JsonPath.Builder pathBuilder, ObjectNode obj) {
-      final JsonPath path = pathBuilder.build();
+    public void shredObject(JsonPath path, ObjectNode obj) {
       addKey(path);
 
       if (subDocEquals == null) {
@@ -121,26 +120,20 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredArray(JsonPath.Builder pathBuilder, ArrayNode arr) {
-      final JsonPath path = pathBuilder.build();
+    public void shredArray(JsonPath path, ArrayNode arr) {
       addKey(path);
       if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
         arrayEquals = new HashMap<>();
-        arrayContains = new HashSet<>();
       }
+      // arrayEquals (full array contents hash) and arraySize are simple to generate
       arraySize.put(path, arr.size());
-
-      // 16-Dec-2022, tatu: "arrayEquals" is easy, but definition of "arrayContains"
-      //    is quite unclear: older documents claim it's "JsonPath + content hash" (per
-      //    element presumably). For now will use that, with space as separator; probably
-      //    not what we want but...
-
       arrayEquals.put(path, hasher.hash(arr).hash());
+
+      // But arrayContains is bit different: must use path to array (not elements);
+      // and for atomics need to avoid generating twice
       for (JsonNode element : arr) {
-        // Assuming it's path to array, NOT index, since otherwise containment tricky.
-        // Plus atomic values contains entries for in-array atomics anyway
-        arrayContains.add(path + " " + hasher.hash(element).hash());
+        addArrayContains(path, hasher.hash(element));
       }
     }
 
@@ -151,6 +144,10 @@ public record WritableShreddedDocument(
         queryTextValues = new HashMap<>();
       }
       queryTextValues.put(path, text);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.stringValue(text).hash());
+      // }
     }
 
     @Override
@@ -160,6 +157,10 @@ public record WritableShreddedDocument(
         queryNumberValues = new HashMap<>();
       }
       queryNumberValues.put(path, number);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.numberValue(number).hash());
+      // }
     }
 
     @Override
@@ -169,6 +170,10 @@ public record WritableShreddedDocument(
         queryBoolValues = new HashMap<>();
       }
       queryBoolValues.put(path, value);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.booleanValue(value).hash());
+      // }
     }
 
     @Override
@@ -178,6 +183,10 @@ public record WritableShreddedDocument(
         queryNullValues = new HashSet<>();
       }
       queryNullValues.add(path);
+      // Only add if NOT directly in array (because if so, containing array has already added)
+      // if (!path.isArrayElement()) {
+      addArrayContains(path, hasher.nullValue().hash());
+      // }
     }
 
     /*
@@ -202,6 +211,25 @@ public record WritableShreddedDocument(
      */
     private void addKey(JsonPath key) {
       existKeys.add(key);
+    }
+
+    /**
+     * Helper method used to add a single entry in "arrayCantains" Set: this is either an actual
+     * Array element OR single atomic value. Both cases are needed to support Mongo's
+     * "atomic-or-array-element" filtering.
+     *
+     * @param path Path to either Array that contains Element (but not index!) OR to an Atomic value
+     *     not directly enclosed in an array.
+     * @param elementHash Hash of value matching the path
+     */
+    private void addArrayContains(JsonPath path, DocValueHash elementHash) {
+      // Do not add doc id field (we do not support Structured doc ids)
+      if (!path.isDocumentId()) {
+        if (arrayContains == null) {
+          arrayContains = new HashSet<>();
+        }
+        arrayContains.add(path + " " + elementHash.hash());
+      }
     }
   }
 }

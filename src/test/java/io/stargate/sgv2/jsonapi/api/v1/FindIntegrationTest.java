@@ -41,15 +41,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                 }
                                 """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
+      insert(json);
       json =
           """
                                 {
@@ -68,14 +60,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                 }
                                 """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -91,14 +76,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                     }
                                     """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -112,14 +90,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                             }
                             """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -134,6 +105,10 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
 
+      insert(json);
+    }
+
+    private void insert(String json) {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -561,6 +536,28 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .body("data.docs[0]", jsonEquals(expected));
     }
 
+    @Order(2)
+    public void findWithEqSubdocumentOrderChangeNoMatch() {
+      String json =
+          """
+                        {
+                          "find": {
+                            "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "d": false, "c": "v1" } } } }
+                          }
+                        }
+                        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(0));
+    }
+
     @Test
     @Order(2)
     public void findWithEqSubdocumentNoMatch() {
@@ -787,47 +784,37 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     public void setUp() {
       String json =
           """
-                               {
-                                 "insertOne": {
-                                   "document": {
-                                     "_id": "doc1",
-                                     "username": "user1",
-                                     "active_user" : true
-                                   }
-                                 }
-                               }
-                               """;
-      ;
+                                    {
+                                      "insertOne": {
+                                        "document": {
+                                          "_id": "doc1",
+                                          "username": "user1",
+                                          "active_user" : true
+                                        }
+                                      }
+                                    }
+                                    """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
+      insert(json);
       json =
           """
-                                {
-                                  "insertOne": {
-                                    "document": {
-                                      "_id": "doc2",
-                                      "username": "user2"
+                                    {
+                                      "insertOne": {
+                                        "document": {
+                                          "_id": "doc2",
+                                          "username": "user2",
+                                          "subdoc" : {
+                                             "id" : "abc"
+                                          },
+                                          "array" : [
+                                              "value1"
+                                          ]
+                                        }
+                                      }
                                     }
-                                  }
-                                }
-                                """;
+                                    """;
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
+      insert(json);
 
       json =
           """
@@ -843,6 +830,39 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                         }
                                         """;
 
+      insert(json);
+
+      json =
+          """
+                                {
+                                  "insertOne": {
+                                    "document": {
+                                      "_id": "doc4",
+                                      "indexedObject" : { "0": "value_0", "1": "value_1" }
+                                    }
+                                  }
+                                }
+                                """;
+
+      insert(json);
+
+      json =
+          """
+                  {
+                    "insertOne": {
+                      "document": {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                    }
+                  }
+                  """;
+
+      insert(json);
+    }
+
+    private void insert(String json) {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

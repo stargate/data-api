@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
@@ -91,7 +92,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
       FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 2, 2, true, objectMapper);
+          new FindOperation(commandContext, List.of(), null, 2, 2, ReadType.DOCUMENT, objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -147,12 +148,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -195,12 +196,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.IDFilter(
-                      FindOperation.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -216,7 +217,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithDynamic() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -226,7 +227,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       }
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -254,12 +257,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -275,7 +278,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_bool_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -286,7 +289,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                               }
                           """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("registration_active"), Values.of((byte) 1))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("registration_active " + new DocValueHasher().getHash(true).hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -314,12 +319,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.BoolFilter(
-                      "registration_active", FindOperation.MapFilterBase.Operator.EQ, true)),
+                  new DBFilterBase.BoolFilter(
+                      "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true)),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -373,11 +378,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.ExistsFilter("registration_active", true)),
+              List.of(new DBFilterBase.ExistsFilter("registration_active", true)),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -433,12 +438,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag1"),
-                  new FindOperation.AllFilter(new DocValueHasher(), "tags", "tag2")),
+                  new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"),
+                  new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2")),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -494,11 +499,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       FindOperation findOperation =
           new FindOperation(
               commandContext,
-              List.of(new FindOperation.SizeFilter("tags", 2)),
+              List.of(new DBFilterBase.SizeFilter("tags", 2)),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -555,12 +560,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.ArrayEqualsFilter(
+                  new DBFilterBase.ArrayEqualsFilter(
                       new DocValueHasher(), "tags", List.of("tag1", "tag2"))),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -617,12 +622,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.SubDocEqualsFilter(
+                  new DBFilterBase.SubDocEqualsFilter(
                       new DocValueHasher(), "sub_doc", Map.of("col", "val"))),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -638,7 +643,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithNoResult() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -648,7 +653,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       }
                   """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("username"), Values.of("user1"))
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -669,12 +676,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               commandContext,
               List.of(
-                  new FindOperation.TextFilter(
-                      "username", FindOperation.MapFilterBase.Operator.EQ, "user1")),
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
               1,
               1,
-              true,
+              ReadType.DOCUMENT,
               objectMapper);
       final Supplier<CommandResult> execute =
           findOperation.execute(queryExecutor).subscribeAsCompletionStage().get();

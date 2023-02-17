@@ -25,8 +25,6 @@ public class PushOperation extends UpdateOperation {
   public static PushOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    // We'll collect updates into List since in near future they will be more complicated than
-    // Just path/value pairs (to support "$each" modifier)
     List<PushAction> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
@@ -45,7 +43,7 @@ public class PushOperation extends UpdateOperation {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new PushAction(name, entry.getValue(), false);
+        action = new PushAction(name, entry.getValue(), false, null);
       }
       updates.add(action);
     }
@@ -54,34 +52,56 @@ public class PushOperation extends UpdateOperation {
 
   private static PushAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We know there is at least one modifier; and if so, all must be modifiers.
-    // For now we only support "$each"
+    // We support basic "$each" with optional "$position":
     JsonNode eachArg = null;
+    Integer position = null;
 
     Iterator<Map.Entry<String, JsonNode>> it = actionDef.fields();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
       final String modifier = entry.getKey();
+      final JsonNode arg = entry.getValue();
 
-      // Since we only support "$each" for now
-      if (!"$each".equals(modifier)) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                + ": $push only supports $each currently; trying to use '"
-                + modifier
-                + "'");
-      }
-      // And argument for $each must be an Array
-      eachArg = entry.getValue();
-      if (!eachArg.isArray()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                + ": $push modifier $each requires ARRAY argument, found: "
-                + eachArg.getNodeType());
+      switch (modifier) {
+        case "$each":
+          eachArg = arg;
+          if (!eachArg.isArray()) {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+                    + ": $push modifier $each requires ARRAY argument, found: "
+                    + eachArg.getNodeType());
+          }
+          break;
+        case "$position":
+          // Mongo requires number
+          if (!arg.isNumber()) {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+                    + ": $push modifier $position requires (integral) NUMBER argument, found: "
+                    + arg.getNodeType());
+          }
+          // but floating-point won't do either:
+          if (!arg.isIntegralNumber()) {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+                ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+                    + ": $push modifier $position requires Integer NUMBER argument, instead got: "
+                    + arg.asText());
+          }
+          position = arg.intValue();
+          break;
+
+        default:
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+                  + ": $push only supports $each and $position currently; trying to use '"
+                  + modifier
+                  + "'");
       }
     }
-
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
       throw new JsonApiException(
@@ -90,7 +110,7 @@ public class PushOperation extends UpdateOperation {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new PushAction(propName, eachArg, true);
+    return new PushAction(propName, eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -122,13 +142,28 @@ public class PushOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $push requires target to be Array; value at '"
                 + path
-                + " of type "
+                + "' of type "
                 + node.getNodeType());
       }
       // Regular add or $each?
       if (update.each) {
-        for (JsonNode element : toAdd) {
-          array.add(element);
+        // $position?
+        if (update.position != null) {
+          int ix = (int) update.position;
+          // Negative index is offset from the end, -1 being "before the last"
+          if (ix < 0) {
+            ix = Math.max(0, ix + array.size());
+          } else {
+            ix = Math.min(ix, array.size());
+          }
+          // ArrayNode.insert() can handle offsets [0..len]
+          for (JsonNode element : toAdd) {
+            array.insert(ix++, element);
+          }
+        } else {
+          for (JsonNode element : toAdd) {
+            array.add(element);
+          }
         }
       } else {
         array.add(toAdd);
@@ -146,9 +181,6 @@ public class PushOperation extends UpdateOperation {
         && Objects.equals(this.updates, ((PushOperation) o).updates);
   }
 
-  /**
-   * Value class for per-field update operations: initially simple replacement but will need
-   * different value type soon to allow {@code $each modifier}.
-   */
-  private record PushAction(String path, JsonNode value, boolean each) {}
+  /** Value class for per-field update operations. */
+  private record PushAction(String path, JsonNode value, boolean each, Integer position) {}
 }

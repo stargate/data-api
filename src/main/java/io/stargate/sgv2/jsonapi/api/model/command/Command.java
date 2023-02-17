@@ -2,8 +2,10 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
@@ -34,8 +36,10 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
     include = JsonTypeInfo.As.WRAPPER_OBJECT,
     property = "commandName")
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = CountDocumentsCommands.class),
   @JsonSubTypes.Type(value = CreateNamespaceCommand.class),
   @JsonSubTypes.Type(value = CreateCollectionCommand.class),
+  @JsonSubTypes.Type(value = DeleteCollectionCommand.class),
   @JsonSubTypes.Type(value = DeleteOneCommand.class),
   @JsonSubTypes.Type(value = FindCommand.class),
   @JsonSubTypes.Type(value = FindOneCommand.class),

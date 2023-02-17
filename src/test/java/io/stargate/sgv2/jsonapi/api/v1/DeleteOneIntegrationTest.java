@@ -21,6 +21,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationTest {
   @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class DeleteOne {
     @Test
     @Order(2)

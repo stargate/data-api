@@ -9,9 +9,9 @@ import java.math.BigDecimal;
  * processing. Callbacks are called in document order when traversing the input document.
  */
 public interface ShredListener {
-  void shredObject(JsonPath.Builder pathBuilder, ObjectNode obj);
+  void shredObject(JsonPath path, ObjectNode obj);
 
-  void shredArray(JsonPath.Builder pathBuilder, ArrayNode arr);
+  void shredArray(JsonPath path, ArrayNode arr);
 
   void shredText(JsonPath path, String text);
 
