@@ -40,7 +40,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -64,7 +64,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -88,7 +88,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       ObjectNode expected =
           objectFromJson(
               """
@@ -136,7 +136,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc);
+                oper.updateDocument(doc, targetLocator);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -161,7 +161,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc);
+                oper.updateDocument(doc, targetLocator);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)

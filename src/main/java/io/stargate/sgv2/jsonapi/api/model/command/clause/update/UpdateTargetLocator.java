@@ -4,10 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.regex.Pattern;
-import javax.enterprise.context.ApplicationScoped;
 
 /** Factory for {@link UpdateTarget} instances. */
-@ApplicationScoped
 public class UpdateTargetLocator {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
 
@@ -75,7 +73,7 @@ public class UpdateTargetLocator {
    * @return Target instance with optional target and context nodes
    */
   public UpdateTarget findOrCreate(JsonNode document, String dotPath) {
-    return null;
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   private String[] splitAndVerify(String dotPath) {

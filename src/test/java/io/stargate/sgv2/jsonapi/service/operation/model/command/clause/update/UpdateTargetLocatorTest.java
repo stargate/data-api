@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTarget;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTargetLocator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import javax.inject.Inject;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
-  @Inject protected UpdateTargetLocator targetLocator;
+  protected UpdateTargetLocator targetLocator = new UpdateTargetLocator();
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

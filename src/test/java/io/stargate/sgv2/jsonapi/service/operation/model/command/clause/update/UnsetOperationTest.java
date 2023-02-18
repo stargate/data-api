@@ -37,7 +37,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("paths", Arrays.asList("a", "b"));
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABC();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       // and be left with just one property
       assertThat(doc)
           .isEqualTo(fromJson("""
@@ -59,7 +59,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("paths", Arrays.asList("missing", "nosuchvalue"));
       ObjectNode doc = defaultTestDocABC();
       // No modifications
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       // and be left with same as original (but get a new copy just to make sure)
       assertThat(doc).isEqualTo(defaultTestDocABC());
     }

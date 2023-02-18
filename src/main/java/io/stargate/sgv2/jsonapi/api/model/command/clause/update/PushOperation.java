@@ -125,7 +125,7 @@ public class PushOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     for (PushAction update : updates) {
       final String path = update.path;
       final JsonNode toAdd = update.value;

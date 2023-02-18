@@ -35,7 +35,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(SetOperation.class);
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABC();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -55,7 +55,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(SetOperation.class);
       ObjectNode doc = defaultTestDocABC();
       // Will append the new property so there is modification
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected = defaultTestDocABC();
       expected.put("nosuchvalue", 1);
       assertThat(doc).isEqualTo(expected);
@@ -71,7 +71,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(SetOperation.class);
       ObjectNode doc = defaultTestDocABC();
       // No change, c was already set as true
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       // And document should be the same as before
       assertThat(doc).isEqualTo(defaultTestDocABC());
     }
