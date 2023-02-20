@@ -60,9 +60,105 @@ h2(#collection). Collection
 
 *TODO:* define the collection, it's properties etc . Do we define how to create one ? 
 
-h2(#document). Document 
+h2(#document). Documents 
 
 *TODO:* Describe how do we define a document and then refer to the parts of a JSON document, e.g. key or path etc ?  
+
+h3(#documentFieldNames). Field Names
+
+Fields names in the JSON document have additional restrictions not imposed on the "member names" by the "JSON Specification":https://www.json.org/. These restrictions are to ensure compatiblity with the underlaying storage system.
+
+Fields names must adhere to the ASCII character set (though may be encoded using UTF-8) and follow the regular experession below. The field name @_id@ is the only field name that can be used that does not match the rules for user defined field names.
+
+_Syntax:_
+
+bc(syntax).. 
+<field-name> ::= <id-field-name> |
+                <user-field-name> 
+
+<id-field-name> = _id
+<user-field-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+
+ 
+Other than the special @_id@ field there are no "reserved names" for field names that documents must not use. Any reserved words used by the system should be defined to not match the rules for @<user-field-name>@ and so avoid collisions. 
+
+p. _Sample:_ 
+
+bc(sample).. 
+{
+    "_id_" : "my_doc",
+    "a_field" : "the value", 
+    "sub_doc" : {
+        "inner_field" : 1
+    }
+}
+
+h3(#documentArrayIndexes). Array Indexes
+
+Array indexes are used in query paths to identify elements in a array. They are zero based, and should not include leading zeros (.e.g. prefer @1@ and avoid @0001@). If leading zeros are included the server will ignore them. 
+
+_Syntax:_
+
+bc(syntax).. 
+<array-index> ::= [0-9]+
+
+p. _Sample:_ 
+
+bc(sample).. 
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+// Equivalent to above
+{"find" : {
+    "filter" : {"tags.002": "foo"}
+    }
+} 
+
+h3(#documentPaths). Document Paths
+
+Document paths are used to identify fields in a JSON document in multiple contexts, such as a filter for a query or specifying fields to update.
+
+@<document-path>@ in this specification are a "JSON Path":https://jsonpath.com/ like syntax. 
+
+"Clauses":#clauses specify where they support the use of @<document-path>@ to filter, update, sort, or project documents.  
+
+_Syntax:_
+
+bc(syntax).. 
+<document-path> ::= <dotted-notation-path> 
+
+h4(#documentPathsDottedNotation). Dotted Notation Paths
+
+Dotted Notation Paths support specifying top level fields, fields in embedded documents (nested fields), array elements, and nested structures in arrays.
+
+In general the dotted notation is one or more @<field-name>@ or @<array-index>@ concatenated with a period characher @.@ and no additional whitespace.
+
+_Syntax:_
+
+bc(syntax).. 
+<dotted-notation-path> ::= <field-name>(.<field-name> | <array-index>)*
+
+p. _Sample:_ 
+
+bc(sample).. 
+// _id is equal to 1 
+{"find" : {
+    "filter" : {"_id": 1}
+    }
+} 
+// suburb field in the address sub document is equal to "banana"
+{"find" : {
+    "filter" : {"address.suburb": "banana"}
+    }
+} 
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+
 
 h2(#commands). Commands
 
@@ -620,6 +716,8 @@ h3(#clauseSort). Sort Clause
 
 A sort clause is applied to a set of documents to order them. Examples of this include ordering a large result set that will returned as pages, or sorting a candidate set of documents to determine which document will be returned when only a single document is required.   
 
+*TODO* THis is wrong, it needs to be a map 
+
 p. _Syntax:_
 
 bc(syntax).. 
@@ -650,3 +748,7 @@ The @<sort-clause>@ is evaluated using the following order of operations:
 h4(#clauseSortOrder). Sort Order
 
 *TODO:* type coercion, missing fields 
+
+h3(#clauseUpdate). Update Clause 
+
+*TODO* BNF for update commands, need to use <document-path>
