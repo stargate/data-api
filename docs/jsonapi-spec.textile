@@ -72,46 +72,38 @@ Each command specifies one or more "Clauses":#clauses that control how it operat
 
 The following commands are supported for collections: 
 
-* @bulkWrite@
-* @countDocuments@ Count documents that match a filter. 
-* @deleteMany@
-* @deleteOne@
-* @estimatedDocumentCount@ Estimate total number of documents in a collection.
+* "@countDocuments@":#commandCountDocuments
+* "@deleteMany@":#commandDeleteMany
+* "@deleteOne@":#commandDeleteOne
+* "@estimatedDocumentCount@":#commandEstimatedDocumentCount
 * "@find@":#commandFind
-* @findOne@ 
-* @findOneAndDelete@
-* @findOneAndReplace@
+* "@findOne@":#commandFindOne
 * "@findOneAndUpdate@":#commandFindOneAndUpdate
-* @insertOne@
-* @insertMany@
-* @replaceOne@
-* @updateOne@
-* @updateMany@
+* "@insertMany@":#commandInsertMany
+* "@insertOne@":#commandInsertOne
+* "@updateMany@":#commandUpdateMany
+* "@updateOne@":#commandUpdateOne
 
+Each command always results in a single "response":#commandResponses , unless there is an unecpected exception. See the "JSON API HTTP Specification" for details. 
 
-*TODO:* Add other commands below as we work through the list
+Commands are defined using the BNF like syntax, with samples presented using a "JSON":https://www.json.org/ encoding of the language. The use of JSON in these samples does not preclude other encodings of the API in the future.
 
-_Syntax:_
+p. _Sample:_ 
 
-bc(syntax).. 
-<command> ::=  <find-command> |
+bc(sample).. 
+// select all documents in a collection, return complete documents
+{"find" : {} }
 
-
-<command-response> ::= <single-document-response> |
-                       <paginated-document-response>
-
-<single-document-response> ::= data <document>
-
-<paginated-document-response> ::= count <total-document-count>, 
-                                  pageState <page-state>, 
-                                  data <paginated-documents>
-
-<total-document-count> ::= <positive-integer>
-<page-state> ::= <ascii-string>
-<paginated-documents> ::= (<document>)*
+// select where name == "aaron" and return selected fields
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
 
 h3(#commandResponses). Command Responses
 
+*TODO* merge the response syntax in from the network spec 
 
 h4(#commandResponseSingle). @<single-document-response>@ 
 
@@ -144,6 +136,16 @@ bc(sample)..
 
 
 p.*TODO:* check this multi doc return format 
+
+h3(#commandCountDocuments). Count Documents Command
+
+h4(#commandCountDocumentsOptions). Count Documents Command Options
+
+h3(#commandDeleteMany). Delete Many Command
+
+h3(#commandDeleteOne). Delete One Command
+
+h3(#commandEstimatedDocumentCount). Estimated Document Count Command
 
 h3(#commandFind). Find Command
 
@@ -233,12 +235,24 @@ bc(sample)..
     } 
 } 
 
+h3(#commandFindOne). Find One Command
+
+h3(#commandFindOneAndUpdate). Find One And Update Command
+
+h3(#commandInsertMany). Insert Many Command
+
+h3(#commandInsertOne). Insert One Command
+
+h3(#commandUpdateMany). Update Many Command
+
+h3(#commandUpdateOne). Update One Command
 
 h2(#clauses). Clauses
 
 * "Filter Clause":#clauseFilter
 * "Projection Clause":#clauseProjection 
 * "Sort Clause":#clauseSort 
+* "Update Clause":#clauseUpdate
 
 h3(#clauseFilter). Filter Clause 
 
