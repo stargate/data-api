@@ -56,9 +56,35 @@ h2(#namespace). Namespace
 
 *TODO:* define the namespace, it's properties etc . Do we define how to create one ?
 
+h3(#namespaceLimits). Namespace Limits
+
+h4(#namespaceLimitsName). Namespace Name Limit
+
+Namespace names must follow the regular expression pattern below:
+
+_Syntax:_
+
+bc(syntax).. 
+<namespace-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+
+p. The maximum length of a namespace name is 48 characters. 
+
 h2(#collection). Collection
 
 *TODO:* define the collection, it's properties etc . Do we define how to create one ? 
+
+h3(#collectionLimits). Collection Limits
+
+h4(#collectionLimitsName). Collection Name Limit
+
+Collection names must follow the regular expression pattern below:
+
+_Syntax:_
+
+bc(syntax).. 
+<collection-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+
+p. The maximum length of a collection name is 48 characters. 
 
 h2(#document). Documents 
 
@@ -159,6 +185,35 @@ bc(sample)..
     }
 } 
 
+h3(#documentLimits). Document Limits
+
+JSON documents must ahere to the following limits. Attempting to insert or modify a document beyond these limits will result in the command failing. 
+
+h4(#documentLimitsSize). Document Size Limit
+
+The maximum size of a single document is 1 megabyte. The size is determined by the JSON serialisation of the document. 
+
+h4(#documentLimitsDepth). Document Depth Limit
+
+The maximum nesting depth for a single document is 8 levels deep. Each nested docment or array adds another level. 
+
+h4(#documentLimitsFields). Document Field Limits
+
+The maximum length of a "field name":#documentFieldNames is 48 characters. 
+
+The maximum number of fields allowed in a single JSON object is 32. 
+
+h4(#documentLimitsValues). Document Value Limits
+
+The maxium size of field values are:
+
+|_. JSON Type |_. Maximum Value |
+| @string@ | Maximum length of 4096 unicode characters |
+| @number@ | Arbitrary sized number described using "BigDecimal in Java":https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html#BigDecimal-java.lang.String- |
+
+h4(#documentLimitsArray). Document Array Limits
+
+The maximum length of an array is 100 elements. 
 
 h2(#commands). Commands
 
