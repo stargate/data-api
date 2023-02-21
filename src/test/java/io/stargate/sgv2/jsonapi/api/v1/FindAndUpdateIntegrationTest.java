@@ -91,6 +91,117 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
 
     @Test
     @Order(2)
+    public void findByIdReturnDocumentAfter() {
+      String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": {
+                        "_id": "afterDoc3",
+                        "username": "afterUser3",
+                        "active_user" : true
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "afterDoc3"},
+                      "update" : {"$set" : {"active_user": false}},
+                      "options" : {"returnDocument" : "after"}
+                    }
+                  }
+                  """;
+      String expected =
+          "{\"_id\":\"afterDoc3\", \"username\":\"afterUser3\", \"active_user\":false}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.updatedIds[0]", is("afterDoc3"));
+
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "afterDoc3"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdUpsert() {
+      String json =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "afterDoc4"},
+                      "update" : {"$set" : {"active_user": false}},
+                      "options" : {"returnDocument" : "after", "upsert" : true}
+                    }
+                  }
+                  """;
+      String expected = "{\"_id\":\"afterDoc4\", \"active_user\":false}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.updatedIds[0]", is("afterDoc4"));
+
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "afterDoc4"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
     public void findByColumnAndSet() {
       String json =
           """
@@ -251,7 +362,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       json =
           """
               {
-                "findOneAndUpdate": {
+                "updateOne": {
                   "filter" : {"_id" : "update_doc1"},
                   "update" : {"$set" : {"active_user": false}}
                 }
@@ -277,6 +388,50 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                 }
               }
               """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdUpsert() {
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "afterDoc6"},
+                          "update" : {"$set" : {"active_user": false}},
+                          "options" : {"upsert" : true}
+                        }
+                      }
+                      """;
+      String expected = "{\"_id\":\"afterDoc6\", \"active_user\":false}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.updatedIds[0]", is("afterDoc6"));
+
+      json =
+          """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "afterDoc6"}
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

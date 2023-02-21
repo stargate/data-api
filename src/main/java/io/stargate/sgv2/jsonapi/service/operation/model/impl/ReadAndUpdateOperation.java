@@ -17,12 +17,15 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public record ReadAndUpdateOperation(
     CommandContext commandContext,
     ReadOperation readOperation,
     DocumentUpdater documentUpdater,
-    boolean returnDoc,
+    boolean returnDocumentInResponse,
+    boolean returnUpdatedDocument,
+    boolean upsert,
     Shredder shredder)
     implements ModifyOperation {
 
@@ -33,24 +36,37 @@ public record ReadAndUpdateOperation(
         docsToUpate
             .onItem()
             .transformToMulti(
-                findResponse -> Multi.createFrom().items(findResponse.docs().stream()))
+                findResponse -> {
+                  if (findResponse.docs().isEmpty()) {
+                    if (upsert) {
+                      return Multi.createFrom().item(readOperation().getEmptyDocuments());
+                    } else {
+                      return Multi.createFrom().items(Stream.empty());
+                    }
+                  } else {
+                    return Multi.createFrom().items(findResponse.docs().stream());
+                  }
+                })
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> {
-                  JsonNode originalDocument = readDocument.document().deepCopy();
                   JsonNode updatedDocument =
-                      documentUpdater().applyUpdates(readDocument.document());
+                      documentUpdater().applyUpdates(readDocument.document().deepCopy());
                   WritableShreddedDocument writableShreddedDocument =
                       shredder().shred(updatedDocument, readDocument.txnId());
+                  final JsonNode originalDocument =
+                      readDocument.txnId() == null ? null : readDocument.document();
+                  final JsonNode documentToReturn =
+                      returnUpdatedDocument ? updatedDocument : originalDocument;
                   return updatedDocument(queryExecutor, writableShreddedDocument)
                       .onItem()
-                      .transform(v -> new UpdatedDocument(readDocument.id(), originalDocument));
+                      .transform(v -> new UpdatedDocument(readDocument.id(), documentToReturn));
                 })
             .collect()
             .asList();
     return updatedDocuments
         .onItem()
-        .transform(updates -> new UpdateOperationPage(updates, returnDoc()));
+        .transform(updates -> new UpdateOperationPage(updates, returnDocumentInResponse()));
   }
 
   private Uni<DocumentId> updatedDocument(
@@ -113,7 +129,7 @@ public record ReadAndUpdateOperation(
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-            .addValues(Values.of(doc.txID()));
+            .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 

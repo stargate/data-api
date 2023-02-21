@@ -120,6 +120,9 @@ public interface ReadOperation extends Operation {
    */
   Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
 
+  /** @return */
+  ReadDocument getEmptyDocuments();
+
   record FindResponse(List<ReadDocument> docs, String pagingState) {}
 
   record CountResponse(int count) {}

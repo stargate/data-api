@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -47,5 +48,10 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
   @Override
   public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
     return Uni.createFrom().failure(new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION));
+  }
+
+  @Override
+  public ReadDocument getEmptyDocuments() {
+    throw new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION);
   }
 }

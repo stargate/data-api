@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
+import javax.validation.constraints.Pattern;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
@@ -17,7 +18,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindOneAndUpdateCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("update") UpdateClause updateClause,
-    @Nullable Options options)
+    @Valid @Nullable Options options)
     implements ReadCommand, Filterable {
-  public record Options() {}
+  public record Options(
+      @Valid
+          @Nullable
+          @Pattern(
+              regexp = "(after|before)",
+              message = "returnDocument value can only be before or after")
+          String returnDocument,
+      boolean upsert) {}
 }
