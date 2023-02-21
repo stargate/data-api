@@ -25,7 +25,7 @@ public record FindOneAndUpdateCommand(
           @Nullable
           @Pattern(
               regexp = "(after|before)",
-              message = "returnDocument value can only be before or after")
+              message = "returnDocument value can only be 'before' or 'after'")
           String returnDocument,
       boolean upsert) {}
 }

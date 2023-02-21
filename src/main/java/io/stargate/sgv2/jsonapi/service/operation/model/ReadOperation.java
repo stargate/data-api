@@ -120,7 +120,12 @@ public interface ReadOperation extends Operation {
    */
   Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
 
-  /** @return */
+  /**
+   * A operation method which can return ReadDocument with an empty document, if the filter
+   * condition has _id filter it will return document with this field added
+   *
+   * @return
+   */
   ReadDocument getEmptyDocuments();
 
   record FindResponse(List<ReadDocument> docs, String pagingState) {}
