@@ -288,17 +288,32 @@ bc(sample)..
 
 p.*TODO:* check this multi doc return format 
 
-h3(#commandCountDocuments). Count Documents Command
+h3(#commandCountDocuments). countDocuments Command
 
-h4(#commandCountDocumentsOptions). Count Documents Command Options
+h4(#commandCountDocumentsOptions). countDocuments Command Options
 
-h3(#commandDeleteMany). Delete Many Command
+The @countDocuments@ command does not support any options.
 
-h3(#commandDeleteOne). Delete One Command
+h3(#commandDeleteMany). deleteMany Command
 
-h3(#commandEstimatedDocumentCount). Estimated Document Count Command
+h4(#commandDeleteManyOptions). deleteMany Command Options
 
-h3(#commandFind). Find Command
+@<delete-many-command-options>@ is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @limit@ | Positive Integer | Limits the number of documents that will be deleted, defaults to @20@ and the maximum value is @100@. If the provided value is greater than the maximum an error is returned. |
+
+h3(#commandDeleteOne). deleteOne Command
+
+h4(#commandCountDocumentsOptions). deleteOne Command Options
+
+The @deleteOne@ command does not support any options.
+
+h3(#commandEstimatedDocumentCount). estimatedDocumentCount Command
+
+*TODO* TBC
+
+h3(#commandFind). find Command
 
 @find@ selects zero or more documents from a collection that match a selection filter, and returns either the complete documents or a partial projection of each document. 
 
@@ -329,7 +344,7 @@ bc(sample)..
     } 
 } 
 
-h4(#commandFindOrderOfOperation). Find Command Order of Operations
+h4(#commandFindOrderOfOperation). find Command Order of Operations
 
 p. TODO: add how cursor state fits into the processing 
 
@@ -340,14 +355,14 @@ p. TODO: add how cursor state fits into the processing
 # The @limit@ option from @<find-command-options>@ is applied to reduce the number of candidate documents to no more than @limit@, if no @limit@ is supplied all candidate documents are included. 
 # @<projection-clause>@ is applied to each candidate document to create the *result set* documents to be included in the @<find-command-response>@, if no @<projection-clause>@ is specified the complete candidate documents are included in the response.
 
-h4(#commandFindOptions). Find Command Options
+h4(#commandFindOptions). find Command Options
 
-@<find-command-options>@ is a map of key-value pairs that modify the behavior of the find command. All options are optional, with default behavior applied when not provided. 
+@<find-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
 
-|_. Find Option |_. Type |_. Description |
-| @limit@ | Positive Integer | Limits the number of documents to be returned by the command. ==<br>== If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages.|
-| @page-state@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. ==<br>== If unspecified, null, or an empty string the first page is returned.|
-
+|_. Option |_. Type |_. Description |
+| @limit@ | Positive Integer | Limits the number of documents to be returned by the command. If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages.|
+| @pageState@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.|
+| @skip@ | Positive Integer | Skips the specified number of documents, in sort order, before returning any documents.|
 
 h3(#commandFindOneAndUpdate). findOneAndUpdate Command
 
@@ -386,17 +401,69 @@ bc(sample)..
     } 
 } 
 
-h3(#commandFindOne). Find One Command
+h4(#commandFindOneAndUpdateOptions). findOneAndUpdate Command Options
 
-h3(#commandFindOneAndUpdate). Find One And Update Command
+@<find-one-and-update-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
 
-h3(#commandInsertMany). Insert Many Command
+|_. Option |_. Type |_. Description |
+| @returnDocument@ | String Enum | Specifies which document to perform the projection on. If @"before"@ the projection is performed on the document before the update is applied, if @"after"@ the document projection is from the document after the update. Defaults to @"before"@.|
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
-h3(#commandInsertOne). Insert One Command
+h3(#commandFindOne). findOne Command
 
-h3(#commandUpdateMany). Update Many Command
+h4(#commandFindOneOptions). findOne Command Options
 
-h3(#commandUpdateOne). Update One Command
+The @findOne@ command does not support any options.
+
+h3(#commandInsertMany). insertMany Command
+
+h4(#commandInsertManyOptions). insertMany Command Options
+
+@<insert-many-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @ordered@ | Boolean | When @true@ the server will insert the documents in sequential order, ensuring each doucument is succesfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When @false@ the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure for details. Defaults to @true@.|
+
+h3(#commandInsertOne). insertOne Command
+
+h4(#commandInsertOneOptions). insertOne Command Options
+
+The @insertOne@ command does not support any options.
+
+h3(#commandUpdateMany). updateMany Command
+
+h4(#commandUpdateManyOptions). updateMany Command Options
+
+@<update-many-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @limit@ | Positive Integer | Limits the number of documents that will be updated, defaults to @20@ and the maximum value is @100@. If the provided value is greater than the maximum an error is returned. |
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h3(#commandUpdateOne). updateOne Command
+
+h4(#commandUpdateOneOptions). updateOne Command Options
+
+@<update-one-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h2(#commandConsierations). Command Considerations
+
+Additional considerations that apply to multiple commands. 
+
+h3(#considerationsUpsert). Upsert Considerations
+
+Multiple concurrent requests that use upsert may result in multiple documents created when the intention was to only create one. This is because the default behaviour of upsert is to create a new document with a random, server assigned, @_id@ and then apply the updates to that document. 
+
+If the @filter@ clause of the command includes the @_id@ field when performing an upsert the new document will use the supplied @_id@. This will ensure a single document is created, as the @_id@ is unique. Overlapping commands may read the new document and update it. 
+
+Fields included in the filter clause in addition to the @_id@ are ignored. 
+
+h3(#considerationsMultiDocumentFailure). Multi Document Failure Considerations
+
+*TODO* multi document failure considerations 
 
 h2(#clauses). Clauses
 
