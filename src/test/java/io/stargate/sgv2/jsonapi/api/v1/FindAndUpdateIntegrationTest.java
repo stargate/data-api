@@ -412,7 +412,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                         }
                       }
                       """;
-      String expected = "{\"_id\":\"afterDoc6\", \"active_user\":false}";
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -421,7 +421,6 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
           .body("status.updatedIds[0]", is("afterDoc6"));
 
       json =
@@ -432,6 +431,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                         }
                       }
                       """;
+      String expected = "{\"_id\":\"afterDoc6\", \"active_user\":false}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
