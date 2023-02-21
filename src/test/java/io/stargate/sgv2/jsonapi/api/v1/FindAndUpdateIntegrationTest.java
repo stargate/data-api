@@ -354,29 +354,16 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     @Test
     @Order(2)
     public void findByIdAndUnset() {
-      String json =
+      insertDoc(
           """
-              {
-                "insertOne": {
-                  "document": {
+                  {
                     "_id": "update_doc3",
                     "username": "update_user3",
                     "unset_col": "val"
                   }
-                }
-              }
-              """;
+              """);
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
-      json =
+      String json =
           """
                {
                   "findOneAndUpdate": {
@@ -404,6 +391,91 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                   }
                 }
                 """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdAndUnsetNested() {
+      insertDoc(
+          """
+                  {
+                    "_id": "update_doc_unset_nested",
+                    "array": [
+                        137,
+                        { "x" : 1, "y" : 2 }
+                    ],
+                    "subdoc" : {
+                        "x" : 5,
+                        "y" : -19
+                    }
+                  }
+              """);
+
+      // NOTE: we mix actual working removals and ones that won't; it is not an error
+      // to try to $unset properties that do not (or sometimes cannot) exist. They just
+      // have no effect.
+      //
+      // Ones that do have effect are:
+      //
+      // * array.0   -> remove first entry, replace with null
+      // * array.1.x -> remove property 'x' from second array element (object)
+      // * subdoc.y  -> remove subdoc property 'y'
+      String json =
+          """
+                   {
+                      "findOneAndUpdate": {
+                        "filter" : {"_id" : "update_doc_unset_nested"},
+                        "update" : {"$unset" : {
+                            "array.0": 1,
+                            "array.1.x" : 1,
+                            "subdoc.x.property" : 1,
+                            "subdoc.y" : 1,
+                            "nosuchfield.to.remove" : 1
+                          }
+                        }
+                      }
+                    }
+                   """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_unset_nested"));
+
+      String expected =
+          """
+                  {
+                    "_id": "update_doc_unset_nested",
+                    "array": [
+                        null,
+                        { "y" : 2 }
+                    ],
+                    "subdoc" : {
+                        "x" : 5
+                    }
+                  }
+      """;
+      json =
+          """
+                    {
+                      "find": {
+                        "filter" : {"_id" : "update_doc_unset_nested"}
+                      }
+                    }
+                    """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
