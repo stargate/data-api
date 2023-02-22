@@ -103,30 +103,30 @@ bc(syntax)..
                 <user-field-name> 
 
 <id-field-name> = _id
-<user-field-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+<user-field-name> ::= [a-zA-Z0-9_]+
 
- 
-Other than the special @_id@ field there are no "reserved names" for field names that documents must not use. Any reserved words used by the system should be defined to not match the rules for @<user-field-name>@ and so avoid collisions. 
+p. The @_id@ field is a "reserved name" and is always interpreted as the document identity field. See *TODO DOC ID LINK* for restrictions on it's use. 
 
 p. _Sample:_ 
 
 bc(sample).. 
 {
-    "_id_" : "my_doc",
+    "_id" : "my_doc",
     "a_field" : "the value", 
     "sub_doc" : {
         "inner_field" : 1
-    }
+    },
+    "__v" : 1
 }
 
 h3(#documentArrayIndexes). Array Indexes
 
-Array indexes are used in query paths to identify elements in a array. They are zero based, and should not include leading zeros (.e.g. prefer @1@ and avoid @0001@). If leading zeros are included the server will ignore them. 
+Array indexes are used in query paths to identify elements in a array. They are zero based, and *must* not include leading zeros, i.e. @1@ is a legal array index and @0001@ is not. Leading zeros are not legal numbers in the "JSON Specification":https://www.json.org/ and should only be used as a property of an object. Not that the first element in the array is indexed using a single zero @0@.
 
 _Syntax:_
 
 bc(syntax).. 
-<array-index> ::= [0-9]+
+<array-index> ::= ^0$|^[1-9][0-9]*$
 
 p. _Sample:_ 
 
@@ -136,9 +136,9 @@ bc(sample)..
     "filter" : {"tags.2": "foo"}
     }
 } 
-// Equivalent to above
+// Filter on the first element of the tags array
 {"find" : {
-    "filter" : {"tags.002": "foo"}
+    "filter" : {"tags.0": "foo"}
     }
 } 
 
