@@ -56,13 +56,166 @@ h2(#namespace). Namespace
 
 *TODO:* define the namespace, it's properties etc . Do we define how to create one ?
 
+h3(#namespaceLimits). Namespace Limits
+
+h4(#namespaceLimitsName). Namespace Name Limit
+
+Namespace names must follow the regular expression pattern below:
+
+_Syntax:_
+
+bc(syntax).. 
+<namespace-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+
+p. The maximum length of a namespace name is 48 characters. 
+
 h2(#collection). Collection
 
 *TODO:* define the collection, it's properties etc . Do we define how to create one ? 
 
-h2(#document). Document 
+h3(#collectionLimits). Collection Limits
+
+h4(#collectionLimitsName). Collection Name Limit
+
+Collection names must follow the regular expression pattern below:
+
+_Syntax:_
+
+bc(syntax).. 
+<collection-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+
+p. The maximum length of a collection name is 48 characters. 
+
+h2(#document). Documents 
 
 *TODO:* Describe how do we define a document and then refer to the parts of a JSON document, e.g. key or path etc ?  
+
+h3(#documentFieldNames). Field Names
+
+Fields names in the JSON document have additional restrictions not imposed on the "member names" by the "JSON Specification":https://www.json.org/. These restrictions are to ensure compatiblity with the underlaying storage system.
+
+Fields names must adhere to the ASCII character set (though may be encoded using UTF-8) and follow the regular experession below. The field name @_id@ is the only field name that can be used that does not match the rules for user defined field names.
+
+_Syntax:_
+
+bc(syntax).. 
+<field-name> ::= <id-field-name> |
+                <user-field-name> 
+
+<id-field-name> = _id
+<user-field-name> ::= [a-zA-Z0-9_]+
+
+p. The @_id@ field is a "reserved name" and is always interpreted as the document identity field. See *TODO DOC ID LINK* for restrictions on it's use. 
+
+*TODO* add support for allowing "." and "$" in the field names, not needed for the intitial demo release. 
+
+p. _Sample:_ 
+
+bc(sample).. 
+{
+    "_id" : "my_doc",
+    "a_field" : "the value", 
+    "sub_doc" : {
+        "inner_field" : 1
+    },
+    "__v" : 1
+}
+
+h3(#documentArrayIndexes). Array Indexes
+
+Array indexes are used in query paths to identify elements in a array. They are zero based, and *must* not include leading zeros, i.e. @1@ is a legal array index and @0001@ is not. Leading zeros are not legal numbers in the "JSON Specification":https://www.json.org/ and should only be used as a property of an object. Not that the first element in the array is indexed using a single zero @0@.
+
+_Syntax:_
+
+bc(syntax).. 
+<array-index> ::= ^0$|^[1-9][0-9]*$
+
+p. _Sample:_ 
+
+bc(sample).. 
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+// Filter on the first element of the tags array
+{"find" : {
+    "filter" : {"tags.0": "foo"}
+    }
+} 
+
+h3(#documentPaths). Document Paths
+
+Document paths are used to identify fields in a JSON document in multiple contexts, such as a filter for a query or specifying fields to update.
+
+@<document-path>@ in this specification are a "JSON Path":https://jsonpath.com/ like syntax. 
+
+"Clauses":#clauses specify where they support the use of @<document-path>@ to filter, update, sort, or project documents.  
+
+_Syntax:_
+
+bc(syntax).. 
+<document-path> ::= <dotted-notation-path> 
+
+h4(#documentPathsDottedNotation). Dotted Notation Paths
+
+Dotted Notation Paths support specifying top level fields, fields in embedded documents (nested fields), array elements, and nested structures in arrays.
+
+In general the dotted notation is one or more @<field-name>@ or @<array-index>@ concatenated with a period characher @.@ and no additional whitespace.
+
+_Syntax:_
+
+bc(syntax).. 
+<dotted-notation-path> ::= <field-name>(.<field-name> | <array-index>)*
+
+p. _Sample:_ 
+
+bc(sample).. 
+// _id is equal to 1 
+{"find" : {
+    "filter" : {"_id": 1}
+    }
+} 
+// suburb field in the address sub document is equal to "banana"
+{"find" : {
+    "filter" : {"address.suburb": "banana"}
+    }
+} 
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+
+h3(#documentLimits). Document Limits
+
+JSON documents must ahere to the following limits. Attempting to insert or modify a document beyond these limits will result in the command failing. 
+
+h4(#documentLimitsSize). Document Size Limit
+
+The maximum size of a single document is 1 megabyte. The size is determined by the JSON serialisation of the document. 
+
+h4(#documentLimitsDepth). Document Depth Limit
+
+The maximum nesting depth for a single document is 8 levels deep. Each nested docment or array adds another level. 
+
+h4(#documentLimitsFields). Document Field Limits
+
+The maximum length of a "field name":#documentFieldNames is 48 characters. 
+
+The maximum number of fields allowed in a single JSON object is 64. 
+
+h4(#documentLimitsValues). Document Value Limits
+
+The maxium size of field values are:
+
+|_. JSON Type |_. Maximum Value |
+| @string@ | Maximum length of 16384 unicode characters |
+| @number@ | TODO: define max num that is well handled by BigDecimal |
+
+h4(#documentLimitsArray). Document Array Limits
+
+The maximum length of an array is 100 elements. 
 
 h2(#commands). Commands
 
@@ -137,17 +290,29 @@ bc(sample)..
 
 p.*TODO:* check this multi doc return format 
 
-h3(#commandCountDocuments). Count Documents Command
+h3(#commandCountDocuments). countDocuments Command
 
-h4(#commandCountDocumentsOptions). Count Documents Command Options
+h4(#commandCountDocumentsOptions). countDocuments Command Options
 
-h3(#commandDeleteMany). Delete Many Command
+The @countDocuments@ command does not support any options.
 
-h3(#commandDeleteOne). Delete One Command
+h3(#commandDeleteMany). deleteMany Command
 
-h3(#commandEstimatedDocumentCount). Estimated Document Count Command
+h4(#commandDeleteManyOptions). deleteMany Command Options
 
-h3(#commandFind). Find Command
+The @deleteMany@ command does not support any options.
+
+h3(#commandDeleteOne). deleteOne Command
+
+h4(#commandCountDocumentsOptions). deleteOne Command Options
+
+The @deleteOne@ command does not support any options.
+
+h3(#commandEstimatedDocumentCount). estimatedDocumentCount Command
+
+*TODO* TBC
+
+h3(#commandFind). find Command
 
 @find@ selects zero or more documents from a collection that match a selection filter, and returns either the complete documents or a partial projection of each document. 
 
@@ -178,7 +343,7 @@ bc(sample)..
     } 
 } 
 
-h4(#commandFindOrderOfOperation). Find Command Order of Operations
+h4(#commandFindOrderOfOperation). find Command Order of Operations
 
 p. TODO: add how cursor state fits into the processing 
 
@@ -189,14 +354,14 @@ p. TODO: add how cursor state fits into the processing
 # The @limit@ option from @<find-command-options>@ is applied to reduce the number of candidate documents to no more than @limit@, if no @limit@ is supplied all candidate documents are included. 
 # @<projection-clause>@ is applied to each candidate document to create the *result set* documents to be included in the @<find-command-response>@, if no @<projection-clause>@ is specified the complete candidate documents are included in the response.
 
-h4(#commandFindOptions). Find Command Options
+h4(#commandFindOptions). find Command Options
 
-@<find-command-options>@ is a map of key-value pairs that modify the behavior of the find command. All options are optional, with default behavior applied when not provided. 
+@<find-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
 
-|_. Find Option |_. Type |_. Description |
-| @limit@ | Positive Integer | Limits the number of documents to be returned by the command. ==<br>== If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages.|
-| @page-state@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. ==<br>== If unspecified, null, or an empty string the first page is returned.|
-
+|_. Option |_. Type |_. Description |
+| @limit@ | Positive Integer | Limits the number of documents to be returned by the command. If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages.|
+| @pageState@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.|
+| @skip@ | Positive Integer | Skips the specified number of documents, in sort order, before returning any documents.|
 
 h3(#commandFindOneAndUpdate). findOneAndUpdate Command
 
@@ -235,17 +400,68 @@ bc(sample)..
     } 
 } 
 
-h3(#commandFindOne). Find One Command
+h4(#commandFindOneAndUpdateOptions). findOneAndUpdate Command Options
 
-h3(#commandFindOneAndUpdate). Find One And Update Command
+@<find-one-and-update-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
 
-h3(#commandInsertMany). Insert Many Command
+|_. Option |_. Type |_. Description |
+| @returnDocument@ | String Enum | Specifies which document to perform the projection on. If @"before"@ the projection is performed on the document before the update is applied, if @"after"@ the document projection is from the document after the update. Defaults to @"before"@.|
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
-h3(#commandInsertOne). Insert One Command
+h3(#commandFindOne). findOne Command
 
-h3(#commandUpdateMany). Update Many Command
+h4(#commandFindOneOptions). findOne Command Options
 
-h3(#commandUpdateOne). Update One Command
+The @findOne@ command does not support any options.
+
+h3(#commandInsertMany). insertMany Command
+
+h4(#commandInsertManyOptions). insertMany Command Options
+
+@<insert-many-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @ordered@ | Boolean | When @true@ the server will insert the documents in sequential order, ensuring each doucument is succesfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When @false@ the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure for details. Defaults to @true@.|
+
+h3(#commandInsertOne). insertOne Command
+
+h4(#commandInsertOneOptions). insertOne Command Options
+
+The @insertOne@ command does not support any options.
+
+h3(#commandUpdateMany). updateMany Command
+
+h4(#commandUpdateManyOptions). updateMany Command Options
+
+@<update-many-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h3(#commandUpdateOne). updateOne Command
+
+h4(#commandUpdateOneOptions). updateOne Command Options
+
+@<update-one-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
+
+|_. Option |_. Type |_. Description |
+| @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h2(#commandConsierations). Command Considerations
+
+Additional considerations that apply to multiple commands. 
+
+h3(#considerationsUpsert). Upsert Considerations
+
+Multiple concurrent requests that use upsert may result in multiple documents created when the intention was to only create one. This is because the default behaviour of upsert is to create a new document with a random, server assigned, @_id@ and then apply the updates to that document. 
+
+If the @filter@ clause of the command includes the @_id@ field when performing an upsert the new document will use the supplied @_id@. This will ensure a single document is created, as the @_id@ is unique. Overlapping commands may read the new document and update it. 
+
+Fields included in the filter clause in addition to the @_id@ are ignored. 
+
+h3(#considerationsMultiDocumentFailure). Multi Document Failure Considerations
+
+*TODO* multi document failure considerations 
 
 h2(#clauses). Clauses
 
@@ -620,6 +836,8 @@ h3(#clauseSort). Sort Clause
 
 A sort clause is applied to a set of documents to order them. Examples of this include ordering a large result set that will returned as pages, or sorting a candidate set of documents to determine which document will be returned when only a single document is required.   
 
+*TODO* THis is wrong, it needs to be a map 
+
 p. _Syntax:_
 
 bc(syntax).. 
@@ -650,3 +868,7 @@ The @<sort-clause>@ is evaluated using the following order of operations:
 h4(#clauseSortOrder). Sort Order
 
 *TODO:* type coercion, missing fields 
+
+h3(#clauseUpdate). Update Clause 
+
+*TODO* BNF for update commands, need to use <document-path>
