@@ -615,6 +615,61 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
   }
 
   @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateOneFailures {
+    @Test
+    @Order(2)
+    public void findByIdTryUnsetId() {
+      final String inputDoc =
+          """
+                      {
+                        "_id": "update_doc_unset_id",
+                        "username": "update_user"
+                      }
+                  """;
+      insertDoc(inputDoc);
+      String json =
+          """
+                   {
+                      "findOneAndUpdate": {
+                        "filter" : {"_id" : "update_doc_unset_id"},
+                        "update" : {"$unset" : {"_id": 1}}
+                      }
+                    }
+                   """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
+          .body("errors[0].message", is("Cannot use operator with '_id' field: $unset"));
+
+      // And finally verify also that nothing was changed:
+      json =
+          """
+                    {
+                      "find": {
+                        "filter" : {"_id" : "update_doc_unset_id"}
+                      }
+                    }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(inputDoc));
+    }
+  }
+
+  @Nested
   class UpdateOneWithPop {
     @Test
     @Order(2)
