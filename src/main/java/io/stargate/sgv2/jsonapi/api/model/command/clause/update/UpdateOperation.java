@@ -16,7 +16,7 @@ public abstract class UpdateOperation {
    * @param doc Document to apply operation to
    * @return True if document was modified by operation; false if not.
    */
-  public abstract boolean updateDocument(ObjectNode doc);
+  public abstract boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator);
 
   /**
    * Shared validation method used by {@code $set} and {@code $unset} operations to ensure they are

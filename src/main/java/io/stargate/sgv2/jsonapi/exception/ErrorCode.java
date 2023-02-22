@@ -38,6 +38,8 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
+  UNSUPPORTED_UPDATE_OPERATION_PATH("Invalid update operation path"),
+
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field");

@@ -43,7 +43,7 @@ public class IncOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
     for (IncAction update : updates) {

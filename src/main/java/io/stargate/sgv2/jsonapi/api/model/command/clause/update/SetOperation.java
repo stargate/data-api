@@ -28,7 +28,7 @@ public class SetOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean modified = false;
     for (SetAction addition : additions) {
       JsonNode prev = doc.replace(addition.path, addition.value);

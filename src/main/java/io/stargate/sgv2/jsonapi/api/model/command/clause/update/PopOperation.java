@@ -56,7 +56,7 @@ public class PopOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean changes = false;
     for (PopAction action : actions) {
       final String path = action.path;

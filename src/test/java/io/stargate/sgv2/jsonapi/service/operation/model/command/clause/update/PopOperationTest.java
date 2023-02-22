@@ -29,7 +29,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
           UpdateOperator.POP.resolveOperation(objectFromJson("{ \"array\" : -1 }"));
       assertThat(oper).isInstanceOf(PopOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ 1, 2, 3 ] }");
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -44,7 +44,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
           UpdateOperator.POP.resolveOperation(objectFromJson("{ \"array\" : 1 }"));
       assertThat(oper).isInstanceOf(PopOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ 1, 2, 3 ] }");
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -60,7 +60,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(PopOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ ] }");
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -71,7 +71,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(PopOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ ] }");
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -83,7 +83,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"a\" : 1}");
       ObjectNode expected = doc.deepCopy();
       // No changes
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -95,7 +95,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"a\" : 1}");
       ObjectNode expected = doc.deepCopy();
       // No changes
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
   }
@@ -140,7 +140,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc);
+                oper.updateDocument(doc, targetLocator);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
