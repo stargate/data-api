@@ -9,7 +9,31 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * update, by {@link UpdateTargetLocator}.
  */
 public record UpdateTarget(
-    String fullPath, JsonNode contextNode, JsonNode valueNode, String lastProperty, int lastIndex) {
+    /** Full path to target for error reporting purposes */
+    String fullPath,
+    /**
+     * Parent node of the value if one exists or could exist at indicated path; {@code null} if
+     * there is no complete path to parent of value node.
+     */
+    JsonNode contextNode,
+    /**
+     * Currently existing value at specified path, if any; {@code null} if not. If not {@code null}
+     * then {@code contextNode} must also be non-{@code null} and one (but not both!) of {@code
+     * lastProperty} and {@code lastIndex} must similarly exist.
+     */
+    JsonNode valueNode,
+    /**
+     * Last property name (segment) from {@code contextNode} to value that either exists or could be
+     * added as Object property. Existence means that {@code contextNode} exists and is an Object
+     * node.
+     */
+    String lastProperty,
+    /**
+     * Last Array index (non-negative) from {@code contextNode} to value that either exists or could
+     * be added as Array element; {@code -1} otherwise (context node is not Array). Existence means
+     * that {@code contextNode} exists and is an Array node.
+     */
+    int lastIndex) {
   public static UpdateTarget missingPath(String fullPath) {
     return new UpdateTarget(fullPath, null, null, null, -1);
   }
