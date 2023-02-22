@@ -300,10 +300,7 @@ h3(#commandDeleteMany). deleteMany Command
 
 h4(#commandDeleteManyOptions). deleteMany Command Options
 
-@<delete-many-command-options>@ is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior applied when not provided. 
-
-|_. Option |_. Type |_. Description |
-| @limit@ | Positive Integer | Limits the number of documents that will be deleted, defaults to @20@ and the maximum value is @100@. If the provided value is greater than the maximum an error is returned. |
+The @deleteMany@ command does not support any options.
 
 h3(#commandDeleteOne). deleteOne Command
 
@@ -439,7 +436,6 @@ h4(#commandUpdateManyOptions). updateMany Command Options
 @<update-many-command-options>@ is a map of key-value pairs that modify the behavior of the  command. All options are optional, with default behavior applied when not provided. 
 
 |_. Option |_. Type |_. Description |
-| @limit@ | Positive Integer | Limits the number of documents that will be updated, defaults to @20@ and the maximum value is @100@. If the provided value is greater than the maximum an error is returned. |
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
 h3(#commandUpdateOne). updateOne Command
