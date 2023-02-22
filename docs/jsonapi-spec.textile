@@ -107,6 +107,8 @@ bc(syntax)..
 
 p. The @_id@ field is a "reserved name" and is always interpreted as the document identity field. See *TODO DOC ID LINK* for restrictions on it's use. 
 
+*TODO* add support for allowing "." and "$" in the field names, not needed for the intitial demo release. 
+
 p. _Sample:_ 
 
 bc(sample).. 
