@@ -1,0 +1,134 @@
+min_version: "4.17.15"
+
+description: |
+  This workload emulates a key-value data model and access patterns.
+  This should be identical to the cql variant except for:
+  - Schema creation with the Docs API, we don't use cql because the Docs API is opinionated about schema.
+  - There is no instrumentation with the http driver.
+  - There is no async mode with the http driver.
+  Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8080).
+
+scenarios:
+  default:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
+    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,10000000) threads=auto
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: jsonapi_host=host1
+  #   multiple hosts: jsonapi_host=host1,host2,host3
+  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  seq_key: Mod(<<keycount:10000000>>); ToString() -> String
+  seq_value: Hash(); Mod(<<valuecount:10000000>>); ToString() -> String
+  rw_key: <<keydist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
+  rw_value: Hash(); <<valdist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
+
+blocks:
+  schema:
+    ops:
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        body: |
+          {
+            "createNamespace": {
+              "name": "<<namespace:jsonapi_keyvalue>>"
+            }
+          }
+
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        body: |
+          {
+            "deleteCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_keyvalue>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        body: |
+          {
+            "createCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+  rampup:
+    ops:
+      rampup-insert:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        body: |
+          {
+            "insertOne" : {
+              "document" : {
+                "_id" :       "{seq_key}",
+                "{seq_key}" : "{seq_value}"
+              }
+            }
+          }
+
+  main:
+    params:
+      ratio: <<read_ratio:5>>
+    ops:
+      main-select:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        body: |
+          {
+            "findOne" : {
+              "filter" : {
+                "_id" : "{random_key}"
+              }
+            }
+          }
+          
+      main-write:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        body: |          
+          {
+            "findOneAndUpdate" : {
+              "filter": {
+                "_id" : "{rw_key}"
+              },
+              "update": {
+                "$set": {
+                  "{rw_key}":"{rw_value}"
+                }
+              }
+            }
+          }
