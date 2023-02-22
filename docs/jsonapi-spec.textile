@@ -203,15 +203,15 @@ h4(#documentLimitsFields). Document Field Limits
 
 The maximum length of a "field name":#documentFieldNames is 48 characters. 
 
-The maximum number of fields allowed in a single JSON object is 32. 
+The maximum number of fields allowed in a single JSON object is 64. 
 
 h4(#documentLimitsValues). Document Value Limits
 
 The maxium size of field values are:
 
 |_. JSON Type |_. Maximum Value |
-| @string@ | Maximum length of 4096 unicode characters |
-| @number@ | Arbitrary sized number described using "BigDecimal in Java":https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html#BigDecimal-java.lang.String- |
+| @string@ | Maximum length of 16384 unicode characters |
+| @number@ | TODO: define max num that is well handled by BigDecimal |
 
 h4(#documentLimitsArray). Document Array Limits
 
