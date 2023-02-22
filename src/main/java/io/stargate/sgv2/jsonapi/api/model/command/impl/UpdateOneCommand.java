@@ -19,5 +19,5 @@ public record UpdateOneCommand(
     @Valid @JsonProperty("update") UpdateClause updateClause,
     @Nullable Options options)
     implements ReadCommand, Filterable {
-  public record Options() {}
+  public record Options(boolean upsert) {}
 }

@@ -251,14 +251,14 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                    {
-                      "findOneAndUpdate": {
-                          "filter" : {"username" : "update_user5"},
-                          "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                          "options" : {}
-                        }
-                    }
-                    """;
+                          {
+                            "findOneAndUpdate": {
+                                "filter" : {"username" : "update_user5"},
+                                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                                "options" : {}
+                              }
+                          }
+                          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -273,6 +273,38 @@ class ObjectMapperConfigurationTest {
                 assertThat(updateClause.buildOperations()).hasSize(1);
                 final FindOneAndUpdateCommand.Options options = findOneAndUpdateCommand.options();
                 assertThat(options).isNotNull();
+              });
+    }
+
+    @Test
+    public void findOneAndUpdateWithOptions() throws Exception {
+      String json =
+          """
+                          {
+                            "findOneAndUpdate": {
+                                "filter" : {"username" : "update_user5"},
+                                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                                "options" : {"returnDocument" : "after", "upsert" : true}
+                              }
+                          }
+                          """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              FindOneAndUpdateCommand.class,
+              findOneAndUpdateCommand -> {
+                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
+                assertThat(filterClause).isNotNull();
+                final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
+                assertThat(updateClause).isNotNull();
+                assertThat(updateClause.buildOperations()).hasSize(1);
+                final FindOneAndUpdateCommand.Options options = findOneAndUpdateCommand.options();
+                assertThat(options).isNotNull();
+                assertThat(options.returnDocument()).isNotNull();
+                assertThat(options.returnDocument()).isEqualTo("after");
+                assertThat(options.upsert()).isTrue();
               });
     }
   }

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -12,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,6 +56,22 @@ public record FindOperation(
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_OPERATION, "Unsupported find operation read type " + readType);
     }
+  }
+
+  @Override
+  public ReadDocument getEmptyDocuments() {
+    ObjectNode rootNode = objectMapper().createObjectNode();
+    DocumentId documentId = null;
+    for (DBFilterBase filter : filters) {
+      if (filter instanceof DBFilterBase.IDFilter) {
+        documentId = ((DBFilterBase.IDFilter) filter).value;
+        JsonNode id = ((DBFilterBase.IDFilter) filter).value.asJson(objectMapper());
+        rootNode.putIfAbsent("_id", id);
+      }
+    }
+
+    ReadDocument doc = new ReadDocument(documentId, null, rootNode);
+    return doc;
   }
 
   private QueryOuterClass.Query buildSelectQuery() {

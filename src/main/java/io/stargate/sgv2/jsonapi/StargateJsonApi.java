@@ -104,6 +104,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             "update": {
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}
+                            },
+                            "options" : {
+                               "returnDocument" : "before",
+                               "upsert" : true
                             }
                         }
                       }
@@ -119,6 +123,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                           "update": {
                               "$set": {"location": "New York"},
                               "$push": {"tags": "marathon"}
+                          },
+                          "options" : {
+                              "upsert" : true
                           }
                       }
                     }
