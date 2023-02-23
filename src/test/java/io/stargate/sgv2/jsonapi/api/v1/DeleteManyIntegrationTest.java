@@ -80,7 +80,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
       String json =
           """
                       {
-                        "deleteOne": {
+                        "deleteMany": {
                           "filter" : {"status": "active"}
                         }
                       }
@@ -130,7 +130,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
       String json =
           """
                       {
-                        "deleteOne": {
+                        "deleteMany": {
                            "filter": {
                                     }
                         }
