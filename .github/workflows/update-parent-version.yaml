@@ -31,7 +31,7 @@ jobs:
         run: |
           VERSION=${{ inputs.version != null && inputs.version || github.event.client_payload.version }}
           echo "Resolved version to update to $VERSION"
-          ./scripts/bump_stargate.sh $VERSION"
+          ./scripts/bump_stargate.sh ${VERSION}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       # commit and create pr
