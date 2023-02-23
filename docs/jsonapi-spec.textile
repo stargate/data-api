@@ -52,6 +52,104 @@ bc(sample). SELECT sample_usage FROM cql;
 
 Samples of requests, operations, and clauses will be presented and encoded as a JSON document. This is illustrative of a suggested encoding as described in the "Preamble":#preamble   
 
+h2(#messaging). Request and Response Messages
+
+The format of Request and Response messages is included in this document so that the format invoking a command, and the structrure of it's response can be understood. 
+
+h3(#messagingRequest). Request Messages
+
+Request messages contain only a single command. Batch operations such as bulk loading are implementing using commands that support the inclusion of multiple documents in the command. The request message is a single JSON document (a JSON Object) that represents the command to run.
+
+p. _Syntax:_
+
+bc(syntax).. 
+<request-message> ::=  <command-name> <command>
+
+p. @<command-name>@ and @<command>@ are defined later in this document document. 
+
+p. _Sample:_
+
+bc(sample).. 
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
+
+p. Top level names in the request message other than a command name are ignored, except where specified in this document.
+
+h3(#messagingResponse). Response Messages
+
+A single JSON format is used for all response messages, though different elements may be present depending on the command. 
+
+p. _Syntax:_
+
+bc(syntax).. 
+<response-message> ::=  (errors (<error>)+)?,    
+                        (status (<command-status>)+)?, 
+                        (data <response-data>)?,
+
+<<error> ::= message <ascii-string>, 
+             errorCode <ascii-string>,
+                    (<error-field>)*
+<error-field> ::= <error-field-name> <error-field-value>
+<error-field-name> ::= <json-string>
+<error-field-value> ::= <json-value>
+
+<command-status> ::= <command-status-name> <command-status-value>
+<command-status-name> ::= <json-string>
+<command-status-value> ::= <json-value>
+
+<response-data> ::= docs (<document>)*, 
+                    (nextPageState <page-state>)?,
+                    (count <document-count>)?
+<page-state> ::= <ascii-string>
+<document-count> ::= <positive-integer>
+
+p. The contents of the @<response-message>@ depend on the command, in general though: 
+
+* A successful command to read documents *must* have @<response-data>@ and *may* have @<command-status>@ or @<error>@. 
+* A successful command to insert or update data that does not return documents *must* have one or more @<command-status>@. 
+* A successful command to insert or update data that returns documents *must* have one or more @<command-status>@ and *must* have @<response-data>@.
+* An unsuccessful command *must* have one or more @<error>@'s and may have other items.
+
+Error information or additional status, such as the @_id@s of inserted documents, is included by some commands. 
+
+Error responses include one or more @<error>@ under the @error@ name. Error info must include a @message@ intended for humans, a @errorCode@ intended for machines to process, and may include other information.   
+
+@<command-status>@ information generally describes the side effects of commands, such as the number of updated documents or the @_id@s of inserted documents.
+
+@<response-data>@ contains zero or more documents returned from the command, if present @<page-state>@ indicates further results are available. See command details for information on how to use the page state. 
+
+p. _find Sample:_
+
+bc(sample).. 
+{
+    "data" : {
+        "docs" : [
+            {"username" : "aaron"}
+        ] 
+    }
+} 
+
+p. _insertMany Sample:_
+
+bc(sample).. 
+{
+    "status" : {
+        insertedIds : ["doc1", "doc2", "doc3"]
+    }
+} 
+
+p. _insertOne with error Sample:_
+
+bc(sample).. 
+{
+    "errors" : [
+        {"message": "_id cannot be Null", "errorCode" : "ID_NULL"}
+    ]
+} 
+
 h2(#namespace). Namespace
 
 *TODO:* define the namespace, it's properties etc . Do we define how to create one ?
@@ -254,47 +352,20 @@ bc(sample)..
     } 
 } 
 
-h3(#commandResponses). Command Responses
-
-*TODO* merge the response syntax in from the network spec 
-
-h4(#commandResponseSingle). @<single-document-response>@ 
-
-*TODO:* included because current API has one, not sure if we would because there may not be a select single document call 
-
-h4(#commandResponseSinglePaginated). @<paginated-document-response>@ 
-
-@<paginated-document-response>@ returns a list of zero or more @<document>@'s, which may be part of a larger list of response documents. Successive calls to the same command that pass the @pageState@ from the previous response will paginate through the total number of response documents. 
-
-The response has the following parts:
-
-* @count@ the integer count of the total number of documents that make up the result document set, this may be more than the number included in the current page. 
-* @pageState@ an opaque ASCII string used by the API to paginate large result sets. Pass the @pageState@ in the options for a request to request the next page. 
-* @data@ a list of @<document>@'s that make up this page.       
-
-_Sample:_
-
-bc(sample).. 
-{
-    "count": 1,
-    "pageState": "2f4acd34",
-    "data": [
-        {
-            "_id": "my-first-post-a6h54",
-            "name": "aaron",
-            "age": 47
-        }
-    ]
-}
-
-
-p.*TODO:* check this multi doc return format 
-
 h3(#commandCountDocuments). countDocuments Command
 
 h4(#commandCountDocumentsOptions). countDocuments Command Options
 
 The @countDocuments@ command does not support any options.
+
+h4(#commandCountDocumentsResponse). countDocuments Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ | Preset with fields: @count: <zero-or-positive-integer>@ |
+| @errors@ | Present if errors occur. |
+
+If an error occurs the command will not return @status@. 
 
 h3(#commandDeleteMany). deleteMany Command
 
@@ -302,15 +373,29 @@ h4(#commandDeleteManyOptions). deleteMany Command Options
 
 The @deleteMany@ command does not support any options.
 
+h4(#commandDeleteManyResponse). deleteMany Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ | Preset with fields: @deletedCount: <zero-or-positive-integer>@ |
+| @errors@ | Present if errors occur. |
+
+If an error occurs the command will still return @status@ as some documents may have been deleted. 
+
 h3(#commandDeleteOne). deleteOne Command
 
 h4(#commandCountDocumentsOptions). deleteOne Command Options
 
 The @deleteOne@ command does not support any options.
 
-h3(#commandEstimatedDocumentCount). estimatedDocumentCount Command
+h4(#commandDeleteOneResponse). deleteOne Command Response
 
-*TODO* TBC
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ | Preset with fields: @deletedCount: <zero-or-one-integer>@ |
+| @errors@ | Present if errors occur. |
+
+If an error occurs the command will not return @status@. 
 
 h3(#commandFind). find Command
 
@@ -363,6 +448,15 @@ h4(#commandFindOptions). find Command Options
 | @pageState@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.|
 | @skip@ | Positive Integer | Skips the specified number of documents, in sort order, before returning any documents.|
 
+h4(#commandFindResponse). find Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Present with fields : @data@, @count@ and @nextPageState@ which will be @null@ if no further data is available. |
+| @status@ |Not preset. |
+| @errors@ |Present if errors occur. |
+
+If an error occurs the command will not return @data@. 
+
 h3(#commandFindOneAndUpdate). findOneAndUpdate Command
 
 
@@ -408,11 +502,32 @@ h4(#commandFindOneAndUpdateOptions). findOneAndUpdate Command Options
 | @returnDocument@ | String Enum | Specifies which document to perform the projection on. If @"before"@ the projection is performed on the document before the update is applied, if @"after"@ the document projection is from the document after the update. Defaults to @"before"@.|
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
+h4(#commandFindOneAndUpdateResponse). findOneAndUpdate Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Present with fields : @data@ only |
+| @status@ |Preset with fields: @upsertedId: <json-value>@ only if a document was upserted. |
+| @errors@ |Present if errors occur. |
+
+If @upsert@ option was set to @true@, and no documentds matched a filter a new document is created. The @_id@ of the document is included in the status field @upsertedId@, otherwise no status is returned .
+
+If an error occurs the command will not return @data@ or @status@. 
+
 h3(#commandFindOne). findOne Command
 
 h4(#commandFindOneOptions). findOne Command Options
 
 The @findOne@ command does not support any options.
+
+h4(#commandFindOneResponse). findOne Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Present with fields : @docs@ only |
+| @status@ |Not present. |
+| @errors@ |Present if errors occur. |
+
+
+If an error occurs the command will not return @data@. 
 
 h3(#commandInsertMany). insertMany Command
 
@@ -423,11 +538,29 @@ h4(#commandInsertManyOptions). insertMany Command Options
 |_. Option |_. Type |_. Description |
 | @ordered@ | Boolean | When @true@ the server will insert the documents in sequential order, ensuring each doucument is succesfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When @false@ the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure for details. Defaults to @true@.|
 
+h4(#commandInsertManyResponse). insertMany Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ |Present with field: @insertedIds@ and array of doc @_id@ 's that were inserted. . |
+| @errors@ |Present if errors occur. |
+
+If an error occurs the command will still return @status@ as some documents may have been inserted. 
+
 h3(#commandInsertOne). insertOne Command
 
 h4(#commandInsertOneOptions). insertOne Command Options
 
 The @insertOne@ command does not support any options.
+
+h4(#commandInsertOneResponse). insertOne Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ |Present with field: @insertedId@ with the single document @_id@ that was inserted.|
+| @errors@ |Present if errors occur. |
+
+If an error occurs the command will not return @status@. 
 
 h3(#commandUpdateMany). updateMany Command
 
@@ -438,6 +571,15 @@ h4(#commandUpdateManyOptions). updateMany Command Options
 |_. Option |_. Type |_. Description |
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
+h4(#commandUpdateManyResponse). updateMany Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ |Present with fields: @matchedCount@ count of documents that matched the @filter@, @modifiedCount@ count of document updated (may be less than match count), @upsertedId@ if a document was upserted (when @matchCount@ is zero) not present otherwise.|
+| @errors@ |Present if errors occur. |
+
+If an error occurs the command will still return @status@ as some documents may have been inserted. 
+
 h3(#commandUpdateOne). updateOne Command
 
 h4(#commandUpdateOneOptions). updateOne Command Options
@@ -446,6 +588,15 @@ h4(#commandUpdateOneOptions). updateOne Command Options
 
 |_. Option |_. Type |_. Description |
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h4(#commandUpdateOneResponse). updateOne Command Response
+
+|_. Response Element |_. Description |
+| @data@ | Not present. |
+| @status@ |Present with fields: @matchedCount@ count of documents that matched the @filter@ (no more than 1), @modifiedCount@ count of document updated (may be less than match count, no more than 1), @upsertedId@ if a document was upserted (when @matchCount@ is zero) otherwise not present. |
+| @errors@ |Present if errors occur. |
+
+If an error occurs the command will still return @status@ as some documents may have been inserted. 
 
 h2(#commandConsierations). Command Considerations
 
