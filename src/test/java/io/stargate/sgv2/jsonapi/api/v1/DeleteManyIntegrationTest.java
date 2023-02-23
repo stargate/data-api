@@ -127,7 +127,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void deleteManyNoFilterMoreDataFlag() {
       insert(25);
       String json =
