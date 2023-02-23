@@ -192,7 +192,7 @@ class ObjectMapperConfigurationTest {
                       "find": {
                         "filter" : {"username" : "user1"},
                         "options" : {
-                          "pageSize" : 1
+                          "limit" : 1
                         }
                       }
                     }
@@ -208,7 +208,7 @@ class ObjectMapperConfigurationTest {
                 assertThat(filterClause).isNotNull();
                 final FindCommand.Options options = find.options();
                 assertThat(options).isNotNull();
-                assertThat(options.pageSize()).isEqualTo(1);
+                assertThat(options.limit()).isEqualTo(1);
               });
     }
   }

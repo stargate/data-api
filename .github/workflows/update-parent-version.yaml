@@ -1,0 +1,48 @@
+# @author Ivan Senic
+name: Update parent version
+
+# runs on
+# * stargate v2 release event
+# * manual trigger
+on:
+  repository_dispatch:
+    types: [ stargate-v2-release ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stargate version to update, for example `v2.0.9`.'
+        required: true
+        type: string
+
+jobs:
+
+  main:
+    name: Main
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      # update version
+      # use input or the event payload value
+      - name: Update version
+        id: update
+        run: |
+          VERSION=${{ inputs.version != null && inputs.version || github.event.client_payload.version }}
+          echo "Resolved version to update to $VERSION"
+          ./scripts/bump_stargate.sh ${VERSION}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      # commit and create pr
+      - name: Create pull-request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Use Stargate ${{ steps.update.outputs.version }}
+          branch: create-pull-request/update-stargate
+          branch-suffix: short-commit-hash
+          base: main
+          title: Use Stargate ${{ steps.update.outputs.version }}
+          body: |
+            Automated changes that try to update Stargate version.

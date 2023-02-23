@@ -41,10 +41,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
         command.options() != null && command.options().limit() != null
             ? command.options().limit()
             : documentConfig.maxLimit();
-    int pageSize =
-        command.options() != null && command.options().pageSize() != null
-            ? command.options().pageSize()
-            : documentConfig.defaultPageSize();
+    int pageSize = documentConfig.defaultPageSize();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     return new FilteringOptions(limit, pagingState, pageSize, ReadType.DOCUMENT);
   }

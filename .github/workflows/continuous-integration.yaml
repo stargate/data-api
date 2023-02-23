@@ -2,13 +2,19 @@
 name: Continuous Integration
 
 # runs on
-# * pushes and pull requests on the "main"
+# * pushes and pull requests on the "main" (pull request only for specific paths)
 # * manual trigger
 on:
   push:
     branches: [ "main" ]
+
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.github/workflows/continuous-integration.yaml'
+
   workflow_dispatch:
 
 
