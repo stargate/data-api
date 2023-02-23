@@ -8,8 +8,6 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
-import javax.inject.Inject;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +23,6 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class DeleteMany {
-    @Inject DocumentConfig documentConfig;
 
     private void insert(int countOfDocument) {
       for (int i = 1; i <= countOfDocument; i++) {
