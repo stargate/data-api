@@ -23,18 +23,23 @@ public record DeleteOperation(CommandContext commandContext, ReadOperation readO
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     Uni<ReadOperation.FindResponse> docsToDelete = readOperation().getDocuments(queryExecutor);
+    final String[] nextPage = new String[1];
     final QueryOuterClass.Query delete = buildDeleteQuery();
     final Uni<List<DocumentId>> ids =
         docsToDelete
             .onItem()
+            .invoke(response -> nextPage[0] = response.pagingState())
+            .onItem()
             .transformToMulti(
-                findResponse -> Multi.createFrom().items(findResponse.docs().stream()))
+                findResponse -> {
+                  return Multi.createFrom().items(findResponse.docs().stream());
+                })
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> deleteDocument(queryExecutor, delete, readDocument))
             .collect()
             .asList();
-    return ids.onItem().transform(DeleteOperationPage::new);
+    return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds, nextPage[0]));
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {

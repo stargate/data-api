@@ -13,6 +13,9 @@ public enum CommandStatus {
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")
   INSERTED_IDS,
+  /** The element represents more document to be processed for updateMany and deleteMany commands */
+  @JsonProperty("moreData")
+  MORE_DATA,
   /** The element has value 1 if collection is created */
   @JsonProperty("ok")
   OK,
