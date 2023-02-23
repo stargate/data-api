@@ -31,11 +31,5 @@ public record FindCommand(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)
-          String pagingState,
-      @Valid
-          @Schema(
-              description = "Number of document needed per page.",
-              type = SchemaType.INTEGER,
-              implementation = Integer.class)
-          Integer pageSize) {}
+          String pagingState) {}
 }
