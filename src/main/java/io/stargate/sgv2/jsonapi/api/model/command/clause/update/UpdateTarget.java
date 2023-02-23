@@ -73,4 +73,19 @@ public record UpdateTarget(
     }
     return valueNode;
   }
+
+  public JsonNode replaceValue(JsonNode newValue) {
+    // Either Object property or Array element, depending on context
+    if (contextNode.isObject()) {
+      ((ObjectNode) contextNode).set(lastProperty, newValue);
+    } else {
+      ArrayNode array = (ArrayNode) contextNode;
+      // important: it is legal to append beyond end; but if so, MUST pad with nulls
+      while (lastIndex >= array.size()) {
+        array.addNull();
+      }
+      ((ArrayNode) contextNode).set(lastIndex, newValue);
+    }
+    return valueNode;
+  }
 }
