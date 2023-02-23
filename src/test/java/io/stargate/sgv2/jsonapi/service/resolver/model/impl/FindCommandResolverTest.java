@@ -101,7 +101,6 @@ public class FindCommandResolverTest {
                 "find": {
                   "options" : {
                     "limit" : 10,
-                    "pageSize" : 5,
                     "pagingState" : "dlavjhvbavkjbna"
                   }
                 }
@@ -114,7 +113,13 @@ public class FindCommandResolverTest {
           findCommandResolver.resolveCommand(commandContext, findOneCommand);
       FindOperation expected =
           new FindOperation(
-              commandContext, List.of(), "dlavjhvbavkjbna", 10, 5, ReadType.DOCUMENT, objectMapper);
+              commandContext,
+              List.of(),
+              "dlavjhvbavkjbna",
+              10,
+              documentConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(

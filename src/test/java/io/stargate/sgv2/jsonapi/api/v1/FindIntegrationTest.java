@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -148,7 +147,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                                   {
                                     "find": {
                                       "options" : {
-                                        "pageSize" : 1
+                                        "limit" : 1
                                       }
                                     }
                                   }
@@ -161,8 +160,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
-          .body("data.nextPageState", is(notNullValue()));
+          .body("data.count", is(1));
     }
 
     @Test
