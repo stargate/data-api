@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -94,7 +95,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("status.deletedIds", is(IsCollectionWithSize.hasSize(5)))
-          .body("status.deletedIds", contains("doc1", "doc2", "doc3", "doc4", "doc5"));
+          .body("status.moreData", nullValue());
       cleanUpData();
     }
 
@@ -119,7 +120,9 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(20)));
+          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(20)))
+          .body("status.moreData", nullValue());
+      ;
       cleanUpData();
     }
 
