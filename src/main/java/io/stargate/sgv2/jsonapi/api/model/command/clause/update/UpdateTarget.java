@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Objects;
 
 /**
  * Definition of a target for an {@link UpdateOperation}; built from "dot path" and document to
@@ -62,6 +63,8 @@ public record UpdateTarget(
    */
   public JsonNode removeValue() {
     if (valueNode != null) {
+      Objects.requireNonNull(contextNode);
+
       // Either Object property or Array element, depending on context
       if (contextNode.isObject()) {
         ((ObjectNode) contextNode).remove(lastProperty);
@@ -75,6 +78,8 @@ public record UpdateTarget(
   }
 
   public JsonNode replaceValue(JsonNode newValue) {
+    Objects.requireNonNull(contextNode);
+
     // Either Object property or Array element, depending on context
     if (contextNode.isObject()) {
       ((ObjectNode) contextNode).set(lastProperty, newValue);
