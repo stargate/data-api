@@ -451,7 +451,7 @@ h4(#commandFindOptions). find Command Options
 h4(#commandFindResponse). find Command Response
 
 |_. Response Element |_. Description |
-| @data@ | Present with fields : @data@, @count@ and @nextPageState@ which will be @null@ if no further data is available. |
+| @data@ | Present with fields : @docs@, @count@ and @nextPageState@.  @nextPageState@ may be @null@ if no further data is available. |
 | @status@ |Not preset. |
 | @errors@ |Present if errors occur. |
 
@@ -505,7 +505,7 @@ h4(#commandFindOneAndUpdateOptions). findOneAndUpdate Command Options
 h4(#commandFindOneAndUpdateResponse). findOneAndUpdate Command Response
 
 |_. Response Element |_. Description |
-| @data@ | Present with fields : @data@ only |
+| @data@ | Present with fields : @docs@ only, see "findOneAndUpdate Command Options":#commandFindOneAndUpdateOptions for controlling the projection.|
 | @status@ |Preset with fields: @upsertedId: <json-value>@ only if a document was upserted. |
 | @errors@ |Present if errors occur. |
 
