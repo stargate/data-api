@@ -24,7 +24,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathFindIfExists {
+  class HappyPathFindIfExists {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
@@ -142,7 +142,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class failForFindIfExists {
+  class FailForFindIfExists {
     @Test
     public void invalidEmptySegment() {
       Exception e = catchException(() -> targetLocator.findIfExists(objectFromJson("{}"), "a..x"));
@@ -158,7 +158,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathFindOrCreate {
+  class HappyPathFindOrCreate {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
@@ -250,7 +250,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class failForFindOrCreate {
+  class FailForFindOrCreate {
     @Test
     public void invalidPathViaAtomic() {
       Exception e =

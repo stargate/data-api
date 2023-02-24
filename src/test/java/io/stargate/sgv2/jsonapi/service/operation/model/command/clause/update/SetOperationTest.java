@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class SetOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathRoot {
+  class HappyPathRoot {
     @Test
     public void testSimpleSetOfExisting() {
       // Remove 2 of 3 properties:
@@ -95,7 +95,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathNestedObjects {
+  class HappyPathNestedObjects {
     @Test
     public void testSetOfExistingNested() {
       // Replace 2 of 3 properties:
@@ -169,7 +169,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathNestedArrays {
+  class HappyPathNestedArrays {
     @Test
     public void testSetOfNestedArrays() {
       UpdateOperation oper =
@@ -275,7 +275,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class invalidCasesRoot {
+  class InvalidCasesRoot {
     @Test
     public void testNoReplacingDocId() {
       Exception e =
@@ -298,7 +298,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class invalidCasesNested {
+  class InvalidCasesNested {
     @Test
     public void testNoPathThroughAtomics() {
       UpdateOperation oper =
