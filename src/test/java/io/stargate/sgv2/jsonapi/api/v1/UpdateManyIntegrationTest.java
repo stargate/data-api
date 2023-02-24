@@ -321,7 +321,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @AfterEach
-    private void cleanUpData() {
+    public void cleanUpData() {
       String json =
           """
                                 {
