@@ -242,7 +242,8 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
                                     {
                                       "updateMany": {
                                         "filter" : {"_id": "doc6"},
-                                        "update" : {"$set" : {"active_user": false}}
+                                        "update" : {"$set" : {"active_user": false}},
+                                        "options" : {"upsert" : true}
                                       }
                                     }
                                     """;

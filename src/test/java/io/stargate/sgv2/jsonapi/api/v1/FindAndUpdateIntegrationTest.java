@@ -182,8 +182,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
           .body("status.upsertedId", is("afterDoc4"))
-          .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1));
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
 
       json =
           """
@@ -430,8 +430,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("status.upsertedId", is("afterDoc6"))
-          .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1));
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
 
       json =
           """
