@@ -104,9 +104,8 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           """
                                 {
                                   "updateMany": {
-                                    "filter" : {"status": "active"},
-                                                                        "update" : {"$set" : {"active_user": false}}
-
+                                    "filter" : {"active_user": true},
+                                    "update" : {"$set" : {"active_user": false}}
                                   }
                                 }
                                 """;
@@ -151,7 +150,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           """
                                 {
                                   "updateMany": {
-                                    "filter" : {"_id" : "doc1"},
+                                    "filter" : {"active_user": true},
                                     "update" : {"$set" : {"active_user": false}}
                                   }
                                 }
@@ -197,7 +196,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           """
                                 {
                                   "updateMany": {
-                                    "filter" : {"_id" : "doc1"},
+                                    "filter" : {"active_user" : true},
                                     "update" : {"$set" : {"active_user": false}}
                                   }
                                 }
@@ -231,6 +230,53 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.count", is(5));
+      cleanUpData();
+    }
+
+    @Test
+    @Order(6)
+    public void updateManyUpsert() {
+      insert(5);
+      String json =
+          """
+                                    {
+                                      "updateMany": {
+                                        "filter" : {"_id": "doc6"},
+                                        "update" : {"$set" : {"active_user": false}}
+                                      }
+                                    }
+                                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.upsertedId", is("doc6"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("status.moreData", nullValue());
+
+      String expected = "{\"_id\":\"doc6\", \"active_user\":false}";
+      json =
+          """
+                            {
+                              "find": {
+                                "filter" : {"_id" : "doc6"}
+                              }
+                            }
+                            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
       cleanUpData();
     }
 
