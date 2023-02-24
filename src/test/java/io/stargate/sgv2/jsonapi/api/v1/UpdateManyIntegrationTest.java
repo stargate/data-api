@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -92,8 +93,6 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-
-      cleanUpData();
     }
 
     @Test
@@ -139,7 +138,6 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-      cleanUpData();
     }
 
     @Test
@@ -184,8 +182,6 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.count", is(20));
-
-      cleanUpData();
     }
 
     @Test
@@ -230,7 +226,6 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.count", is(5));
-      cleanUpData();
     }
 
     @Test
@@ -278,7 +273,6 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-      cleanUpData();
     }
 
     @Test
@@ -324,10 +318,9 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
-
-      cleanUpData();
     }
 
+    @AfterEach
     private void cleanUpData() {
       String json =
           """

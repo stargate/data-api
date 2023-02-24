@@ -21,6 +21,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+/**
+ * This operation method is used for 3 commands findOneAndUpdate, updateOne and updateMany
+ *
+ * @param commandContext
+ * @param readOperation
+ * @param documentUpdater
+ * @param returnDocumentInResponse
+ * @param returnUpdatedDocument
+ * @param upsert
+ * @param shredder
+ * @param updateLimit
+ */
 public record ReadAndUpdateOperation(
     CommandContext commandContext,
     ReadOperation readOperation,
@@ -41,9 +53,9 @@ public record ReadAndUpdateOperation(
             .uni(
                 () -> new AtomicReference<String>(null),
                 stateRef -> {
-                  Uni<ReadOperation.FindResponse> docsToDelete =
+                  Uni<ReadOperation.FindResponse> docsToUpdate =
                       readOperation().getDocuments(queryExecutor, stateRef.get());
-                  return docsToDelete
+                  return docsToUpdate
                       .onItem()
                       .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
                 })
