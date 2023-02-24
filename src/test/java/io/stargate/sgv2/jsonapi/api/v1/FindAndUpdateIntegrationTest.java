@@ -1102,7 +1102,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                         "array3": [ ]
                       }
                       """);
-      // Let's test 5 valid pop operations (with 3 changes)
+      // Let's test 6 pop operations, resulting in 3 changes
       String updateBody =
           """
                       {
