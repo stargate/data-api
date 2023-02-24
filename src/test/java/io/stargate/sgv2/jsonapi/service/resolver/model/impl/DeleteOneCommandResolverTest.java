@@ -54,7 +54,7 @@ public class DeleteOneCommandResolverTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -79,7 +79,7 @@ public class DeleteOneCommandResolverTest {
           deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.KEY, objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -114,7 +114,7 @@ public class DeleteOneCommandResolverTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(

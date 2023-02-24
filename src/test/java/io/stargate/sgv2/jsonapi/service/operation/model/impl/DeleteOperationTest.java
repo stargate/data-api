@@ -92,7 +92,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -143,7 +143,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -207,7 +207,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -227,7 +227,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 2"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
@@ -278,12 +278,12 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               null,
-              2,
+              3,
               2,
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 2);
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -341,7 +341,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();

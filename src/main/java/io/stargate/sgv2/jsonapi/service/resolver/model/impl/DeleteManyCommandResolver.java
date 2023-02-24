@@ -32,7 +32,8 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
     ReadOperation readOperation = resolve(commandContext, command);
-    return new DeleteOperation(commandContext, readOperation);
+    return new DeleteOperation(
+        commandContext, readOperation, documentConfig.maxDocumentDeleteCount());
   }
 
   @Override
@@ -43,6 +44,9 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   @Override
   protected FilteringOptions getFilteringOption(DeleteManyCommand command) {
     return new FilteringOptions(
-        documentConfig.maxLimit(), null, documentConfig.maxDocumentDeleteCount(), ReadType.KEY);
+        documentConfig.maxDocumentDeleteCount() + 1,
+        null,
+        documentConfig.defaultPageSize(),
+        ReadType.KEY);
   }
 }

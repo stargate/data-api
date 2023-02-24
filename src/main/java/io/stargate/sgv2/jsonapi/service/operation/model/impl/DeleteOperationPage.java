@@ -12,13 +12,13 @@ import java.util.function.Supplier;
  *
  * @param deletedIds - document ids deleted
  */
-public record DeleteOperationPage(List<DocumentId> deletedIds, String nextPage)
+public record DeleteOperationPage(List<DocumentId> deletedIds, boolean moreData)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    if (nextPage == null) return new CommandResult(Map.of(CommandStatus.DELETED_IDS, deletedIds));
-    else
+    if (moreData)
       return new CommandResult(
           Map.of(CommandStatus.DELETED_IDS, deletedIds, CommandStatus.MORE_DATA, true));
+    else return new CommandResult(Map.of(CommandStatus.DELETED_IDS, deletedIds));
   }
 }

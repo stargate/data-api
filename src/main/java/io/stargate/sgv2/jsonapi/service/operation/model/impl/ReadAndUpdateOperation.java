@@ -31,7 +31,7 @@ public record ReadAndUpdateOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<ReadOperation.FindResponse> docsToUpate = readOperation().getDocuments(queryExecutor);
+    Uni<ReadOperation.FindResponse> docsToUpate = readOperation().getDocuments(queryExecutor, null);
     final Uni<List<UpdatedDocument>> updatedDocuments =
         docsToUpate
             .onItem()

@@ -52,11 +52,13 @@ public class DeleteManyCommandResolverTest {
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -84,11 +86,13 @@ public class DeleteManyCommandResolverTest {
               commandContext,
               List.of(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -119,11 +123,13 @@ public class DeleteManyCommandResolverTest {
                   new DBFilterBase.TextFilter(
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(

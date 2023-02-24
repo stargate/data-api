@@ -12,34 +12,73 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
  * Executes readOperation to get the documents ids based on filter condition. All the ids are
  * deleted as LWT based on the id and tx_id.
  */
-public record DeleteOperation(CommandContext commandContext, ReadOperation readOperation)
+public record DeleteOperation(
+    CommandContext commandContext, ReadOperation readOperation, int deleteLimit)
     implements ModifyOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<ReadOperation.FindResponse> docsToDelete = readOperation().getDocuments(queryExecutor);
-    final String[] nextPage = new String[1];
+    final Boolean[] moreData = {false};
     final QueryOuterClass.Query delete = buildDeleteQuery();
+    final Multi<ReadOperation.FindResponse> findResponses =
+        Multi.createBy()
+            .repeating()
+            .uni(
+                () -> new AtomicReference<String>(null),
+                stateRef -> {
+                  Uni<ReadOperation.FindResponse> docsToDelete =
+                      readOperation().getDocuments(queryExecutor, stateRef.get());
+                  return docsToDelete
+                      .onItem()
+                      .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
+                })
+            .whilst(findResponse -> findResponse.pagingState() != null);
+    AtomicInteger totalCount = new AtomicInteger(0);
     final Uni<List<DocumentId>> ids =
-        docsToDelete
-            .onItem()
-            .invoke(response -> nextPage[0] = response.pagingState())
+        findResponses
             .onItem()
             .transformToMulti(
                 findResponse -> {
-                  return Multi.createFrom().items(findResponse.docs().stream());
+                  final List<ReadDocument> docs = findResponse.docs();
+                  if (totalCount.get() + docs.size() <= deleteLimit) {
+                    totalCount.addAndGet(docs.size());
+                    return Multi.createFrom().items(docs.stream());
+                  } else {
+                    int needed = deleteLimit - totalCount.get();
+                    moreData[0] = true;
+                    return Multi.createFrom()
+                        .items(findResponse.docs().subList(0, needed).stream());
+                  }
                 })
+            .concatenate()
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> deleteDocument(queryExecutor, delete, readDocument))
             .collect()
             .asList();
-    return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds, nextPage[0]));
+
+    /*final Uni<List<DocumentId>> ids =
+    docsToDelete
+        .onItem()
+        .invoke(response -> nextPage[0] = response.pagingState())
+        .onItem()
+        .transformToMulti(
+            findResponse -> {
+              return Multi.createFrom().items(findResponse.docs().stream());
+            })
+        .onItem()
+        .transformToUniAndConcatenate(
+            readDocument -> deleteDocument(queryExecutor, delete, readDocument))
+        .collect()
+        .asList();*/
+    return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds, moreData[0]));
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {
