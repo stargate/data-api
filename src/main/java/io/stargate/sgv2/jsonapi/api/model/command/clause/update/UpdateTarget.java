@@ -49,14 +49,6 @@ public record UpdateTarget(
     return new UpdateTarget(fullPath, contextNode, valueNode, property, -1);
   }
 
-  public boolean hasContext() {
-    return contextNode != null;
-  }
-
-  public boolean hasValue() {
-    return valueNode != null;
-  }
-
   /**
    * Method that may be called to remove value node from its context, if there is value; value
    * removed (if any) is returned.
@@ -77,6 +69,14 @@ public record UpdateTarget(
     return valueNode;
   }
 
+  /**
+   * Method that may be called to replace-or-insert (upsert?) a value at context this target points
+   * to: if there was a value, it will be replaced; if not, new value will be inserted. In case of
+   * Arrays, possible padding may be added in case of insertion to put it in specified index.
+   *
+   * @param newValue Value to upsert
+   * @return Previous value at target, if any; {@code null} if none.
+   */
   public JsonNode replaceValue(JsonNode newValue) {
     Objects.requireNonNull(contextNode);
 
