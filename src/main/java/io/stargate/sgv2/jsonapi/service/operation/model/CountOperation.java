@@ -51,7 +51,7 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
   }
 
   @Override
-  public ReadDocument getEmptyDocuments() {
+  public ReadDocument getNewDocument() {
     throw new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION);
   }
 }

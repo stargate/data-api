@@ -126,7 +126,7 @@ public interface ReadOperation extends Operation {
    *
    * @return
    */
-  ReadDocument getEmptyDocuments();
+  ReadDocument getNewDocument();
 
   record FindResponse(List<ReadDocument> docs, String pagingState) {}
 

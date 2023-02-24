@@ -70,7 +70,7 @@ public record ReadAndUpdateOperation(
                 findResponse -> {
                   final List<ReadDocument> docs = findResponse.docs();
                   if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
-                    return Multi.createFrom().item(readOperation().getEmptyDocuments());
+                    return Multi.createFrom().item(readOperation().getNewDocument());
                   } else {
                     // Below conditionality is because we read up to deleteLimit +1 record.
                     if (matchedCount.get() + docs.size() <= updateLimit) {

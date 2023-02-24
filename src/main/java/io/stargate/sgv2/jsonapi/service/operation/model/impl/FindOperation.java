@@ -59,7 +59,7 @@ public record FindOperation(
   }
 
   @Override
-  public ReadDocument getEmptyDocuments() {
+  public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
     for (DBFilterBase filter : filters) {
