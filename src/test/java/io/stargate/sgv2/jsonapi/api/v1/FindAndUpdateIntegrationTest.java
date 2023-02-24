@@ -559,91 +559,6 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
 
     @Test
     @Order(2)
-    public void findByIdAndUnsetNested() {
-      insertDoc(
-          """
-                  {
-                    "_id": "update_doc_unset_nested",
-                    "array": [
-                        137,
-                        { "x" : 1, "y" : 2 }
-                    ],
-                    "subdoc" : {
-                        "x" : 5,
-                        "y" : -19
-                    }
-                  }
-              """);
-
-      // NOTE: we mix actual working removals and ones that won't; it is not an error
-      // to try to $unset properties that do not (or sometimes cannot) exist. They just
-      // have no effect.
-      //
-      // Ones that do have effect are:
-      //
-      // * array.0   -> remove first entry, replace with null
-      // * array.1.x -> remove property 'x' from second array element (object)
-      // * subdoc.y  -> remove subdoc property 'y'
-      String json =
-          """
-                   {
-                      "findOneAndUpdate": {
-                        "filter" : {"_id" : "update_doc_unset_nested"},
-                        "update" : {"$unset" : {
-                            "array.0": 1,
-                            "array.1.x" : 1,
-                            "subdoc.x.property" : 1,
-                            "subdoc.y" : 1,
-                            "nosuchfield.to.remove" : 1
-                          }
-                        }
-                      }
-                    }
-                   """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_unset_nested"));
-
-      String expected =
-          """
-                  {
-                    "_id": "update_doc_unset_nested",
-                    "array": [
-                        null,
-                        { "y" : 2 }
-                    ],
-                    "subdoc" : {
-                        "x" : 5
-                    }
-                  }
-      """;
-      json =
-          """
-                    {
-                      "find": {
-                        "filter" : {"_id" : "update_doc_unset_nested"}
-                      }
-                    }
-                    """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
-    }
-
-    @Test
-    @Order(2)
     public void findByColumnAndSetArray() {
       String json =
           """
@@ -771,6 +686,170 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateOneNested {
+    @Test
+    @Order(2)
+    public void findByIdAndUnsetNested() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_unset_nested",
+                        "array": [
+                            137,
+                            { "x" : 1, "y" : 2 }
+                        ],
+                        "subdoc" : {
+                            "x" : 5,
+                            "y" : -19
+                        }
+                      }
+                  """);
+
+      // NOTE: we mix actual working removals and ones that won't; it is not an error
+      // to try to $unset properties that do not (or sometimes cannot) exist. They just
+      // have no effect.
+      //
+      // Ones that do have effect are:
+      //
+      // * array.0   -> remove first entry, replace with null
+      // * array.1.x -> remove property 'x' from second array element (object)
+      // * subdoc.y  -> remove subdoc property 'y'
+      String json =
+          """
+                       {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "update_doc_unset_nested"},
+                            "update" : {"$unset" : {
+                                "array.0": 1,
+                                "array.1.x" : 1,
+                                "subdoc.x.property" : 1,
+                                "subdoc.y" : 1,
+                                "nosuchfield.to.remove" : 1
+                              }
+                            }
+                          }
+                        }
+                       """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_unset_nested"));
+
+      String expected =
+          """
+                      {
+                        "_id": "update_doc_unset_nested",
+                        "array": [
+                            null,
+                            { "y" : 2 }
+                        ],
+                        "subdoc" : {
+                            "x" : 5
+                        }
+                      }
+          """;
+      json =
+          """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "update_doc_unset_nested"}
+                          }
+                        }
+                        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdAndSetNested() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_set_nested",
+                        "array": [
+                            137,
+                            { "y" : 2, "subarray" : [ ] }
+                        ],
+                        "subdoc" : {
+                            "x" : 5
+                        }
+                      }
+                  """);
+
+      String json =
+          """
+                       {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "update_doc_set_nested"},
+                            "update" : {"$set" : {
+                                "array.0": true,
+                                "array.1.subarray.1" : -25,
+                                "subdoc.x" : false,
+                                "subdoc.y" : 1
+                              }
+                            }
+                          }
+                        }
+                       """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.updatedIds[0]", is("update_doc_set_nested"));
+
+      String expected =
+          """
+                  {
+                    "_id": "update_doc_set_nested",
+                    "array": [
+                        true,
+                        { "y": 2, "subarray": [ null, -25 ] }
+                    ],
+                    "subdoc" : {
+                        "x": false,
+                        "y": 1
+                    }
+                  }
+              """;
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_set_nested"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class UpdateOneFailures {
     @Test
     @Order(2)
@@ -812,6 +891,113 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                       }
                     }
                     """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(inputDoc));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdTrySetId() {
+      final String inputDoc =
+          """
+                          {
+                            "_id": "update_doc_set_id",
+                            "username": "update_user"
+                          }
+                      """;
+      insertDoc(inputDoc);
+      String json =
+          """
+                       {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "update_doc_set_id"},
+                            "update" : {"$set" : {"_id": "new-id"}}
+                          }
+                        }
+                       """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
+          .body("errors[0].message", is("Cannot use operator with '_id' field: $set"));
+
+      // And finally verify also that nothing was changed:
+      json =
+          """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "update_doc_set_id"}
+                          }
+                        }
+                        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(inputDoc));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdTrySetPropertyOnArray() {
+      final String inputDoc =
+          """
+                {
+                  "_id": "update_doc_set_prop_on_array",
+                  "subdoc": {
+                     "array": [ 1, 2, true ]
+                  }
+                }
+            """;
+      insertDoc(inputDoc);
+      String json =
+          """
+                 {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "update_doc_set_prop_on_array"},
+                      "update" : {"$set" : {"subdoc.array.name": "Bob"}}
+                    }
+                  }
+                 """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PATH"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Invalid update operation path: cannot create field ('name') in path 'subdoc.array.name'; only OBJECT nodes have properties (got ARRAY)"));
+
+      // And finally verify also that nothing was changed:
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_set_prop_on_array"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

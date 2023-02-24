@@ -31,8 +31,10 @@ public class SetOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean modified = false;
     for (SetAction addition : additions) {
-      JsonNode prev = doc.replace(addition.path, addition.value);
-      modified |= !Objects.equals(prev, addition.value);
+      UpdateTarget target = targetLocator.findOrCreate(doc, addition.path());
+      JsonNode newValue = addition.value();
+      JsonNode oldValue = target.replaceValue(newValue);
+      modified |= !Objects.equals(newValue, oldValue);
     }
     return modified;
   }

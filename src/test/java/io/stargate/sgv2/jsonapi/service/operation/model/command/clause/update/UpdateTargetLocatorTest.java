@@ -24,7 +24,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPathFindIfExists {
+  class HappyPathFindIfExists {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
@@ -46,7 +46,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
     @Test
     public void findRootIndexPath() {
-      // Although main-level is always an Object, locator is not limited and
+      // Although main-level is always an Object, locator is not limited
       // and can refer to array indexes too
       JsonNode doc = fromJson("[ 3, 7 ]");
       UpdateTarget target = targetLocator.findIfExists(doc, "1");
@@ -142,7 +142,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class failForFindIfExists {
+  class FailForFindIfExists {
     @Test
     public void invalidEmptySegment() {
       Exception e = catchException(() -> targetLocator.findIfExists(objectFromJson("{}"), "a..x"));
@@ -153,6 +153,155 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
           .hasMessage(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
                   + ": empty segment ('') in path 'a..x'");
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class HappyPathFindOrCreate {
+    @Test
+    public void findRootPropertyPath() {
+      ObjectNode doc = objectFromJson("{\"a\" : 1 }");
+      UpdateTarget target = targetLocator.findOrCreate(doc, "a");
+      assertThat(target.contextNode()).isSameAs(doc);
+      assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(1));
+
+      // Can refer to missing property as well
+      target = targetLocator.findOrCreate(doc, "unknown");
+      assertThat(target.contextNode()).isSameAs(doc);
+      assertThat(target.valueNode()).isNull();
+      assertThat(target.lastProperty()).isEqualTo("unknown");
+    }
+
+    @Test
+    public void findRootIndexPath() {
+      // Although main-level is always an Object, locator is not limited
+      // and can refer to array indexes too
+      JsonNode doc = fromJson("[ 3, 7 ]");
+      UpdateTarget target = targetLocator.findOrCreate(doc, "1");
+      assertThat(target.contextNode()).isSameAs(doc);
+      assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(7));
+      assertThat(target.lastProperty()).isNull();
+      assertThat(target.lastIndex()).isEqualTo(1);
+
+      // May try to reference past end, no match
+      target = targetLocator.findOrCreate(doc, "9");
+      assertThat(target.contextNode()).isSameAs(doc);
+      assertThat(target.valueNode()).isNull();
+      assertThat(target.lastProperty()).isNull();
+      assertThat(target.lastIndex()).isEqualTo(9);
+    }
+
+    @Test
+    public void findNestedPropertyPath() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                              {
+                                "b" : {
+                                   "c" : true
+                                }
+                              }
+                              """);
+
+      // First: simple nested property:
+      UpdateTarget target = targetLocator.findOrCreate(doc, "b.c");
+      assertThat(target.contextNode()).isSameAs(doc.get("b"));
+      assertThat(target.valueNode()).isEqualTo(fromJson("true"));
+      assertThat(target.lastProperty()).isEqualTo("c");
+
+      // But can also go for not eisting
+      target = targetLocator.findOrCreate(doc, "b.x.y");
+      // will now have created path
+      assertThat(target.contextNode()).isSameAs(doc.at("/b/x"));
+      assertThat(target.valueNode()).isNull();
+      assertThat(target.lastProperty()).isEqualTo("y");
+    }
+
+    @Test
+    public void findNestedArrayPath() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                              {
+                                "array" : [ 1, 2,
+                                   { "a": 3,
+                                      "subArray" : [ true, false ]
+                                    }
+                                 ]
+                              }
+                              """);
+
+      // First, existing path
+      UpdateTarget target = targetLocator.findOrCreate(doc, "array.0");
+      assertThat(target.contextNode()).isSameAs(doc.get("array"));
+      assertThat(target.valueNode()).isEqualTo(doc.numberNode(1));
+      assertThat(target.lastProperty()).isNull();
+      assertThat(target.lastIndex()).isEqualTo(0);
+
+      // But then something past inner array's end
+      target = targetLocator.findOrCreate(doc, "array.2.subArray.3");
+      assertThat(target.contextNode()).isSameAs(doc.at("/array/2/subArray"));
+      assertThat(target.valueNode()).isNull();
+      assertThat(target.lastProperty()).isNull();
+      assertThat(target.lastIndex()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FailForFindOrCreate {
+    @Test
+    public void invalidPathViaAtomic() {
+      Exception e =
+          catchException(() -> targetLocator.findOrCreate(objectFromJson("{\"a\": 3}"), "a.x"));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('x') in path 'a.x'; only OBJECT nodes have properties (got NUMBER)");
+
+      e =
+          catchException(
+              () ->
+                  targetLocator.findOrCreate(objectFromJson("{\"a\": {\"b\": null}}"), "a.b.c.d"));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('c') in path 'a.b.c.d'; only OBJECT nodes have properties (got NULL)");
+    }
+
+    @Test
+    public void invalidPropViaArray() {
+      Exception e =
+          catchException(
+              () -> targetLocator.findOrCreate(objectFromJson("{\"array\": [1] }"), "array.prop"));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('prop') in path 'array.prop'; only OBJECT nodes have properties (got ARRAY)");
+
+      e =
+          catchException(
+              () ->
+                  targetLocator.findOrCreate(
+                      objectFromJson("{\"ob\":{\"array\":[{\"a2\":[true]}]}} }"),
+                      "ob.array.0.a2.x"));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('x') in path 'ob.array.0.a2.x'; only OBJECT nodes have properties (got ARRAY)");
     }
   }
 }

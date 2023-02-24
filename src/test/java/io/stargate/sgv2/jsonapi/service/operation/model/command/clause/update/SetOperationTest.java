@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class SetOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class happyPath {
+  class HappyPathRoot {
     @Test
     public void testSimpleSetOfExisting() {
       // Remove 2 of 3 properties:
@@ -34,7 +34,11 @@ public class SetOperationTest extends UpdateOperationTestBase {
                     """));
       assertThat(oper).isInstanceOf(SetOperation.class);
       // Should indicate document being modified
-      ObjectNode doc = defaultTestDocABC();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                          { "a" : 1, "c" : true, "b" : 1234 }
+                          """);
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       assertThat(doc)
           .isEqualTo(
@@ -50,14 +54,21 @@ public class SetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.SET.resolveOperation(
               objectFromJson(
                   """
-                    { "nosuchvalue" : 1 }
+                    { "nosuchvalue" : 99 }
                     """));
       assertThat(oper).isInstanceOf(SetOperation.class);
-      ObjectNode doc = defaultTestDocABC();
+      ObjectNode doc =
+          objectFromJson(
+              """
+                          { "a" : 1, "c" : true, "b" : 1234 }
+                          """);
       // Will append the new property so there is modification
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
-      ObjectNode expected = defaultTestDocABC();
-      expected.put("nosuchvalue", 1);
+      ObjectNode expected =
+          objectFromJson(
+              """
+                          { "a" : 1, "c" : true, "b" : 1234, "nosuchvalue": 99 }
+                          """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -69,17 +80,202 @@ public class SetOperationTest extends UpdateOperationTestBase {
                     { "c" : true }
                     """));
       assertThat(oper).isInstanceOf(SetOperation.class);
-      ObjectNode doc = defaultTestDocABC();
+      ObjectNode orig =
+          objectFromJson(
+              """
+                          { "a" : 1, "c" : true, "b" : 1234 }
+                          """);
+      ObjectNode doc = orig.deepCopy();
       // No change, c was already set as true
       assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
-      // And document should be the same as before
-      assertThat(doc).isEqualTo(defaultTestDocABC());
+      // And document should not be changed
+      assertThat(doc).isEqualTo(orig);
     }
   }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class invalidCases {
+  class HappyPathNestedObjects {
+    @Test
+    public void testSetOfExistingNested() {
+      // Replace 2 of 3 properties:
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                                {
+                                  "a.x" : -27,
+                                  "b.array": true
+                                }
+                                """));
+      assertThat(oper).isInstanceOf(SetOperation.class);
+      ObjectNode doc =
+          objectFromJson(
+              """
+                {
+                  "a" : { "x": 9, "y" : 2 },
+                  "b" : { "on": true, "array": [1, 2, 3] }
+                }
+                """);
+      // Should indicate document being modified
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(doc)
+          .isEqualTo(
+              fromJson(
+                  """
+                {
+                  "a" : { "x": -27, "y" : 2 },
+                  "b" : { "on": true, "array": true }
+                }
+                """));
+    }
+
+    @Test
+    public void testSetOfMissingNested() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                                            {
+                                              "a.x" : true,
+                                              "array.0.name": null
+                                            }
+                                            """));
+      ObjectNode doc = objectFromJson("{ }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(doc)
+          .isEqualTo(
+              fromJson(
+                  """
+                            {
+                              "a" : { "x": true },
+                              "array" : { "0": { "name": null } }
+                            }
+                            """));
+    }
+
+    @Test
+    public void testNoChangeWithNested() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(objectFromJson("{\"a.x\": \"value\"}"));
+      ObjectNode doc = objectFromJson("{\"a\": {\"x\": \"value\" }}");
+      ObjectNode exp = doc.deepCopy();
+
+      // No change reported, none observed
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(exp);
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class HappyPathNestedArrays {
+    @Test
+    public void testSetOfNestedArrays() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                                            {
+                                              "array.1" : -27,
+                                              "subdoc.array.3": true
+                                            }
+                                            """));
+      ObjectNode doc =
+          objectFromJson(
+              """
+                        {
+                          "array" : [1, 2],
+                          "subdoc" : {
+                            "array" : [ ]
+                          }
+                        }
+                        """);
+      // Should indicate document being modified
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(doc)
+          .isEqualTo(
+              fromJson(
+                  """
+                                {
+                                  "array" : [1, -27],
+                                  "subdoc" : {
+                                    "array" : [ null, null, null, true ]
+                                  }
+                                }
+                                """));
+    }
+
+    @Test
+    public void testNoChangeOfNestedArrays() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(objectFromJson("{\"subdoc.array.1\": 42 }"));
+      ObjectNode doc =
+          objectFromJson(
+              """
+                                {
+                                  "subdoc" : {
+                                    "array" : [ false, 42]
+                                  }
+                                }
+                                """);
+      ObjectNode exp = doc.deepCopy();
+
+      // Should indicate NO change; as well as, well, not change :)
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(exp);
+    }
+
+    @Test
+    public void testMixedNested() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                      {
+                        "array": [
+                            137,
+                            { "y" : 2, "subarray" : [ ] }
+                        ],
+                        "subdoc" : {
+                            "x" : 5
+                        }
+                      }
+                  """);
+
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                       {
+                          "array.0": true,
+                          "array.1.subarray.1" : -25,
+                          "subdoc.x" : false,
+                          "subdoc.y" : 1
+                        }
+                       """));
+      ObjectNode exp =
+          objectFromJson(
+              """
+                {
+                  "array": [
+                      true,
+                      { "y": 2, "subarray": [ null, -25 ] }
+                  ],
+                  "subdoc" : {
+                      "x": false,
+                      "y": 1
+                  }
+                }
+            """);
+
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(doc).isEqualTo(exp);
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class InvalidCasesRoot {
     @Test
     public void testNoReplacingDocId() {
       Exception e =
@@ -97,6 +293,42 @@ public class SetOperationTest extends UpdateOperationTestBase {
           .withFailMessage("Should throw exception on $set of _id")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class InvalidCasesNested {
+    @Test
+    public void testNoPathThroughAtomics() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(objectFromJson("{ \"a.x\" : 12 }"));
+      ObjectNode doc = objectFromJson("{ \"a\" : null }");
+      Exception e = catchException(() -> oper.updateDocument(doc, targetLocator));
+
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('x') in path 'a.x'; only OBJECT nodes have properties (got NULL)");
+    }
+
+    @Test
+    public void testNoPropertyOnArray() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(objectFromJson("{ \"array.x.y.z\" : 12 }"));
+      ObjectNode doc = objectFromJson("{ \"array\" : [ 1, 2 ] }");
+      Exception e = catchException(() -> oper.updateDocument(doc, targetLocator));
+
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": cannot create field ('x') in path 'array.x.y.z'; only OBJECT nodes have properties (got ARRAY)");
     }
   }
 }

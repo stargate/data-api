@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Objects;
 
 /**
  * Definition of a target for an {@link UpdateOperation}; built from "dot path" and document to
@@ -48,20 +49,14 @@ public record UpdateTarget(
     return new UpdateTarget(fullPath, contextNode, valueNode, property, -1);
   }
 
-  public boolean hasContext() {
-    return contextNode != null;
-  }
-
-  public boolean hasValue() {
-    return valueNode != null;
-  }
-
   /**
    * Method that may be called to remove value node from its context, if there is value; value
    * removed (if any) is returned.
    */
   public JsonNode removeValue() {
     if (valueNode != null) {
+      Objects.requireNonNull(contextNode);
+
       // Either Object property or Array element, depending on context
       if (contextNode.isObject()) {
         ((ObjectNode) contextNode).remove(lastProperty);
@@ -70,6 +65,31 @@ public record UpdateTarget(
         // (case where index is past end do not have valueNode)
         ((ArrayNode) contextNode).setNull(lastIndex);
       }
+    }
+    return valueNode;
+  }
+
+  /**
+   * Method that may be called to replace-or-insert (upsert?) a value at context this target points
+   * to: if there was a value, it will be replaced; if not, new value will be inserted. In case of
+   * Arrays, possible padding may be added in case of insertion to put it in specified index.
+   *
+   * @param newValue Value to upsert
+   * @return Previous value at target, if any; {@code null} if none.
+   */
+  public JsonNode replaceValue(JsonNode newValue) {
+    Objects.requireNonNull(contextNode);
+
+    // Either Object property or Array element, depending on context
+    if (contextNode.isObject()) {
+      ((ObjectNode) contextNode).set(lastProperty, newValue);
+    } else {
+      ArrayNode array = (ArrayNode) contextNode;
+      // important: it is legal to append beyond end; but if so, MUST pad with nulls
+      while (lastIndex >= array.size()) {
+        array.addNull();
+      }
+      ((ArrayNode) contextNode).set(lastIndex, newValue);
     }
     return valueNode;
   }
