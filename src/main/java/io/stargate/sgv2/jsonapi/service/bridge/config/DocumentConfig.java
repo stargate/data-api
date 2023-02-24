@@ -49,7 +49,7 @@ public interface DocumentConfig {
 
   /**
    * @return Defines the maximum limit of document that can be returned for a request, defaults to
-   *     <code>1000</code>.
+   *     <code>20</code>.
    */
   @Max(100)
   @Positive

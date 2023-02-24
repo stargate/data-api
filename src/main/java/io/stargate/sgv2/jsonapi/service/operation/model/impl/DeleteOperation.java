@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -21,11 +22,17 @@ import java.util.function.Supplier;
  * deleted as LWT based on the id and tx_id.
  */
 public record DeleteOperation(
-    CommandContext commandContext, ReadOperation readOperation, int deleteLimit)
+    CommandContext commandContext,
+    ReadOperation readOperation,
+    /**
+     * Added parameter to pass number of document to be deleted, this is needed because read
+     * documents limit changed to deleteLimit + 1
+     */
+    int deleteLimit)
     implements ModifyOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    final Boolean[] moreData = {false};
+    final AtomicBoolean boolenFlag = new AtomicBoolean(false);
     final QueryOuterClass.Query delete = buildDeleteQuery();
     final Multi<ReadOperation.FindResponse> findResponses =
         Multi.createBy()
@@ -47,12 +54,14 @@ public record DeleteOperation(
             .transformToMulti(
                 findResponse -> {
                   final List<ReadDocument> docs = findResponse.docs();
+                  // Below conditionality is because we read up to deleteLimit +1 record.
                   if (totalCount.get() + docs.size() <= deleteLimit) {
                     totalCount.addAndGet(docs.size());
                     return Multi.createFrom().items(docs.stream());
                   } else {
                     int needed = deleteLimit - totalCount.get();
-                    moreData[0] = true;
+                    totalCount.addAndGet(needed);
+                    boolenFlag.set(true);
                     return Multi.createFrom()
                         .items(findResponse.docs().subList(0, needed).stream());
                   }
@@ -63,7 +72,8 @@ public record DeleteOperation(
                 readDocument -> deleteDocument(queryExecutor, delete, readDocument))
             .collect()
             .asList();
-    return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds, moreData[0]));
+    return ids.onItem()
+        .transform(deletedIds -> new DeleteOperationPage(deletedIds, boolenFlag.get()));
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {

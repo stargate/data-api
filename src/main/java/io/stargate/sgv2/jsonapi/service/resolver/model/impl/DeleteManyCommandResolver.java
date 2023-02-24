@@ -15,7 +15,7 @@ import javax.inject.Inject;
 
 /**
  * Resolves the {@link DeleteManyCommand } DeleteOne command implements Filterable to identify the
- * record to be deleted, Based on the filter condition a record will deleted
+ * records to delete based on the filter condition and deletes it.
  */
 @ApplicationScoped
 public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyCommand>
