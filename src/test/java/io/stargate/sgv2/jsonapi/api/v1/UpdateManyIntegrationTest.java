@@ -281,6 +281,53 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
       cleanUpData();
     }
 
+    @Test
+    @Order(7)
+    public void updateManyByIdNoChange() {
+      insert(1);
+      String json =
+          """
+                                    {
+                                      "updateMany": {
+                                        "filter" : {"_id" : "doc1"},
+                                        "update" : {"$set" : {"active_user": true}}
+                                      }
+                                    }
+                                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(0))
+          .body("status.moreData", nullValue());
+
+      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      json =
+          """
+                            {
+                              "find": {
+                                "filter" : {"_id" : "doc1"}
+                              }
+                            }
+                            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+
+      cleanUpData();
+    }
+
     private void cleanUpData() {
       String json =
           """
