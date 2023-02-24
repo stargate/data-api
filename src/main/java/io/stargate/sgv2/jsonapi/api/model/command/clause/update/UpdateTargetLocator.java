@@ -21,7 +21,7 @@ public class UpdateTargetLocator {
    *
    * @param document Document that may contain target path
    * @param dotPath Path that points to possibly existing target
-   * @return Target instance with optional target and context nodes
+   * @return Target instance with optional context and value nodes
    */
   public UpdateTarget findIfExists(JsonNode document, String dotPath) {
     String[] segments = splitAndVerify(dotPath);
@@ -72,7 +72,7 @@ public class UpdateTargetLocator {
    *
    * @param document Document that is to contain target path
    * @param dotPath Path that points to target that may exists, or is about to be added
-   * @return Target instance with optional target and context nodes
+   * @return Target instance with non-null context node, optional value node
    */
   public UpdateTarget findOrCreate(JsonNode document, String dotPath) {
     String[] segments = splitAndVerify(dotPath);
@@ -129,7 +129,7 @@ public class UpdateTargetLocator {
       }
       return UpdateTarget.pathViaArray(dotPath, context, context.get(index), index);
     }
-    // Can't create properties on Atomics either
+    // Cannot create properties on Atomics either
     throw cantCreatePropertyPath(dotPath, segment, context);
   }
 
