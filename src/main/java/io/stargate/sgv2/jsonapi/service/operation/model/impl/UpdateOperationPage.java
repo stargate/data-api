@@ -14,7 +14,8 @@ public record UpdateOperationPage(
     int matchedCount,
     int modifiedCount,
     List<ReadAndUpdateOperation.UpdatedDocument> updatedDocuments,
-    boolean returnDocs)
+    boolean returnDocs,
+    boolean moreDataFlag)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
@@ -29,6 +30,7 @@ public record UpdateOperationPage(
     if (upsertedId[0] != null) updateStatus.put(CommandStatus.UPSERTED_ID, upsertedId[0]);
     updateStatus.put(CommandStatus.MATCHED_COUNT, matchedCount());
     updateStatus.put(CommandStatus.MODIFIED_COUNT, modifiedCount());
+    if (moreDataFlag) updateStatus.put(CommandStatus.MORE_DATA, moreDataFlag);
     if (returnDocs) {
       return new CommandResult(new CommandResult.ResponseData(updatedDocs), updateStatus);
     } else {

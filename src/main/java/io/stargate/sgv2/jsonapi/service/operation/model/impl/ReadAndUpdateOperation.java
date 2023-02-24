@@ -34,7 +34,7 @@ public record ReadAndUpdateOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    final AtomicBoolean boolenFlag = new AtomicBoolean(false);
+    final AtomicBoolean moreDataFlag = new AtomicBoolean(false);
     final Multi<ReadOperation.FindResponse> findResponses =
         Multi.createBy()
             .repeating()
@@ -68,7 +68,7 @@ public record ReadAndUpdateOperation(
                       int needed = updateLimit - matchedCount.get();
                       matchedCount.addAndGet(needed);
 
-                      boolenFlag.set(true);
+                      moreDataFlag.set(true);
                       return Multi.createFrom()
                           .items(findResponse.docs().subList(0, needed).stream());
                     }
@@ -111,7 +111,11 @@ public record ReadAndUpdateOperation(
         .transform(
             updates ->
                 new UpdateOperationPage(
-                    matchedCount.get(), modifiedCount.get(), updates, returnDocumentInResponse()));
+                    matchedCount.get(),
+                    modifiedCount.get(),
+                    updates,
+                    returnDocumentInResponse(),
+                    moreDataFlag.get()));
   }
 
   private Uni<DocumentId> updatedDocument(
