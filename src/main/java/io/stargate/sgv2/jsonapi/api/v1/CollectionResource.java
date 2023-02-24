@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
@@ -69,6 +70,7 @@ public class CollectionResource {
                       anyOf = {
                         CountDocumentsCommands.class,
                         DeleteOneCommand.class,
+                        DeleteManyCommand.class,
                         FindOneCommand.class,
                         FindCommand.class,
                         FindOneAndUpdateCommand.class,
@@ -79,6 +81,7 @@ public class CollectionResource {
               examples = {
                 @ExampleObject(ref = "count"),
                 @ExampleObject(ref = "deleteOne"),
+                @ExampleObject(ref = "deleteMany"),
                 @ExampleObject(ref = "findOne"),
                 @ExampleObject(ref = "find"),
                 @ExampleObject(ref = "findOneAndUpdate"),

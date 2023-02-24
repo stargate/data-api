@@ -7,7 +7,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -21,28 +22,29 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class DeleteOneCommandResolverTest {
+public class DeleteManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject DeleteOneCommandResolver deleteOneCommandResolver;
+  @Inject DocumentConfig documentConfig;
+  @Inject DeleteManyCommandResolver deleteManyCommandResolver;
 
   @Nested
-  class DeleteOneCommandResolveCommand {
+  class DeleteManyCommandResolveCommand {
 
     @Test
     public void idFilterCondition() throws Exception {
       String json =
           """
                           {
-                            "deleteOne": {
+                            "deleteMany": {
                               "filter" : {"_id" : "id"}
                             }
                           }
                           """;
 
-      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
+          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -50,11 +52,13 @@ public class DeleteOneCommandResolverTest {
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
-              1,
-              1,
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -68,18 +72,27 @@ public class DeleteOneCommandResolverTest {
       String json =
           """
                     {
-                      "deleteOne": {
+                      "deleteMany": {
                       }
                     }
                     """;
 
-      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
+          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
       FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.KEY, objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+          new FindOperation(
+              commandContext,
+              List.of(),
+              null,
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
+              ReadType.KEY,
+              objectMapper);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -93,16 +106,16 @@ public class DeleteOneCommandResolverTest {
       String json =
           """
                     {
-                      "deleteOne": {
+                      "deleteMany": {
                         "filter" : {"col" : "val"}
                       }
                     }
                     """;
 
-      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
+          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
       FindOperation findOperation =
           new FindOperation(
               commandContext,
@@ -110,11 +123,13 @@ public class DeleteOneCommandResolverTest {
                   new DBFilterBase.TextFilter(
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               null,
-              1,
-              1,
+              documentConfig.maxDocumentDeleteCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(

@@ -118,7 +118,7 @@ public interface ReadOperation extends Operation {
    * @param queryExecutor
    * @return
    */
-  Uni<FindResponse> getDocuments(QueryExecutor queryExecutor);
+  Uni<FindResponse> getDocuments(QueryExecutor queryExecutor, String pagingState);
 
   /**
    * A operation method which can return ReadDocument with an empty document, if the filter

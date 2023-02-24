@@ -142,6 +142,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             }
                             """),
               @ExampleObject(
+                  name = "deleteMany",
+                  summary = "`deleteMany` command",
+                  value =
+                      """
+                            {
+                              "deleteMany": {
+                                  "filter": {"city": "London"}
+                              }
+                            }
+                      """),
+              @ExampleObject(
                   name = "insertOne",
                   summary = "`insertOne` command",
                   value =
@@ -337,7 +348,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                                 {
                                   "status": {
-                                      "deletedIds": ["1", "2"]
+                                      "deletedIds": ["1", "2"],
+                                      "moreData" : true
                                   }
                                 }
                                 """),

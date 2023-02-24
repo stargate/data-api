@@ -32,13 +32,13 @@ public record FindOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    return getDocuments(queryExecutor)
+    return getDocuments(queryExecutor, pagingState())
         .onItem()
         .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
   }
 
   @Override
-  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor) {
+  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor, String pagingState) {
     switch (readType) {
       case DOCUMENT:
       case KEY:

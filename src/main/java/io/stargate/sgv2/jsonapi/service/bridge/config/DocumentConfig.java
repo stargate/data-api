@@ -46,4 +46,13 @@ public interface DocumentConfig {
   @Positive
   @WithDefault("1000")
   int maxLimit();
+
+  /**
+   * @return Defines the maximum limit of document that can be returned for a request, defaults to
+   *     <code>20</code>.
+   */
+  @Max(100)
+  @Positive
+  @WithDefault("20")
+  int maxDocumentDeleteCount();
 }
