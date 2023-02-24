@@ -63,21 +63,6 @@ public record DeleteOperation(
                 readDocument -> deleteDocument(queryExecutor, delete, readDocument))
             .collect()
             .asList();
-
-    /*final Uni<List<DocumentId>> ids =
-    docsToDelete
-        .onItem()
-        .invoke(response -> nextPage[0] = response.pagingState())
-        .onItem()
-        .transformToMulti(
-            findResponse -> {
-              return Multi.createFrom().items(findResponse.docs().stream());
-            })
-        .onItem()
-        .transformToUniAndConcatenate(
-            readDocument -> deleteDocument(queryExecutor, delete, readDocument))
-        .collect()
-        .asList();*/
     return ids.onItem().transform(deletedIds -> new DeleteOperationPage(deletedIds, moreData[0]));
   }
 
