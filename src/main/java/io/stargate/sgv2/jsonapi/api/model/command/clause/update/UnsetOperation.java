@@ -30,9 +30,7 @@ public class UnsetOperation extends UpdateOperation {
     boolean modified = false;
     for (String path : paths) {
       UpdateTarget target = targetLocator.findIfExists(doc, path);
-      if (target.removeValue() != null) {
-        modified = true;
-      }
+      modified |= (target.removeValue() != null);
     }
     return modified;
   }
