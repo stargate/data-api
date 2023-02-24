@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
@@ -76,6 +77,7 @@ public class CollectionResource {
                         FindOneAndUpdateCommand.class,
                         InsertOneCommand.class,
                         InsertManyCommand.class,
+                        UpdateManyCommand.class,
                         UpdateOneCommand.class
                       }),
               examples = {
@@ -87,6 +89,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "findOneAndUpdate"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "insertMany"),
+                @ExampleObject(ref = "updateMany"),
                 @ExampleObject(ref = "updateOne"),
               }))
   @APIResponses(
@@ -105,6 +108,7 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultInsert"),
                     @ExampleObject(ref = "resultError"),
                     @ExampleObject(ref = "resultDelete"),
+                    @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateOne"),
                   })))
   @POST

@@ -8,9 +8,9 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -26,43 +26,43 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class FindOneAndUpdateResolverTest {
+public class UpdateManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
+  @Inject DocumentConfig documentConfig;
   @Inject Shredder shredder;
-  @Inject FindOneAndUpdateCommandResolver findOneAndUpdateCommandResolver;
+
+  @Inject UpdateManyCommandResolver updateManyCommandResolver;
 
   @Nested
-  class FindAndUpdateCommandResolveCommand {
+  class UpdateManyCommandResolveCommand {
 
     @Test
-    public void idFilterConditionBsonType() throws Exception {
+    public void idFilterCondition() throws Exception {
       String json =
           """
-                            {
-                              "findOneAndUpdate": {
-                                "filter" : {"_id" : "id"},
-                                "update" : {"$set" : {"location" : "New York"}}
-                              }
-                            }
-                            """;
+                                    {
+                                      "updateMany": {
+                                        "filter" : {"_id" : "id"},
+                                        "update" : {"$set" : {"location" : "New York"}}
+                                      }
+                                    }
+                                    """;
 
-      FindOneAndUpdateCommand findOneAndUpdateCommand =
-          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateManyCommand updateManyCommand = objectMapper.readValue(json, UpdateManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
-      ReadOperation readOperation =
+          updateManyCommandResolver.resolveCommand(commandContext, updateManyCommand);
+      FindOperation readOperation =
           new FindOperation(
               commandContext,
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               null,
-              1,
-              1,
+              documentConfig.maxDocumentUpdateCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper);
-
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -70,7 +70,15 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
+              commandContext,
+              readOperation,
+              documentUpdater,
+              false,
+              false,
+              false,
+              shredder,
+              documentConfig.maxDocumentUpdateCount());
+
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
@@ -80,35 +88,29 @@ public class FindOneAndUpdateResolverTest {
     }
 
     @Test
-    public void idFilterConditionWithOptions() throws Exception {
+    public void noFilterCondition() throws Exception {
       String json =
           """
-                                {
-                                  "findOneAndUpdate": {
-                                    "filter" : {"_id" : "id"},
-                                    "update" : {"$set" : {"location" : "New York"}},
-                                    "options" : {"returnDocument" : "after", "upsert": true }
-                                  }
-                                }
-                                """;
+                                    {
+                                      "updateMany": {
+                                        "update" : {"$set" : {"location" : "New York"}}
+                                      }
+                                    }
+                                    """;
 
-      FindOneAndUpdateCommand findOneAndUpdateCommand =
-          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateManyCommand updateManyCommand = objectMapper.readValue(json, UpdateManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
-      ReadOperation readOperation =
+          updateManyCommandResolver.resolveCommand(commandContext, updateManyCommand);
+      FindOperation readOperation =
           new FindOperation(
               commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              List.of(),
               null,
-              1,
-              1,
+              documentConfig.maxDocumentUpdateCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper);
-
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -116,7 +118,15 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, true, true, shredder, 1);
+              commandContext,
+              readOperation,
+              documentUpdater,
+              false,
+              false,
+              false,
+              shredder,
+              documentConfig.maxDocumentUpdateCount());
+
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
@@ -129,39 +139,45 @@ public class FindOneAndUpdateResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-                            {
-                              "findOneAndUpdate": {
-                                "filter" : {"col" : "val"},
-                                "update" : {"$set" : {"location" : "New York"}}
-                              }
-                            }
-                            """;
+                              {
+                                      "updateMany": {
+                                      "filter" : {"col" : "val"},
+                                        "update" : {"$set" : {"location" : "New York"}}
+                                      }
+                                    }
+                              """;
 
-      FindOneAndUpdateCommand findOneAndUpdateCommand =
-          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateManyCommand updateManyCommand = objectMapper.readValue(json, UpdateManyCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
       final Operation operation =
-          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
-      ReadOperation readOperation =
+          updateManyCommandResolver.resolveCommand(commandContext, updateManyCommand);
+      FindOperation readOperation =
           new FindOperation(
               commandContext,
               List.of(
                   new DBFilterBase.TextFilter(
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               null,
-              1,
-              1,
+              documentConfig.maxDocumentUpdateCount() + 1,
+              documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper);
-
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
+
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
+              commandContext,
+              readOperation,
+              documentUpdater,
+              false,
+              false,
+              false,
+              shredder,
+              documentConfig.maxDocumentUpdateCount());
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(

@@ -131,6 +131,24 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                     }
                     """),
               @ExampleObject(
+                  name = "updateMany",
+                  summary = "`updateMany` command",
+                  value =
+                      """
+                                {
+                                "updateMany": {
+                                    "filter": {"location": "London"},
+                                    "update": {
+                                        "$set": {"location": "New York"},
+                                        "$push": {"tags": "marathon"}
+                                    },
+                                    "options" : {
+                                        "upsert" : true
+                                    }
+                                }
+                              }
+                              """),
+              @ExampleObject(
                   name = "deleteOne",
                   summary = "`deleteOne` command",
                   value =
@@ -313,7 +331,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                           ],
                           "count": 1,
                           "status": {
-                            "updatedIds": ["1"]
+                            "upsertedId": "1",
+                            "matchedCount": 0,
+                            "modifiedCount": 1,
                           }
                         }
                       }
@@ -325,11 +345,28 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                           "status": {
-                              "updatedIds": ["1"]
+                            "upsertedId": "1",
+                            "matchedCount": 0,
+                            "modifiedCount": 1,
                             }
                           }
                         }
                         """),
+              @ExampleObject(
+                  name = "resultUpdateMany",
+                  summary = "`updateMany` command result",
+                  value =
+                      """
+                            {
+                                "status": {
+                                  "upsertedId": "1",
+                                  "matchedCount": 0,
+                                  "modifiedCount": 1,
+                                  "moreData" : true
+                                  }
+                                }
+                              }
+                              """),
               @ExampleObject(
                   name = "resultInsert",
                   summary = "Insert command result",

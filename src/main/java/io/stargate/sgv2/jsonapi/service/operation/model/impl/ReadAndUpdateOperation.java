@@ -16,9 +16,23 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
+/**
+ * This operation method is used for 3 commands findOneAndUpdate, updateOne and updateMany
+ *
+ * @param commandContext
+ * @param readOperation
+ * @param documentUpdater
+ * @param returnDocumentInResponse
+ * @param returnUpdatedDocument
+ * @param upsert
+ * @param shredder
+ * @param updateLimit
+ */
 public record ReadAndUpdateOperation(
     CommandContext commandContext,
     ReadOperation readOperation,
@@ -26,47 +40,94 @@ public record ReadAndUpdateOperation(
     boolean returnDocumentInResponse,
     boolean returnUpdatedDocument,
     boolean upsert,
-    Shredder shredder)
+    Shredder shredder,
+    int updateLimit)
     implements ModifyOperation {
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Uni<ReadOperation.FindResponse> docsToUpate = readOperation().getDocuments(queryExecutor, null);
+    final AtomicBoolean moreDataFlag = new AtomicBoolean(false);
+    final Multi<ReadOperation.FindResponse> findResponses =
+        Multi.createBy()
+            .repeating()
+            .uni(
+                () -> new AtomicReference<String>(null),
+                stateRef -> {
+                  Uni<ReadOperation.FindResponse> docsToUpdate =
+                      readOperation().getDocuments(queryExecutor, stateRef.get());
+                  return docsToUpdate
+                      .onItem()
+                      .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
+                })
+            .whilst(findResponse -> findResponse.pagingState() != null);
+    final AtomicInteger matchedCount = new AtomicInteger(0);
+    final AtomicInteger modifiedCount = new AtomicInteger(0);
+
     final Uni<List<UpdatedDocument>> updatedDocuments =
-        docsToUpate
+        findResponses
             .onItem()
             .transformToMulti(
                 findResponse -> {
-                  if (findResponse.docs().isEmpty()) {
-                    if (upsert) {
-                      return Multi.createFrom().item(readOperation().getEmptyDocuments());
-                    } else {
-                      return Multi.createFrom().items(Stream.empty());
-                    }
+                  final List<ReadDocument> docs = findResponse.docs();
+                  if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
+                    return Multi.createFrom().item(readOperation().getNewDocument());
                   } else {
-                    return Multi.createFrom().items(findResponse.docs().stream());
+                    // Below conditionality is because we read up to deleteLimit +1 record.
+                    if (matchedCount.get() + docs.size() <= updateLimit) {
+                      matchedCount.addAndGet(docs.size());
+                      return Multi.createFrom().items(docs.stream());
+                    } else {
+                      int needed = updateLimit - matchedCount.get();
+                      matchedCount.addAndGet(needed);
+
+                      moreDataFlag.set(true);
+                      return Multi.createFrom()
+                          .items(findResponse.docs().subList(0, needed).stream());
+                    }
                   }
                 })
+            .concatenate()
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> {
-                  JsonNode updatedDocument =
+                  DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
                       documentUpdater().applyUpdates(readDocument.document().deepCopy());
-                  WritableShreddedDocument writableShreddedDocument =
-                      shredder().shred(updatedDocument, readDocument.txnId());
                   final JsonNode originalDocument =
                       readDocument.txnId() == null ? null : readDocument.document();
+                  JsonNode updatedDocument = documentUpdaterResponse.document();
+                  Uni<DocumentId> updated = Uni.createFrom().nullItem();
+                  if (documentUpdaterResponse.modified()) {
+                    WritableShreddedDocument writableShreddedDocument =
+                        shredder().shred(updatedDocument, readDocument.txnId());
+                    updated = updatedDocument(queryExecutor, writableShreddedDocument);
+                  }
                   final JsonNode documentToReturn =
                       returnUpdatedDocument ? updatedDocument : originalDocument;
-                  return updatedDocument(queryExecutor, writableShreddedDocument)
+                  return updated
                       .onItem()
-                      .transform(v -> new UpdatedDocument(readDocument.id(), documentToReturn));
+                      .ifNotNull()
+                      .transform(
+                          v -> {
+                            if (readDocument.txnId() != null) modifiedCount.incrementAndGet();
+                            return new UpdatedDocument(
+                                readDocument.id(),
+                                readDocument.txnId() == null,
+                                returnDocumentInResponse ? documentToReturn : null);
+                          });
                 })
             .collect()
             .asList();
+
     return updatedDocuments
         .onItem()
-        .transform(updates -> new UpdateOperationPage(updates, returnDocumentInResponse()));
+        .transform(
+            updates ->
+                new UpdateOperationPage(
+                    matchedCount.get(),
+                    modifiedCount.get(),
+                    updates,
+                    returnDocumentInResponse(),
+                    moreDataFlag.get()));
   }
 
   private Uni<DocumentId> updatedDocument(
@@ -133,5 +194,5 @@ public record ReadAndUpdateOperation(
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 
-  record UpdatedDocument(DocumentId id, JsonNode document) {}
+  record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document) {}
 }

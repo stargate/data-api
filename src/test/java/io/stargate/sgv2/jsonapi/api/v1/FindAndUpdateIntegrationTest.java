@@ -67,7 +67,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.updatedIds[0]", is("doc3"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       expected = "{\"_id\":\"doc3\", \"username\":\"user3\", \"active_user\":false}";
       json =
@@ -135,7 +136,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.updatedIds[0]", is("afterDoc3"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       json =
           """
@@ -179,7 +181,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.updatedIds[0]", is("afterDoc4"));
+          .body("status.upsertedId", is("afterDoc4"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
 
       json =
           """
@@ -242,7 +246,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.updatedIds[0]", is("doc4"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       expected = "{\"_id\":\"doc4\", \"username\":\"user4\", \"new_col\": \"new_val\"}";
       json =
@@ -308,7 +313,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
-          .body("status.updatedIds[0]", is("doc5"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       expected = "{\"_id\":\"doc5\", \"username\":\"user5\"}";
       json =
@@ -376,7 +382,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc1"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
 
       String expected =
           "{\"_id\":\"update_doc1\", \"username\":\"update_user3\", \"active_user\":false}";
@@ -421,7 +429,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("afterDoc6"));
+          .body("status.upsertedId", is("afterDoc6"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
 
       json =
           """
@@ -483,7 +493,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc2"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           "{\"_id\":\"update_doc2\", \"username\":\"update_user2\", \"new_col\": \"new_val\"}";
@@ -535,7 +546,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc3"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
 
       String expected = "{\"_id\":\"update_doc3\", \"username\":\"update_user3\"}";
       json =
@@ -597,7 +610,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc4"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           "{\"_id\":\"update_doc4\", \"username\":\"update_user4\", \"new_col\": [\"new_val\", \"new_val2\"]}";
@@ -660,7 +674,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc5"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           "{\"_id\":\"update_doc5\", \"username\":\"update_user5\", \"new_col\": {\"sub_doc_col\":\"new_val2\"}}";
@@ -738,7 +753,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_unset_nested"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           """
@@ -812,7 +828,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_set_nested"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           """
@@ -1049,7 +1066,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_pop"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -1110,7 +1129,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_push"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
 
       String expected = "{\"_id\":\"update_doc_push\", \"array\": [2, 13]}";
       json =
@@ -1164,7 +1185,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_push_each"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
 
       String expected =
           """
@@ -1223,7 +1246,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_push_each_position"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expected =
           """
@@ -1281,7 +1305,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.updatedIds[0]", is("update_doc_inc"));
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expectedDoc = "{\"_id\":\"update_doc_inc\", \"number\": 119, \"newProp\": 0.25 }";
       String findJson =
