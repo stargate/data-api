@@ -113,8 +113,8 @@ public class PopOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-                                        { "a" : 1, "subdoc": { "array" : [ 2, 3 ] } }
-                                        """);
+              { "a" : 1, "subdoc": { "array" : [ 2, 3 ] } }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
