@@ -225,6 +225,52 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       assertThat(doc).isEqualTo(exp);
     }
+
+    @Test
+    public void testMixedNested() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                      {
+                        "array": [
+                            137,
+                            { "y" : 2, "subarray" : [ ] }
+                        ],
+                        "subdoc" : {
+                            "x" : 5
+                        }
+                      }
+                  """);
+
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                       {
+                          "array.0": true,
+                          "array.1.subarray.1" : -25,
+                          "subdoc.x" : false,
+                          "subdoc.y" : 1
+                        }
+                       """));
+      ObjectNode exp =
+          objectFromJson(
+              """
+                {
+                  "array": [
+                      true,
+                      { "y": 2, "subarray": [ null, -25 ] }
+                  ],
+                  "subdoc" : {
+                      "x": false,
+                      "y": 1
+                  }
+                }
+            """);
+
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(doc).isEqualTo(exp);
+    }
   }
 
   @Nested
