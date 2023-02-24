@@ -39,7 +39,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         command.options() != null && "after".equals(command.options().returnDocument());
     boolean upsert = command.options() != null && command.options().upsert();
     return new ReadAndUpdateOperation(
-        ctx, readOperation, documentUpdater, true, returnUpdatedDocument, upsert, shredder);
+        ctx, readOperation, documentUpdater, true, returnUpdatedDocument, upsert, shredder, 1);
   }
 
   @Override

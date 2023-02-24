@@ -48,11 +48,20 @@ public interface DocumentConfig {
   int maxLimit();
 
   /**
-   * @return Defines the maximum limit of document that can be returned for a request, defaults to
+   * @return Defines the maximum limit of document that can be deleted for a request, defaults to
    *     <code>20</code>.
    */
   @Max(100)
   @Positive
   @WithDefault("20")
   int maxDocumentDeleteCount();
+
+  /**
+   * @return Defines the maximum limit of document that can be updated for a request, defaults to
+   *     <code>20</code>.
+   */
+  @Max(100)
+  @Positive
+  @WithDefault("20")
+  int maxDocumentUpdateCount();
 }

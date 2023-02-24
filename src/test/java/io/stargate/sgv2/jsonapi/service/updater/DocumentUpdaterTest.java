@@ -25,11 +25,11 @@ public class DocumentUpdaterTest {
 
   private static String BASE_DOC_JSON =
       """
-                      {
-                          "_id": "1",
-                          "location": "London"
-                      }
-                    """;
+                          {
+                              "_id": "1",
+                              "location": "London"
+                          }
+                        """;
 
   @Nested
   class UpdateDocumentHappy {
@@ -38,11 +38,11 @@ public class DocumentUpdaterTest {
     public void setUpdateCondition() throws Exception {
       String expected =
           """
-                        {
-                            "_id": "1",
-                            "location": "New York"
-                        }
-                      """;
+                            {
+                                "_id": "1",
+                                "location": "New York"
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
       JsonNode expectedData = objectMapper.readTree(expected);
@@ -51,12 +51,14 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
-      JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
               node -> {
-                assertThat(node).isEqualTo(expectedData);
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
               });
     }
 
@@ -64,12 +66,12 @@ public class DocumentUpdaterTest {
     public void setUpdateNewData() throws Exception {
       String expected =
           """
-                        {
-                            "_id": "1",
-                            "location": "London",
-                            "new_data" : "data"
-                        }
-                      """;
+                            {
+                                "_id": "1",
+                                "location": "London",
+                                "new_data" : "data"
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
       JsonNode expectedData = objectMapper.readTree(expected);
@@ -78,12 +80,14 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
-      JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
               node -> {
-                assertThat(node).isEqualTo(expectedData);
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
               });
     }
 
@@ -91,12 +95,12 @@ public class DocumentUpdaterTest {
     public void setUpdateNumberData() throws Exception {
       String expected =
           """
-                        {
-                            "_id": "1",
-                            "location": "London",
-                            "new_data" : 40
-                        }
-                      """;
+                            {
+                                "_id": "1",
+                                "location": "London",
+                                "new_data" : 40
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
       JsonNode expectedData = objectMapper.readTree(expected);
@@ -105,12 +109,14 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", 40)));
-      JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
               node -> {
-                assertThat(node).isEqualTo(expectedData);
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
               });
     }
 
@@ -118,11 +124,11 @@ public class DocumentUpdaterTest {
     public void unsetUpdateData() throws Exception {
       String expected =
           """
-                        {
-                            "_id": "1",
-                            "location": "London"
-                        }
-                      """;
+                            {
+                                "_id": "1",
+                                "location": "London"
+                            }
+                          """;
 
       ObjectNode baseData = (ObjectNode) objectMapper.readTree(BASE_DOC_JSON);
       baseData.put("col", "data");
@@ -131,12 +137,14 @@ public class DocumentUpdaterTest {
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.UNSET, objectMapper.getNodeFactory().objectNode().put("col", 1)));
-      JsonNode updatedDocument = documentUpdater.applyUpdates(baseData);
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.applyUpdates(baseData);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
               node -> {
-                assertThat(node).isEqualTo(expectedData);
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
               });
     }
   }

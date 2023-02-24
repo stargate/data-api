@@ -13,10 +13,14 @@ public record DocumentUpdater(List<UpdateOperation> updateOperations) {
     return new DocumentUpdater(updateDef.buildOperations());
   }
 
-  public JsonNode applyUpdates(JsonNode readDocument) {
+  public DocumentUpdaterResponse applyUpdates(JsonNode readDocument) {
     UpdateTargetLocator targetLocator = new UpdateTargetLocator();
     ObjectNode docToUpdate = (ObjectNode) readDocument;
-    updateOperations.forEach(u -> u.updateDocument(docToUpdate, targetLocator));
-    return readDocument;
+    boolean modified = false;
+    for (UpdateOperation updateOperation : updateOperations)
+      modified |= updateOperation.updateDocument(docToUpdate, targetLocator);
+    return new DocumentUpdaterResponse(readDocument, modified);
   }
+
+  public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}
 }
