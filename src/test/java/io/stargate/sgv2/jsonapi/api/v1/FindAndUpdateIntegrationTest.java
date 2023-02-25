@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -1025,6 +1027,62 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
     }
+
+    @Test
+    @Order(2)
+    public void findByIdTryPopNonArray() {
+      final String inputDoc =
+          """
+                    {
+                      "_id": "update_doc_pop_non_array",
+                      "subdoc": {
+                         "value": 15
+                      }
+                    }
+                """;
+      insertDoc(inputDoc);
+      String json =
+          """
+                     {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id" : "update_doc_pop_non_array"},
+                          "update" : {"$pop" : {"subdoc.value": 1 }}
+                        }
+                      }
+                     """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_TARGET"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Unsupported target JSON value for update operation: $pop requires target to be ARRAY; value at 'subdoc.value' of type NUMBER"));
+
+      // And finally verify also that nothing was changed:
+      json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_pop_non_array"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(inputDoc));
+    }
   }
 
   @Nested
@@ -1032,16 +1090,19 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     @Test
     @Order(2)
     public void findByColumnAndPop() {
-      // Let's test 4 valid pop operations:
       insertDoc(
           """
                       {
                         "_id": "update_doc_pop",
                         "array1": [ 1, 2, 3 ],
                         "array2": [ 4, 5, 6 ],
+                        "subdoc" : {
+                          "array" : [ 0, 1 ]
+                        },
                         "array3": [ ]
                       }
                       """);
+      // Let's test 6 pop operations, resulting in 3 changes
       String updateBody =
           """
                       {
@@ -1052,7 +1113,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                               "array1": 1,
                               "array2": -1,
                               "array3": 1,
-                              "array4": -1
+                              "array4": -1,
+                              "subdoc.array" : 1,
+                              "subdoc.x.y" : 1
                               }
                           }
                         }
@@ -1093,6 +1156,9 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                         "_id": "update_doc_pop",
                         "array1": [ 1, 2 ],
                         "array2": [ 5, 6 ],
+                        "subdoc" : {
+                          "array" : [ 0 ]
+                        },
                         "array3": [ ]
                       }
                       """));
@@ -1347,6 +1413,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
         .then()
+        // Sanity check: let's look for non-empty inserted id
+        .body("status.insertedIds[0]", not(emptyString()))
         .statusCode(200);
   }
 }

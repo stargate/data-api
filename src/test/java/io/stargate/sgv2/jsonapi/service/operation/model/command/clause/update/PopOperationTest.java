@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class PopOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class HappyPath {
+  class HappyPathRoot {
     @Test
     public void testSimplePopFirstFromExisting() {
       UpdateOperation oper =
@@ -102,6 +102,55 @@ public class PopOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class HappyPathNested {
+    @Test
+    public void testNestedPopFromExisting() {
+      UpdateOperation oper =
+          UpdateOperator.POP.resolveOperation(objectFromJson("{ \"subdoc.array\" : -1 }"));
+      assertThat(oper).isInstanceOf(PopOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"subdoc\" : { \"array\" : [ 1, 2, 3 ] } }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+              { "a" : 1, "subdoc": { "array" : [ 2, 3 ] } }
+              """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void testNestedPopFromEmpty() {
+      UpdateOperation oper =
+          UpdateOperator.POP.resolveOperation(objectFromJson("{ \"subdoc.array\" : 1 }"));
+      assertThat(oper).isInstanceOf(PopOperation.class);
+      ObjectNode doc = objectFromJson("{ \"subdoc\" : { \"array\" : [ ] } }");
+      ObjectNode expected = doc.deepCopy();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void testNestedPopFromNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.POP.resolveOperation(objectFromJson("{ \"subdoc.array\" : -1 }"));
+      assertThat(oper).isInstanceOf(PopOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"doc\" : { } }");
+      ObjectNode expected = doc.deepCopy();
+      // No changes
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(expected);
+
+      // But let's verify longer nesting too
+      oper = UpdateOperator.POP.resolveOperation(objectFromJson("{ \"a.b.c.d\" : -1 }"));
+      doc = objectFromJson("{ }");
+      // No changes here either
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(objectFromJson("{ }"));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FailingCases {
     @Test
     public void nonNumberParamForPop() {
@@ -134,7 +183,7 @@ public class PopOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void testPopFromNonArrayProperty() {
+    public void testPopFromNonArrayRootProperty() {
       ObjectNode doc = objectFromJson("{ \"a\": 175 }");
       UpdateOperation oper = UpdateOperator.POP.resolveOperation(objectFromJson("{ \"a\": 1 }"));
       Exception e =
@@ -147,7 +196,25 @@ public class PopOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $pop requires target to be Array; value at 'a' of type NUMBER");
+                  + ": $pop requires target to be ARRAY; value at 'a' of type NUMBER");
+    }
+
+    @Test
+    public void testPopFromNonArrayNestedProperty() {
+      ObjectNode doc = objectFromJson("{ \"subdoc\" : [ true, false ] }");
+      UpdateOperation oper =
+          UpdateOperator.POP.resolveOperation(objectFromJson("{ \"subdoc.1\": 1 }"));
+      Exception e =
+          catchException(
+              () -> {
+                oper.updateDocument(doc, targetLocator);
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+                  + ": $pop requires target to be ARRAY; value at 'subdoc.1' of type BOOLEAN");
     }
   }
 }
