@@ -2,13 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -62,8 +60,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
-          .body("status.deletedIds", contains("doc3"));
+          .body("status.deletedCount", is(1));
     }
 
     @Test
@@ -106,8 +103,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
-          .body("status.deletedIds", contains("doc4"));
+          .body("status.deletedCount", is(1));
     }
 
     @Test
@@ -150,7 +146,49 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)));
+          .body("status.deletedCount", is(1));
+    }
+
+    @Test
+    @Order(5)
+    public void deleteOneNoMatch() {
+      String json =
+          """
+                                  {
+                                    "insertOne": {
+                                      "document": {
+                                        "_id": "doc5",
+                                        "username": "user5"
+                                      }
+                                    }
+                                  }
+                                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200);
+      json =
+          """
+                          {
+                            "deleteOne": {
+                               "filter" : {"username" : "user12345"}
+                            }
+                          }
+                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(0));
     }
   }
 }

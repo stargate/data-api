@@ -7,9 +7,9 @@ public enum CommandStatus {
   /** The element has the count of document */
   @JsonProperty("counted_documents")
   COUNTED_DOCUMENT,
-  /** The element has the list of deleted ids */
-  @JsonProperty("deletedIds")
-  DELETED_IDS,
+  /** The element has the count of deleted documents */
+  @JsonProperty("deletedCount")
+  DELETED_COUNT,
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")
   INSERTED_IDS,
