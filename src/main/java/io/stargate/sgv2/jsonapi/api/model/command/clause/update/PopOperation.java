@@ -23,7 +23,8 @@ public class PopOperation extends UpdateOperation {
     List<PopAction> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
-      final String name = entry.getKey();
+      final String path = validateUpdatePath(UpdateOperator.POP, entry.getKey());
+
       final JsonNode arg = entry.getValue();
 
       // Argument must be -1 (remove first) or 1 (remove last)
@@ -50,7 +51,7 @@ public class PopOperation extends UpdateOperation {
                   + ": $pop requires argument of -1 or 1, instead got: "
                   + arg.intValue());
       }
-      actions.add(new PopAction(name, first));
+      actions.add(new PopAction(path, first));
     }
     return new PopOperation(actions);
   }

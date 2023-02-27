@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class IncOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class HappyPath {
+  class HappyPathRoot {
     @Test
     public void testSimpleIncOfExisting() {
       UpdateOperation oper =
@@ -101,6 +101,100 @@ public class IncOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class HappyPathNested {
+    @Test
+    public void testIncOfExisting() {
+      UpdateOperation oper =
+          UpdateOperator.INC.resolveOperation(
+              objectFromJson(
+                  """
+                                {
+                                  "fpArray.1" : -0.5,
+                                  "ints.count" : 1
+                                }
+                                """));
+      assertThat(oper).isInstanceOf(IncOperation.class);
+      ObjectNode doc =
+          objectFromJson(
+              """
+                            { "ints" : { "count" : 37 },
+                              "fpArray" : [ 0, 0.25 ]
+                            }
+                            """);
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                            { "ints" : { "count" : 38 },
+                              "fpArray" : [ 0, -0.25 ]
+                            }
+                            """);
+      // NOTE: need to use "toPrettyString()" since NumberNode types may differ
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
+    }
+
+    @Test
+    public void testIncOfNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.INC.resolveOperation(
+              objectFromJson(
+                  """
+                                { "ints.value" : -123456 }
+                                """));
+      assertThat(oper).isInstanceOf(IncOperation.class);
+      ObjectNode doc =
+          objectFromJson(
+              """
+                            {
+                              "numbers" : { },
+                              "text" : "value"
+                            }"
+                            """);
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                            {
+                              "numbers" : { },
+                              "text" : "value",
+                              "ints" : {
+                                 "value" : -123456
+                              }
+                            }"
+                      """);
+      // NOTE: need to use "toPrettyString()" since NumberNode types may differ
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
+    }
+
+    @Test
+    public void testIncWithNoChange() {
+      UpdateOperation oper =
+          UpdateOperator.INC.resolveOperation(
+              objectFromJson(
+                  """
+                              { "numbers.integer" : 0, "numbers.fp" : 0 }
+                              """));
+      assertThat(oper).isInstanceOf(IncOperation.class);
+      ObjectNode doc =
+          objectFromJson(
+              """
+                            {
+                              "numbers" : {
+                                "integer": 15,
+                                "fp" : 2.5
+                              },
+                              "text" : "value"
+                            }"
+                            """);
+      ObjectNode expected = doc.deepCopy();
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      // NOTE: need to use "toPrettyString()" since NumberNode types may differ
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class InvalidCases {
     @Test
     public void testIncWithNonNumberParam() {
@@ -120,9 +214,22 @@ public class IncOperationTest extends UpdateOperationTestBase {
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $inc requires numeric parameter, got: STRING");
     }
+    // Not legal to try to modify doc id (immutable):
+    @Test
+    public void testIncOnDocumentId() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.INC.resolveOperation(objectFromJson("{\"_id\": 1}"));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessageStartingWith(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $inc");
+    }
 
     @Test
-    public void testIncOnStringProperty() {
+    public void testIncOnRootStringProperty() {
       ObjectNode doc =
           objectFromJson(
               """
@@ -146,17 +253,18 @@ public class IncOperationTest extends UpdateOperationTestBase {
                   + ": $inc requires target to be Number; value at 'prop' of type STRING");
     }
 
-    // One odd case: explicit "null" is invalid target
     @Test
-    public void testIncOnExplicitNullProperty() {
+    public void testIncOnNestedStringProperty() {
       ObjectNode doc =
-          objectFromJson("""
-                    { "prop" : null  }
-                    """);
+          objectFromJson(
+              """
+                            { "subdoc" : { "array" : [ 1, "some text"] } }
+                            """);
       UpdateOperation oper =
           UpdateOperator.INC.resolveOperation(
-              objectFromJson("""
-                    { "prop" : 3 }
+              objectFromJson(
+                  """
+                    { "subdoc.array.1" : -1 }
                     """));
       Exception e =
           catchException(
@@ -168,7 +276,37 @@ public class IncOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $inc requires target to be Number; value at 'prop' of type NULL");
+                  + ": $inc requires target to be Number; value at 'subdoc.array.1' of type STRING");
+    }
+
+    // One odd case: explicit "null" is invalid target
+    @Test
+    public void testIncOnExplicitNullProperty() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                    { "subdoc" : {
+                       "prop" : null
+                       }
+                    }
+                    """);
+      UpdateOperation oper =
+          UpdateOperator.INC.resolveOperation(
+              objectFromJson(
+                  """
+                    { "subdoc.prop" : 3 }
+                    """));
+      Exception e =
+          catchException(
+              () -> {
+                oper.updateDocument(doc, targetLocator);
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasMessageStartingWith(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+                  + ": $inc requires target to be Number; value at 'subdoc.prop' of type NULL");
     }
 
     // Test to make sure we know to look for "$"-modifier to help with user errors

@@ -19,11 +19,11 @@ public abstract class UpdateOperation {
   public abstract boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator);
 
   /**
-   * Shared validation method used by {@code $set} and {@code $unset} operations to ensure they are
-   * not used to modify paths that are not allowed (specifically Document's primary id, {@code
-   * _id}).
+   * Shared validation method used by mutating operations (like {@code $set}, {@code $unset}, {@code
+   * inc}, {@code pop}) to ensure they are not used to modify paths that are not allowed:
+   * specifically Document's primary id, {@code _id}.
    */
-  protected static String validateSetPath(UpdateOperator oper, String path) {
+  protected static String validateUpdatePath(UpdateOperator oper, String path) {
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
       throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID,

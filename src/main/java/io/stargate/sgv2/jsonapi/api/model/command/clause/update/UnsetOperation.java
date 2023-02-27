@@ -20,7 +20,7 @@ public class UnsetOperation extends UpdateOperation {
     Iterator<String> it = args.fieldNames();
     List<String> fieldNames = new ArrayList<>();
     while (it.hasNext()) {
-      fieldNames.add(validateSetPath(UpdateOperator.UNSET, it.next()));
+      fieldNames.add(validateUpdatePath(UpdateOperator.UNSET, it.next()));
     }
     return new UnsetOperation(fieldNames);
   }

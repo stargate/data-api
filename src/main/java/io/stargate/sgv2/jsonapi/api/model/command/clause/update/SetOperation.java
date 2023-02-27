@@ -21,7 +21,7 @@ public class SetOperation extends UpdateOperation {
     var it = args.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      String path = validateSetPath(UpdateOperator.SET, entry.getKey());
+      String path = validateUpdatePath(UpdateOperator.SET, entry.getKey());
       additions.add(new SetAction(path, entry.getValue()));
     }
     return new SetOperation(additions);
