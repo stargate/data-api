@@ -183,6 +183,19 @@ public class PopOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
+    public void testPopOfDocId() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.POP.resolveOperation(objectFromJson("{ \"_id\" : 1 }"));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessageStartingWith(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $pop");
+    }
+
+    @Test
     public void testPopFromNonArrayRootProperty() {
       ObjectNode doc = objectFromJson("{ \"a\": 175 }");
       UpdateOperation oper = UpdateOperator.POP.resolveOperation(objectFromJson("{ \"a\": 1 }"));

@@ -28,7 +28,10 @@ public class IncOperation extends UpdateOperation {
     List<IncAction> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
+      // Verify we have neither operators...
       String name = validateNonModifierPath(UpdateOperator.INC, entry.getKey());
+      // nor try to change doc id
+      name = validateUpdatePath(UpdateOperator.INC, name);
       JsonNode value = entry.getValue();
       if (!value.isNumber()) {
         throw new JsonApiException(
@@ -46,19 +49,22 @@ public class IncOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (IncAction update : updates) {
-      final String path = update.path;
-      final NumericNode toAdd = update.value;
-      JsonNode oldValue = doc.get(path);
+    for (IncAction action : updates) {
+      final String path = action.path;
+      final NumericNode toAdd = action.value;
+
+      UpdateTarget target = targetLocator.findOrCreate(doc, path);
+      JsonNode oldValue = target.valueNode();
+
       if (oldValue == null) { // No such property? Add number
-        doc.set(path, toAdd);
+        target.replaceValue(toAdd);
         modified = true;
       } else if (oldValue.isNumber()) { // Otherwise, if existing number, can modify
         // One minor optimization: plain old zero won't change value so can avoid
         // unnecessary mutation.
         if (toAdd.isFloatingPointNumber() || !toAdd.canConvertToInt() || toAdd.intValue() != 0) {
           JsonNode newValue = addNumbers(doc, (NumericNode) oldValue, toAdd);
-          doc.set(path, newValue);
+          target.replaceValue(newValue);
           modified |= !newValue.equals(oldValue);
         }
       } else { // Non-number existing value? Fail
