@@ -6,9 +6,10 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * This represents the response for a delete operation. .
+ * This represents the response for a delete operation.
  *
- * @param deletedCount - Count of document deleted
+ * @param deletedCount - Count of documents deleted
+ * @param moreData - if `true` means more documents available in DB for the provided condition
  */
 public record DeleteOperationPage(Integer deletedCount, boolean moreData)
     implements Supplier<CommandResult> {

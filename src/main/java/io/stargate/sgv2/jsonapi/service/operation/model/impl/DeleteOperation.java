@@ -31,7 +31,7 @@ public record DeleteOperation(
     implements ModifyOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    final AtomicBoolean boolenFlag = new AtomicBoolean(false);
+    final AtomicBoolean moreData = new AtomicBoolean(false);
     final QueryOuterClass.Query delete = buildDeleteQuery();
     final Multi<ReadOperation.FindResponse> findResponses =
         Multi.createBy()
@@ -60,7 +60,7 @@ public record DeleteOperation(
                   } else {
                     int needed = deleteLimit - totalCount.get();
                     totalCount.addAndGet(needed);
-                    boolenFlag.set(true);
+                    moreData.set(true);
                     return Multi.createFrom()
                         .items(findResponse.docs().subList(0, needed).stream());
                   }
@@ -80,8 +80,7 @@ public record DeleteOperation(
 
     return counter
         .onItem()
-        .transform(
-            deletedCounter -> new DeleteOperationPage(deletedCounter.get(), boolenFlag.get()));
+        .transform(deletedCounter -> new DeleteOperationPage(deletedCounter.get(), moreData.get()));
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {
@@ -108,7 +107,7 @@ public record DeleteOperation(
    * @param queryExecutor
    * @param query
    * @param doc
-   * @return
+   * @return Uni<Boolean> `true` if deleted successfully, else `false`
    */
   private static Uni<Boolean> deleteDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
