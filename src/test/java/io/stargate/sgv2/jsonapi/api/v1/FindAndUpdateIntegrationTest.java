@@ -1083,6 +1083,62 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
     }
+
+    @Test
+    @Order(2)
+    public void findByIdTryIncNonNumber() {
+      final String inputDoc =
+          """
+                        {
+                          "_id": "update_doc_inc_non_number",
+                          "subdoc": {
+                             "value": "text"
+                          }
+                        }
+                    """;
+      insertDoc(inputDoc);
+      String json =
+          """
+                         {
+                            "findOneAndUpdate": {
+                              "filter" : {"_id" : "update_doc_inc_non_number"},
+                              "update" : {"$inc" : {"subdoc.value": -99 }}
+                            }
+                          }
+                         """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_TARGET"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Unsupported target JSON value for update operation: $inc requires target to be Number; value at 'subdoc.value' of type STRING"));
+
+      // And finally verify also that nothing was changed:
+      json =
+          """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "update_doc_inc_non_number"}
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(inputDoc));
+    }
   }
 
   @Nested
@@ -1351,7 +1407,10 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                      {
                         "_id": "update_doc_inc",
-                        "number": 123
+                        "number": 123,
+                        "numbers": {
+                           "values": [ 1 ]
+                         }
                       }
                       """);
       String updateJson =
@@ -1359,7 +1418,13 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                       {
                         "updateOne": {
                           "filter" : {"_id" : "update_doc_inc"},
-                          "update" : {"$inc" : {"number": -4, "newProp" : 0.25 }}
+                          "update" : {"$inc" : {
+                                          "number": -4,
+                                          "newProp" : 0.25,
+                                          "numbers.values.0" : 9,
+                                          "numbers.values.1" : 0.5
+                                      }
+                           }
                         }
                       }
                       """;
@@ -1374,7 +1439,16 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
-      String expectedDoc = "{\"_id\":\"update_doc_inc\", \"number\": 119, \"newProp\": 0.25 }";
+      String expectedDoc =
+          """
+            { "_id":"update_doc_inc",
+              "number": 119,
+              "newProp": 0.25,
+              "numbers": {
+                "values" : [ 10, 0.5 ]
+              }
+            }
+            """;
       String findJson =
           """
                         {
