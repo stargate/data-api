@@ -2,14 +2,13 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import org.hamcrest.collection.IsCollectionWithSize;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -70,8 +69,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(1)))
-          .body("status.deletedIds", contains("doc1"));
+          .body("status.deletedCount", is(1));
     }
 
     @Test
@@ -94,9 +92,8 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(5)))
+          .body("status.deletedCount", is(5))
           .body("status.moreData", nullValue());
-      cleanUpData();
     }
 
     @Test
@@ -120,10 +117,8 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(20)))
+          .body("status.deletedCount", is(20))
           .body("status.moreData", nullValue());
-      ;
-      cleanUpData();
     }
 
     @Test
@@ -147,12 +142,12 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedIds", is(IsCollectionWithSize.hasSize(20)))
+          .body("status.deletedCount", is(20))
           .body("status.moreData", is(true));
-      cleanUpData();
     }
 
-    private void cleanUpData() {
+    @AfterEach
+    public void cleanUpData() {
       String json =
           """
                       {
