@@ -142,7 +142,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     boolean canAddField() {
-      return Operator.MAP_EQUALS.equals(operator);
+      return Operator.EQ.equals(operator);
     }
   }
 
@@ -162,7 +162,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     boolean canAddField() {
-      return Operator.MAP_EQUALS.equals(operator);
+      return Operator.EQ.equals(operator);
     }
   }
 
@@ -182,7 +182,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     boolean canAddField() {
-      return Operator.MAP_EQUALS.equals(operator);
+      return Operator.EQ.equals(operator);
     }
   }
 
