@@ -152,7 +152,6 @@ public record ReadAndUpdateOperation(
         "UPDATE %s.%s "
             + "        SET"
             + "            tx_id = now(),"
-            + "            doc_properties = ?,"
             + "            exist_keys = ?,"
             + "            sub_doc_equals = ?,"
             + "            array_size = ?,"
@@ -177,7 +176,6 @@ public record ReadAndUpdateOperation(
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))

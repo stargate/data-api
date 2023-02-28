@@ -60,9 +60,9 @@ public record InsertOperation(
   private QueryOuterClass.Query buildInsertQuery() {
     String insert =
         "INSERT INTO %s.%s"
-            + "            (key, tx_id, doc_json, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + "            (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
             + "        VALUES"
-            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
     return QueryOuterClass.Query.newBuilder()
         .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
         .build();
@@ -75,7 +75,6 @@ public record InsertOperation(
         QueryOuterClass.Values.newBuilder()
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.docJson()))
-            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.docProperties())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
