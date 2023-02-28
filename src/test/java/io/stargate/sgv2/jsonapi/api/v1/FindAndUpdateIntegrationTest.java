@@ -462,7 +462,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                           {
                             "updateOne": {
-                              "filter" : {"_id" : "afterDoc7", "username" : "afterName7"},
+                              "filter" : {"_id" : "afterDoc7", "username" : "afterName7", "phone" : null},
                               "update" : {"$set" : {"active_user": false}},
                               "options" : {"upsert" : true}
                             }
@@ -490,7 +490,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                           }
                           """;
       String expected =
-          "{\"_id\":\"afterDoc7\", \"username\" : \"afterName7\", \"active_user\":false}";
+          "{\"_id\":\"afterDoc7\", \"username\" : \"afterName7\", \"phone\" : null, \"active_user\":false}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

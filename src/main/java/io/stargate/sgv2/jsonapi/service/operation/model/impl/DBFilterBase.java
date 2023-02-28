@@ -8,6 +8,7 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.Predicate;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
@@ -46,7 +47,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /**
-   * Returns `true` if the filter condition can be added to upsert row
+   * Returns `true` if the filter condition should be added to upsert row
    *
    * @return
    */
@@ -196,7 +197,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     protected final DocumentId value;
 
     public IDFilter(IDFilter.Operator operator, DocumentId value) {
-      super("_id");
+      super(DocumentConstants.Fields.DOC_ID);
       this.operator = operator;
       this.value = value;
     }
