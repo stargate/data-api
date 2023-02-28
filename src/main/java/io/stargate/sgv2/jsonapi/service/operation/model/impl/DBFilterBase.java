@@ -21,17 +21,36 @@ import java.util.function.Supplier;
 
 /** Base for the DB filters / conditions that we want to use with queries */
 public abstract class DBFilterBase implements Supplier<BuiltCondition> {
+  /** Filter condition element path. */
   private final String path;
 
   protected DBFilterBase(String path) {
     this.path = path;
   }
 
+  /**
+   * Get JsonNode for the representing filter condition value.
+   *
+   * @param nodeFactory
+   * @return
+   */
   abstract JsonNode asJson(JsonNodeFactory nodeFactory);
 
+  /**
+   * Returns filter condition element path.
+   *
+   * @return
+   */
   protected String getPath() {
     return path;
   }
+
+  /**
+   * Returns `true` if the filter condition can be added to upsert row
+   *
+   * @return
+   */
+  abstract boolean canAddField();
 
   /** Filter for the map columns we have in the super shredding table. */
   public abstract static class MapFilterBase<T> extends DBFilterBase {
@@ -52,7 +71,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     private final String columnName;
     private final String key;
-    private final DBFilterBase.MapFilterBase.Operator operator;
+    protected final DBFilterBase.MapFilterBase.Operator operator;
     private final T value;
 
     /**
@@ -120,6 +139,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.textNode(strValue);
     }
+
+    @Override
+    boolean canAddField() {
+      return Operator.MAP_EQUALS.equals(operator);
+    }
   }
 
   /** Filters db documents based on a boolean field value */
@@ -135,6 +159,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.booleanNode(boolValue);
     }
+
+    @Override
+    boolean canAddField() {
+      return Operator.MAP_EQUALS.equals(operator);
+    }
   }
 
   /** Filters db documents based on a numeric field value */
@@ -149,6 +178,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.numberNode(numberValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return Operator.MAP_EQUALS.equals(operator);
     }
   }
 
@@ -196,6 +230,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return DBFilterBase.getJsonNode(nodeFactory, value);
+    }
+
+    @Override
+    boolean canAddField() {
+      return true;
     }
   }
   /**
@@ -261,6 +300,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return DBFilterBase.getJsonNode(nodeFactory, null);
     }
+
+    @Override
+    boolean canAddField() {
+      return true;
+    }
   }
 
   /**
@@ -277,17 +321,30 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return null;
     }
+
+    @Override
+    boolean canAddField() {
+      return false;
+    }
   }
 
   /** Filter for document where all values exists for an array */
   public static class AllFilter extends SetFilterBase<String> {
+    private final Object arrayValue;
+
     public AllFilter(DocValueHasher hasher, String path, Object arrayValue) {
       super("array_contains", path, getHashValue(hasher, path, arrayValue), Operator.CONTAINS);
+      this.arrayValue = arrayValue;
     }
 
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
-      return null;
+      return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return false;
     }
   }
 
@@ -300,6 +357,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return null;
+    }
+
+    @Override
+    boolean canAddField() {
+      return false;
     }
   }
 
@@ -315,6 +377,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return true;
     }
   }
 
@@ -334,6 +401,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return DBFilterBase.getJsonNode(nodeFactory, subDocValue);
     }
+
+    @Override
+    boolean canAddField() {
+      return true;
+    }
   }
 
   private static QueryOuterClass.Value getGrpcValue(Object value) {
@@ -349,6 +421,13 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     return Values.of((String) null);
   }
 
+  /**
+   * Return JsonNode for a filter conditions value, used to set in new document created for upsert.
+   *
+   * @param nodeFactory
+   * @param value
+   * @return
+   */
   private static JsonNode getJsonNode(JsonNodeFactory nodeFactory, Object value) {
     if (value == null) return nodeFactory.nullNode();
     if (value instanceof DocumentId) {

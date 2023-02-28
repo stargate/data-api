@@ -70,10 +70,12 @@ public record FindOperation(
         documentId = ((DBFilterBase.IDFilter) filter).value;
         rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
       } else {
-        JsonNode value = filter.asJson(objectMapper().getNodeFactory());
-        if (value != null) {
-          String filterPath = filter.getPath();
-          SetOperation.construct(filterPath, value).updateDocument(rootNode, targetLocator);
+        if (filter.canAddField()) {
+          JsonNode value = filter.asJson(objectMapper().getNodeFactory());
+          if (value != null) {
+            String filterPath = filter.getPath();
+            SetOperation.construct(filterPath, value).updateDocument(rootNode, targetLocator);
+          }
         }
       }
     }
