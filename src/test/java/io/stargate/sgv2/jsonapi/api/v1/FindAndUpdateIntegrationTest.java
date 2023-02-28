@@ -1286,7 +1286,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                   {
                     "updateOne": {
                       "filter" : {"_id" : "update_doc_push"},
-                      "update" : {"$push" : {"array": 13 }}
+                      "update" : {"$push" : {"array": 13, "subdoc.array": true }}
                     }
                   }
                   """;
@@ -1302,7 +1302,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .body("status.modifiedCount", is(1));
       ;
 
-      String expected = "{\"_id\":\"update_doc_push\", \"array\": [2, 13]}";
+      String expected =
+          "{\"_id\":\"update_doc_push\", \"array\": [2, 13], \"subdoc\" : { \"array\" : [ true ] }}";
       json =
           """
                       {
@@ -1329,7 +1330,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                   {
                     "_id": "update_doc_push_each",
-                    "array": [ 1 ]
+                    "nested" : { "array": [ 1 ] }
                   }
                   """);
       String json =
@@ -1339,7 +1340,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                       "filter" : {"_id" : "update_doc_push_each"},
                       "update" : {
                           "$push" : {
-                             "array": { "$each" : [ 2, 3 ] },
+                             "nested.array": { "$each" : [ 2, 3 ] },
                              "newArray": { "$each" : [ true ] }
                           }
                        }
@@ -1361,7 +1362,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String expected =
           """
             { "_id":"update_doc_push_each",
-              "array": [1, 2, 3],
+              "nested" : { "array": [1, 2, 3] },
               "newArray": [true] }
             """;
       json =
@@ -1401,7 +1402,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                           "update" : {
                               "$push" : {
                                  "array": { "$each" : [ 4, 5 ], "$position" : 2 },
-                                 "newArray": { "$each" : [ 1, 2, 3 ], "$position" : -999 }
+                                 "nested.values": { "$each" : [ 1, 2, 3 ], "$position" : -999 }
                               }
                            }
                         }
@@ -1422,7 +1423,10 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                 { "_id":"update_doc_push_each_position",
                   "array": [1, 2, 4, 5, 3],
-                  "newArray": [1, 2, 3] }
+                  "nested": {
+                    "values" : [1, 2, 3]
+                  }
+                }
                 """;
       json =
           """
