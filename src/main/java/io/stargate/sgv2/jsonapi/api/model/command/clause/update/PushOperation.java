@@ -16,10 +16,10 @@ import java.util.Objects;
  * documents.
  */
 public class PushOperation extends UpdateOperation {
-  private List<PushAction> updates;
+  private List<PushAction> actions;
 
-  private PushOperation(List<PushAction> updates) {
-    this.updates = updates;
+  private PushOperation(List<PushAction> actions) {
+    this.actions = actions;
   }
 
   public static PushOperation construct(ObjectNode args) {
@@ -28,8 +28,8 @@ public class PushOperation extends UpdateOperation {
     List<PushAction> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
+      final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
       // At main level we must have field name (no modifiers)
-      final String name = entry.getKey();
       if (looksLikeModifier(name)) {
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
@@ -126,30 +126,34 @@ public class PushOperation extends UpdateOperation {
 
   @Override
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
-    for (PushAction update : updates) {
-      final String path = update.path;
-      final JsonNode toAdd = update.value;
-      JsonNode node = doc.get(path);
+    for (PushAction action : actions) {
+      final String path = action.path;
+      final JsonNode toAdd = action.value;
+
+      UpdateTarget target = targetLocator.findOrCreate(doc, path);
+      JsonNode node = target.valueNode();
+
       ArrayNode array;
 
-      if (node == null) { // No such property? Add new 1-element array
-        array = doc.putArray(path);
+      if (node == null) { // No such property? Add new array
+        array = doc.arrayNode();
+        target.replaceValue(array);
       } else if (node.isArray()) { // Already array? Append
         array = (ArrayNode) node;
       } else { // Something else? fail
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                + ": $push requires target to be Array; value at '"
+                + ": $push requires target to be ARRAY; value at '"
                 + path
                 + "' of type "
                 + node.getNodeType());
       }
       // Regular add or $each?
-      if (update.each) {
+      if (action.each) {
         // $position?
-        if (update.position != null) {
-          int ix = (int) update.position;
+        if (action.position() != null) {
+          int ix = (int) action.position();
           // Negative index is offset from the end, -1 being "before the last"
           if (ix < 0) {
             ix = Math.max(0, ix + array.size());
@@ -171,14 +175,14 @@ public class PushOperation extends UpdateOperation {
     }
 
     // Every valid update operation modifies document so need just one:
-    return !updates.isEmpty();
+    return !actions.isEmpty();
   }
 
   // Just needed for tests
   @Override
   public boolean equals(Object o) {
     return (o instanceof PushOperation)
-        && Objects.equals(this.updates, ((PushOperation) o).updates);
+        && Objects.equals(this.actions, ((PushOperation) o).actions);
   }
 
   /** Value class for per-field update operations. */

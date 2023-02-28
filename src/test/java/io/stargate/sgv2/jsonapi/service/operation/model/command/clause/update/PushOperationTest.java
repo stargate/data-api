@@ -24,13 +24,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class BasicPushHappyPath {
     @Test
-    public void testSimplePushToExisting() {
+    public void testPushToExistingRoot() {
       UpdateOperation oper =
-          UpdateOperator.PUSH.resolveOperation(
-              objectFromJson(
-                  """
-                                      { "array" : 32 }
-                                      """));
+          UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"array\" : 32 }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
@@ -43,21 +39,48 @@ public class PushOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void testSimplePushToNonExisting() {
+    public void testPushToExistingNested() {
       UpdateOperation oper =
-          UpdateOperator.PUSH.resolveOperation(
-              objectFromJson(
-                  """
-                                      { "newArray" : "value" }
-                                      """));
+          UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"subdoc.array\" : 32 }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
-      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
+      ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ true ] } }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a" : 1, "array" : [ true ], "newArray" : [ "value" ] }
+                                      { "subdoc" : { "array" : [ true, 32 ] } }
+                                      """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void testPushToNonExistingRoot() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"newArray\" : \"value\" }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"a\": 1, \"array\" : [ true ] }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                              { "a": 1, "array": [ true ], "newArray": [ "value" ] }
                               """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void testPushToNonExistingNested() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson("{ \"subdoc.newArray\" : \"value\" }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"array\" : [ true ] }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                                      { "array": [ true ], "subdoc" : { "newArray": [ "value" ] } }
+                                      """);
       assertThat(doc).isEqualTo(expected);
     }
   }
@@ -84,7 +107,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $push requires target to be Array");
+                  + ": $push requires target to be ARRAY");
     }
 
     // Test to make sure we know to look for "$"-qualifiers even if not yet supporting them?
@@ -127,13 +150,26 @@ public class PushOperationTest extends UpdateOperationTestBase {
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push requires field names at main level, found modifier: $each");
     }
+
+    @Test
+    public void tryPushWithDocId() {
+      Exception e =
+          catchException(
+              () -> {
+                UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"_id\" : 123 }"));
+              });
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
+    }
   }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class PushWithEachHappyCases {
     @Test
-    public void withEachToExisting() {
+    public void withEachToExistingRoot() {
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson(
@@ -152,7 +188,26 @@ public class PushOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void withEachToNonExisting() {
+    public void withEachToExistingNested() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                                                  { "nested.array" : { "$each" : [ 17, false ] } }
+                                                  """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                                      { "nested": { "array" : [ true, 17, false ] } }
+                                      """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachToNonExistingRoot() {
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson(
@@ -167,6 +222,25 @@ public class PushOperationTest extends UpdateOperationTestBase {
               """
                               { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
                               """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachToNonExistingNested() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  """
+                                                  { "nested.newArray" : { "$each" : [ -50, "abc" ] } }
+                                                    """));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                                      { "nested" : { "array" : [ true ], "newArray" : [ -50, "abc" ] } }
+                                      """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -258,7 +332,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class PushWithPositionHappyCases {
     @Test
-    public void withEachToExistingPositive() {
+    public void withEachToExistingPositiveRoot() {
       // First case: insert between 1st and 2nd elements
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
@@ -277,6 +351,20 @@ public class PushOperationTest extends UpdateOperationTestBase {
       doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       expected = objectFromJson("{ \"array\": [ 1, 2, 3, 4, true, false ] }");
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachToExistingPositiveNested() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  "{ \"nested.array\": { \"$each\" : [true, false], \"$position\" : 1 } }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ \"nested\": { \"array\": [ 1, 2, 3, 4 ] } }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson("{ \"nested\" : { \"array\": [ 1, true, false, 2, 3, 4 ] } }");
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -304,7 +392,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void withEachToNonExisting() {
+    public void withEachToNonExistingRoot() {
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson("{ \"newArray\": { \"$each\" : [true, false], \"$position\": 1 } }"));
@@ -313,6 +401,19 @@ public class PushOperationTest extends UpdateOperationTestBase {
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson("{ \"array\": [ 1, 2, 3 ], \"newArray\": [true, false] }");
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void withEachToNonExistingNested() {
+      UpdateOperation oper =
+          UpdateOperator.PUSH.resolveOperation(
+              objectFromJson(
+                  "{ \"nested.array\": { \"$each\" : [true, false], \"$position\": 1 } }"));
+      assertThat(oper).isInstanceOf(PushOperation.class);
+      ObjectNode doc = objectFromJson("{ }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected = objectFromJson("{ \"nested\": { \"array\": [true, false] } }");
       assertThat(doc).isEqualTo(expected);
     }
   }
