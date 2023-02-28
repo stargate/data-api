@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
@@ -29,15 +29,15 @@ import org.junit.jupiter.api.Test;
 public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private static final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
   @Inject QueryExecutor queryExecutor;
-  @Inject ObjectMapper objectMapper;
 
   @Nested
-  class CountOperationsTest {
+  class Execute {
+
     @Test
-    public void countWithNoFilter() throws Exception {
+    public void countWithNoFilter() {
       String collectionReadCql =
           "SELECT COUNT(key) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
@@ -51,9 +51,20 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setType(TypeSpecs.INT)
                           .build()))
               .returning(List.of(List.of(Values.of(5))));
-      CountOperation countOperation = new CountOperation(commandContext, List.of());
+
+      CountOperation countOperation = new CountOperation(CONTEXT, List.of());
       final Supplier<CommandResult> execute =
-          countOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          countOperation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+
+      // then result
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -64,10 +75,11 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     }
 
     @Test
-    public void countWithDynamic() throws Exception {
+    public void countWithDynamic() {
       String collectionReadCql =
           "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -80,14 +92,25 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setType(TypeSpecs.INT)
                           .build()))
               .returning(List.of(List.of(Values.of(2))));
+
       CountOperation countOperation =
           new CountOperation(
-              commandContext,
+              CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")));
       final Supplier<CommandResult> execute =
-          countOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          countOperation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+
+      // then result
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -98,10 +121,11 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     }
 
     @Test
-    public void countWithDynamicNoMatch() throws Exception {
+    public void countWithDynamicNoMatch() {
       String collectionReadCql =
           "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -114,14 +138,25 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setType(TypeSpecs.INT)
                           .build()))
               .returning(List.of(List.of(Values.of(0))));
+
       CountOperation countOperation =
           new CountOperation(
-              commandContext,
+              CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")));
       final Supplier<CommandResult> execute =
-          countOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+          countOperation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+
+      // then result
       CommandResult result = execute.get();
       assertThat(result)
           .satisfies(
@@ -129,6 +164,11 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                 assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
                 assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(0);
               });
+    }
+
+    @Test
+    public void error() {
+      // TODO with stargate v2.0.9
     }
   }
 }

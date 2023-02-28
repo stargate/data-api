@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Enum with it's json property name which is returned in api response inside status */
 public enum CommandStatus {
   /** The element has the count of document */
-  @JsonProperty("counted_documents")
+  @JsonProperty("count")
   COUNTED_DOCUMENT,
   /** The element has the count of deleted documents */
   @JsonProperty("deletedCount")
