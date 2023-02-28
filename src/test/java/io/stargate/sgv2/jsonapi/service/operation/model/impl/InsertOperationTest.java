@@ -60,9 +60,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                     """;
       String insert =
           "INSERT INTO %s.%s"
-              + "            (key, tx_id, doc_json, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+              + "            (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
               + "        VALUES"
-              + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       String collectionInsertCql = insert.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final JsonNode jsonNode = objectMapper.readTree(doc1);
       final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
@@ -72,8 +72,6 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                   collectionInsertCql,
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(shredDocument.docJson()),
-                  Values.of(
-                      CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
@@ -134,9 +132,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                       """;
     String insert =
         "INSERT INTO %s.%s"
-            + "            (key, tx_id, doc_json, doc_properties, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + "            (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
             + "        VALUES"
-            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
     String collectionInsertCql = insert.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     final JsonNode jsonNode = objectMapper.readTree(doc1);
     final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
@@ -146,8 +144,6 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                 collectionInsertCql,
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(shredDocument.docJson()),
-                Values.of(
-                    CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
                 Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                 Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),

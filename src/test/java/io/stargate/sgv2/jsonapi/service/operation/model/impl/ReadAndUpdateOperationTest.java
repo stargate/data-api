@@ -100,7 +100,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           "UPDATE %s.%s "
               + "        SET"
               + "            tx_id = now(),"
-              + "            doc_properties = ?,"
               + "            exist_keys = ?,"
               + "            sub_doc_equals = ?,"
               + "            array_size = ?,"
@@ -121,7 +120,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
       withQuery(
               collectionUpdateCql,
-              Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
               Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
               Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
               Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
@@ -233,7 +231,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
         "UPDATE %s.%s "
             + "        SET"
             + "            tx_id = now(),"
-            + "            doc_properties = ?,"
             + "            exist_keys = ?,"
             + "            sub_doc_equals = ?,"
             + "            array_size = ?,"
@@ -254,7 +251,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
     withQuery(
             collectionUpdateCql,
-            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
             Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
             Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
             Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
@@ -480,7 +476,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
         "UPDATE %s.%s "
             + "        SET"
             + "            tx_id = now(),"
-            + "            doc_properties = ?,"
             + "            exist_keys = ?,"
             + "            sub_doc_equals = ?,"
             + "            array_size = ?,"
@@ -501,7 +496,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
     withQuery(
             collectionUpdateCql,
-            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
             Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
             Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
             Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
@@ -527,7 +521,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
     withQuery(
             collectionUpdateCql,
-            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
             Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
             Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
             Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
@@ -635,7 +628,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
         "UPDATE %s.%s "
             + "        SET"
             + "            tx_id = now(),"
-            + "            doc_properties = ?,"
             + "            exist_keys = ?,"
             + "            sub_doc_equals = ?,"
             + "            array_size = ?,"
@@ -656,7 +648,6 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
     withQuery(
             collectionUpdateCql,
-            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.docProperties())),
             Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
             Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
             Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
