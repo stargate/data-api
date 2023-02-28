@@ -358,6 +358,12 @@ h4(#commandCountDocumentsOptions). countDocuments Command Options
 
 The @countDocuments@ command does not support any options.
 
+h4(#commandCountDocumentsFailure). countDocuments Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
 h4(#commandCountDocumentsResponse). countDocuments Command Response
 
 |_. Response Element |_. Description |
@@ -373,6 +379,12 @@ h4(#commandDeleteManyOptions). deleteMany Command Options
 
 The @deleteMany@ command does not support any options.
 
+h4(#commandDeleteManyFailure). deleteMany Multi Document Failure Modes
+
+Fail Silently, a storage failure does not stop the command from processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
 h4(#commandDeleteManyResponse). deleteMany Command Response
 
 |_. Response Element |_. Description |
@@ -384,9 +396,15 @@ If an error occurs the command will still return @status@ as some documents may 
 
 h3(#commandDeleteOne). deleteOne Command
 
-h4(#commandCountDocumentsOptions). deleteOne Command Options
+h4(#commandDeleteOneOptions). deleteOne Command Options
 
 The @deleteOne@ command does not support any options.
+
+h4(#commandDeleteOneFailure). deleteOne Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
 
 h4(#commandDeleteOneResponse). deleteOne Command Response
 
@@ -448,6 +466,12 @@ h4(#commandFindOptions). find Command Options
 | @pageState@ | ASCII String | The page state of the previous page, when supplied the @find@ command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.|
 | @skip@ | Positive Integer | Skips the specified number of documents, in sort order, before returning any documents.|
 
+h4(#commandFindOptionsFailure). find Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
 h4(#commandFindResponse). find Command Response
 
 |_. Response Element |_. Description |
@@ -502,6 +526,13 @@ h4(#commandFindOneAndUpdateOptions). findOneAndUpdate Command Options
 | @returnDocument@ | String Enum | Specifies which document to perform the projection on. If @"before"@ the projection is performed on the document before the update is applied, if @"after"@ the document projection is from the document after the update. Defaults to @"before"@.|
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
+h4(#commandFindOneAndUpdateFailure). findOneAndUpdate Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
+
 h4(#commandFindOneAndUpdateResponse). findOneAndUpdate Command Response
 
 |_. Response Element |_. Description |
@@ -519,13 +550,18 @@ h4(#commandFindOneOptions). findOne Command Options
 
 The @findOne@ command does not support any options.
 
+h4(#commandFindOneFailure). findOne Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
 h4(#commandFindOneResponse). findOne Command Response
 
 |_. Response Element |_. Description |
 | @data@ | Present with fields : @docs@ only |
 | @status@ |Not present. |
 | @errors@ |Present if errors occur. |
-
 
 If an error occurs the command will not return @data@. 
 
@@ -537,6 +573,14 @@ h4(#commandInsertManyOptions). insertMany Command Options
 
 |_. Option |_. Type |_. Description |
 | @ordered@ | Boolean | When @true@ the server will insert the documents in sequential order, ensuring each doucument is succesfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When @false@ the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure for details. Defaults to @true@.|
+
+h4(#commandInsertManyFailure). insertMany Multi Document Failure Modes
+
+Depends on the @ordered@ option. When @true@ the command uses Fail Fast to stop processing at the first fault, when @false@ the command uses Fail Silently and attempts to insert all documents.
+
+See "insertMany Command Options":#commandInsertManyOptions for @ordered@.
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
 
 h4(#commandInsertManyResponse). insertMany Command Response
 
@@ -552,6 +596,12 @@ h3(#commandInsertOne). insertOne Command
 h4(#commandInsertOneOptions). insertOne Command Options
 
 The @insertOne@ command does not support any options.
+
+h4(#commandInsertOneFailure). insertOne Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
 
 h4(#commandInsertOneResponse). insertOne Command Response
 
@@ -571,6 +621,12 @@ h4(#commandUpdateManyOptions). updateMany Command Options
 |_. Option |_. Type |_. Description |
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
 
+h4(#commandUpdateManyFailure). updateMany Multi Document Failure Modes
+
+Fail Silently, a storage failure does not stop the command from processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
+
 h4(#commandUpdateManyResponse). updateMany Command Response
 
 |_. Response Element |_. Description |
@@ -588,6 +644,12 @@ h4(#commandUpdateOneOptions). updateOne Command Options
 
 |_. Option |_. Type |_. Description |
 | @upsert@ | Boolean | When @true@ if no documents match the @filter@ clause the command will create a new _empty_ document and apply the @update@ clause to the empty document. If the @_id@ field is included in the @filter@ the new document will use this @_id@, otherwise a random value will be used see "Upsert Considerations":#considerationsUpsert for details. When false the command will only update a document if one matches the filter. Defaults to @false@.|
+
+h4(#commandUpdateOneFailure). updateOne Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing. 
+
+See "Multi Document Failure Considerations":#considerationsMultiDocumentFailure.
 
 h4(#commandUpdateOneResponse). updateOne Command Response
 
@@ -612,7 +674,36 @@ Fields included in the filter clause in addition to the @_id@ are ignored.
 
 h3(#considerationsMultiDocumentFailure). Multi Document Failure Considerations
 
-*TODO* multi document failure considerations 
+Commands that modify multiple documents in a single operation, such as @updateMany@ or @insertMany@, do not perform all of the modification in a single transaction. Instead each document is updated individually and concurrently with other modifications and reads. As a consequence there are two failure modes for multi document updates, and each command specifies if it supports one, or both. 
+
+The two failure modes are "Fail Fast" and "Fail Silently". Where the main different is Fail Fast commands normally return results about individual documents, and Fail Silent commands normally return a summary or count of affected document.
+
+There are two category of storage failures under consideration: 
+
+# *Availability Faults*: These occur when the underlying storage platform is unable to successfully complete an operation due node failures. These errors may be transient and the JSON API may retry operations, if operations still fail after retrying the operation will be considered to have failed. 
+# *Concurrency Faults*: These occur when the a document is under very high concurrenct modification which make it impossible for the JSON API to complete an optimistic "compare-and-set" update. Modification operations read documents from the storage platform and update or delete it only if it has not changed since being read. If the document has changed, the filter that seleted the document is tested again on that document, and the modification is re-tried. Under high contention it is possible for one request to "starve" and be unable to complete.     
+
+In the context of Multi Document Failures we consider a failure (after a configured number of retries) from either of these categories as a failure to complete a command.  
+
+*Note* Neither of these faults will leave a document in an inconsistent state, that would cause "eventually consistent" reads. Document retain internal consistency as they are stored on a single row which is always atomically updated. And they maintain cluster wide consistency through the user of cluster wide "compare-and-set" operations.    
+
+h4(#considerationsMultiDocumentFailureFailFast). Fail Fast Multi Document Failure
+
+Under the "fail fast" mode each operation on the database is performed sequentially, ensuring the previous operation has succedded before starting the next. In this mode a single failure causes the command to stop processing and return information on the work that has completed together with an error. 
+
+For example, consider an ordered "@insertMany@":#commandInsertMany command that is inserting three documents. This command will use "fail fast", the second document will be inserted once the first is successful. If inserting the second document fails the command will return both the @_id@ of the first document and an error describing the failure inserting the second. No attempt will be made to insert the third document. 
+
+h4(#considerationsMultiDocumentFailureFailSilently). Fail Silently Multi Document Failure
+
+Under the "fail silently" mode the command will attempt to perform all operations on the database, which may include successfully processing some operations after others have failed. In this mode a single failure does not cause the command to stop processing, instead it makes a best effort to complete and returns information on the work that was completed and potentially what was not. 
+
+Fail silently also allows the server to re-order the database operations to achieve best performance, which may include running multiple operations in parallel. 
+
+Commands that use Fail Silently may return an error and status information about what was successfully completed. See "Response Messages":#messagingResponse for the structure of responses, and "Commands":#commands for individual command responses. 
+
+For example, consider an **unordered** "@insertMany@":#commandInsertMany command that is inserting three documents. This command will use "fail silently", and may run all database operations at once in parallel. If inserting the second document fails, the first and third may success. In this case command will return the @_id@ of the first and third documents and an error describing the failure inserting the second. 
+
+Similarly a "@deleteMany@":#commandDeleteMany  command always uses "fail silently", and will attempt to delete many candidate documents in parallel. If an Availability or Concurrency fault occurs the command will retry the operation some configured number of times before marking that document operation as failed. At completion the command will return a count of deleted documents and an error describing any failures.
 
 h2(#clauses). Clauses
 
