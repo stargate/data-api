@@ -457,6 +457,53 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
 
     @Test
     @Order(2)
+    public void findByIdAndColumnUpsert() {
+      String json =
+          """
+                          {
+                            "updateOne": {
+                              "filter" : {"_id" : "afterDoc7", "username" : "afterName7", "phone" : null},
+                              "update" : {"$set" : {"active_user": false}},
+                              "options" : {"upsert" : true}
+                            }
+                          }
+                          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.upsertedId", is("afterDoc7"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
+
+      json =
+          """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "afterDoc7"}
+                            }
+                          }
+                          """;
+      String expected =
+          "{\"_id\":\"afterDoc7\", \"username\" : \"afterName7\", \"phone\" : null, \"active_user\":false}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
     public void findByColumnAndSet() {
       String json =
           """

@@ -142,7 +142,7 @@ public record ReadAndUpdateOperation(
               if (result.getRows(0).getValues(0).getBoolean()) {
                 return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
-                return Uni.createFrom().nothing();
+                return Uni.createFrom().nullItem();
               }
             });
   }

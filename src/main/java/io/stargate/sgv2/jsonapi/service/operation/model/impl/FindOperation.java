@@ -9,6 +9,8 @@ import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTargetLocator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
@@ -62,14 +64,21 @@ public record FindOperation(
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
+    UpdateTargetLocator targetLocator = new UpdateTargetLocator();
     for (DBFilterBase filter : filters) {
       if (filter instanceof DBFilterBase.IDFilter) {
         documentId = ((DBFilterBase.IDFilter) filter).value;
-        JsonNode id = ((DBFilterBase.IDFilter) filter).value.asJson(objectMapper());
-        rootNode.putIfAbsent("_id", id);
+        rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
+      } else {
+        if (filter.canAddField()) {
+          JsonNode value = filter.asJson(objectMapper().getNodeFactory());
+          if (value != null) {
+            String filterPath = filter.getPath();
+            SetOperation.construct(filterPath, value).updateDocument(rootNode, targetLocator);
+          }
+        }
       }
     }
-
     ReadDocument doc = new ReadDocument(documentId, null, rootNode);
     return doc;
   }
