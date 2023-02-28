@@ -27,6 +27,20 @@ public class SetOperation extends UpdateOperation {
     return new SetOperation(additions);
   }
 
+  /**
+   * Override method used to set update filter condition fields to the document
+   *
+   * @param filterPath
+   * @param value
+   * @return
+   */
+  public static SetOperation construct(String filterPath, JsonNode value) {
+    List<SetAction> additions = new ArrayList<>();
+    String path = validateUpdatePath(UpdateOperator.SET, filterPath);
+    additions.add(new SetAction(path, value));
+    return new SetOperation(additions);
+  }
+
   @Override
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean modified = false;
