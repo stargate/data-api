@@ -56,7 +56,6 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
-            + "    doc_properties      map<text, int>,"
             + "    exist_keys          set<text>,"
             + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
@@ -68,9 +67,6 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    query_null_values   set<text>,     "
             + "    PRIMARY KEY (key))";
     queries.add(create.formatted(namespace, collection));
-    queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_doc_properties ON %s.%s (entries(doc_properties)) USING 'StorageAttachedIndex'"
-            .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (exist_keys) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
