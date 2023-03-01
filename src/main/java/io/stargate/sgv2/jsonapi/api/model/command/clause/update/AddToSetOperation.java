@@ -142,7 +142,12 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   private boolean addToSet(ArrayNode set, JsonNode elementToAdd) {
-    // At first just... append
+    for (JsonNode node : set) {
+      // !!! TODO: order-sensitive (for JSON Object) comparotor:
+      if (elementToAdd.equals(node)) {
+        return false;
+      }
+    }
     set.add(elementToAdd);
     return true;
   }

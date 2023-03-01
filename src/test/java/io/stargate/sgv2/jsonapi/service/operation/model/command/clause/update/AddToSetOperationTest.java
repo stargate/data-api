@@ -22,9 +22,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class AddToSetOperationTest extends UpdateOperationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class BasicAddToSetHappyPath {
+  class AddToSetBasicHappyPath {
     @Test
-    public void addToExistingRoot() {
+    public void addToRootArray() {
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"array\" : 32 }"));
       assertThat(oper).isInstanceOf(AddToSetOperation.class);
@@ -39,22 +39,44 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
-    public void addToExistingNested() {
+    public void tryAddExistingValueRoot() {
+      UpdateOperation oper =
+          UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"array\" : 19 }"));
+      ObjectNode doc = objectFromJson("{ \"array\" : [ true, \"foo\", 19 ] }");
+      ObjectNode expected = doc.deepCopy();
+      // Won't add since we already had same value
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void addToNestedArray() {
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"subdoc.array\" : 32 }"));
-      assertThat(oper).isInstanceOf(AddToSetOperation.class);
       ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ true ] } }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                                      { "subdoc" : { "array" : [ true, 32 ] } }
-                                      """);
+              { "subdoc" : { "array" : [ true, 32 ] } }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
     @Test
-    public void addToNonExistingRoot() {
+    public void tryAddExistingValueNested() {
+      UpdateOperation oper =
+          UpdateOperator.ADD_TO_SET.resolveOperation(
+              objectFromJson("{ \"subdoc.array\" : \"b\" }"));
+      ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ \"a\", \"b\", \"c\" ] } }");
+      ObjectNode expected = doc.deepCopy();
+      // Already had "b", no change
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void addToNewArrayRoot() {
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson("{ \"newArray\" : \"value\" }"));
@@ -63,13 +85,13 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a": 1, "array": [ true ], "newArray": [ "value" ] }
-                              """);
+              { "a": 1, "array": [ true ], "newArray": [ "value" ] }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
     @Test
-    public void addToNonExistingNested() {
+    public void addToNewArrayNested() {
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson("{ \"subdoc.newArray\" : \"value\" }"));
@@ -78,24 +100,20 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-                                      { "array": [ true ], "subdoc" : { "newArray": [ "value" ] } }
-                                      """);
+              { "array": [ true ], "subdoc" : { "newArray": [ "value" ] } }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
   }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class BasicAddToSetInvalidCases {
+  class AddToSetBasicInvalidCases {
     @Test
     public void onNonArrayProperty() {
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       UpdateOperation oper =
-          UpdateOperator.ADD_TO_SET.resolveOperation(
-              objectFromJson(
-                  """
-                                      { "a" : 57 }
-                                      """));
+          UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"a\" : 57 }"));
       Exception e =
           catchException(
               () -> {
@@ -165,7 +183,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class AddToSetWithEachHappyCases {
+  class AddToSetWithEachHappyPath {
     @Test
     public void withEachToExistingRoot() {
       UpdateOperation oper =
