@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import javax.annotation.Nullable;
 import javax.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -13,9 +12,5 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     description =
         "Command that returns count of documents in a collection based on the collection.")
 @JsonTypeName("countDocuments")
-public record CountDocumentsCommands(
-    @Valid @JsonProperty("filter") FilterClause filterClause, @Valid @Nullable Options options)
-    implements ReadCommand, Filterable {
-
-  public record Options() {}
-}
+public record CountDocumentsCommands(@Valid @JsonProperty("filter") FilterClause filterClause)
+    implements ReadCommand, Filterable {}

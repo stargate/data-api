@@ -81,7 +81,7 @@ public class CollectionResource {
                         UpdateOneCommand.class
                       }),
               examples = {
-                @ExampleObject(ref = "count"),
+                @ExampleObject(ref = "countDocuments"),
                 @ExampleObject(ref = "deleteOne"),
                 @ExampleObject(ref = "deleteMany"),
                 @ExampleObject(ref = "findOne"),

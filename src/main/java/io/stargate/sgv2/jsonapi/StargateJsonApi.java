@@ -274,7 +274,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                                     {
                                       "status": {
-                                        "counted_documents": 2
+                                        "count": 2
                                       }
                                     }
                                     """),
