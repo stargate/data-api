@@ -38,7 +38,6 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
-            + "    doc_properties      map<text, int>,"
             + "    exist_keys          set<text>,"
             + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
@@ -56,13 +55,6 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
 
   protected List<QueryOuterClass.Query> getIndexStatements(String keyspace, String table) {
     List<QueryOuterClass.Query> statements = new ArrayList<>(10);
-
-    String propertyIndex =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_doc_properties ON %s.%s (entries(doc_properties)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(propertyIndex, table, keyspace, table))
-            .build());
 
     String existKeys =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (exist_keys) USING 'StorageAttachedIndex'";

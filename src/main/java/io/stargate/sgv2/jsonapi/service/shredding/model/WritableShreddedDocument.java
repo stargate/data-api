@@ -18,8 +18,6 @@ public record WritableShreddedDocument(
     /** Optional transaction id used for optimistic locking */
     UUID txID,
     String docJson,
-    /** !!! TODO: what purpose does this field serve? */
-    Map<JsonPath, Integer> docProperties,
     Set<JsonPath> existKeys,
     Map<JsonPath, String> subDocEquals,
     Map<JsonPath, Integer> arraySize,
@@ -48,8 +46,6 @@ public record WritableShreddedDocument(
     private final UUID txID;
 
     private final String docJson;
-
-    private Map<JsonPath, Integer> properties;
 
     private final Set<JsonPath> existKeys;
 
@@ -83,7 +79,6 @@ public record WritableShreddedDocument(
           id,
           txID,
           docJson,
-          _nonNull(properties),
           existKeys,
           _nonNull(subDocEquals),
           _nonNull(arraySize),
