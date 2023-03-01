@@ -8,7 +8,13 @@ import java.util.Map;
 
 /** List of update operator that's supported in update. */
 public enum UpdateOperator {
-  // First operators that are supported
+  ADD_TO_SET("$addToSet") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return AddToSetOperation.construct(arguments);
+    }
+  },
+
   INC("$inc") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
