@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class CollectionResourceBaseIntegrationTest extends CqlEnabledIntegrationTestBase {
+public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIntegrationTestBase {
   protected String collectionName = "col" + RandomStringUtils.randomNumeric(16);
 
   @BeforeAll
