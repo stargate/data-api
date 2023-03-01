@@ -1520,6 +1520,123 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     }
   }
 
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateOneWithAddToSet {
+    @Test
+    @Order(2)
+    public void findByColumnAndAddToSet() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_add_to_set",
+                        "array": [ 2 ]
+                      }
+                      """);
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_add_to_set"},
+                          "update" : {"$addToSet" : {"array": 3, "subdoc.array": "value" }}
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
+
+      String expected =
+          "{\"_id\":\"update_doc_add_to_set\", \"array\": [2, 3], \"subdoc\" : { \"array\" : [ \"value\" ] }}";
+      json =
+          """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "update_doc_add_to_set"}
+                            }
+                          }
+                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByColumnAndAddToSetWithEach() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_add_to_set_each",
+                        "nested" : { "array": [ 1, 2, 3 ] }
+                      }
+                      """);
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_add_to_set_each"},
+                          "update" : {
+                              "$addToSet" : {
+                                 "nested.array": { "$each" : [ 1, 3, 4 ] },
+                                 "newArray": { "$each" : [ true, false ] }
+                              }
+                           }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
+
+      String expected =
+          """
+                { "_id":"update_doc_add_to_set_each",
+                  "nested" : { "array": [1, 2, 3, 4] },
+                  "newArray": [true, false] }
+                """;
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "update_doc_add_to_set_each"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
   private void insertDoc(String docJson) {
     String doc =
         """
