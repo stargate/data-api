@@ -13,16 +13,14 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
-import io.stargate.sgv2.common.testresource.StargateTestResource;
+import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(StargateTestResource.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@QuarkusTestResource(DseTestResource.class)
 class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   private String collectionName = "col" + RandomStringUtils.randomNumeric(16);
 

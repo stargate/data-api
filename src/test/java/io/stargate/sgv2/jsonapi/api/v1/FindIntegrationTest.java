@@ -6,19 +6,19 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@QuarkusTestResource(DseTestResource.class)
 public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
   @Nested
