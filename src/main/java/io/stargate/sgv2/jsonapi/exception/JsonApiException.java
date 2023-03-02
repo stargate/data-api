@@ -58,4 +58,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       return new CommandResult(List.of(error, causeError));
     }
   }
+
+  public ErrorCode getErrorCode() {
+    return errorCode;
+  }
 }

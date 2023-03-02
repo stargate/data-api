@@ -17,12 +17,12 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -165,9 +165,28 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
             .returning(List.of(List.of(Values.of(false))));
 
     InsertOperation operation = new InsertOperation(commandContext, shredDocument);
-    UniAssertSubscriber<Supplier<CommandResult>> subscriber =
-        operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.assertFailedWith(
-        JsonApiException.class, "Document already exists with the _id: doc1");
+    Supplier<CommandResult> execute =
+        operation
+            .execute(queryExecutor)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
+
+    CommandResult result = execute.get();
+    assertThat(result.status())
+        .hasSize(1)
+        .containsEntry(CommandStatus.INSERTED_IDS, Collections.emptyList());
+    assertThat(result.errors())
+        .singleElement()
+        .satisfies(
+            error -> {
+              assertThat(error.message())
+                  .isEqualTo(
+                      "Failed to insert document with _id doc1: Document already exists with the given _id");
+              assertThat(error.fields())
+                  .containsEntry("exceptionClass", "JsonApiException")
+                  .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
+            });
   }
 }
