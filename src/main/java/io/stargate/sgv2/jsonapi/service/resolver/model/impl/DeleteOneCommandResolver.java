@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -20,15 +21,19 @@ import javax.inject.Inject;
 public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneCommand>
     implements CommandResolver<DeleteOneCommand> {
 
+  private final DocumentConfig documentConfig;
+
   @Inject
-  public DeleteOneCommandResolver(ObjectMapper objectMapper) {
+  public DeleteOneCommandResolver(DocumentConfig documentConfig, ObjectMapper objectMapper) {
     super(objectMapper);
+    this.documentConfig = documentConfig;
   }
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
     ReadOperation readOperation = resolve(commandContext, command);
-    return new DeleteOperation(commandContext, readOperation, 1);
+    return new DeleteOperation(
+        commandContext, readOperation, 1, documentConfig.maxLWTFailureRetry());
   }
 
   @Override

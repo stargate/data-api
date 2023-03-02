@@ -6,6 +6,8 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -27,7 +29,8 @@ public record DeleteOperation(
      * Added parameter to pass number of document to be deleted, this is needed because read
      * documents limit changed to deleteLimit + 1
      */
-    int deleteLimit)
+    int deleteLimit,
+    int retryLimit)
     implements ModifyOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
@@ -40,7 +43,7 @@ public record DeleteOperation(
                 () -> new AtomicReference<String>(null),
                 stateRef -> {
                   Uni<ReadOperation.FindResponse> docsToDelete =
-                      readOperation().getDocuments(queryExecutor, stateRef.get());
+                      readOperation().getDocuments(queryExecutor, stateRef.get(), null);
                   return docsToDelete
                       .onItem()
                       .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
@@ -68,7 +71,13 @@ public record DeleteOperation(
             .concatenate()
             .onItem()
             .transformToUniAndConcatenate(
-                readDocument -> deleteDocument(queryExecutor, delete, readDocument))
+                readDocument -> {
+                  AtomicBoolean retry = new AtomicBoolean(false);
+                  return deleteDocument(queryExecutor, delete, readDocument, retry)
+                      .onFailure()
+                      .retry()
+                      .atMost(retryLimit);
+                })
             .collect()
             .in(
                 AtomicInteger::new,
@@ -109,18 +118,65 @@ public record DeleteOperation(
    * @param doc
    * @return Uni<Boolean> `true` if deleted successfully, else `false`
    */
-  private static Uni<Boolean> deleteDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
-    query = bindDeleteQuery(query, doc);
-    return queryExecutor
-        .executeWrite(query)
+  private Uni<Boolean> deleteDocument(
+      QueryExecutor queryExecutor,
+      QueryOuterClass.Query query,
+      ReadDocument doc,
+      AtomicBoolean retryFlag) {
+
+    final Uni<ReadDocument> documentToDelete =
+        Uni.createFrom()
+            .item(retryFlag.get())
+            .onItem()
+            .transformToUni(
+                retry -> {
+                  if (retry) {
+                    // Read again if retry flag is `true`
+                    final Uni<ReadOperation.FindResponse> findResponse =
+                        readOperation()
+                            .getDocuments(
+                                queryExecutor,
+                                null,
+                                new DBFilterBase.IDFilter(
+                                    DBFilterBase.IDFilter.Operator.EQ, doc.id()));
+                    return findResponse
+                        .onItem()
+                        .transform(
+                            response -> {
+                              if (response.docs().isEmpty()) {
+                                return response.docs().get(0);
+                              } else {
+                                // If data changed and doesn't satisfy filter conditions
+                                return null;
+                              }
+                            });
+                  } else {
+                    return Uni.createFrom().item(doc);
+                  }
+                });
+    return documentToDelete
         .onItem()
         .transformToUni(
-            result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(true);
-              } else {
+            docToDelete -> {
+              if (docToDelete == null) {
                 return Uni.createFrom().item(false);
+              } else {
+                QueryOuterClass.Query boundQuery = bindDeleteQuery(query, docToDelete);
+                return queryExecutor
+                    .executeWrite(boundQuery)
+                    .onItem()
+                    .transform(
+                        result -> {
+                          if (result.getRows(0).getValues(0).getBoolean()) {
+                            return true;
+                          } else {
+                            retryFlag.set(true);
+                            throw new JsonApiException(
+                                ErrorCode.CONCURRENCY_FAILURE,
+                                "Delete failed for %s because of concurrent transaction"
+                                    .formatted(docToDelete.id().value()));
+                          }
+                        });
               }
             });
   }
