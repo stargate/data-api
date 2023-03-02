@@ -454,7 +454,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
       supplierUniAssertSubscriber.assertFailedWith(
           JsonApiException.class,
-          "Delete failed for %s because of concurrent transaction".formatted("doc1"));
+          "Delete failed for document with id %s because of concurrent transaction"
+              .formatted("doc1"));
     }
 
     @Test

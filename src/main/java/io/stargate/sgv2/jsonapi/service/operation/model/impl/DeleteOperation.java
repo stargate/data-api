@@ -88,13 +88,13 @@ public record DeleteOperation(
                             switch (respVal) {
                               case DELETED:
                                 return true;
-                              case MODIFIED_BY_CONCURRENT_PROCESS:
+                              case MODIFIED_BY_CONCURRENT_TRANSACTION:
                                 return false;
                               case CONCURRENCY_FAILURE:
                               default:
                                 throw new JsonApiException(
                                     ErrorCode.CONCURRENCY_FAILURE,
-                                    "Delete failed for %s because of concurrent transaction"
+                                    "Delete failed for document with id %s because of concurrent transaction"
                                         .formatted(readDocument.id().toString()));
                             }
                           });
@@ -162,7 +162,7 @@ public record DeleteOperation(
         .transformToUni(
             docToDelete -> {
               if (docToDelete == null) {
-                return Uni.createFrom().item(DeleteResponse.MODIFIED_BY_CONCURRENT_PROCESS);
+                return Uni.createFrom().item(DeleteResponse.MODIFIED_BY_CONCURRENT_TRANSACTION);
               } else {
                 QueryOuterClass.Query boundQuery = bindDeleteQuery(query, docToDelete);
                 return queryExecutor
@@ -215,10 +215,10 @@ public record DeleteOperation(
     /** Successfully deleted a document */
     DELETED,
     /**
-     * Document modified by concurrent process and doesn't match the condition Could have changed
-     * value or deleted
+     * Document modified by concurrent transaction and document doesn't match the condition or
+     * document is deleted
      */
-    MODIFIED_BY_CONCURRENT_PROCESS,
+    MODIFIED_BY_CONCURRENT_TRANSACTION,
 
     /** Failed because of concurrent process */
     CONCURRENCY_FAILURE;
