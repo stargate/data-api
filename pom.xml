@@ -11,9 +11,6 @@
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
-    <!-- Quarkus version override due to the https://github.com/quarkusio/quarkus/issues/30744 -->
-    <!-- Remove when updating to 2.0.9 -->
-    <quarkus.platform.version>2.16.2.Final</quarkus.platform.version>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
