@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
 
 /** Implementation of {@code $set} update operation used to assign values to document fields. */
 public class SetOperation extends UpdateOperation {
-  private final List<SetAction> additions;
+  private final List<SetAction> actions;
 
-  private SetOperation(List<SetAction> additions) {
-    this.additions = additions;
+  private SetOperation(List<SetAction> actions) {
+    this.actions = sortByPath(actions);
   }
 
   public static SetOperation construct(ObjectNode args) {
@@ -44,7 +44,7 @@ public class SetOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean modified = false;
-    for (SetAction addition : additions) {
+    for (SetAction addition : actions) {
       UpdateTarget target = targetLocator.findOrCreate(doc, addition.path());
       JsonNode newValue = addition.value();
       JsonNode oldValue = target.replaceValue(newValue);
@@ -54,15 +54,14 @@ public class SetOperation extends UpdateOperation {
   }
 
   public Set<String> paths() {
-    return additions.stream().map(SetAction::path).collect(Collectors.toSet());
+    return actions.stream().map(SetAction::path).collect(Collectors.toSet());
   }
 
   // Just needed for tests
   @Override
   public boolean equals(Object o) {
-    return (o instanceof SetOperation)
-        && Objects.equals(this.additions, ((SetOperation) o).additions);
+    return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
 
-  private record SetAction(String path, JsonNode value) {}
+  private record SetAction(String path, JsonNode value) implements ActionWithPath {}
 }

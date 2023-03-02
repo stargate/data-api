@@ -19,7 +19,7 @@ public class AddToSetOperation extends UpdateOperation {
   private List<AddToSetAction> actions;
 
   private AddToSetOperation(List<AddToSetAction> actions) {
-    this.actions = actions;
+    this.actions = sortByPath(actions);
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
@@ -153,5 +153,6 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record AddToSetAction(String path, JsonNode value, boolean each) {}
+  private record AddToSetAction(String path, JsonNode value, boolean each)
+      implements ActionWithPath {}
 }
