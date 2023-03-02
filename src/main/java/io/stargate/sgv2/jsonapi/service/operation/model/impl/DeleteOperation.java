@@ -72,11 +72,32 @@ public record DeleteOperation(
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> {
-                  AtomicBoolean retry = new AtomicBoolean(false);
-                  return deleteDocument(queryExecutor, delete, readDocument, retry)
-                      .onFailure()
-                      .retry()
-                      .atMost(retryLimit);
+                  AtomicInteger attempt = new AtomicInteger(0);
+                  return Multi.createBy()
+                      .repeating()
+                      .uni(() -> deleteDocument(queryExecutor, delete, readDocument, attempt))
+                      .whilst(
+                          respVal ->
+                              (respVal == DeleteResponse.CONCURRENCY_FAILURE
+                                  && attempt.incrementAndGet() < retryLimit))
+                      .collect()
+                      .last()
+                      .onItem()
+                      .transform(
+                          respVal -> {
+                            switch (respVal) {
+                              case DELETED:
+                                return true;
+                              case MODIFIED_BY_CONCURRENT_PROCESS:
+                                return false;
+                              case CONCURRENCY_FAILURE:
+                              default:
+                                throw new JsonApiException(
+                                    ErrorCode.CONCURRENCY_FAILURE,
+                                    "Delete failed for %s because of concurrent transaction"
+                                        .formatted(readDocument.id().toString()));
+                            }
+                          });
                 })
             .collect()
             .in(
@@ -116,40 +137,22 @@ public record DeleteOperation(
    * @param queryExecutor
    * @param query
    * @param doc
-   * @return Uni<Boolean> `true` if deleted successfully, else `false`
+   * @param attempt
+   * @return Uni<DeleteResponse>
    */
-  private Uni<Boolean> deleteDocument(
+  private Uni<DeleteResponse> deleteDocument(
       QueryExecutor queryExecutor,
       QueryOuterClass.Query query,
       ReadDocument doc,
-      AtomicBoolean retryFlag) {
-
+      AtomicInteger attempt) {
     final Uni<ReadDocument> documentToDelete =
         Uni.createFrom()
-            .item(retryFlag.get())
+            .item(attempt.get())
             .onItem()
             .transformToUni(
-                retry -> {
-                  if (retry) {
-                    // Read again if retry flag is `true`
-                    final Uni<ReadOperation.FindResponse> findResponse =
-                        readOperation()
-                            .getDocuments(
-                                queryExecutor,
-                                null,
-                                new DBFilterBase.IDFilter(
-                                    DBFilterBase.IDFilter.Operator.EQ, doc.id()));
-                    return findResponse
-                        .onItem()
-                        .transform(
-                            response -> {
-                              if (response.docs().isEmpty()) {
-                                return response.docs().get(0);
-                              } else {
-                                // If data changed and doesn't satisfy filter conditions
-                                return null;
-                              }
-                            });
+                attemptValue -> {
+                  if (attemptValue > 0) {
+                    return readDocumentAgain(queryExecutor, doc);
                   } else {
                     return Uni.createFrom().item(doc);
                   }
@@ -159,7 +162,7 @@ public record DeleteOperation(
         .transformToUni(
             docToDelete -> {
               if (docToDelete == null) {
-                return Uni.createFrom().item(false);
+                return Uni.createFrom().item(DeleteResponse.MODIFIED_BY_CONCURRENT_PROCESS);
               } else {
                 QueryOuterClass.Query boundQuery = bindDeleteQuery(query, docToDelete);
                 return queryExecutor
@@ -168,15 +171,33 @@ public record DeleteOperation(
                     .transform(
                         result -> {
                           if (result.getRows(0).getValues(0).getBoolean()) {
-                            return true;
+                            return DeleteResponse.DELETED;
                           } else {
-                            retryFlag.set(true);
-                            throw new JsonApiException(
-                                ErrorCode.CONCURRENCY_FAILURE,
-                                "Delete failed for %s because of concurrent transaction"
-                                    .formatted(docToDelete.id().value()));
+                            return DeleteResponse.CONCURRENCY_FAILURE;
                           }
                         });
+              }
+            });
+  }
+
+  private Uni<? extends ReadDocument> readDocumentAgain(
+      QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
+    // Read again if retry flag is `true`
+    final Uni<ReadOperation.FindResponse> findResponse =
+        readOperation()
+            .getDocuments(
+                queryExecutor,
+                null,
+                new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.EQ, prevReadDoc.id()));
+    return findResponse
+        .onItem()
+        .transform(
+            response -> {
+              if (!response.docs().isEmpty()) {
+                return response.docs().get(0);
+              } else {
+                // If data changed and doesn't satisfy filter conditions
+                return null;
               }
             });
   }
@@ -188,5 +209,18 @@ public record DeleteOperation(
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+  }
+
+  public enum DeleteResponse {
+    /** Successfully deleted a document */
+    DELETED,
+    /**
+     * Document modified by concurrent process and doesn't match the condition Could have changed
+     * value or deleted
+     */
+    MODIFIED_BY_CONCURRENT_PROCESS,
+
+    /** Failed because of concurrent process */
+    CONCURRENCY_FAILURE;
   }
 }
