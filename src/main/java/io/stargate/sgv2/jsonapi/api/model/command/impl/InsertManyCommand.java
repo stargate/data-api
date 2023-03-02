@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import java.util.List;
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -20,6 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName("insertMany")
 public record InsertManyCommand(
     @NotNull
+        @NotEmpty
         @Schema(
             description = "JSON document to insert.",
             implementation = Object.class,
