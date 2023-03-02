@@ -14,10 +14,8 @@ import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -61,7 +59,7 @@ public record InsertOperation(
 
                     // if we fail to insert propagate the FailFastInsertException
                     .onFailure()
-                    .transform(t -> new FailFastInsertException(doc.id(), t)))
+                    .transform(t -> new FailFastInsertException(doc, t)))
 
         // if no failures reduce to the op page
         .collect()
@@ -77,20 +75,19 @@ public record InsertOperation(
             e -> {
               // safe to cast, asserted class in onFailure
               FailFastInsertException failFastInsertException = (FailFastInsertException) e;
-              DocumentId failedId = failFastInsertException.documentId;
+              WritableShreddedDocument failed = failFastInsertException.document;
 
-              // collect inserted, since it's sequential iterate until failed id
-              List<DocumentId> insertedId = new ArrayList<>();
-              for (WritableShreddedDocument document : documents()) {
-                if (Objects.equals(document.id(), failedId)) {
-                  break;
-                }
-                insertedId.add(document.id());
-              }
+              // collect inserted, since it's sequential iterate until failed index
+              int failedIndex = documents().lastIndexOf(failed);
+              List<DocumentId> insertedId =
+                  documents().stream()
+                      .limit(failedIndex)
+                      .map(WritableShreddedDocument::id)
+                      .toList();
 
               return new InsertOperationPage(
                   insertedId,
-                  Collections.singletonMap(failedId, failFastInsertException.getCause()));
+                  Collections.singletonMap(failed.id(), failFastInsertException.getCause()));
             })
 
         // use object identity to resolve to Supplier<CommandResult>
@@ -181,11 +178,11 @@ public record InsertOperation(
   // simple exception to propagate fail fast
   private static class FailFastInsertException extends Exception {
 
-    private final DocumentId documentId;
+    private final WritableShreddedDocument document;
 
-    public FailFastInsertException(DocumentId documentId, Throwable cause) {
+    public FailFastInsertException(WritableShreddedDocument document, Throwable cause) {
       super(cause);
-      this.documentId = documentId;
+      this.document = document;
     }
   }
 }
