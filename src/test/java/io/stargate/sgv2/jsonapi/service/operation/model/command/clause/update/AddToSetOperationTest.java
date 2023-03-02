@@ -12,16 +12,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class AddToSetOperationTest extends UpdateOperationTestBase {
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetBasicHappyPath {
     @Test
     public void addToRootArray() {
@@ -108,7 +105,6 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
 
   // Since equality semantics of sub-docs differ, have separate sets for them
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetWithSubDocs {
     @Test
     public void addSubDocIfOrderDifferent() {
@@ -168,7 +164,6 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetBasicInvalidCases {
     @Test
     public void onNonArrayProperty() {
@@ -243,7 +238,6 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetWithEachHappyPath {
     @Test
     public void withEachToExistingRoot() {
@@ -356,7 +350,6 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetWithEachInvalidCases {
     // Argument for "$each" must be an Array
     @Test

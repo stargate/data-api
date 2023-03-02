@@ -138,7 +138,6 @@ public class AddToSetOperation extends UpdateOperation {
       }
     }
 
-    // Every valid update operation modifies document so need just one:
     return modified;
   }
 

@@ -1582,7 +1582,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           """
                       {
                         "_id": "update_doc_add_to_set_each",
-                        "nested" : { "array": [ 1, 2, 3 ] }
+                        "nested" : { "array": [ 2, 3 ] }
                       }
                       """);
       String json =
@@ -1614,7 +1614,7 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
       String expected =
           """
                 { "_id":"update_doc_add_to_set_each",
-                  "nested" : { "array": [1, 2, 3, 4] },
+                  "nested" : { "array": [2, 3, 1, 4] },
                   "newArray": [true, false] }
                 """;
       json =
