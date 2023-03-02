@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -142,9 +143,9 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   private boolean addToSet(ArrayNode set, JsonNode elementToAdd) {
+    // See if Array already has value we are trying to add; if so, do NOT add
     for (JsonNode node : set) {
-      // !!! TODO: order-sensitive (for JSON Object) comparotor:
-      if (elementToAdd.equals(node)) {
+      if (JsonUtil.equalsOrdered(elementToAdd, node)) {
         return false;
       }
     }

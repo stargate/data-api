@@ -106,6 +106,67 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
     }
   }
 
+  // Since equality semantics of sub-docs differ, have separate sets for them
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class AddToSetWithSubDocs {
+    @Test
+    public void addSubDocIfOrderDifferent() {
+      UpdateOperation oper =
+          UpdateOperator.ADD_TO_SET.resolveOperation(
+              objectFromJson("{ \"doc.array\" : { \"y\":2, \"x\": 1}}"));
+      ObjectNode doc =
+          objectFromJson(
+              """
+                      { "doc" :
+                        {
+                          "array" : [{ "x": 1, "y": 2 }]
+                        }
+                      }
+                      """);
+      // Should add, change
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                      { "doc" :
+                        {
+                          "array" : [{ "x": 1, "y": 2 }, {"y":2, "x":1 }]
+                        }
+                      }
+                      """);
+      assertThat(doc).isEqualTo(expected);
+    }
+
+    @Test
+    public void dontAddSubDocIfSameIncludingOrdering() {
+      UpdateOperation oper =
+          UpdateOperator.ADD_TO_SET.resolveOperation(
+              objectFromJson("{ \"doc.array\" : { \"x\":1, \"y\": 2}}"));
+      ObjectNode doc =
+          objectFromJson(
+              """
+                      { "doc" :
+                        {
+                          "array" : [{ "x": 1, "y": 2 }]
+                        }
+                      }
+                      """);
+      // No add, no change
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      ObjectNode expected =
+          objectFromJson(
+              """
+                      { "doc" :
+                        {
+                          "array" : [{ "x": 1, "y": 2 }]
+                        }
+                      }
+                      """);
+      assertThat(doc).isEqualTo(expected);
+    }
+  }
+
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class AddToSetBasicInvalidCases {
@@ -190,15 +251,15 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson(
                   """
-                                      { "array" : { "$each" : [ 17, false ] } }
-                                      """));
+                  { "array" : { "$each" : [ 17, false ] } }
+                  """));
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a" : 1, "array" : [ true, 17, false ] }
-                              """);
+              { "a" : 1, "array" : [ true, 17, false ] }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -208,15 +269,15 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson(
                   """
-                                                  { "nested.array" : { "$each" : [ 17, false ] } }
-                                                  """));
+                  { "nested.array" : { "$each" : [ 17, false ] } }
+                  """));
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                                      { "nested": { "array" : [ true, 17, false ] } }
-                                      """);
+              { "nested": { "array" : [ true, 17, false ] } }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -233,8 +294,8 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
-                              """);
+              { "a" : 1, "array" : [ true ], "newArray" : [ -50, "abc" ] }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -244,33 +305,34 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson(
                   """
-                                                  { "nested.newArray" : { "$each" : [ -50, "abc" ] } }
-                                                    """));
+                  { "nested.newArray" : { "$each" : [ -50, "abc" ] } }
+                    """));
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                                      { "nested" : { "array" : [ true ], "newArray" : [ -50, "abc" ] } }
-                                      """);
+                { "nested" : { "array" : [ true ], "newArray" : [ -50, "abc" ] } }
+                """);
       assertThat(doc).isEqualTo(expected);
     }
 
     @Test
     public void withEachNestedArray() {
+      // Let's check that [ 3 ] is NOT added as it already exists in doc:
+      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ null, [ 3 ] ] }");
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson(
                   """
-                                      { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
-                                      """));
-      ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ null ] }");
+                  { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                  """));
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                              { "a" : 1, "array" : [ null, [ 1, 2 ], [ 3 ] ] }
-                              """);
+                { "a" : 1, "array" : [ null, [3], [ 1, 2 ] ] }
+                """);
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -280,15 +342,15 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson(
                   """
-                                      { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
-                                      """));
+                  { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
+                  """));
       ObjectNode doc = objectFromJson("{ \"x\" : 1 }");
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
-                              { "x" : 1, "array" : [ [ 1, 2 ], [ 3 ] ] }
-                              """);
+              { "x" : 1, "array" : [ [ 1, 2 ], [ 3 ] ] }
+              """);
       assertThat(doc).isEqualTo(expected);
     }
   }
@@ -303,10 +365,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           catchException(
               () -> {
                 UpdateOperator.ADD_TO_SET.resolveOperation(
-                    objectFromJson(
-                        """
-                                                        { "array" : { "$each" : 365 } }
-                                                """));
+                    objectFromJson("{ \"array\" : { \"$each\" : 365 } }"));
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -326,8 +385,8 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.ADD_TO_SET.resolveOperation(
                     objectFromJson(
                         """
-                                                        { "array" : { "$each" : [ 1, 2, 3 ], "value" : 3 } }
-                                                """));
+                        { "array" : { "$each" : [ 1, 2, 3 ], "value" : 3 } }
+                        """));
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
