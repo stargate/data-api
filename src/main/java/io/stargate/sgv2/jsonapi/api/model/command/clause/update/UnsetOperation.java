@@ -34,7 +34,7 @@ public class UnsetOperation extends UpdateOperation {
     return modified;
   }
 
-  public Set<String> paths() {
+  public Set<String> getPaths() {
     return actions.stream().map(UnsetAction::path).collect(Collectors.toSet());
   }
 

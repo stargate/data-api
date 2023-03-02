@@ -53,7 +53,7 @@ public class SetOperation extends UpdateOperation {
     return modified;
   }
 
-  public Set<String> paths() {
+  public Set<String> getPaths() {
     return actions.stream().map(SetAction::path).collect(Collectors.toSet());
   }
 

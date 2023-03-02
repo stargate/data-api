@@ -47,8 +47,8 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
     UnsetOperation unsetOp = (UnsetOperation) operationMap.get(UpdateOperator.UNSET);
 
     if ((setOp != null) && (unsetOp != null)) {
-      Set<String> paths = setOp.paths();
-      paths.retainAll(unsetOp.paths());
+      Set<String> paths = setOp.getPaths();
+      paths.retainAll(unsetOp.getPaths());
 
       if (!paths.isEmpty()) {
         throw new JsonApiException(
