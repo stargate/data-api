@@ -1520,6 +1520,169 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
     }
   }
 
+  @Nested
+  class UpdateOneWithAddToSet {
+    @Test
+    public void findByColumnAndAddToSet() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_add_to_set",
+                        "array": [ 2 ]
+                      }
+                      """);
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_add_to_set"},
+                          "update" : {"$addToSet" : {"array": 3, "subdoc.array": "value" }}
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
+
+      String expected =
+          "{\"_id\":\"update_doc_add_to_set\", \"array\": [2, 3], \"subdoc\" : { \"array\" : [ \"value\" ] }}";
+      json =
+          """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "update_doc_add_to_set"}
+                            }
+                          }
+                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    // Test for case where nothing is actually added
+    @Test
+    public void findByColumnAndAddToSetNoChange() {
+      final String originalDoc =
+          """
+                          {
+                            "_id": "update_doc_add_to_set_unchanged",
+                            "array": [ 0, 1, 2 ]
+                          }
+                          """;
+      insertDoc(originalDoc);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "updateOne": {
+                              "filter" : {"_id" : "update_doc_add_to_set_unchanged"},
+                              "update" : {"$addToSet" : {"array": 2 }}
+                            }
+                          }
+                          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(0));
+      ;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_add_to_set_unchanged"}
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(originalDoc));
+    }
+
+    @Test
+    public void findByColumnAndAddToSetWithEach() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_add_to_set_each",
+                        "nested" : { "array": [ 2, 3 ] }
+                      }
+                      """);
+      String json =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_add_to_set_each"},
+                          "update" : {
+                              "$addToSet" : {
+                                 "nested.array": { "$each" : [ 1, 3, 4 ] },
+                                 "newArray": { "$each" : [ true, false ] }
+                              }
+                           }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      ;
+
+      String expected =
+          """
+                { "_id":"update_doc_add_to_set_each",
+                  "nested" : { "array": [2, 3, 1, 4] },
+                  "newArray": [true, false] }
+                """;
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "update_doc_add_to_set_each"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
   private void insertDoc(String docJson) {
     String doc =
         """
