@@ -151,7 +151,7 @@ public interface DocumentId {
 
     @Override
     public String toString() {
-      return key.toPlainString();
+      return String.valueOf(key);
     }
   }
 
