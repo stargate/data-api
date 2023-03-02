@@ -168,7 +168,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
 
     @Test
     public void error() {
-      // failures are propaged down
+      // failures are propagated down
       RuntimeException failure = new RuntimeException("Ivan fails the test.");
 
       String collectionReadCql =
