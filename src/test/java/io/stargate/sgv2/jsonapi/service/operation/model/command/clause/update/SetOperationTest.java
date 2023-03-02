@@ -25,7 +25,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
   class HappyPathRoot {
     @Test
     public void testSimpleSetOfExisting() {
-      // Remove 2 of 3 properties:
+      // Replace 2 of 3 properties:
       UpdateOperation oper =
           UpdateOperator.SET.resolveOperation(
               objectFromJson(
@@ -70,6 +70,26 @@ public class SetOperationTest extends UpdateOperationTestBase {
                           { "a" : 1, "c" : true, "b" : 1234, "nosuchvalue": 99 }
                           """);
       assertThat(doc).isEqualTo(expected);
+    }
+
+    // Test for [json-api#164], order of $set additions alphabetic
+    @Test
+    public void testOrderedSetOfNonExisting() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                                { "b" : 2, "a": 1}
+                                """));
+      assertThat(oper).isInstanceOf(SetOperation.class);
+      // Will append the new property so there is modification
+      ObjectNode doc = objectFromJson("{ }");
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      ObjectNode expected = objectFromJson("{ \"a\": 1, \"b\": 2 }");
+
+      // Important! Compare serialization as that preserves ordering: not ObjectNode
+      // which would use order-insensitive comparison
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
 
     @Test
