@@ -103,14 +103,14 @@ public class CollectionResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCount"),
+                    @ExampleObject(ref = "resultDeleteOne"),
+                    @ExampleObject(ref = "resultDeleteMany"),
                     @ExampleObject(ref = "resultRead"),
                     @ExampleObject(ref = "resultFindOneAndUpdate"),
                     @ExampleObject(ref = "resultInsert"),
-                    @ExampleObject(ref = "resultError"),
-                    @ExampleObject(ref = "resultDeleteOne"),
-                    @ExampleObject(ref = "resultDeleteMany"),
                     @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateOne"),
+                    @ExampleObject(ref = "resultError"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
