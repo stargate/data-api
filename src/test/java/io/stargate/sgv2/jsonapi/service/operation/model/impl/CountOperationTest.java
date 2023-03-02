@@ -53,7 +53,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(5))));
 
       CountOperation countOperation = new CountOperation(CONTEXT, List.of());
-      final Supplier<CommandResult> execute =
+      Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
               .subscribe()
@@ -99,7 +99,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")));
-      final Supplier<CommandResult> execute =
+      Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
               .subscribe()
@@ -145,7 +145,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")));
-      final Supplier<CommandResult> execute =
+      Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
               .subscribe()
@@ -168,7 +168,37 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
 
     @Test
     public void error() {
-      // TODO with stargate v2.0.9
+      // failures are propaged down
+      RuntimeException failure = new RuntimeException("Ivan fails the test.");
+
+      String collectionReadCql =
+          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(collectionReadCql)
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("count")
+                          .setType(TypeSpecs.INT)
+                          .build()))
+              .returningFailure(failure);
+
+      CountOperation countOperation = new CountOperation(CONTEXT, List.of());
+      Throwable result =
+          countOperation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+
+      // then result
+      assertThat(result).isEqualTo(failure);
     }
   }
 }
