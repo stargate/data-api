@@ -29,11 +29,11 @@ class InsertOneCommandTest {
     public void noDocument() throws Exception {
       String json =
           """
-                    {
-                      "insertOne": {
-                      }
-                    }
-                    """;
+          {
+            "insertOne": {
+            }
+          }
+          """;
 
       InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
       Set<ConstraintViolation<InsertOneCommand>> result = validator.validate(command);

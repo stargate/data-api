@@ -28,13 +28,12 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
 
   @AfterEach
   public void cleanUpData() {
-    String json =
-        """
-            {
-              "deleteMany": {
-              }
-            }
-            """;
+    String json = """
+        {
+          "deleteMany": {
+          }
+        }
+        """;
 
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())

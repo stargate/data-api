@@ -28,11 +28,11 @@ class InsertManyCommandTest {
     public void noDocuments() throws Exception {
       String json =
           """
-                    {
-                      "insertMany": {
-                      }
-                    }
-                    """;
+          {
+            "insertMany": {
+            }
+          }
+          """;
 
       InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
       Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
@@ -47,12 +47,12 @@ class InsertManyCommandTest {
     public void documentsArrayEmpty() throws Exception {
       String json =
           """
-                    {
-                      "insertMany": {
-                        "documents": []
-                      }
-                    }
-                    """;
+          {
+            "insertMany": {
+              "documents": []
+            }
+          }
+          """;
 
       InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
       Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
