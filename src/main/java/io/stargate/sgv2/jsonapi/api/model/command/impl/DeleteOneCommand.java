@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -14,7 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Representation of the deleteOne API {@link Command}.
  *
- * @param filterClause {@link FilterClause} used to identify the document.
+ * @param filterClause {@link FilterClause} used to identify a document.
  */
 @Schema(description = "Command that finds a single document and deletes it from a collection")
 @JsonTypeName("deleteOne")
@@ -25,8 +24,5 @@ public record DeleteOneCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterClause filterClause,
-    @Nullable Options options)
-    implements ModifyCommand, Filterable {
-  public record Options() {}
-}
+        FilterClause filterClause)
+    implements ModifyCommand, Filterable {}

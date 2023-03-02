@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -15,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,45 +25,50 @@ import org.junit.jupiter.api.Test;
 public class DeleteManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DocumentConfig documentConfig;
-  @Inject DeleteManyCommandResolver deleteManyCommandResolver;
+  @Inject DeleteManyCommandResolver resolver;
 
   @Nested
-  class DeleteManyCommandResolveCommand {
+  class ResolveCommand {
+
+    @Mock CommandContext commandContext;
 
     @Test
     public void idFilterCondition() throws Exception {
       String json =
           """
-                          {
-                            "deleteMany": {
-                              "filter" : {"_id" : "id"}
-                            }
-                          }
-                          """;
+          {
+            "deleteMany": {
+              "filter" : {"_id" : "id"}
+            }
+          }
+          """;
 
       DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
-      FindOperation findOperation =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
-              null,
-              documentConfig.maxDocumentDeleteCount() + 1,
-              documentConfig.defaultPageSize(),
-              ReadType.KEY,
-              objectMapper);
-      DeleteOperation expected =
-          new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+      Operation operation = resolver.resolveCommand(commandContext, deleteManyCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(documentConfig.maxDocumentDeleteCount());
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.IDFilter filter =
+                              new DBFilterBase.IDFilter(
+                                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.limit())
+                              .isEqualTo(documentConfig.maxDocumentDeleteCount() + 1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                        });
               });
     }
 
@@ -71,33 +76,34 @@ public class DeleteManyCommandResolverTest {
     public void noFilterCondition() throws Exception {
       String json =
           """
-                    {
-                      "deleteMany": {
-                      }
-                    }
-                    """;
+          {
+            "deleteMany": {
+            }
+          }
+          """;
 
       DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
-      FindOperation findOperation =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              null,
-              documentConfig.maxDocumentDeleteCount() + 1,
-              documentConfig.defaultPageSize(),
-              ReadType.KEY,
-              objectMapper);
-      DeleteOperation expected =
-          new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+      Operation operation = resolver.resolveCommand(commandContext, deleteManyCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(documentConfig.maxDocumentDeleteCount());
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.limit())
+                              .isEqualTo(documentConfig.maxDocumentDeleteCount() + 1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).isEmpty();
+                        });
               });
     }
 
@@ -105,36 +111,39 @@ public class DeleteManyCommandResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-                    {
-                      "deleteMany": {
-                        "filter" : {"col" : "val"}
-                      }
-                    }
-                    """;
+          {
+            "deleteMany": {
+              "filter" : {"col" : "val"}
+            }
+          }
+          """;
 
       DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteManyCommandResolver.resolveCommand(commandContext, deleteManyCommand);
-      FindOperation findOperation =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
-              null,
-              documentConfig.maxDocumentDeleteCount() + 1,
-              documentConfig.defaultPageSize(),
-              ReadType.KEY,
-              objectMapper);
-      DeleteOperation expected =
-          new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+      Operation operation = resolver.resolveCommand(commandContext, deleteManyCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(documentConfig.maxDocumentDeleteCount());
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.limit())
+                              .isEqualTo(documentConfig.maxDocumentDeleteCount() + 1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                        });
               });
     }
   }

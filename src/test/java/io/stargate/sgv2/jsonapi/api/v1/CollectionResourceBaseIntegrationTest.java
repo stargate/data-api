@@ -24,18 +24,19 @@ public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIn
   }
 
   @Test
-  @Order(1)
+  @Order(Integer.MIN_VALUE)
   public final void createCollection() {
     String json =
         String.format(
             """
-                                            {
-                                              "createCollection": {
-                                                "name": "%s"
-                                              }
-                                            }
-                                            """,
+            {
+              "createCollection": {
+                "name": "%s"
+              }
+            }
+            """,
             collectionName);
+
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)

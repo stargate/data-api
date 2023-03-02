@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -14,7 +15,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,43 +23,49 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DeleteOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject DeleteOneCommandResolver deleteOneCommandResolver;
+  @Inject DeleteOneCommandResolver resolver;
 
   @Nested
   class DeleteOneCommandResolveCommand {
+
+    @Mock CommandContext commandContext;
 
     @Test
     public void idFilterCondition() throws Exception {
       String json =
           """
-                          {
-                            "deleteOne": {
-                              "filter" : {"_id" : "id"}
-                            }
-                          }
-                          """;
+          {
+            "deleteOne": {
+              "filter" : {"_id" : "id"}
+            }
+          }
+          """;
 
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
-      FindOperation findOperation =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
-              null,
-              1,
-              1,
-              ReadType.KEY,
-              objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      Operation operation = resolver.resolveCommand(commandContext, deleteOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(1);
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.IDFilter filter =
+                              new DBFilterBase.IDFilter(
+                                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                        });
               });
     }
 
@@ -67,24 +73,33 @@ public class DeleteOneCommandResolverTest {
     public void noFilterCondition() throws Exception {
       String json =
           """
-                    {
-                      "deleteOne": {
-                      }
-                    }
-                    """;
+          {
+            "deleteOne": {
+            }
+          }
+          """;
 
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
-      FindOperation findOperation =
-          new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.KEY, objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      Operation operation = resolver.resolveCommand(commandContext, deleteOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(1);
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).isEmpty();
+                        });
               });
     }
 
@@ -92,34 +107,38 @@ public class DeleteOneCommandResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-                    {
-                      "deleteOne": {
-                        "filter" : {"col" : "val"}
-                      }
-                    }
-                    """;
+          {
+            "deleteOne": {
+              "filter" : {"col" : "val"}
+            }
+          }
+          """;
 
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
-      FindOperation findOperation =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
-              null,
-              1,
-              1,
-              ReadType.KEY,
-              objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      Operation operation = resolver.resolveCommand(commandContext, deleteOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(DeleteOperation.class)
-          .satisfies(
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
               op -> {
-                assertThat(op).isEqualTo(expected);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(1);
+                assertThat(op.readOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                        });
               });
     }
   }

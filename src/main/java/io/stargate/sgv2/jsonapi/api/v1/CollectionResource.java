@@ -107,7 +107,8 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultFindOneAndUpdate"),
                     @ExampleObject(ref = "resultInsert"),
                     @ExampleObject(ref = "resultError"),
-                    @ExampleObject(ref = "resultDelete"),
+                    @ExampleObject(ref = "resultDeleteOne"),
+                    @ExampleObject(ref = "resultDeleteMany"),
                     @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateOne"),
                   })))
