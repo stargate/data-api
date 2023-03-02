@@ -1521,10 +1521,8 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class UpdateOneWithAddToSet {
     @Test
-    @Order(2)
     public void findByColumnAndAddToSet() {
       insertDoc(
           """
@@ -1575,8 +1573,56 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
           .body("data.docs[0]", jsonEquals(expected));
     }
 
+    // Test for case where nothing is actually added
     @Test
-    @Order(2)
+    public void findByColumnAndAddToSetNoChange() {
+      final String originalDoc =
+          """
+                          {
+                            "_id": "update_doc_add_to_set_unchanged",
+                            "array": [ 0, 1, 2 ]
+                          }
+                          """;
+      insertDoc(originalDoc);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "updateOne": {
+                              "filter" : {"_id" : "update_doc_add_to_set_unchanged"},
+                              "update" : {"$addToSet" : {"array": 2 }}
+                            }
+                          }
+                          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(0));
+      ;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_add_to_set_unchanged"}
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(originalDoc));
+    }
+
+    @Test
     public void findByColumnAndAddToSetWithEach() {
       insertDoc(
           """
