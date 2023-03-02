@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,8 +48,13 @@ public class SetOperation extends UpdateOperation {
     for (SetAction addition : additions) {
       UpdateTarget target = targetLocator.findOrCreate(doc, addition.path());
       JsonNode newValue = addition.value();
-      JsonNode oldValue = target.replaceValue(newValue);
-      modified |= !Objects.equals(newValue, oldValue);
+      JsonNode oldValue = target.valueNode();
+
+      // Modify if no old value OR new value differs, as per Mongo-equality rules
+      if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
+        target.replaceValue(newValue);
+        modified = true;
+      }
     }
     return modified;
   }
