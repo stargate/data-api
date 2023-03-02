@@ -105,9 +105,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .getItem();
 
       // assert query execution
-      // TODO due to the https://github.com/stargate/stargate/issues/2471
-      //  fetches 2 times, limit not respected
-      readAssert.assertExecuteCount().isEqualTo(2);
+      readAssert.assertExecuteCount().isOne();
       deleteAssert.assertExecuteCount().isOne();
 
       // then result
@@ -229,9 +227,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .getItem();
 
       // assert query execution
-      // TODO due to the https://github.com/stargate/stargate/issues/2471
-      //  fetches 2 times, limit not respected
-      candidatesAssert.assertExecuteCount().isEqualTo(2);
+      candidatesAssert.assertExecuteCount().isOne();
       deleteAssert.assertExecuteCount().isOne();
 
       // then result
@@ -486,9 +482,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .getItem();
 
       // assert query execution
-      // TODO due to the https://github.com/stargate/stargate/issues/2471
-      //  fetches 4 times, limit not respected
-      candidatesAssert.assertExecuteCount().isEqualTo(4);
+      candidatesAssert.assertExecuteCount().isEqualTo(3);
       deleteFirstAsser.assertExecuteCount().isOne();
       deleteSecondAssert.assertExecuteCount().isOne();
 
@@ -558,11 +552,13 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void errorPartial() {
       // TODO with stargate v2.0.9
+      //  and failure modes impl
     }
 
     @Test
     public void errorAll() {
       // TODO with stargate v2.0.9
+      //  and failure modes impl
     }
   }
 }
