@@ -14,6 +14,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -36,6 +37,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
+  @Inject DocumentConfig documentConfig;
 
   @Nested
   class DeleteOperationsTest {
@@ -92,7 +94,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation operation =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -140,7 +144,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation operation =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -203,7 +209,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation operation =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -276,7 +284,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 2);
+      DeleteOperation operation =
+          new DeleteOperation(
+              commandContext, findOperation, 2, documentConfig.maxLWTFailureRetry());
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();
@@ -331,7 +341,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation operation =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       final Supplier<CommandResult> execute =
           operation.execute(queryExecutor).subscribeAsCompletionStage().get();
       CommandResult result = execute.get();

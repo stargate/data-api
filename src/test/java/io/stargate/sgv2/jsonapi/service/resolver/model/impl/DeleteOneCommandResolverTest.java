@@ -8,6 +8,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DeleteOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
+  @Inject DocumentConfig documentConfig;
   @Inject DeleteOneCommandResolver deleteOneCommandResolver;
 
   @Nested
@@ -54,7 +56,9 @@ public class DeleteOneCommandResolverTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -79,7 +83,9 @@ public class DeleteOneCommandResolverTest {
           deleteOneCommandResolver.resolveCommand(commandContext, deleteOneCommand);
       FindOperation findOperation =
           new FindOperation(commandContext, List.of(), null, 1, 1, ReadType.KEY, objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -114,7 +120,9 @@ public class DeleteOneCommandResolverTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation expected = new DeleteOperation(commandContext, findOperation, 1);
+      DeleteOperation expected =
+          new DeleteOperation(
+              commandContext, findOperation, 1, documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(

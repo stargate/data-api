@@ -58,7 +58,10 @@ public class DeleteManyCommandResolverTest {
               objectMapper);
       DeleteOperation expected =
           new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+              commandContext,
+              findOperation,
+              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -92,7 +95,10 @@ public class DeleteManyCommandResolverTest {
               objectMapper);
       DeleteOperation expected =
           new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+              commandContext,
+              findOperation,
+              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(
@@ -129,7 +135,10 @@ public class DeleteManyCommandResolverTest {
               objectMapper);
       DeleteOperation expected =
           new DeleteOperation(
-              commandContext, findOperation, documentConfig.maxDocumentDeleteCount());
+              commandContext,
+              findOperation,
+              documentConfig.maxDocumentDeleteCount(),
+              documentConfig.maxLWTFailureRetry());
       assertThat(operation)
           .isInstanceOf(DeleteOperation.class)
           .satisfies(

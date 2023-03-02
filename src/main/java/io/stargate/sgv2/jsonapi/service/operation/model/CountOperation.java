@@ -46,7 +46,8 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
   }
 
   @Override
-  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor, String pagingState) {
+  public Uni<FindResponse> getDocuments(
+      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter idOverride) {
     return Uni.createFrom().failure(new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION));
   }
 
