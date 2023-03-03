@@ -199,7 +199,8 @@ public class ShredderTest {
     // [json-api#210]: accidental use of Engineering notation with trailing zeroes
     @Test
     public void shredSimpleWithNumberIdWithTrailingZeroes() throws Exception {
-      final JsonNode inputDoc = fromJson("{\"_id\":30}");
+      final String inputJson = "{\"_id\":30}";
+      final JsonNode inputDoc = fromJson(inputJson);
 
       WritableShreddedDocument doc = shredder.shred(inputDoc);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(30L)));
@@ -208,8 +209,7 @@ public class ShredderTest {
 
       // Important: MUST use ObjectMapper we have configured as it has necessary
       // settings. JsonNode.toString() would use "wrong" mapper
-      assertThat(objectMapper.writeValueAsString(jsonFromShredded))
-          .isEqualTo(objectMapper.writeValueAsString(inputDoc));
+      assertThat(objectMapper.writeValueAsString(jsonFromShredded)).isEqualTo(inputJson);
     }
   }
 
