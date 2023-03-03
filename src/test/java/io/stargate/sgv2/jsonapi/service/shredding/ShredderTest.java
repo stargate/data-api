@@ -196,6 +196,7 @@ public class ShredderTest {
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
     }
 
+    // [json-api#210]: accidental use of Engineering notation with trailing zeroes
     @Test
     public void shredSimpleWithNumberIdWithTrailingZeroes() throws Exception {
       final JsonNode inputDoc = fromJson("{\"_id\":30}");
