@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -72,7 +73,14 @@ public class Shredder {
     docWithId.set(DocumentConstants.Fields.DOC_ID, docId.asJson(objectMapper));
     docWithId.setAll(docWithoutId);
 
-    final String docJson = docWithId.toString();
+    // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
+    final String docJson;
+
+    try {
+      docJson = objectMapper.writeValueAsString(docWithId);
+    } catch (IOException e) { // never happens but signature exposes it
+      throw new RuntimeException(e);
+    }
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
 
