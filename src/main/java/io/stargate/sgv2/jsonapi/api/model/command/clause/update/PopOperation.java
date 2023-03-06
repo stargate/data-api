@@ -14,7 +14,7 @@ public class PopOperation extends UpdateOperation {
   private List<PopAction> actions;
 
   private PopOperation(List<PopAction> actions) {
-    this.actions = actions;
+    this.actions = sortByPath(actions);
   }
 
   public static PopOperation construct(ObjectNode args) {
@@ -94,5 +94,5 @@ public class PopOperation extends UpdateOperation {
   }
 
   /** Value class for per-field Pop operation definitions. */
-  private record PopAction(String path, boolean removeFirst) {}
+  private record PopAction(String path, boolean removeFirst) implements ActionWithPath {}
 }

@@ -16,10 +16,10 @@ import java.util.Map;
  * explanation.
  */
 public class IncOperation extends UpdateOperation {
-  private final List<IncAction> updates;
+  private final List<IncAction> actions;
 
-  private IncOperation(List<IncAction> updates) {
-    this.updates = updates;
+  private IncOperation(List<IncAction> actions) {
+    this.actions = sortByPath(actions);
   }
 
   public static IncOperation construct(ObjectNode args) {
@@ -49,7 +49,7 @@ public class IncOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (IncAction action : updates) {
+    for (IncAction action : actions) {
       final String path = action.path;
       final NumericNode toAdd = action.value;
 
@@ -92,5 +92,5 @@ public class IncOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record IncAction(String path, NumericNode value) {}
+  private record IncAction(String path, NumericNode value) implements ActionWithPath {}
 }

@@ -19,7 +19,7 @@ public class PushOperation extends UpdateOperation {
   private List<PushAction> actions;
 
   private PushOperation(List<PushAction> actions) {
-    this.actions = actions;
+    this.actions = sortByPath(actions);
   }
 
   public static PushOperation construct(ObjectNode args) {
@@ -186,5 +186,6 @@ public class PushOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record PushAction(String path, JsonNode value, boolean each, Integer position) {}
+  private record PushAction(String path, JsonNode value, boolean each, Integer position)
+      implements ActionWithPath {}
 }

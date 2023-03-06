@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * UpdateOperation represents one of update definitions from {@link UpdateClause} (like {@code $set}
@@ -55,5 +58,19 @@ public abstract class UpdateOperation {
 
   protected static boolean looksLikeModifier(String path) {
     return path.startsWith("$");
+  }
+
+  protected <P extends ActionWithPath> List<P> sortByPath(List<P> actions) {
+    Collections.sort(actions, NameComparator.INSTANCE);
+    return actions;
+  }
+
+  static class NameComparator implements Comparator<ActionWithPath> {
+    public static final NameComparator INSTANCE = new NameComparator();
+
+    @Override
+    public int compare(ActionWithPath o1, ActionWithPath o2) {
+      return o1.path().compareTo(o2.path());
+    }
   }
 }

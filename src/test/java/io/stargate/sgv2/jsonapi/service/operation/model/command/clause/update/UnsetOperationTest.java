@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import java.util.Arrays;
+import java.util.Set;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                     """));
       assertThat(oper)
           .isInstanceOf(UnsetOperation.class)
-          .hasFieldOrPropertyWithValue("paths", Arrays.asList("a", "b"));
+          .hasFieldOrPropertyWithValue("paths", Set.of("a", "b"));
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABC();
       assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
@@ -56,7 +56,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                     """));
       assertThat(oper)
           .isInstanceOf(UnsetOperation.class)
-          .hasFieldOrPropertyWithValue("paths", Arrays.asList("missing", "nosuchvalue"));
+          .hasFieldOrPropertyWithValue("paths", Set.of("missing", "nosuchvalue"));
       ObjectNode doc = defaultTestDocABC();
       // No modifications
       assertThat(oper.updateDocument(doc, targetLocator)).isFalse();

@@ -2,46 +2,41 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Implementation of {@code $unset} update operation used to remove fields from documents. */
 public class UnsetOperation extends UpdateOperation {
-  private List<String> paths;
+  private List<UnsetAction> actions;
 
-  private UnsetOperation(List<String> paths) {
-    this.paths = paths;
+  private UnsetOperation(List<UnsetAction> actions) {
+    this.actions = sortByPath(actions);
   }
 
   public static UnsetOperation construct(ObjectNode args) {
     Iterator<String> it = args.fieldNames();
-    List<String> fieldNames = new ArrayList<>();
+    List<UnsetAction> actions = new ArrayList<>();
     while (it.hasNext()) {
-      fieldNames.add(validateUpdatePath(UpdateOperator.UNSET, it.next()));
+      actions.add(new UnsetAction(validateUpdatePath(UpdateOperator.UNSET, it.next())));
     }
-    return new UnsetOperation(fieldNames);
+    return new UnsetOperation(actions);
   }
 
   @Override
   public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
     boolean modified = false;
-    for (String path : paths) {
-      UpdateTarget target = targetLocator.findIfExists(doc, path);
+    for (UnsetAction action : actions) {
+      UpdateTarget target = targetLocator.findIfExists(doc, action.path());
       modified |= (target.removeValue() != null);
     }
     return modified;
   }
 
-  public Set<String> paths() {
-    return new HashSet<>(paths);
+  public Set<String> getPaths() {
+    return actions.stream().map(UnsetAction::path).collect(Collectors.toSet());
   }
 
-  // Just needed for tests
-  @Override
-  public boolean equals(Object o) {
-    return (o instanceof UnsetOperation) && Objects.equals(this.paths, ((UnsetOperation) o).paths);
-  }
+  private record UnsetAction(String path) implements ActionWithPath {}
 }
