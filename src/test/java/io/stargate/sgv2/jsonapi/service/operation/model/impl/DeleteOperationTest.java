@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
@@ -16,7 +17,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -40,7 +41,6 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
 
   @Nested
   class Execute {
@@ -98,9 +98,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 1, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -153,9 +151,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 1, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -223,9 +219,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 1, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -616,9 +610,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               2,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 2, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -701,9 +693,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 2, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -792,9 +782,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 2, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -854,9 +842,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation =
-          new DeleteOperation(
-              COMMAND_CONTEXT, findOperation, 1, documentConfig.maxLWTFailureRetry());
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -872,6 +858,30 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 0);
+    }
+
+    @Test
+    public void testMutiny() {
+      Uni<AtomicInteger> input = Uni.createFrom().item(new AtomicInteger(0));
+      Uni<AtomicInteger> output =
+          input
+              .onItem()
+              .transformToUni(
+                  val -> {
+                    return tryVal(val).onFailure().retry().atMost(3);
+                  });
+
+      AtomicInteger execute =
+          output.subscribe().withSubscriber(UniAssertSubscriber.create()).awaitItem().getItem();
+
+      System.out.println("incoming value : " + execute.get());
+    }
+
+    private Uni<AtomicInteger> tryVal(AtomicInteger value) {
+      System.out.println("incoming value : " + value.get());
+      value.incrementAndGet();
+      System.out.println("Increment successfully : " + value.get());
+      return Uni.createFrom().item(new AtomicInteger(1 / value.get()));
     }
 
     @Test

@@ -36,7 +36,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
         commandContext,
         readOperation,
         documentConfig.maxDocumentDeleteCount(),
-        documentConfig.maxLWTFailureRetry());
+        documentConfig.lwt().retries());
   }
 
   @Override

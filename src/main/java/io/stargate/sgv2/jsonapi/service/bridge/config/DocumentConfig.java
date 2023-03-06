@@ -65,9 +65,14 @@ public interface DocumentConfig {
   @WithDefault("20")
   int maxDocumentUpdateCount();
 
-  /** @return Defines the maximum retry for lwt failure <code>3</code>. */
-  @Max(5)
-  @Positive
-  @WithDefault("3")
-  int maxLWTFailureRetry();
+  /** {@inheritDoc} */
+  LwtConfig lwt();
+
+  interface LwtConfig {
+    /** @return Defines the maximum retry for lwt failure <code>3</code>. */
+    @Max(5)
+    @Positive
+    @WithDefault("3")
+    int retries();
+  }
 }

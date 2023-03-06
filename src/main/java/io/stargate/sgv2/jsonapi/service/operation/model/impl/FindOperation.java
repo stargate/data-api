@@ -41,12 +41,12 @@ public record FindOperation(
 
   @Override
   public Uni<FindResponse> getDocuments(
-      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter idOverride) {
+      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
     switch (readType) {
       case DOCUMENT:
       case KEY:
         {
-          QueryOuterClass.Query query = buildSelectQuery(idOverride);
+          QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
           return findDocument(
               queryExecutor,
               query,
@@ -84,13 +84,13 @@ public record FindOperation(
     return doc;
   }
 
-  private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter idOverride) {
+  private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
     for (DBFilterBase filter : filters) {
       conditions.add(filter.get());
     }
-    if (idOverride != null) {
-      conditions.add(idOverride.get());
+    if (additionalIdFilter != null) {
+      conditions.add(additionalIdFilter.get());
     }
     return new QueryBuilder()
         .select()

@@ -32,8 +32,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
     ReadOperation readOperation = resolve(commandContext, command);
-    return new DeleteOperation(
-        commandContext, readOperation, 1, documentConfig.maxLWTFailureRetry());
+    return new DeleteOperation(commandContext, readOperation, 1, documentConfig.lwt().retries());
   }
 
   @Override
