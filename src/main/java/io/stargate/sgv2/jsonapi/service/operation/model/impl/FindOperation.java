@@ -87,7 +87,9 @@ public record FindOperation(
   private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
     for (DBFilterBase filter : filters) {
-      conditions.add(filter.get());
+      if (additionalIdFilter == null
+          || (additionalIdFilter != null && !(filter instanceof DBFilterBase.IDFilter)))
+        conditions.add(filter.get());
     }
     if (additionalIdFilter != null) {
       conditions.add(additionalIdFilter.get());

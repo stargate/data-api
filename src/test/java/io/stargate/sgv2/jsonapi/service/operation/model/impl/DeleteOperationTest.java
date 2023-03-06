@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
@@ -24,7 +23,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -858,30 +856,6 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 0);
-    }
-
-    @Test
-    public void testMutiny() {
-      Uni<AtomicInteger> input = Uni.createFrom().item(new AtomicInteger(0));
-      Uni<AtomicInteger> output =
-          input
-              .onItem()
-              .transformToUni(
-                  val -> {
-                    return tryVal(val).onFailure().retry().atMost(3);
-                  });
-
-      AtomicInteger execute =
-          output.subscribe().withSubscriber(UniAssertSubscriber.create()).awaitItem().getItem();
-
-      System.out.println("incoming value : " + execute.get());
-    }
-
-    private Uni<AtomicInteger> tryVal(AtomicInteger value) {
-      System.out.println("incoming value : " + value.get());
-      value.incrementAndGet();
-      System.out.println("Increment successfully : " + value.get());
-      return Uni.createFrom().item(new AtomicInteger(1 / value.get()));
     }
 
     @Test
