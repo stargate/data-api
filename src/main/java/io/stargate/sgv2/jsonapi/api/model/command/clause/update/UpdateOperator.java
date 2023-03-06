@@ -42,6 +42,13 @@ public enum UpdateOperator {
       return SetOperation.construct(arguments);
     }
   },
+  SET_ON_INSERT("$setOnInsert") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return SetOnInsertOperation.construct(arguments);
+    }
+  },
+
   UNSET("$unset") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
