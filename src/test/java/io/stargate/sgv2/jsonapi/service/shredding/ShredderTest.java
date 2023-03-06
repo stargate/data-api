@@ -12,6 +12,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -175,11 +176,11 @@ public class ShredderTest {
                         "name" : "Bob"
                       }
                       """;
-      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      final JsonNode inputDoc = fromJson(inputJson);
       WritableShreddedDocument doc = shredder.shred(inputDoc);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
 
-      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      JsonNode jsonFromShredded = fromJson(doc.docJson());
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       assertThat(doc.arraySize()).isEmpty();
@@ -193,6 +194,16 @@ public class ShredderTest {
       assertThat(doc.queryNumberValues())
           .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
+    }
+
+    // [json-api#210]: accidental use of Engineering notation with trailing zeroes
+    @Test
+    public void shredSimpleWithNumberIdWithTrailingZeroes() {
+      final String inputJson = "{\"_id\":30}";
+      WritableShreddedDocument doc = shredder.shred(fromJson(inputJson));
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(30L)));
+      // Verify that we do NOT have '{"_id":3E+1}':
+      assertThat(doc.docJson()).isEqualTo(inputJson);
     }
   }
 
@@ -231,6 +242,14 @@ public class ShredderTest {
           .isNotNull()
           .hasMessage("Bad value for '_id' property: empty String not allowed")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+    }
+  }
+
+  protected JsonNode fromJson(String json) {
+    try {
+      return objectMapper.readTree(json);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }
