@@ -12,16 +12,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class SetOperationTest extends UpdateOperationTestBase {
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class HappyPathRoot {
     @Test
     public void testSimpleSetOfExisting() {
@@ -114,7 +111,6 @@ public class SetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class HappyPathNestedObjects {
     @Test
     public void testSetOfExistingNested() {
@@ -188,7 +184,6 @@ public class SetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class HappyPathNestedArrays {
     @Test
     public void testSetOfNestedArrays() {
@@ -293,8 +288,62 @@ public class SetOperationTest extends UpdateOperationTestBase {
     }
   }
 
+  // Tests for [json-api#190]; consider Object Equality to require field ordering
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class HappyPathObjectEquality {
+    @Test
+    public void testNoChangeForIdenticalObject() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+          { "people":
+            { "name":"Bob", "age":42 }
+          }
+      """);
+      ObjectNode expected = doc.deepCopy();
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson("""
+            { "people" :  { "name":"Bob", "age":42 } }
+      """));
+      // No actual change
+      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
+      // order-INsensitive:
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
+    }
+
+    @Test
+    public void testChangeForObjectWithDifferentFieldOrder() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+          { "people":
+            { "name":"Bob", "age":42 }
+          }
+      """);
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson("""
+            { "people":  { "age":42, "name":"Bob" } }
+      """));
+      ObjectNode expected =
+          objectFromJson(
+              """
+          { "people":
+            { "age":42, "name":"Bob" }
+          }
+      """);
+
+      // Actual change due to reordering of fields
+      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
+      // order-INsensitive:
+      assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
+    }
+  }
+
+  @Nested
   class InvalidCasesRoot {
     @Test
     public void testNoReplacingDocId() {
@@ -317,7 +366,6 @@ public class SetOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class InvalidCasesNested {
     @Test
     public void testNoPathThroughAtomics() {
