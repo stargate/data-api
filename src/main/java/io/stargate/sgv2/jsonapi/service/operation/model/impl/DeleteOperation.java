@@ -37,6 +37,7 @@ public record DeleteOperation(
     final AtomicBoolean moreData = new AtomicBoolean(false);
     final QueryOuterClass.Query delete = buildDeleteQuery();
     AtomicInteger totalCount = new AtomicInteger(0);
+    final int retryAttempt = retryLimit - 2;
     // Read the required records to be deleted
     return Multi.createBy()
         .repeating()
@@ -74,15 +75,31 @@ public record DeleteOperation(
 
         // Run delete for selected documents and retry in case of
         .onItem()
-        .transformToUniAndConcatenate(
+        .transformToUniAndMerge(
             document -> {
-              AtomicInteger retryAttempt = new AtomicInteger(0);
-              return deleteDocument(queryExecutor, delete, document, retryAttempt)
-
+              return deleteDocument(queryExecutor, delete, document)
                   // Retry `retryLimit` times in case of LWT failure
                   .onFailure(LWTException.class)
-                  .retry()
-                  .until(error -> error instanceof LWTException && retryAttempt.get() < retryLimit);
+                  .recoverWithUni(
+                      () -> {
+                        return Uni.createFrom()
+                            .nullItem()
+                            .flatMap(
+                                nullData -> {
+                                  return readDocumentAgain(queryExecutor, document)
+                                      .onItem()
+                                      // Try deleting the document
+                                      .transformToUni(
+                                          reReadDocument ->
+                                              deleteDocument(
+                                                  queryExecutor, delete, reReadDocument));
+                                })
+                            .onFailure(LWTException.class)
+                            .retry()
+                            // because it's already run twice before this
+                            // check.
+                            .atMost(retryLimit - 1);
+                      });
             })
         .collect()
 
@@ -122,39 +139,22 @@ public record DeleteOperation(
    * @param queryExecutor
    * @param query
    * @param doc
-   * @param retryAttempt
    * @return Uni<Boolean> `true` if deleted successfully, else `false` if data changed and no longer
    *     match the conditions and throws JsonApiException if LWT failure.
    */
   private Uni<Boolean> deleteDocument(
-      QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
-      ReadDocument doc,
-      AtomicInteger retryAttempt)
+      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc)
       throws JsonApiException {
-
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`
         .onItem()
         .transformToUni(
             document -> {
-              if (retryAttempt.get() > 0) {
-                retryAttempt.incrementAndGet();
-                return readDocumentAgain(queryExecutor, document);
-              } else {
-                retryAttempt.incrementAndGet();
-                return Uni.createFrom().item(document);
-              }
-            })
-        .onItem()
-        .transformToUni(
-            docToDelete -> {
-              // In case document resolved after the retry read
-              if (docToDelete == null) {
+              if (document == null) {
                 return Uni.createFrom().item(false);
               } else {
-                QueryOuterClass.Query boundQuery = bindDeleteQuery(query, docToDelete);
+                QueryOuterClass.Query boundQuery = bindDeleteQuery(query, document);
                 return queryExecutor
                     .executeWrite(boundQuery)
                     .onItem()
@@ -170,14 +170,14 @@ public record DeleteOperation(
                             throw new LWTException(
                                 ErrorCode.CONCURRENCY_FAILURE,
                                 "Delete failed for document with id %s because of concurrent transaction"
-                                    .formatted(docToDelete.id().value()));
+                                    .formatted(document.id().value()));
                           }
                         });
               }
             });
   }
 
-  private Uni<? extends ReadDocument> readDocumentAgain(
+  private Uni<ReadDocument> readDocumentAgain(
       QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     // Read again if retry flag is `true`
     return readOperation()
