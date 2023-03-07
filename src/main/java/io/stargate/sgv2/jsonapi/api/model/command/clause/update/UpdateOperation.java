@@ -22,6 +22,19 @@ public abstract class UpdateOperation {
   public abstract boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator);
 
   /**
+   * Method called to see if update operator should be applied for specific kind of update:
+   * currently one special case is that of document insertion as part of upsert. Most update
+   * operations should apply for all updates so the default implementation returns {@code true};
+   *
+   * @param isInsert True if the document to update was just inserted (as part of upsert operation)
+   * @return {@code true} If the update should be applied for document context; {@code false} if it
+   *     should be skipped
+   */
+  public boolean shouldApplyIf(boolean isInsert) {
+    return true;
+  }
+
+  /**
    * Shared validation method used by mutating operations (like {@code $set}, {@code $unset}, {@code
    * inc}, {@code pop}) to ensure they are not used to modify paths that are not allowed:
    * specifically Document's primary id, {@code _id}.

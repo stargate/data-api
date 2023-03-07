@@ -6,6 +6,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -1671,6 +1672,105 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
                   }
                 }
                 """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class UpdateOneWithSetOnInsert {
+    @Test
+    @Order(2)
+    public void findByIdUpsertAndAddOnInsert() {
+      String json =
+          """
+          {
+            "findOneAndUpdate": {
+              "filter" : {"_id" : "setOnInsertDoc1"},
+              "update" : {
+                  "$set" : {"active_user": true},
+                  "$setOnInsert" : {"new_user": true}
+              },
+              "options" : {"returnDocument" : "after", "upsert" : true}
+            }
+          }
+          """;
+      // On Insert (for Upsert) should apply both $set and $setOnInsert
+      String expected = "{\"_id\":\"setOnInsertDoc1\", \"new_user\":true, \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.upsertedId", is("setOnInsertDoc1"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0));
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "setOnInsertDoc1"}
+                    }
+                  }
+                  """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+
+      // However: with update for upsert, $setOnInsert not to be applied
+      json =
+          """
+            {
+              "findOneAndUpdate": {
+                "filter" : {"_id" : "setOnInsertDoc1"},
+                "update" : {
+                    "$set" : {"new_user": false},
+                    "$setOnInsert" : {"x": 5}
+                },
+                "options" : {"returnDocument" : "after", "upsert" : true}
+              }
+            }
+            """;
+      expected = "{\"_id\":\"setOnInsertDoc1\", \"new_user\":false, \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("status.upsertedId", nullValue());
+
+      // And validate to make sure nothing was actually modified
+      json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : "setOnInsertDoc1"}
+              }
+            }
+            """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

@@ -90,10 +90,11 @@ public record ReadAndUpdateOperation(
             .onItem()
             .transformToUniAndConcatenate(
                 readDocument -> {
-                  DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                      documentUpdater().applyUpdates(readDocument.document().deepCopy());
                   final JsonNode originalDocument =
                       readDocument.txnId() == null ? null : readDocument.document();
+                  final boolean isInsert = (originalDocument == null);
+                  DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
+                      documentUpdater().applyUpdates(readDocument.document().deepCopy(), isInsert);
                   JsonNode updatedDocument = documentUpdaterResponse.document();
                   Uni<DocumentId> updated = Uni.createFrom().nullItem();
                   if (documentUpdaterResponse.modified()) {

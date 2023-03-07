@@ -52,7 +52,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.applyUpdates(baseData);
+          documentUpdater.applyUpdates(baseData, false);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -81,7 +81,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.applyUpdates(baseData);
+          documentUpdater.applyUpdates(baseData, false);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -110,7 +110,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", 40)));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.applyUpdates(baseData);
+          documentUpdater.applyUpdates(baseData, false);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -138,7 +138,7 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.UNSET, objectMapper.getNodeFactory().objectNode().put("col", 1)));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.applyUpdates(baseData);
+          documentUpdater.applyUpdates(baseData, false);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(

@@ -13,12 +13,20 @@ public record DocumentUpdater(List<UpdateOperation> updateOperations) {
     return new DocumentUpdater(updateDef.buildOperations());
   }
 
-  public DocumentUpdaterResponse applyUpdates(JsonNode readDocument) {
+  /**
+   * @param readDocument Document to update
+   * @param docInserted True if document was just created (inserted); false if updating existing
+   *     document
+   */
+  public DocumentUpdaterResponse applyUpdates(JsonNode readDocument, boolean docInserted) {
     UpdateTargetLocator targetLocator = new UpdateTargetLocator();
     ObjectNode docToUpdate = (ObjectNode) readDocument;
     boolean modified = false;
-    for (UpdateOperation updateOperation : updateOperations)
-      modified |= updateOperation.updateDocument(docToUpdate, targetLocator);
+    for (UpdateOperation updateOperation : updateOperations) {
+      if (updateOperation.shouldApplyIf(docInserted)) {
+        modified |= updateOperation.updateDocument(docToUpdate, targetLocator);
+      }
+    }
     return new DocumentUpdaterResponse(readDocument, modified);
   }
 
