@@ -9,37 +9,51 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Implementation of {@code $set} update operation used to assign values to document fields. */
+/**
+ * Implementation of {@code $set} update operation used to assign values to document fields; also
+ * used for {@code $setOnInsert} with different configuration.
+ */
 public class SetOperation extends UpdateOperation {
   private final List<SetAction> actions;
 
-  private SetOperation(List<SetAction> actions) {
+  private final boolean onlyOnInsert;
+
+  private SetOperation(List<SetAction> actions, boolean onlyOnInsert) {
     this.actions = sortByPath(actions);
+    this.onlyOnInsert = onlyOnInsert;
   }
 
-  public static SetOperation construct(ObjectNode args) {
+  public static SetOperation constructSet(ObjectNode args) {
+    return construct(args, false, UpdateOperator.SET);
+  }
+
+  /** Override method used to create an operation that $sets a single property */
+  public static SetOperation constructSet(String filterPath, JsonNode value) {
+    List<SetAction> additions = new ArrayList<>();
+    String path = validateUpdatePath(UpdateOperator.SET, filterPath);
+    additions.add(new SetAction(path, value));
+    return new SetOperation(additions, false);
+  }
+
+  public static SetOperation constructSetOnInsert(ObjectNode args) {
+    return construct(args, true, UpdateOperator.SET_ON_INSERT);
+  }
+
+  private static SetOperation construct(
+      ObjectNode args, boolean onlyOnInsert, UpdateOperator operator) {
     List<SetAction> additions = new ArrayList<>();
     var it = args.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      String path = validateUpdatePath(UpdateOperator.SET, entry.getKey());
+      String path = validateUpdatePath(operator, entry.getKey());
       additions.add(new SetAction(path, entry.getValue()));
     }
-    return new SetOperation(additions);
+    return new SetOperation(additions, onlyOnInsert);
   }
 
-  /**
-   * Override method used to set update filter condition fields to the document
-   *
-   * @param filterPath
-   * @param value
-   * @return
-   */
-  public static SetOperation construct(String filterPath, JsonNode value) {
-    List<SetAction> additions = new ArrayList<>();
-    String path = validateUpdatePath(UpdateOperator.SET, filterPath);
-    additions.add(new SetAction(path, value));
-    return new SetOperation(additions);
+  @Override
+  public boolean shouldApplyIf(boolean isInsert) {
+    return isInsert || !onlyOnInsert;
   }
 
   @Override

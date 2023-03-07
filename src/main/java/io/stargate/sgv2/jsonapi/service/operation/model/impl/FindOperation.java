@@ -74,7 +74,7 @@ public record FindOperation(
           JsonNode value = filter.asJson(objectMapper().getNodeFactory());
           if (value != null) {
             String filterPath = filter.getPath();
-            SetOperation.construct(filterPath, value).updateDocument(rootNode, targetLocator);
+            SetOperation.constructSet(filterPath, value).updateDocument(rootNode, targetLocator);
           }
         }
       }
