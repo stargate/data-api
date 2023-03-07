@@ -83,10 +83,10 @@ public record DeleteOperation(
                   .recoverWithUni(
                       () -> {
                         return Uni.createFrom()
-                            .nullItem()
+                            .item(document)
                             .flatMap(
-                                nullData -> {
-                                  return readDocumentAgain(queryExecutor, document)
+                                prevDoc -> {
+                                  return readDocumentAgain(queryExecutor, prevDoc)
                                       .onItem()
                                       // Try deleting the document
                                       .transformToUni(
