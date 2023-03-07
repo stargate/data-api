@@ -80,11 +80,9 @@ public record DeleteOperation(
               return deleteDocument(queryExecutor, delete, document, retryAttempt)
 
                   // Retry `retryLimit` times in case of LWT failure
-                  .onFailure()
+                  .onFailure(LWTException.class)
                   .retry()
-                  .until(
-                      error ->
-                          error instanceof JsonApiException && retryAttempt.get() < retryLimit);
+                  .until(error -> error instanceof LWTException && retryAttempt.get() < retryLimit);
             })
         .collect()
 
@@ -169,7 +167,7 @@ public record DeleteOperation(
                           } else {
                             // In case of successful document delete
 
-                            throw new JsonApiException(
+                            throw new LWTException(
                                 ErrorCode.CONCURRENCY_FAILURE,
                                 "Delete failed for document with id %s because of concurrent transaction"
                                     .formatted(docToDelete.id().value()));
@@ -206,5 +204,12 @@ public record DeleteOperation(
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+  }
+
+  /** Inherited Exception class to handle retry */
+  private class LWTException extends JsonApiException {
+    public LWTException(ErrorCode errorCode, String message) {
+      super(errorCode, message);
+    }
   }
 }
