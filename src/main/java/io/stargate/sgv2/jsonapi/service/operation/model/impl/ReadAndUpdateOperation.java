@@ -88,7 +88,7 @@ public record ReadAndUpdateOperation(
         .concatenate()
         // Update the read documents
         .onItem()
-        .transformToUniAndConcatenate(
+        .transformToUniAndMerge(
             readDocument ->
                 processUpdate(readDocument, queryExecutor, modifiedCount)
                     .onFailure(LWTException.class)
