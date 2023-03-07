@@ -34,18 +34,19 @@ public record FindOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    return getDocuments(queryExecutor, pagingState())
+    return getDocuments(queryExecutor, pagingState(), null)
         .onItem()
         .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
   }
 
   @Override
-  public Uni<FindResponse> getDocuments(QueryExecutor queryExecutor, String pagingState) {
+  public Uni<FindResponse> getDocuments(
+      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
     switch (readType) {
       case DOCUMENT:
       case KEY:
         {
-          QueryOuterClass.Query query = buildSelectQuery();
+          QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
           return findDocument(
               queryExecutor,
               query,
@@ -83,10 +84,15 @@ public record FindOperation(
     return doc;
   }
 
-  private QueryOuterClass.Query buildSelectQuery() {
+  private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
     for (DBFilterBase filter : filters) {
-      conditions.add(filter.get());
+      if (additionalIdFilter == null
+          || (additionalIdFilter != null && !(filter instanceof DBFilterBase.IDFilter)))
+        conditions.add(filter.get());
+    }
+    if (additionalIdFilter != null) {
+      conditions.add(additionalIdFilter.get());
     }
     return new QueryBuilder()
         .select()

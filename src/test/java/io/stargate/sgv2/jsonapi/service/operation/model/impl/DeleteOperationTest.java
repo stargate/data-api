@@ -15,6 +15,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -95,7 +96,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -148,7 +149,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               ReadType.KEY,
               objectMapper);
 
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -216,7 +217,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -233,6 +234,314 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
+    }
+
+    @Test
+    public void deleteWithDynamicRetry() {
+      UUID tx_id1 = UUID.randomUUID();
+      UUID tx_id2 = UUID.randomUUID();
+      String collectionReadCql =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id1))));
+
+      String collectionReadCql2 =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql2,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id2))));
+
+      String collectionDeleteCql =
+          "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert deleteAssert =
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id1))
+              .returning(List.of(List.of(Values.of(false))));
+      ValidatingStargateBridge.QueryAssert deleteAssert2 =
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id2))
+              .returning(List.of(List.of(Values.of(true))));
+
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              null,
+              1,
+              1,
+              ReadType.KEY,
+              objectMapper);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isOne();
+      deleteAssert.assertExecuteCount().isOne();
+      deleteAssert2.assertExecuteCount().isOne();
+      // then result
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
+    }
+
+    @Test
+    public void deleteWithDynamicRetryFailure() {
+      UUID tx_id1 = UUID.randomUUID();
+      UUID tx_id2 = UUID.randomUUID();
+      String collectionReadCql =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id1))));
+
+      String collectionReadCql2 =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql2,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id2))));
+
+      String collectionDeleteCql =
+          "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert deleteAssert =
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id1))
+              .returning(List.of(List.of(Values.of(false))));
+      ValidatingStargateBridge.QueryAssert deleteAssert2 =
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id2))
+              .returning(List.of(List.of(Values.of(false))));
+
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              null,
+              1,
+              1,
+              ReadType.KEY,
+              objectMapper);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
+
+      final UniAssertSubscriber<Supplier<CommandResult>> supplierUniAssertSubscriber =
+          operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isEqualTo(2);
+      deleteAssert.assertExecuteCount().isOne();
+      deleteAssert2.assertExecuteCount().isEqualTo(2);
+      // then result
+
+      supplierUniAssertSubscriber.assertFailedWith(
+          JsonApiException.class,
+          "Delete failed for document with id %s because of concurrent transaction"
+              .formatted("doc1"));
+    }
+
+    @Test
+    public void deleteWithDynamicRetryConcurrentDelete() {
+      UUID tx_id1 = UUID.randomUUID();
+      String collectionReadCql =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id1))));
+
+      String collectionReadCql2 =
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql2,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build()))
+              .returning(List.of());
+
+      String collectionDeleteCql =
+          "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert deleteAssert =
+          withQuery(
+                  collectionDeleteCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of(tx_id1))
+              .returning(List.of(List.of(Values.of(false))));
+
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(
+                  new DBFilterBase.TextFilter(
+                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              null,
+              1,
+              1,
+              ReadType.KEY,
+              objectMapper);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isOne();
+      deleteAssert.assertExecuteCount().isOne();
+      // then result
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 0);
     }
 
     @Test
@@ -299,7 +608,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               2,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -382,7 +691,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -471,7 +780,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
           operation
@@ -531,7 +840,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               ReadType.KEY,
               objectMapper);
-      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1);
+      DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
           operation

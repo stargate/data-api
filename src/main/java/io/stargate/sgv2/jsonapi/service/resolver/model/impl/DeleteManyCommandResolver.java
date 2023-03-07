@@ -33,7 +33,10 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
     ReadOperation readOperation = resolve(commandContext, command);
     return new DeleteOperation(
-        commandContext, readOperation, documentConfig.maxDocumentDeleteCount());
+        commandContext,
+        readOperation,
+        documentConfig.maxDocumentDeleteCount(),
+        documentConfig.lwt().retries());
   }
 
   @Override

@@ -6,6 +6,8 @@ public enum ErrorCode {
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
+  CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
+
   DOCUMENT_ALREADY_EXISTS("Document already exists with the id"),
 
   DOCUMENT_UNPARSEABLE("Unable to parse the document"),

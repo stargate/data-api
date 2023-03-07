@@ -54,7 +54,7 @@ public record ReadAndUpdateOperation(
                 () -> new AtomicReference<String>(null),
                 stateRef -> {
                   Uni<ReadOperation.FindResponse> docsToUpdate =
-                      readOperation().getDocuments(queryExecutor, stateRef.get());
+                      readOperation().getDocuments(queryExecutor, stateRef.get(), null);
                   return docsToUpdate
                       .onItem()
                       .invoke(findResponse -> stateRef.set(findResponse.pagingState()));

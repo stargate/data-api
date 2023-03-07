@@ -6,6 +6,8 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -27,58 +29,88 @@ public record DeleteOperation(
      * Added parameter to pass number of document to be deleted, this is needed because read
      * documents limit changed to deleteLimit + 1
      */
-    int deleteLimit)
+    int deleteLimit,
+    int retryLimit)
     implements ModifyOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
     final QueryOuterClass.Query delete = buildDeleteQuery();
-    final Multi<ReadOperation.FindResponse> findResponses =
-        Multi.createBy()
-            .repeating()
-            .uni(
-                () -> new AtomicReference<String>(null),
-                stateRef -> {
-                  Uni<ReadOperation.FindResponse> docsToDelete =
-                      readOperation().getDocuments(queryExecutor, stateRef.get());
-                  return docsToDelete
-                      .onItem()
-                      .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
-                })
-            .whilst(findResponse -> findResponse.pagingState() != null);
     AtomicInteger totalCount = new AtomicInteger(0);
-    final Uni<AtomicInteger> counter =
-        findResponses
-            .onItem()
-            .transformToMulti(
-                findResponse -> {
-                  final List<ReadDocument> docs = findResponse.docs();
-                  // Below conditionality is because we read up to deleteLimit +1 record.
-                  if (totalCount.get() + docs.size() <= deleteLimit) {
-                    totalCount.addAndGet(docs.size());
-                    return Multi.createFrom().items(docs.stream());
-                  } else {
-                    int needed = deleteLimit - totalCount.get();
-                    totalCount.addAndGet(needed);
-                    moreData.set(true);
-                    return Multi.createFrom()
-                        .items(findResponse.docs().subList(0, needed).stream());
-                  }
-                })
-            .concatenate()
-            .onItem()
-            .transformToUniAndConcatenate(
-                readDocument -> deleteDocument(queryExecutor, delete, readDocument))
-            .collect()
-            .in(
-                AtomicInteger::new,
-                (atomicCounter, flag) -> {
-                  if (flag) {
-                    atomicCounter.incrementAndGet();
-                  }
-                });
+    final int retryAttempt = retryLimit - 2;
+    // Read the required records to be deleted
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<String>(null),
+            stateRef -> {
+              Uni<ReadOperation.FindResponse> docsToDelete =
+                  readOperation().getDocuments(queryExecutor, stateRef.get(), null);
+              return docsToDelete
+                  .onItem()
+                  .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
+            })
 
-    return counter
+        // Documents read until pagingState available, max records read is deleteLimit + 1
+        .whilst(findResponse -> findResponse.pagingState() != null)
+
+        // Get the deleteLimit # of documents to be delete and set moreData flag true if extra
+        // document is read.
+        .onItem()
+        .transformToMulti(
+            findResponse -> {
+              final List<ReadDocument> docs = findResponse.docs();
+              // Below conditionality is because we read up to deleteLimit +1 record.
+              if (totalCount.get() + docs.size() <= deleteLimit) {
+                totalCount.addAndGet(docs.size());
+                return Multi.createFrom().items(docs.stream());
+              } else {
+                int needed = deleteLimit - totalCount.get();
+                totalCount.addAndGet(needed);
+                moreData.set(true);
+                return Multi.createFrom().items(findResponse.docs().subList(0, needed).stream());
+              }
+            })
+        .concatenate()
+
+        // Run delete for selected documents and retry in case of
+        .onItem()
+        .transformToUniAndMerge(
+            document -> {
+              return deleteDocument(queryExecutor, delete, document)
+                  // Retry `retryLimit` times in case of LWT failure
+                  .onFailure(LWTException.class)
+                  .recoverWithUni(
+                      () -> {
+                        return Uni.createFrom()
+                            .item(document)
+                            .flatMap(
+                                prevDoc -> {
+                                  return readDocumentAgain(queryExecutor, prevDoc)
+                                      .onItem()
+                                      // Try deleting the document
+                                      .transformToUni(
+                                          reReadDocument ->
+                                              deleteDocument(
+                                                  queryExecutor, delete, reReadDocument));
+                                })
+                            .onFailure(LWTException.class)
+                            .retry()
+                            // because it's already run twice before this
+                            // check.
+                            .atMost(retryLimit - 1);
+                      });
+            })
+        .collect()
+
+        // Count the successful deletes
+        .in(
+            AtomicInteger::new,
+            (atomicCounter, flag) -> {
+              if (flag) {
+                atomicCounter.incrementAndGet();
+              }
+            })
         .onItem()
         .transform(deletedCounter -> new DeleteOperationPage(deletedCounter.get(), moreData.get()));
   }
@@ -107,20 +139,60 @@ public record DeleteOperation(
    * @param queryExecutor
    * @param query
    * @param doc
-   * @return Uni<Boolean> `true` if deleted successfully, else `false`
+   * @return Uni<Boolean> `true` if deleted successfully, else `false` if data changed and no longer
+   *     match the conditions and throws JsonApiException if LWT failure.
    */
-  private static Uni<Boolean> deleteDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc) {
-    query = bindDeleteQuery(query, doc);
-    return queryExecutor
-        .executeWrite(query)
+  private Uni<Boolean> deleteDocument(
+      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc)
+      throws JsonApiException {
+    return Uni.createFrom()
+        .item(doc)
+        // Read again if retryAttempt >`0`
         .onItem()
         .transformToUni(
-            result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
-                return Uni.createFrom().item(true);
-              } else {
+            document -> {
+              if (document == null) {
                 return Uni.createFrom().item(false);
+              } else {
+                QueryOuterClass.Query boundQuery = bindDeleteQuery(query, document);
+                return queryExecutor
+                    .executeWrite(boundQuery)
+                    .onItem()
+                    .transform(
+                        result -> {
+                          // LWT returns `true` for successful transaction, false on failure.
+                          if (result.getRows(0).getValues(0).getBoolean()) {
+                            // In case of successful document delete
+                            return true;
+                          } else {
+                            // In case of successful document delete
+
+                            throw new LWTException(
+                                ErrorCode.CONCURRENCY_FAILURE,
+                                "Delete failed for document with id %s because of concurrent transaction"
+                                    .formatted(document.id().value()));
+                          }
+                        });
+              }
+            });
+  }
+
+  private Uni<ReadDocument> readDocumentAgain(
+      QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
+    // Read again if retry flag is `true`
+    return readOperation()
+        .getDocuments(
+            queryExecutor,
+            null,
+            new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.EQ, prevReadDoc.id()))
+        .onItem()
+        .transform(
+            response -> {
+              if (!response.docs().isEmpty()) {
+                return response.docs().get(0);
+              } else {
+                // If data changed and doesn't satisfy filter conditions
+                return null;
               }
             });
   }
@@ -132,5 +204,12 @@ public record DeleteOperation(
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+  }
+
+  /** Inherited Exception class to handle retry */
+  private class LWTException extends JsonApiException {
+    public LWTException(ErrorCode errorCode, String message) {
+      super(errorCode, message);
+    }
   }
 }
