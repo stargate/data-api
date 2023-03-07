@@ -16,6 +16,10 @@ import java.util.stream.Collectors;
 public class SetOperation extends UpdateOperation {
   private final List<SetAction> actions;
 
+  /**
+   * Setting to indicate that update should only be applied to inserts (part of upsert), not for
+   * updates of existing rows.
+   */
   private final boolean onlyOnInsert;
 
   private SetOperation(List<SetAction> actions, boolean onlyOnInsert) {
@@ -23,6 +27,7 @@ public class SetOperation extends UpdateOperation {
     this.onlyOnInsert = onlyOnInsert;
   }
 
+  /** Factory method for constructing {@code $set} update operation with given configuration */
   public static SetOperation constructSet(ObjectNode args) {
     return construct(args, false, UpdateOperator.SET);
   }
@@ -35,6 +40,9 @@ public class SetOperation extends UpdateOperation {
     return new SetOperation(additions, false);
   }
 
+  /**
+   * Factory method for constructing {@code $setOnInsert} update operation with given configuration
+   */
   public static SetOperation constructSetOnInsert(ObjectNode args) {
     return construct(args, true, UpdateOperator.SET_ON_INSERT);
   }
