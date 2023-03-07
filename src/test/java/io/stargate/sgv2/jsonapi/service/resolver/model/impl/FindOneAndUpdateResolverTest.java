@@ -70,7 +70,7 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
+              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
@@ -116,7 +116,7 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, true, true, shredder, 1);
+              commandContext, readOperation, documentUpdater, true, true, true, shredder, 1, 3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
@@ -161,7 +161,7 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
+              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(

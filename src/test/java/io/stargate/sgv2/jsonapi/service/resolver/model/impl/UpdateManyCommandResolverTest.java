@@ -77,7 +77,8 @@ public class UpdateManyCommandResolverTest {
               false,
               false,
               shredder,
-              documentConfig.maxDocumentUpdateCount());
+              documentConfig.maxDocumentUpdateCount(),
+              3);
 
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
@@ -125,7 +126,8 @@ public class UpdateManyCommandResolverTest {
               false,
               false,
               shredder,
-              documentConfig.maxDocumentUpdateCount());
+              documentConfig.maxDocumentUpdateCount(),
+              3);
 
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
@@ -177,7 +179,8 @@ public class UpdateManyCommandResolverTest {
               false,
               false,
               shredder,
-              documentConfig.maxDocumentUpdateCount());
+              documentConfig.maxDocumentUpdateCount(),
+              3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
