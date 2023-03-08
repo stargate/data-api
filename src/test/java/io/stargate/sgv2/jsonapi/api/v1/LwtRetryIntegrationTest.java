@@ -76,7 +76,7 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
                   "_id": "doc1"
                 },
                 "update" : {
-                    $set": {"counter": "%s"}
+                    "$set": {"counter": "%s"}
                 },
                 "options": {"upsert" : true}
               }
