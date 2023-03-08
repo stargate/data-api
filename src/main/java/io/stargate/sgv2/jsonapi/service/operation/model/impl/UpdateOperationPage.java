@@ -37,9 +37,12 @@ public record UpdateOperationPage(
 
     if (moreDataFlag) updateStatus.put(CommandStatus.MORE_DATA, moreDataFlag);
     if (returnDocs) {
-      return new CommandResult(new CommandResult.ResponseData(updatedDocs), updateStatus, errors);
+      return new CommandResult(
+          new CommandResult.ResponseData(updatedDocs),
+          updateStatus,
+          errors.isEmpty() ? null : errors);
     } else {
-      return new CommandResult(null, updateStatus, errors);
+      return new CommandResult(null, updateStatus, errors.isEmpty() ? null : errors);
     }
   }
 
