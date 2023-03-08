@@ -28,9 +28,10 @@ import java.util.function.Supplier;
  * @param commandContext
  * @param readOperation
  * @param documentUpdater
- * @param returnDocumentInResponse
- * @param returnUpdatedDocument
- * @param upsert
+ * @param returnDocumentInResponse - if `true` return document
+ * @param returnUpdatedDocument - if `true` return after update document, else before document
+ * @param upsert - flag to suggest insert as new document if no documents in DB matches the
+ *     condition
  * @param shredder
  * @param updateLimit - Number of documents to be updated
  * @param retryLimit - Number of times retry to happen in case of lwt failure
