@@ -65,9 +65,6 @@ public record InsertOperation(
         .collect()
         .in(InsertOperationPage::new, (agg, in) -> agg.aggregate(in, null))
 
-        // use object identity to resolve to Supplier<CommandResult>
-        .map(i -> i)
-
         // in case upstream propagated FailFastInsertException
         // ensure to construct correctly the information about inserted documents
         .onFailure(FailFastInsertException.class)

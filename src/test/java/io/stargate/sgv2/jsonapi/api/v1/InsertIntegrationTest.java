@@ -6,6 +6,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -393,6 +394,47 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .statusCode(200)
           .body("status.count", is(1))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void orderedDuplicateIdsNoNamespace() {
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": [
+                {
+                  "_id": "doc4",
+                  "username": "user4"
+                },
+                {
+                  "_id": "doc4",
+                  "username": "user4_duplicate"
+                },
+                {
+                  "_id": "doc5",
+                  "username": "user5"
+                }
+              ]
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", is(empty()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Failed to insert document with _id doc4: INVALID_ARGUMENT: keyspace something_else does not exist"))
+          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
     @Test
