@@ -50,14 +50,14 @@ public record InsertOperation(
     return Multi.createFrom()
         .iterable(documents)
 
-        // concatenate to respect ordered and do not prefetch items
+        // concatenate to respect ordered
         .onItem()
         .transformToUni(
             doc ->
                 insertDocument(queryExecutor, query, doc)
 
                     // wrap item and failure
-                    // no prefetch, the collection can decide how to react on failure
+                    // the collection can decide how to react on failure
                     .onItemOrFailure()
                     .transform((id, t) -> Tuple2.of(doc, t)))
         .concatenate(false)
