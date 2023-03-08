@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -18,12 +19,15 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneCommand>
     implements CommandResolver<UpdateOneCommand> {
-  private Shredder shredder;
+  private final Shredder shredder;
+  private final DocumentConfig documentConfig;
 
   @Inject
-  public UpdateOneCommandResolver(ObjectMapper objectMapper, Shredder shredder) {
+  public UpdateOneCommandResolver(
+      ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
     super(objectMapper);
     this.shredder = shredder;
+    this.documentConfig = documentConfig;
   }
 
   @Override
@@ -37,7 +41,15 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
     boolean upsert = command.options() != null && command.options().upsert();
     return new ReadAndUpdateOperation(
-        ctx, readOperation, documentUpdater, false, false, upsert, shredder, 1);
+        ctx,
+        readOperation,
+        documentUpdater,
+        false,
+        false,
+        upsert,
+        shredder,
+        1,
+        documentConfig.lwt().retries());
   }
 
   @Override

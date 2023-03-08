@@ -49,7 +49,8 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         false,
         upsert,
         shredder,
-        documentConfig.maxDocumentUpdateCount());
+        documentConfig.maxDocumentUpdateCount(),
+        documentConfig.lwt().retries());
   }
 
   @Override

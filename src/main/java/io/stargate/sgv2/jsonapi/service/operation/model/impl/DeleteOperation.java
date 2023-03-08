@@ -205,11 +205,4 @@ public record DeleteOperation(
             .addValues(Values.of(doc.txnId()));
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
-
-  /** Inherited Exception class to handle retry */
-  private class LWTException extends JsonApiException {
-    public LWTException(ErrorCode errorCode, String message) {
-      super(errorCode, message);
-    }
-  }
 }
