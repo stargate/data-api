@@ -397,7 +397,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
     }
 
     @Test
-    public void orderedDuplicateIdsNoNamespace() {
+    public void orderedDuplicateDocumentNoNamespace() {
       String json =
           """
           {
@@ -409,7 +409,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
                 },
                 {
                   "_id": "doc4",
-                  "username": "user4_duplicate"
+                  "username": "user4"
                 },
                 {
                   "_id": "doc5",

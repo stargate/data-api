@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -51,40 +50,39 @@ public record InsertOperation(
     return Multi.createFrom()
         .iterable(documents)
 
-        // concatenate to respect ordered
+        // concatenate to respect ordered and do not prefetch items
         .onItem()
-        .transformToUniAndConcatenate(
+        .transformToUni(
             doc ->
                 insertDocument(queryExecutor, query, doc)
 
-                    // if we fail to insert propagate the FailFastInsertException
-                    .onFailure()
-                    .transform(t -> new FailFastInsertException(doc, t)))
+                    // wrap item and failure
+                    // no prefetch, the collection can decide how to react on failure
+                    .onItemOrFailure()
+                    .transform((id, t) -> Tuple2.of(doc, t)))
+        .concatenate(false)
 
         // if no failures reduce to the op page
         .collect()
-        .in(InsertOperationPage::new, (agg, in) -> agg.aggregate(in, null))
+        .in(
+            InsertOperationPage::new,
+            (agg, in) -> {
+              Throwable failure = in.getItem2();
+              agg.aggregate(in.getItem1().id(), failure);
+
+              if (failure != null) {
+                throw new FailFastInsertException(agg, failure);
+              }
+            })
 
         // in case upstream propagated FailFastInsertException
-        // ensure to construct correctly the information about inserted documents
+        // return collected result
         .onFailure(FailFastInsertException.class)
         .recoverWithItem(
             e -> {
               // safe to cast, asserted class in onFailure
               FailFastInsertException failFastInsertException = (FailFastInsertException) e;
-              WritableShreddedDocument failed = failFastInsertException.document;
-
-              // collect inserted, since it's sequential iterate until failed index
-              int failedIndex = documents().lastIndexOf(failed);
-              List<DocumentId> insertedId =
-                  documents().stream()
-                      .limit(failedIndex)
-                      .map(WritableShreddedDocument::id)
-                      .toList();
-
-              return new InsertOperationPage(
-                  insertedId,
-                  Collections.singletonMap(failed.id(), failFastInsertException.getCause()));
+              return failFastInsertException.result;
             })
 
         // use object identity to resolve to Supplier<CommandResult>
@@ -174,13 +172,13 @@ public record InsertOperation(
   }
 
   // simple exception to propagate fail fast
-  private static class FailFastInsertException extends Exception {
+  private static class FailFastInsertException extends RuntimeException {
 
-    private final WritableShreddedDocument document;
+    private final InsertOperationPage result;
 
-    public FailFastInsertException(WritableShreddedDocument document, Throwable cause) {
+    public FailFastInsertException(InsertOperationPage result, Throwable cause) {
       super(cause);
-      this.document = document;
+      this.result = result;
     }
   }
 }
