@@ -190,6 +190,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                     .isEqualTo(1);
                 assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
                     .isEqualTo(1);
+                assertThat(commandResultSupplier.errors()).isNull();
               });
     }
   }
@@ -387,6 +388,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(1);
               assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
                   .isEqualTo(1);
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 
@@ -973,6 +975,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(0);
               assertThat((DocumentId) commandResultSupplier.status().get(CommandStatus.UPSERTED_ID))
                   .isEqualTo(new DocumentId.StringId("doc1"));
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 
@@ -1049,6 +1052,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(0);
               assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
                   .isEqualTo(0);
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 
@@ -1241,6 +1245,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(2);
               assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
                   .isEqualTo(2);
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 
@@ -1370,6 +1375,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(0);
               assertThat((DocumentId) commandResultSupplier.status().get(CommandStatus.UPSERTED_ID))
                   .isEqualTo(new DocumentId.StringId("doc1"));
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 
@@ -1446,6 +1452,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   .isEqualTo(0);
               assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
                   .isEqualTo(0);
+              assertThat(commandResultSupplier.errors()).isNull();
             });
   }
 }
