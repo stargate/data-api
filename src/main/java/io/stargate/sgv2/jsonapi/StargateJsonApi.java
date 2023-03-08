@@ -196,24 +196,29 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                                     {
                                       "insertMany": {
-                                        "documents": [{
-                                          "_id": "1",
-                                          "location": "London",
-                                          "race": {
-                                            "competitors": 100,
-                                            "start_date": "2022-08-15"
-                                          },
-                                          "tags" : [ "eu" ]
-                                        },
-                                        {
-                                          "_id": "2",
-                                          "location": "New York",
-                                          "race": {
-                                            "competitors": 150,
-                                            "start_date": "2022-09-15"
-                                          },
-                                          "tags": [ "us" ]
-                                        }]
+                                        "documents": [
+                                            {
+                                              "_id": "1",
+                                              "location": "London",
+                                              "race": {
+                                                "competitors": 100,
+                                                "start_date": "2022-08-15"
+                                              },
+                                              "tags" : [ "eu" ]
+                                            },
+                                            {
+                                              "_id": "2",
+                                              "location": "New York",
+                                              "race": {
+                                                "competitors": 150,
+                                                "start_date": "2022-09-15"
+                                              },
+                                              "tags": [ "us" ]
+                                            }
+                                        ],
+                                        "options": {
+                                            "ordered": true
+                                        }
                                       }
                                     }
                                     """),
@@ -269,7 +274,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             """),
               @ExampleObject(
                   name = "resultCount",
-                  summary = "countDocuments command result",
+                  summary = "`countDocuments` command result",
                   value =
                       """
                                     {
@@ -369,7 +374,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               """),
               @ExampleObject(
                   name = "resultInsert",
-                  summary = "Insert command result",
+                  summary = "`insertOne` & `insertMany` command result",
                   value =
                       """
                       {

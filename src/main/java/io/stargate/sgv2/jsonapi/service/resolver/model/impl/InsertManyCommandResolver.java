@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -31,7 +30,12 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
     final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(doc -> shredder.shred(doc)).collect(Collectors.toList());
-    return new InsertOperation(ctx, shreddedDocuments);
+        command.documents().stream().map(shredder::shred).toList();
+
+    // resolve ordered
+    InsertManyCommand.Options options = command.options();
+    boolean ordered = null == options || !Boolean.FALSE.equals(options.ordered());
+
+    return new InsertOperation(ctx, shreddedDocuments, ordered);
   }
 }

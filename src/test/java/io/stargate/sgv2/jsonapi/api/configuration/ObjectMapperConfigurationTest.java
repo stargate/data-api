@@ -137,8 +137,7 @@ class ObjectMapperConfigurationTest {
                 "some": {
                   "data": true
                 }
-              },
-              "options" :{}
+              }
             }
           }
           """;

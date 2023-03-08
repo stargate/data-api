@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
@@ -17,7 +16,6 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -35,41 +33,44 @@ import org.junit.jupiter.api.Test;
 public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private static final CommandContext COMMAND_CONTEXT =
+      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
 
   @Nested
-  class InsertOperationsTest {
+  class Execute {
+
+    static final String INSERT_CQL =
+        "INSERT INTO %s.%s"
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + " VALUES"
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insertOne() throws Exception {
-      String doc1 =
+      String document =
           """
-                    {
-                          "_id": "doc1",
-                          "text": "user1",
-                          "number" : 10,
-                          "boolean": true,
-                          "nullval" : null,
-                          "array" : ["a", "b"],
-                          "sub_doc" : {"col": "val"}
-                        }
-                    """;
-      String insert =
-          "INSERT INTO %s.%s"
-              + "            (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
-              + "        VALUES"
-              + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-      String collectionInsertCql = insert.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      final JsonNode jsonNode = objectMapper.readTree(doc1);
-      final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
+      JsonNode jsonNode = objectMapper.readTree(document);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertAssert =
           withQuery(
-                  collectionInsertCql,
+                  insertCql,
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
@@ -94,80 +95,784 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of(List.of(Values.of(true))));
 
-      InsertOperation operation = new InsertOperation(commandContext, shredDocument);
-      final Uni<Supplier<CommandResult>> execute = operation.execute(queryExecutor);
-      final CommandResult commandResultSupplier =
-          execute.subscribe().asCompletionStage().get().get();
+      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
 
-      UniAssertSubscriber<Supplier<CommandResult>> subscriber =
-          operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
+      // assert query execution
+      insertAssert.assertExecuteCount().isOne();
 
-      assertThat(commandResultSupplier)
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void insertDuplicate() throws Exception {
+      String doc1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+
+      final JsonNode jsonNode = objectMapper.readTree(doc1);
+      final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(false))));
+
+      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      insertAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
+      assertThat(result.errors())
+          .singleElement()
           .satisfies(
-              commandResult -> {
-                assertThat(commandResultSupplier.status()).isNotNull();
-                assertThat(commandResultSupplier.status().get(CommandStatus.INSERTED_IDS))
-                    .isNotNull();
-                assertThat(
-                        (List<DocumentId>)
-                            commandResultSupplier.status().get(CommandStatus.INSERTED_IDS))
-                    .contains(new DocumentId.StringId("doc1"));
+              error -> {
+                assertThat(error.message())
+                    .isEqualTo(
+                        "Failed to insert document with _id doc1: Document already exists with the given _id");
+                assertThat(error.fields())
+                    .containsEntry("exceptionClass", "JsonApiException")
+                    .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
               });
     }
-  }
 
-  @Test
-  public void insertDuplicate() throws Exception {
-    String doc1 =
-        """
-                      {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                      """;
-    String insert =
-        "INSERT INTO %s.%s"
-            + "            (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
-            + "        VALUES"
-            + "            (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-    String collectionInsertCql = insert.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-    final JsonNode jsonNode = objectMapper.readTree(doc1);
-    final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+    @Test
+    public void insertManyOrdered() throws Exception {
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
-    ValidatingStargateBridge.QueryAssert candidatesAssert =
-        withQuery(
-                collectionInsertCql,
-                Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                Values.of(shredDocument.docJson()),
-                Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
-                Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
-                Values.of(CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                Values.of(
-                    CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                Values.of(
-                    CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                Values.of(
-                    CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
-            .withColumnSpec(
-                List.of(
-                    QueryOuterClass.ColumnSpec.newBuilder()
-                        .setName("applied")
-                        .setType(TypeSpecs.BOOLEAN)
-                        .build()))
-            .returning(List.of(List.of(Values.of(false))));
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
-    InsertOperation operation = new InsertOperation(commandContext, shredDocument);
-    UniAssertSubscriber<Supplier<CommandResult>> subscriber =
-        operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.assertFailedWith(
-        JsonApiException.class, "Document already exists with the _id: doc1");
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+      ValidatingStargateBridge.QueryAssert insertSecondAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument2.id())),
+                  Values.of(shredDocument2.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument2.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument2.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument2.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument2.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      insertFirstAssert.assertExecuteCount().isOne();
+      insertSecondAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(
+              CommandStatus.INSERTED_IDS,
+              List.of(new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2")));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void insertManyUnordered() throws Exception {
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
+
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
+
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+      ValidatingStargateBridge.QueryAssert insertSecondAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument2.id())),
+                  Values.of(shredDocument2.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument2.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument2.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument2.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument2.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      insertFirstAssert.assertExecuteCount().isOne();
+      insertSecondAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1);
+      assertThat(result.status().get(CommandStatus.INSERTED_IDS))
+          .asList()
+          .containsExactlyInAnyOrder(
+              new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2"));
+      assertThat(result.errors()).isNull();
+    }
+
+    // failure modes
+
+    @Test
+    public void failureOrdered() throws Exception {
+      // unordered first query fail
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
+
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
+
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returningFailure(new RuntimeException("Ivan breaks the test."));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      // second query never executed
+      insertFirstAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
+      assertThat(result.errors())
+          .singleElement()
+          .satisfies(
+              error -> {
+                assertThat(error.message())
+                    .isEqualTo("Failed to insert document with _id doc1: Ivan breaks the test.");
+                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+              });
+    }
+
+    @Test
+    public void failureOrderedLastFails() throws Exception {
+      // unordered first query OK, second fail
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
+
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
+
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+      ValidatingStargateBridge.QueryAssert insertSecondAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument2.id())),
+                  Values.of(shredDocument2.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument2.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument2.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument2.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument2.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returningFailure(new RuntimeException("Ivan really breaks the test."));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      // second query never executed
+      insertFirstAssert.assertExecuteCount().isOne();
+      insertSecondAssert.assertExecuteCount().isOne();
+
+      // then result contains both insert and error
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
+      assertThat(result.errors())
+          .singleElement()
+          .satisfies(
+              error -> {
+                assertThat(error.message())
+                    .isEqualTo(
+                        "Failed to insert document with _id doc2: Ivan really breaks the test.");
+                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+              });
+    }
+
+    @Test
+    public void failureUnorderedPartial() throws Exception {
+      // unordered one query fail
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
+
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
+
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returningFailure(new RuntimeException("Ivan breaks the test."));
+      ValidatingStargateBridge.QueryAssert insertSecondAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument2.id())),
+                  Values.of(shredDocument2.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument2.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument2.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument2.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument2.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returning(List.of(List.of(Values.of(true))));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      // second query never executed
+      insertFirstAssert.assertExecuteCount().isOne();
+      insertSecondAssert.assertExecuteCount().isOne();
+
+      // then result has both insert id and errors
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc2")));
+      assertThat(result.errors())
+          .singleElement()
+          .satisfies(
+              error -> {
+                assertThat(error.message())
+                    .isEqualTo("Failed to insert document with _id doc1: Ivan breaks the test.");
+                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+              });
+    }
+
+    @Test
+    public void failureUnorderedAll() throws Exception {
+      // unordered both queries fail
+      String document1 =
+          """
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
+      String document2 =
+          """
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
+
+      JsonNode jsonNode1 = objectMapper.readTree(document1);
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
+
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
+
+      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertFirstAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument1.id())),
+                  Values.of(shredDocument1.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument1.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument1.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument1.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument1.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returningFailure(new RuntimeException("Ivan breaks the test."));
+      ValidatingStargateBridge.QueryAssert insertSecondAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument2.id())),
+                  Values.of(shredDocument2.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument2.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument2.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument2.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(
+                          shredDocument2.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .returningFailure(new RuntimeException("Ivan really breaks the test."));
+
+      InsertOperation operation =
+          new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      // second query never executed
+      insertFirstAssert.assertExecuteCount().isOne();
+      insertSecondAssert.assertExecuteCount().isOne();
+
+      // then result has 2 errors
+      CommandResult result = execute.get();
+      assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
+      assertThat(result.errors())
+          .hasSize(2)
+          .extracting(CommandResult.Error::message)
+          .containsExactlyInAnyOrder(
+              "Failed to insert document with _id doc1: Ivan breaks the test.",
+              "Failed to insert document with _id doc2: Ivan really breaks the test.");
+    }
   }
 }
