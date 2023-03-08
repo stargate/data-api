@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -91,7 +91,7 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
         .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
         .then()
         .statusCode(200)
-        .body("errors", is(notNullValue()));
+        .body("errors", is(nullValue()));
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
@@ -100,6 +100,6 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
         .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
         .then()
         .statusCode(200)
-        .body("errors", is(notNullValue()));
+        .body("errors", is(nullValue()));
   }
 }
