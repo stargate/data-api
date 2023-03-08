@@ -8,7 +8,6 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -33,7 +32,8 @@ import java.util.function.Supplier;
  * @param returnUpdatedDocument
  * @param upsert
  * @param shredder
- * @param updateLimit
+ * @param updateLimit - Number of documents to be updated
+ * @param retryLimit - Number of times retry to happen in case of lwt failure
  */
 public record ReadAndUpdateOperation(
     CommandContext commandContext,
@@ -73,7 +73,7 @@ public record ReadAndUpdateOperation(
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(readOperation().getNewDocument());
               } else {
-                // Below conditionality is because we read up to deleteLimit +1 record.
+                // Below conditionality is because we read up to updateLimit +1 record.
                 if (matchedCount.get() + docs.size() <= updateLimit) {
                   matchedCount.addAndGet(docs.size());
                   return Multi.createFrom().items(docs.stream());
@@ -237,9 +237,15 @@ public record ReadAndUpdateOperation(
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 
+  /**
+   * Utility method to read the document again, in case of lwt error
+   *
+   * @param queryExecutor
+   * @param prevReadDoc
+   * @return
+   */
   private Uni<ReadDocument> readDocumentAgain(
       QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
-    // Read again if retry flag is `true`
     return readOperation()
         .getDocuments(
             queryExecutor,
@@ -258,11 +264,4 @@ public record ReadAndUpdateOperation(
   }
 
   record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document, Throwable error) {}
-
-  /** Inherited Exception class to handle retry */
-  public class LWTException extends JsonApiException {
-    public LWTException(ErrorCode errorCode) {
-      super(errorCode);
-    }
-  }
 }
