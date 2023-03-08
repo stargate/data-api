@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -18,12 +19,15 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneAndUpdateCommand>
     implements CommandResolver<FindOneAndUpdateCommand> {
-  private Shredder shredder;
+  private final Shredder shredder;
+  private final DocumentConfig documentConfig;
 
   @Inject
-  public FindOneAndUpdateCommandResolver(ObjectMapper objectMapper, Shredder shredder) {
+  public FindOneAndUpdateCommandResolver(
+      ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
     super(objectMapper);
     this.shredder = shredder;
+    this.documentConfig = documentConfig;
   }
 
   @Override
@@ -39,7 +43,15 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         command.options() != null && "after".equals(command.options().returnDocument());
     boolean upsert = command.options() != null && command.options().upsert();
     return new ReadAndUpdateOperation(
-        ctx, readOperation, documentUpdater, true, returnUpdatedDocument, upsert, shredder, 1);
+        ctx,
+        readOperation,
+        documentUpdater,
+        true,
+        returnUpdatedDocument,
+        upsert,
+        shredder,
+        1,
+        documentConfig.lwt().retries());
   }
 
   @Override

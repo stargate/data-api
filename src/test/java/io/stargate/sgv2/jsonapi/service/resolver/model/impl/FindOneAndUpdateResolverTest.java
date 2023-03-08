@@ -38,56 +38,10 @@ public class FindOneAndUpdateResolverTest {
     public void idFilterConditionBsonType() throws Exception {
       String json =
           """
-                            {
-                              "findOneAndUpdate": {
-                                "filter" : {"_id" : "id"},
-                                "update" : {"$set" : {"location" : "New York"}}
-                              }
-                            }
-                            """;
-
-      FindOneAndUpdateCommand findOneAndUpdateCommand =
-          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
-      ReadOperation readOperation =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
-              null,
-              1,
-              1,
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      DocumentUpdater documentUpdater =
-          DocumentUpdater.construct(
-              DocumentUpdaterUtils.updateClause(
-                  UpdateOperator.SET,
-                  objectMapper.getNodeFactory().objectNode().put("location", "New York")));
-      ReadAndUpdateOperation expected =
-          new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
-      assertThat(operation)
-          .isInstanceOf(ReadAndUpdateOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
-              });
-    }
-
-    @Test
-    public void idFilterConditionWithOptions() throws Exception {
-      String json =
-          """
                                 {
                                   "findOneAndUpdate": {
                                     "filter" : {"_id" : "id"},
-                                    "update" : {"$set" : {"location" : "New York"}},
-                                    "options" : {"returnDocument" : "after", "upsert": true }
+                                    "update" : {"$set" : {"location" : "New York"}}
                                   }
                                 }
                                 """;
@@ -116,7 +70,53 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, true, true, shredder, 1);
+              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
+      assertThat(operation)
+          .isInstanceOf(ReadAndUpdateOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void idFilterConditionWithOptions() throws Exception {
+      String json =
+          """
+                                    {
+                                      "findOneAndUpdate": {
+                                        "filter" : {"_id" : "id"},
+                                        "update" : {"$set" : {"location" : "New York"}},
+                                        "options" : {"returnDocument" : "after", "upsert": true }
+                                      }
+                                    }
+                                    """;
+
+      FindOneAndUpdateCommand findOneAndUpdateCommand =
+          objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation =
+          findOneAndUpdateCommandResolver.resolveCommand(commandContext, findOneAndUpdateCommand);
+      ReadOperation readOperation =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET,
+                  objectMapper.getNodeFactory().objectNode().put("location", "New York")));
+      ReadAndUpdateOperation expected =
+          new ReadAndUpdateOperation(
+              commandContext, readOperation, documentUpdater, true, true, true, shredder, 1, 3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
@@ -129,13 +129,13 @@ public class FindOneAndUpdateResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-                            {
-                              "findOneAndUpdate": {
-                                "filter" : {"col" : "val"},
-                                "update" : {"$set" : {"location" : "New York"}}
-                              }
-                            }
-                            """;
+                                {
+                                  "findOneAndUpdate": {
+                                    "filter" : {"col" : "val"},
+                                    "update" : {"$set" : {"location" : "New York"}}
+                                  }
+                                }
+                                """;
 
       FindOneAndUpdateCommand findOneAndUpdateCommand =
           objectMapper.readValue(json, FindOneAndUpdateCommand.class);
@@ -161,7 +161,7 @@ public class FindOneAndUpdateResolverTest {
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       ReadAndUpdateOperation expected =
           new ReadAndUpdateOperation(
-              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1);
+              commandContext, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
       assertThat(operation)
           .isInstanceOf(ReadAndUpdateOperation.class)
           .satisfies(
