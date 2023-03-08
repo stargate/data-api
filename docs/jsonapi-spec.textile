@@ -685,6 +685,10 @@ There are two category of storage failures under consideration:
 
 In the context of Multi Document Failures we consider a failure (after a configured number of retries) from either of these categories as a failure to complete a command.  
 
+The server should use the following retry policy: 
+* *Availability Faults*: a single retry, for a total of two (2) attempts.
+* *Concurrency Faults*: two retries, for a total of three (3) attempts.  
+
 *Note* Neither of these faults will leave a document in an inconsistent state, that would cause "eventually consistent" reads. Document retain internal consistency as they are stored on a single row which is always atomically updated. And they maintain cluster wide consistency through the user of cluster wide "compare-and-set" operations.    
 
 h4(#considerationsMultiDocumentFailureFailFast). Fail Fast Multi Document Failure
@@ -699,7 +703,7 @@ Under the "fail silently" mode the command will attempt to perform all operation
 
 Fail silently also allows the server to re-order the database operations to achieve best performance, which may include running multiple operations in parallel. 
 
-Commands that use Fail Silently may return an error and status information about what was successfully completed. See "Response Messages":#messagingResponse for the structure of responses, and "Commands":#commands for individual command responses. 
+Commands that use Fail Silently may return an error(s) and status information about what was successfully completed. See "Response Messages":#messagingResponse for the structure of responses, and "Commands":#commands for individual command responses. Multiple errors may be returned, the server should rationalise the errors by category. e.g. it should not return 10 errors that each say "DB service timeout", rather it should return a single error that covers the 10 documents this happened to.  
 
 For example, consider an **unordered** "@insertMany@":#commandInsertMany command that is inserting three documents. This command will use "fail silently", and may run all database operations at once in parallel. If inserting the second document fails, the first and third may success. In this case command will return the @_id@ of the first and third documents and an error describing the failure inserting the second. 
 
