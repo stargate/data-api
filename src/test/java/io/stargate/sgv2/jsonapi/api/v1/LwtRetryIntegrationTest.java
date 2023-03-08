@@ -19,42 +19,14 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTest {
-  @Test
-  @Order(1)
-  public void setUp() {
-    String json =
-        """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc1",
-                  "username": "user1",
-                  "active_user" : true
-                }
-              }
-            }
-            """;
 
-    insert(json);
-  }
-
-  private void insert(String json) {
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200);
-  }
   /**
    * Made the invocation to 3, so all the transactions should be successful because retrylimit is 3
    */
   @Test
   @Order(2)
-  @Execution(ExecutionMode.CONCURRENT)
   @RepeatedTest(3)
   public void retryLWT() {
     String delete =
