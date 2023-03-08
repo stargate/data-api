@@ -594,6 +594,260 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
   }
 
   @Test
+  public void findAndUpdateWithRetryPartialFailure() throws Exception {
+    String collectionReadCql =
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
+            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+    UUID tx_id1 = UUID.randomUUID();
+    UUID tx_id2 = UUID.randomUUID();
+    UUID tx_id3 = UUID.randomUUID();
+    String doc1 =
+        """
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "status" : "active"
+              }
+            """;
+
+    String doc2 =
+        """
+              {
+                "_id": "doc2",
+                "username": "user2",
+                "status" : "active"
+              }
+            """;
+
+    String doc1Updated =
+        """
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "status" : "active",
+                "name" : "test"
+              }
+            """;
+
+    String doc2Updated =
+        """
+              {
+                "_id": "doc2",
+                "username": "user2",
+                "status" : "active",
+                "name" : "test"
+              }
+            """;
+    withQuery(
+            collectionReadCql, Values.of("status " + new DocValueHasher().getHash("active").hash()))
+        .withPageSize(3)
+        .withColumnSpec(
+            List.of(
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("key")
+                    .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                    .build(),
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("tx_id")
+                    .setType(TypeSpecs.UUID)
+                    .build(),
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("doc_json")
+                    .setType(TypeSpecs.VARCHAR)
+                    .build()))
+        .returning(
+            List.of(
+                List.of(
+                    Values.of(
+                        CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                    Values.of(tx_id1),
+                    Values.of(doc1)),
+                List.of(
+                    Values.of(
+                        CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
+                    Values.of(tx_id3),
+                    Values.of(doc2))));
+
+    collectionReadCql =
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 3"
+            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+    withQuery(
+            collectionReadCql,
+            Values.of("status " + new DocValueHasher().getHash("active").hash()),
+            Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+        .withPageSize(3)
+        .withColumnSpec(
+            List.of(
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("key")
+                    .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                    .build(),
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("tx_id")
+                    .setType(TypeSpecs.UUID)
+                    .build(),
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("doc_json")
+                    .setType(TypeSpecs.VARCHAR)
+                    .build()))
+        .returning(
+            List.of(
+                List.of(
+                    Values.of(
+                        CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                    Values.of(tx_id2),
+                    Values.of(doc1))));
+
+    String update =
+        "UPDATE %s.%s "
+            + "        SET"
+            + "            tx_id = now(),"
+            + "            exist_keys = ?,"
+            + "            sub_doc_equals = ?,"
+            + "            array_size = ?,"
+            + "            array_equals = ?,"
+            + "            array_contains = ?,"
+            + "            query_bool_values = ?,"
+            + "            query_dbl_values = ?,"
+            + "            query_text_values = ?,"
+            + "            query_null_values = ?,"
+            + "            doc_json  = ?"
+            + "        WHERE "
+            + "            key = ?"
+            + "        IF "
+            + "            tx_id = ?";
+    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    JsonNode jsonNode = objectMapper.readTree(doc1Updated);
+    WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+    withQuery(
+            collectionUpdateCql,
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+            Values.of(CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+            Values.of(CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+            Values.of(CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+            Values.of(shredDocument.docJson()),
+            Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+            Values.of(tx_id1))
+        .withColumnSpec(
+            List.of(
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("applied")
+                    .setType(TypeSpecs.BOOLEAN)
+                    .build()))
+        .returning(List.of(List.of(Values.of(false))));
+
+    withQuery(
+            collectionUpdateCql,
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+            Values.of(CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+            Values.of(CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+            Values.of(CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+            Values.of(shredDocument.docJson()),
+            Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+            Values.of(tx_id2))
+        .withColumnSpec(
+            List.of(
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("applied")
+                    .setType(TypeSpecs.BOOLEAN)
+                    .build()))
+        .returning(List.of(List.of(Values.of(false))));
+
+    jsonNode = objectMapper.readTree(doc2Updated);
+    shredDocument = shredder.shred(jsonNode);
+
+    withQuery(
+            collectionUpdateCql,
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+            Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+            Values.of(CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+            Values.of(CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+            Values.of(CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+            Values.of(CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+            Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+            Values.of(shredDocument.docJson()),
+            Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+            Values.of(tx_id3))
+        .withColumnSpec(
+            List.of(
+                QueryOuterClass.ColumnSpec.newBuilder()
+                    .setName("applied")
+                    .setType(TypeSpecs.BOOLEAN)
+                    .build()))
+        .returning(List.of(List.of(Values.of(true))));
+
+    String updater =
+        """
+              {
+                "findOneAndUpdate": {
+                  "filter": {
+                    "username": "user1"
+                  },
+                  "update": {
+                    "$set": {
+                      "name": "test"
+                    }
+                  }
+                }
+              }
+            """;
+
+    FindOneAndUpdateCommand findOneAndUpdateCommand =
+        objectMapper.readValue(updater, FindOneAndUpdateCommand.class);
+    ReadOperation readOperation =
+        new FindOperation(
+            commandContext,
+            List.of(
+                new DBFilterBase.TextFilter(
+                    "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
+            null,
+            3,
+            3,
+            ReadType.DOCUMENT,
+            objectMapper);
+    DocumentUpdater documentUpdater =
+        DocumentUpdater.construct(findOneAndUpdateCommand.updateClause());
+    ReadAndUpdateOperation operation =
+        new ReadAndUpdateOperation(
+            commandContext, readOperation, documentUpdater, true, false, false, shredder, 2, 3);
+    final Uni<Supplier<CommandResult>> execute = operation.execute(queryExecutor);
+    final CommandResult commandResultSupplier = execute.subscribe().asCompletionStage().get().get();
+    UniAssertSubscriber<Supplier<CommandResult>> subscriber =
+        operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
+    assertThat(commandResultSupplier)
+        .satisfies(
+            commandResult -> {
+              assertThat(commandResultSupplier.status()).isNotNull();
+              assertThat(commandResultSupplier.status().get(CommandStatus.MATCHED_COUNT))
+                  .isEqualTo(2);
+              assertThat(commandResultSupplier.status().get(CommandStatus.MODIFIED_COUNT))
+                  .isEqualTo(1);
+              assertThat(commandResultSupplier.errors()).isNotNull();
+              assertThat(commandResultSupplier.errors()).hasSize(1);
+              assertThat(commandResultSupplier.errors().get(0).fields().get("errorCode"))
+                  .isEqualTo("CONCURRENCY_FAILURE");
+              assertThat(commandResultSupplier.errors().get(0).message())
+                  .isEqualTo(
+                      "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions");
+            });
+  }
+
+  @Test
   public void findAndUpdateUpsert() throws Exception {
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
