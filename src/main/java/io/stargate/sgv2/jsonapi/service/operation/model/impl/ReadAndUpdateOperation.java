@@ -162,6 +162,7 @@ public record ReadAndUpdateOperation(
               // return updatedDocument if document is successfully updated
               return updated
                   .onItem()
+                  .ifNotNull()
                   .transform(
                       v -> {
                         if (readDocument.txnId() != null) modifiedCount.incrementAndGet();
