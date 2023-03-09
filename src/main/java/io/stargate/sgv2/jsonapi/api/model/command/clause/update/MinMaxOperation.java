@@ -2,15 +2,17 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Implementation of {@code $inc} update operation used to modify numeric field values in documents.
- * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/inc/} for full
- * explanation.
+ * Implementation of {@code $min} and {@code $max} update operation used to modify numeric field
+ * values in documents. See {@href
+ * https://www.mongodb.com/docs/manual/reference/operator/update/min/} and {@href
+ * https://www.mongodb.com/docs/manual/reference/operator/update/max/} for full explanations.
  */
 public class MinMaxOperation extends UpdateOperation {
   private final List<MinMaxAction> actions;
@@ -69,8 +71,12 @@ public class MinMaxOperation extends UpdateOperation {
   }
 
   private boolean shouldReplace(JsonNode oldValue, JsonNode newValue) {
-    // !!! TODO
-    return true;
+    if (isMaxAction) {
+      // For $max, replace if newValue sorts later
+      return JsonNodeComparator.ascending().compare(oldValue, newValue) < 0;
+    }
+    // For $min, replace if newValue sorts earlier
+    return JsonNodeComparator.ascending().compare(oldValue, newValue) > 0;
   }
 
   /** Value class for per-field update operations. */

@@ -1687,7 +1687,6 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
   @Nested
   class UpdateOneWithSetOnInsert {
     @Test
-    @Order(2)
     public void findByIdUpsertAndAddOnInsert() {
       String json =
           """
@@ -1804,5 +1803,147 @@ public class FindAndUpdateIntegrationTest extends CollectionResourceBaseIntegrat
         // Sanity check: let's look for non-empty inserted id
         .body("status.insertedIds[0]", not(emptyString()))
         .statusCode(200);
+  }
+
+  @Nested
+  class UpdateOneWithMin {
+    @Test
+    public void findByColumnAndMin() {
+      insertDoc(
+          """
+                      {
+                         "_id": "update_doc_min",
+                         "min": 1,
+                         "max": 99,
+                         "numbers": {
+                            "values": [ 1 ]
+                          }
+                       }
+                       """);
+      String updateJson =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_min"},
+                          "update" : {"$min" : {
+                              "min": 2,
+                              "max" : 25,
+                              "numbers.values" : [ -9 ]
+                            }
+                           }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      String expectedDoc =
+          """
+                      {
+                         "_id": "update_doc_min",
+                         "min": 1,
+                         "max": 25,
+                         "numbers": {
+                            "values": [ -9 ]
+                          }
+                       }
+                       """;
+      String findJson =
+          """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "update_doc_min"}
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
+  @Nested
+  class UpdateOneWithMax {
+    @Test
+    public void findByColumnAndMax() {
+      insertDoc(
+          """
+                               {
+                                  "_id": "update_doc_max",
+                                  "min": 1,
+                                  "max": 99,
+                                  "numbers": {
+                                     "values": { "x":1, "y":2 }
+                                   }
+                                }
+                                """);
+      String updateJson =
+          """
+                                {
+                                  "updateOne": {
+                                    "filter" : {"_id" : "update_doc_max"},
+                                    "update" : {"$max" : {
+                                        "min": 2,
+                                        "max" : 25,
+                                        "numbers.values": { "x":1, "y":3 }
+                                      }
+                                     }
+                                  }
+                                }
+                                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      String expectedDoc =
+          """
+                     {
+                        "_id": "update_doc_max",
+                        "min": 2,
+                        "max": 99,
+                        "numbers": {
+                           "values": { "x":1, "y":3 }
+                         }
+                      }
+                      """;
+      String findJson =
+          """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "update_doc_max"}
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
   }
 }
