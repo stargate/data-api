@@ -15,7 +15,6 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -434,8 +433,13 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
-      final UniAssertSubscriber<Supplier<CommandResult>> supplierUniAssertSubscriber =
-          operation.execute(queryExecutor).subscribe().withSubscriber(UniAssertSubscriber.create());
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
 
       // assert query execution
       candidatesAssert.assertExecuteCount().isOne();
@@ -443,11 +447,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       deleteAssert.assertExecuteCount().isOne();
       deleteAssert2.assertExecuteCount().isEqualTo(2);
       // then result
-
-      supplierUniAssertSubscriber.assertFailedWith(
-          JsonApiException.class,
-          "Delete failed for document with id %s because of concurrent transaction"
-              .formatted("doc1"));
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(commandResult.errors()).isNotNull();
+                assertThat(commandResult.errors()).hasSize(1);
+                assertThat(commandResult.errors().get(0).fields().get("errorCode"))
+                    .isEqualTo("CONCURRENCY_FAILURE");
+                assertThat(commandResult.errors().get(0).message())
+                    .isEqualTo(
+                        "Failed to delete documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
+              });
     }
 
     @Test
