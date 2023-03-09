@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -16,11 +15,11 @@ import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-/** Resolves the {@link UpdateOneCommand } */
+/** Resolves the {@link UpdateManyCommand } */
 @ApplicationScoped
 public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyCommand>
     implements CommandResolver<UpdateManyCommand> {
-  private Shredder shredder;
+  private final Shredder shredder;
   private final DocumentConfig documentConfig;
 
   @Inject
@@ -40,7 +39,12 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   public Operation resolveCommand(CommandContext ctx, UpdateManyCommand command) {
     ReadOperation readOperation = resolve(ctx, command);
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
-    boolean upsert = command.options() != null && command.options().upsert();
+
+    // resolve upsert
+    UpdateManyCommand.Options options = command.options();
+    boolean upsert = options != null && options.upsert();
+
+    // return op
     return new ReadAndUpdateOperation(
         ctx,
         readOperation,

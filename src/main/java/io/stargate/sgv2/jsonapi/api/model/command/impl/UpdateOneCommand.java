@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
@@ -16,8 +17,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName("updateOne")
 public record UpdateOneCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
-    @Valid @JsonProperty("update") UpdateClause updateClause,
+    @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Nullable Options options)
     implements ReadCommand, Filterable {
-  public record Options(boolean upsert) {}
+
+  @Schema(name = "UpdateOneCommand.Options", description = "Options for updating a document.")
+  public record Options(
+      @Schema(
+              description =
+                  "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply the `update` clause to the empty document.",
+              defaultValue = "false")
+          boolean upsert) {}
 }
