@@ -27,6 +27,7 @@ import java.util.UUID;
 public interface DocumentId {
   int typeId();
 
+  /** Method called by JSON serializer to get value to include in JSON output. */
   @JsonValue
   Object value();
 
@@ -35,6 +36,14 @@ public interface DocumentId {
   }
 
   JsonNode asJson(JsonNodeFactory nodeFactory);
+
+  /**
+   * Accessor used to get canonical String representation of the id to be stored in database. Does
+   * NOT contain type prefix or suffic.
+   *
+   * @return Canonical String representation of the id
+   */
+  String asDBKey();
 
   static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
@@ -128,8 +137,16 @@ public interface DocumentId {
     }
 
     @Override
+    public String asDBKey() {
+      return key();
+    }
+
+    @Override
     public String toString() {
-      return key;
+      // Enclose in single-quotes to indicate it is String value (not to overlap
+      // with Number, Boolean, null values), indicate start/end
+      // TODO: Consider escaping of quotes within value?
+      return "'" + key + "'";
     }
   }
 
@@ -147,6 +164,11 @@ public interface DocumentId {
     @Override
     public JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.numberNode(key);
+    }
+
+    @Override
+    public String asDBKey() {
+      return String.valueOf(key);
     }
 
     @Override
@@ -179,6 +201,11 @@ public interface DocumentId {
     }
 
     @Override
+    public String asDBKey() {
+      return String.valueOf(key);
+    }
+
+    @Override
     public String toString() {
       return String.valueOf(key);
     }
@@ -200,6 +227,11 @@ public interface DocumentId {
     @Override
     public JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.nullNode();
+    }
+
+    @Override
+    public String asDBKey() {
+      return "null";
     }
 
     @Override

@@ -112,7 +112,7 @@ public class ShredderTest {
 
       assertThat(doc.id()).isInstanceOf(DocumentId.StringId.class);
       // should be auto-generated UUID:
-      assertThat(UUID.fromString(doc.id().toString())).isNotNull();
+      assertThat(UUID.fromString(doc.id().asDBKey())).isNotNull();
       List<JsonPath> expPaths =
           Arrays.asList(JsonPath.from("_id"), JsonPath.from("age"), JsonPath.from("name"));
 
@@ -128,7 +128,7 @@ public class ShredderTest {
       JsonNode idNode = jsonFromShredded.get("_id");
       assertThat(idNode).isNotNull();
       String generatedId = idNode.textValue();
-      assertThat(generatedId).isEqualTo(doc.id().toString());
+      assertThat(generatedId).isEqualTo(doc.id().asDBKey());
       ((ObjectNode) inputDoc).put("_id", generatedId);
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 

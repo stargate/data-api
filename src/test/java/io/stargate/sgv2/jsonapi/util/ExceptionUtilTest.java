@@ -41,7 +41,7 @@ public class ExceptionUtilTest {
             err -> {
               assertThat(err.message())
                   .isEqualTo(
-                      "test error for ids [doc1, doc2]: Unable to complete transaction due to concurrent transactions");
+                      "test error for ids ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
               assertThat(err.fields()).containsEntry("exceptionClass", "JsonApiException");
               assertThat(err.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
             });
@@ -52,7 +52,8 @@ public class ExceptionUtilTest {
     assertThat(error)
         .satisfies(
             err -> {
-              assertThat(err.message()).isEqualTo("test error for ids [doc1, doc2]: Some error");
+              assertThat(err.message())
+                  .isEqualTo("test error for ids ['doc1', 'doc2']: Some error");
               assertThat(err.fields()).containsEntry("exceptionClass", "RuntimeException");
             });
   }
