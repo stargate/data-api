@@ -39,7 +39,12 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   public Operation resolveCommand(CommandContext ctx, UpdateOneCommand command) {
     ReadOperation readOperation = resolve(ctx, command);
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
-    boolean upsert = command.options() != null && command.options().upsert();
+
+    // resolve upsert
+    UpdateOneCommand.Options options = command.options();
+    boolean upsert = options != null && options.upsert();
+
+    // return op
     return new ReadAndUpdateOperation(
         ctx,
         readOperation,

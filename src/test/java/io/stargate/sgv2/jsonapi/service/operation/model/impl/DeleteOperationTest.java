@@ -338,7 +338,6 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       candidatesAssert2.assertExecuteCount().isOne();
       deleteAssert.assertExecuteCount().isOne();
       deleteAssert2.assertExecuteCount().isOne();
-      // then result
 
       // then result
       CommandResult result = execute.get();
