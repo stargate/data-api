@@ -35,6 +35,10 @@ quarkus:
           paths: /v1/*
           policy: authenticated
 
+    limits:
+      # Let's lower maximum HTTP request size from 10 megs to 1
+      max-body-size: 1024K
+
   # built-in micrometer properties
   micrometer:
     binder:
