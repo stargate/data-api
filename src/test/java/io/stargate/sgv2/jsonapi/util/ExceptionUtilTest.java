@@ -52,7 +52,8 @@ public class ExceptionUtilTest {
     assertThat(error)
         .satisfies(
             err -> {
-              assertThat(err.message()).isEqualTo("test error for ids ['doc1', 'doc2']: Some error");
+              assertThat(err.message())
+                  .isEqualTo("test error for ids ['doc1', 'doc2']: Some error");
               assertThat(err.fields()).containsEntry("exceptionClass", "RuntimeException");
             });
   }
