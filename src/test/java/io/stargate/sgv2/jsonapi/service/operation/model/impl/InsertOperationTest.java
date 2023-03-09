@@ -182,7 +182,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Failed to insert document with _id doc1: Document already exists with the given _id");
+                        "Failed to insert document with _id 'doc1': Document already exists with the given _id");
                 assertThat(error.fields())
                     .containsEntry("exceptionClass", "JsonApiException")
                     .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
@@ -507,7 +507,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           .satisfies(
               error -> {
                 assertThat(error.message())
-                    .isEqualTo("Failed to insert document with _id doc1: Ivan breaks the test.");
+                    .isEqualTo("Failed to insert document with _id 'doc1': Ivan breaks the test.");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -630,7 +630,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Failed to insert document with _id doc2: Ivan really breaks the test.");
+                        "Failed to insert document with _id 'doc2': Ivan really breaks the test.");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -752,7 +752,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           .satisfies(
               error -> {
                 assertThat(error.message())
-                    .isEqualTo("Failed to insert document with _id doc1: Ivan breaks the test.");
+                    .isEqualTo("Failed to insert document with _id 'doc1': Ivan breaks the test.");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -871,8 +871,8 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           .hasSize(2)
           .extracting(CommandResult.Error::message)
           .containsExactlyInAnyOrder(
-              "Failed to insert document with _id doc1: Ivan breaks the test.",
-              "Failed to insert document with _id doc2: Ivan really breaks the test.");
+              "Failed to insert document with _id 'doc1': Ivan breaks the test.",
+              "Failed to insert document with _id 'doc2': Ivan really breaks the test.");
     }
   }
 }
