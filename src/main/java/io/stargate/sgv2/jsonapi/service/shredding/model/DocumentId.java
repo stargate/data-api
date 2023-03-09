@@ -129,7 +129,10 @@ public interface DocumentId {
 
     @Override
     public String toString() {
-      return key;
+      // Enclose in single-quotes to indicate it is String value (not to overlap
+      // with Number, Boolean, null values), indicate start/end
+      // TODO: Consider escaping of quotes within value?
+      return "'" + key + "'";
     }
   }
 
