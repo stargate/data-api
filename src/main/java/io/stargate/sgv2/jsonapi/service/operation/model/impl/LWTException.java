@@ -8,8 +8,4 @@ public class LWTException extends JsonApiException {
   public LWTException(ErrorCode errorCode) {
     super(errorCode);
   }
-
-  public LWTException(ErrorCode errorCode, String message) {
-    super(errorCode, message);
-  }
 }
