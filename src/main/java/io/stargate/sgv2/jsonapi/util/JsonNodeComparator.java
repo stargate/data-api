@@ -9,6 +9,29 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * {@link Comparator} for sorting {@link JsonNode} values as needed for operations like {@code $min}
+ * and {@code $max}. Uses definitions of BSON type-based sorting, where order of types is (from
+ * lowest to highest precedence):
+ *
+ * <ol>
+ *   <li>Null
+ *   <li>Number
+ *   <li>String
+ *   <li>Object
+ *   <li>Array
+ *   <li>Boolean
+ * </oL>
+ *
+ * (NOTE: these are types we have -- MongoDB has more native types so this is a subset of BSON
+ * sorting definitions).
+ *
+ * <p>Within each type sorting is as usual for most types (Numbers, Strings, Booleans). Arrays use
+ * straight-forward element-by-element sorting (similar to Strings). The only more esoteric case are
+ * Objects, where sorting is by ordered fields, first comparing field name (String sort), if same,
+ * then recursively by value; and if first N fields the same, Object with more properties is sorted
+ * last.
+ */
 public class JsonNodeComparator implements Comparator<JsonNode> {
   private static final Comparator<JsonNode> ASC = new JsonNodeComparator();
 
