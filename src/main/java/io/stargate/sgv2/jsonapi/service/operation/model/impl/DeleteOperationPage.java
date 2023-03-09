@@ -35,9 +35,10 @@ public record DeleteOperationPage(
                     deletedDocument ->
                         deletedDocument.getItem1() != null && deletedDocument.getItem1())
                 .count();
+
+    // aggregate the errors by error code or error class
     Multimap<String, Tuple3<Boolean, Throwable, DocumentId>> groupedErrorDeletes =
         ArrayListMultimap.create();
-
     deletedInformation.forEach(
         deletedData -> {
           if (deletedData.getItem2() != null) {
@@ -48,6 +49,7 @@ public record DeleteOperationPage(
           }
         });
 
+    // Create error by error code or error class
     List<CommandResult.Error> errors = new ArrayList<>(groupedErrorDeletes.size());
     groupedErrorDeletes
         .keySet()

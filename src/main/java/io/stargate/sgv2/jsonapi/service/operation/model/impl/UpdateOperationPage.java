@@ -27,18 +27,22 @@ public record UpdateOperationPage(
   public CommandResult get() {
     final DocumentId[] upsertedId = new DocumentId[1];
     List<JsonNode> updatedDocs = new ArrayList<>(updatedDocuments().size());
+
+    // aggregate the errors by error code or error class
     Multimap<String, ReadAndUpdateOperation.UpdatedDocument> groupedErrorUpdates =
         ArrayListMultimap.create();
     updatedDocuments.forEach(
         update -> {
           if (update.upserted()) upsertedId[0] = update.id();
           if (returnDocs) updatedDocs.add(update.document());
+          //
           if (update.error() != null) {
             String key = update.error().getClass().getSimpleName();
             if (update.error() instanceof JsonApiException jae) key = jae.getErrorCode().name();
             groupedErrorUpdates.put(key, update);
           }
         });
+    // Create error by error code or error class
     List<CommandResult.Error> errors = new ArrayList<>(groupedErrorUpdates.size());
     groupedErrorUpdates
         .keySet()
