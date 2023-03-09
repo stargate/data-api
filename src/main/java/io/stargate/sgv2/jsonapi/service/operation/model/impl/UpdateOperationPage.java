@@ -5,14 +5,12 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -23,6 +21,9 @@ public record UpdateOperationPage(
     boolean returnDocs,
     boolean moreDataFlag)
     implements Supplier<CommandResult> {
+
+  private static final String ERROR = "Failed to update documents with _id %s: %s";
+
   @Override
   public CommandResult get() {
     final DocumentId[] upsertedId = new DocumentId[1];
@@ -37,8 +38,7 @@ public record UpdateOperationPage(
           if (returnDocs) updatedDocs.add(update.document());
           //
           if (update.error() != null) {
-            String key = update.error().getClass().getSimpleName();
-            if (update.error() instanceof JsonApiException jae) key = jae.getErrorCode().name();
+            String key = ExceptionUtil.getThrowableGroupingKey(update.error());
             groupedErrorUpdates.put(key, update);
           }
         });
@@ -53,7 +53,8 @@ public record UpdateOperationPage(
               final List<DocumentId> documentIds =
                   updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
               errors.add(
-                  getError(documentIds, updatedDocuments.stream().findFirst().get().error()));
+                  ExceptionUtil.getError(
+                      ERROR, documentIds, updatedDocuments.stream().findFirst().get().error()));
             });
     EnumMap<CommandStatus, Object> updateStatus = new EnumMap<>(CommandStatus.class);
     if (upsertedId[0] != null) updateStatus.put(CommandStatus.UPSERTED_ID, upsertedId[0]);
@@ -69,17 +70,5 @@ public record UpdateOperationPage(
     } else {
       return new CommandResult(null, updateStatus, errors.isEmpty() ? null : errors);
     }
-  }
-
-  private CommandResult.Error getError(List<DocumentId> documentIds, Throwable throwable) {
-    String message =
-        "Failed to update documents with _id %s: %s".formatted(documentIds, throwable.getMessage());
-
-    Map<String, Object> fields = new HashMap<>();
-    fields.put("exceptionClass", throwable.getClass().getSimpleName());
-    if (throwable instanceof JsonApiException jae) {
-      fields.put("errorCode", jae.getErrorCode().name());
-    }
-    return new CommandResult.Error(message, fields);
   }
 }

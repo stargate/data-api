@@ -5,11 +5,10 @@ import com.google.common.collect.Multimap;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -26,14 +25,14 @@ import java.util.stream.Collectors;
 public record DeleteOperationPage(
     List<Tuple3<Boolean, Throwable, DocumentId>> deletedInformation, boolean moreData)
     implements Supplier<CommandResult> {
+  private static final String ERROR = "Failed to delete documents with _id %s: %s";
+
   @Override
   public CommandResult get() {
     int deletedCount =
         (int)
             deletedInformation.stream()
-                .filter(
-                    deletedDocument ->
-                        deletedDocument.getItem1() != null && deletedDocument.getItem1())
+                .filter(deletedDocument -> Boolean.TRUE.equals(deletedDocument.getItem1()))
                 .count();
 
     // aggregate the errors by error code or error class
@@ -42,9 +41,7 @@ public record DeleteOperationPage(
     deletedInformation.forEach(
         deletedData -> {
           if (deletedData.getItem2() != null) {
-            String key = deletedData.getItem2().getClass().getSimpleName();
-            if (deletedData.getItem2() instanceof JsonApiException jae)
-              key = jae.getErrorCode().name();
+            String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());
             groupedErrorDeletes.put(key, deletedData);
           }
         });
@@ -62,7 +59,8 @@ public record DeleteOperationPage(
                       .map(deletes -> deletes.getItem3())
                       .collect(Collectors.toList());
               errors.add(
-                  getError(documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
+                  ExceptionUtil.getError(
+                      ERROR, documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
             });
 
     if (moreData)
@@ -75,17 +73,5 @@ public record DeleteOperationPage(
           null,
           Map.of(CommandStatus.DELETED_COUNT, deletedCount),
           errors.isEmpty() ? null : errors);
-  }
-
-  private CommandResult.Error getError(List<DocumentId> documentIds, Throwable throwable) {
-    String message =
-        "Failed to delete documents with _id %s: %s".formatted(documentIds, throwable.getMessage());
-
-    Map<String, Object> fields = new HashMap<>();
-    fields.put("exceptionClass", throwable.getClass().getSimpleName());
-    if (throwable instanceof JsonApiException jae) {
-      fields.put("errorCode", jae.getErrorCode().name());
-    }
-    return new CommandResult.Error(message, fields);
   }
 }
