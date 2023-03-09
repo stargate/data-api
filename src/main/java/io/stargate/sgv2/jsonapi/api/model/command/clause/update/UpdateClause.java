@@ -22,9 +22,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     implementation = Object.class,
     example =
         """
-             {"$set" : {"location": "New York"},
-              "$unset" : {"new_data": 1}
-              """)
+        {
+          "$set" : {"location": "New York"},
+          "$unset" : {"new_data": 1}
+        }
+        """)
 public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDefs) {
   /**
    * Method that will validate update operation definitions of the clause and construct an ordered
