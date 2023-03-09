@@ -446,7 +446,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
               assertThat(error.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
               assertThat(error.message())
                   .isEqualTo(
-                      "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions");
+                      "Failed to update documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
             });
   }
 
@@ -1192,42 +1192,27 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .build()))
             .returning(List.of(List.of(Values.of(false))));
 
-    String updater =
-        """
-                              {
-                                "findOneAndUpdate": {
-                                  "filter": {
-                                    "username": "user1"
-                                  },
-                                  "update": {
-                                    "$set": {
-                                      "name": "test"
-                                    }
-                                  }
-                                }
-                              }
-                            """;
-
-    FindOneAndUpdateCommand findOneAndUpdateCommand =
-        objectMapper.readValue(updater, FindOneAndUpdateCommand.class);
+    DBFilterBase.TextFilter filter =
+        new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
     ReadOperation readOperation =
         new FindOperation(
-            commandContext,
-            List.of(
-                new DBFilterBase.TextFilter(
-                    "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
-            null,
-            3,
-            3,
-            ReadType.DOCUMENT,
-            objectMapper);
+            COMMAND_CONTEXT, List.of(filter), null, 3, 3, ReadType.DOCUMENT, objectMapper);
     DocumentUpdater documentUpdater =
-        DocumentUpdater.construct(findOneAndUpdateCommand.updateClause());
+        DocumentUpdater.construct(
+            DocumentUpdaterUtils.updateClause(
+                UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            commandContext, readOperation, documentUpdater, true, false, false, shredder, 2, 3);
-    final Uni<Supplier<CommandResult>> execute = operation.execute(queryExecutor);
-    final CommandResult commandResultSupplier = execute.subscribe().asCompletionStage().get().get();
+            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, false, shredder, 2, 3);
+
+    Supplier<CommandResult> execute =
+        operation
+            .execute(queryExecutor)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
+    final CommandResult commandResultSupplier = execute.get();
 
     initialSelectQueryAssert.assertExecuteCount().isOne();
 
