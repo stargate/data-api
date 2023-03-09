@@ -22,6 +22,20 @@ public enum UpdateOperator {
     }
   },
 
+  MAX("$max") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return MinMaxOperation.constructMax(arguments);
+    }
+  },
+
+  MIN("$min") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return MinMaxOperation.constructMin(arguments);
+    }
+  },
+
   POP("$pop") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
