@@ -442,7 +442,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                   .isEqualTo("CONCURRENCY_FAILURE");
               assertThat(commandResultSupplier.errors().get(0).message())
                   .isEqualTo(
-                      "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions");
+                      "Failed to update documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
             });
   }
 
@@ -698,7 +698,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                   .isEqualTo("CONCURRENCY_FAILURE");
               assertThat(commandResultSupplier.errors().get(0).message())
                   .isEqualTo(
-                      "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions");
+                      "Failed to update documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
             });
   }
 }

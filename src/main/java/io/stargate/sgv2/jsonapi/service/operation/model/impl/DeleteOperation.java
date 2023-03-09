@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -99,20 +100,15 @@ public record DeleteOperation(
                             // because it's already run twice before this
                             // check.
                             .atMost(retryLimit - 1);
-                      });
+                      })
+                  .onItemOrFailure()
+                  .transform((deleted, error) -> Tuple3.of(deleted, error, document.id()));
             })
         .collect()
-
-        // Count the successful deletes
-        .in(
-            AtomicInteger::new,
-            (atomicCounter, flag) -> {
-              if (flag) {
-                atomicCounter.incrementAndGet();
-              }
-            })
+        .asList()
         .onItem()
-        .transform(deletedCounter -> new DeleteOperationPage(deletedCounter.get(), moreData.get()));
+        .transform(
+            deletedInformation -> new DeleteOperationPage(deletedInformation, moreData.get()));
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {
@@ -167,10 +163,7 @@ public record DeleteOperation(
                           } else {
                             // In case of successful document delete
 
-                            throw new LWTException(
-                                ErrorCode.CONCURRENCY_FAILURE,
-                                "Delete failed for document with id %s because of concurrent transaction"
-                                    .formatted(document.id().value()));
+                            throw new LWTException(ErrorCode.CONCURRENCY_FAILURE);
                           }
                         });
               }
