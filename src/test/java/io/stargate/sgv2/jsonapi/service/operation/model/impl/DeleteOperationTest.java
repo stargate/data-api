@@ -456,7 +456,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(commandResult.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
               });
     }
 
@@ -1001,7 +1001,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id [doc1]: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
               });
     }
 
@@ -1174,7 +1174,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id [doc1, doc2]: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
               });
     }
   }
