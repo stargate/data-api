@@ -206,7 +206,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .body(
               "errors[0].message",
               is(
-                  "Failed to insert document with _id duplicate: Document already exists with the given _id"))
+                  "Failed to insert document with _id 'duplicate': Document already exists with the given _id"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       json =
@@ -373,7 +373,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .statusCode(200)
           .body("status.insertedIds", contains("doc4"))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       json =
@@ -433,7 +433,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .body(
               "errors[0].message",
               startsWith(
-                  "Failed to insert document with _id doc4: INVALID_ARGUMENT: keyspace something_else does not exist"))
+                  "Failed to insert document with _id 'doc4': INVALID_ARGUMENT: keyspace something_else does not exist"))
           .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
@@ -525,7 +525,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       json =
