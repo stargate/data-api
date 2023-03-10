@@ -76,14 +76,14 @@ public class MulOperationTest extends UpdateOperationTestBase {
           UpdateOperator.MUL.resolveOperation(
               objectFromJson(
                   """
-                                { "integer" : 1, "fp" : 1.0 }
-                                """));
+                  { "integer" : 1, "fp" : 1.0 }
+                  """));
       assertThat(oper).isInstanceOf(MulOperation.class);
       ObjectNode doc =
           objectFromJson(
               """
-                    { "integer" : 5, "fp" : 0.25, "text" : "value"  }
-                    """);
+              { "integer" : 5, "fp" : 0.25, "text" : "value"  }
+              """);
       ObjectNode expected = doc.deepCopy();
       assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
