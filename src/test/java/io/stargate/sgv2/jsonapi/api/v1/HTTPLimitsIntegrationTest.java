@@ -12,12 +12,13 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junitpioneer.jupiter.RetryingTest;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
   private final ObjectMapper objectMapper = new JsonMapper();
 
   // For some reason there are failures esp by Native Image, for "Broken Pipe": RestAssured
@@ -59,7 +60,8 @@ public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegration
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        // Fails before getting to business logic no need for real collection (or keyspace fwtw)
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), "noSuchCollection")
         .then()
         // While docs don't say it, Quarkus tests show 413 as expected fail message:
         .statusCode(413);
