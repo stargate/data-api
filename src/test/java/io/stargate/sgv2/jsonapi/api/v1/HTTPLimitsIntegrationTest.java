@@ -55,8 +55,7 @@ public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegration
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
         .then()
-        // What response code should we get here? It's quarkus limiting not our code so
-        // likely 4xx? 413, probably?
+        // While docs don't say it, Quarkus tests show 413 as expected fail message:
         .statusCode(413);
   }
 }
