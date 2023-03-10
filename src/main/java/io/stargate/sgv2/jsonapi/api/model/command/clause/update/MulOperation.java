@@ -79,9 +79,15 @@ public class MulOperation extends UpdateOperation {
     return modified;
   }
 
-  private JsonNode multiply(ObjectNode doc, JsonNode oldValue, JsonNode multiplier) {
-    BigDecimal result = oldValue.decimalValue().multiply(multiplier.decimalValue());
-    return doc.numberNode(result);
+  private JsonNode multiply(ObjectNode doc, JsonNode oldValue, JsonNode multiplierValue) {
+    BigDecimal multiplier = multiplierValue.decimalValue();
+    BigDecimal old = oldValue.decimalValue();
+
+    // Short-cuts to avoid calculation
+    if (BigDecimal.ONE.equals(multiplier) || BigDecimal.ZERO.equals(old)) {
+      return oldValue;
+    }
+    return doc.numberNode(old.multiply(multiplier));
   }
 
   /** Value class for per-field update operations. */
