@@ -64,7 +64,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
       ObjectNode expected =
           objectFromJson(
               """
-              { "integer" : 1, "fp" : 0, "text" : "value", "number" : 0 }
+              { "integer" : 1, "fp" : 0.25, "text" : "value", "number" : 0 }
               """);
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
       assertThat(asPrettyJson(doc)).isEqualTo(asPrettyJson(expected));
