@@ -37,7 +37,7 @@ quarkus:
 
     limits:
       # Let's lower maximum HTTP request size from 10 megs to 1
-      max-body-size: 1000000
+      max-body-size: 1M
 
   # built-in micrometer properties
   micrometer:

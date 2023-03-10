@@ -29,10 +29,11 @@ public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegration
     root.put("_id", "too-big-1");
     ArrayNode dataArray = root.putArray("data");
 
-    // 100k numbers with 9 digits (plus separators etc) goes above 1 meg
-    for (int row = 0; row < 1000; ++row) {
+    // ~100k numbers with 9 digits (plus separators etc) goes above 1 meg
+    for (int row = 0; row < 1024; ++row) {
       ArrayNode rowArray = dataArray.addArray();
-      for (int col = 0; col < 100; ++col) {
+      // 9 digits plus separating comma (plus [ and ]) make it about this:
+      for (int chars = 0; chars < 1024; chars += 10) {
         rowArray.add(123456789);
       }
     }
@@ -46,7 +47,9 @@ public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegration
                 }
             """
             .formatted(root.toString());
-    assertThat(json.length()).isGreaterThan(1_000_000);
+    // Sanity check payload is between 1 and 2 megs
+    assertThat(json.length()).isGreaterThan(1 * 1024 * 1024);
+    assertThat(json.length()).isLessThan(2 * 1024 * 1024);
 
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
