@@ -13,14 +13,17 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.RetryingTest;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 public class HTTPLimitsIntegrationTest extends CollectionResourceBaseIntegrationTest {
   private final ObjectMapper objectMapper = new JsonMapper();
 
-  @Test
+  // For some reason there are failures esp by Native Image, for "Broken Pipe": RestAssured
+  // client having trouble getting connection closed before sending whole payload.
+  // But seems to be transient issue, related to timing. So retry a few times
+  @RetryingTest(5)
   public void tryToSendTooBigInsert() {
     // Need to generate payload above 1 meg: need NOT be valid wrt Document
     // constraints (i.e. can have like 10k array elements) because request
