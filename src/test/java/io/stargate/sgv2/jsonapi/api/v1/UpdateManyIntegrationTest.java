@@ -3,8 +3,10 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -12,8 +14,10 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
@@ -27,23 +31,12 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
         String json =
             """
             {
-              "insertOne": {
-                "document": {
-                  "_id": "doc%s",
-                  "username": "user%s",
-                  "active_user" : true
-                }
-              }
+              "_id": "doc%s",
+              "username": "user%s",
+              "active_user" : true
             }
             """;
-        given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-            .contentType(ContentType.JSON)
-            .body(json.formatted(i, i))
-            .when()
-            .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-            .then()
-            .statusCode(200);
+        insertDoc(json.formatted(i, i));
       }
     }
 
@@ -425,6 +418,83 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
   }
 
   @Nested
+  class Concurrency {
+
+    @RepeatedTest(10)
+    public void concurrentUpdates() throws Exception {
+      // with 5 docs
+      String document =
+          """
+          {
+             "_id": "concurrent-%s",
+             "count": 0
+           }
+           """;
+      for (int i = 0; i < 5; i++) {
+        insertDoc(document.formatted(i));
+      }
+
+      // three threads ensures no retries exhausted
+      int threads = 3;
+      CountDownLatch latch = new CountDownLatch(threads);
+
+      // find all docs
+      String updateJson =
+          """
+              {
+                "updateMany": {
+                  "update" : {
+                    "$inc" : {"count": 1}
+                  }
+                }
+              }
+              """;
+      // start all threads
+      for (int i = 0; i < threads; i++) {
+        new Thread(
+                () -> {
+                  given()
+                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                      .contentType(ContentType.JSON)
+                      .body(updateJson)
+                      .when()
+                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                      .then()
+                      .statusCode(200)
+                      .body("status.matchedCount", is(5))
+                      .body("status.modifiedCount", is(5))
+                      .body("errors", is(nullValue()));
+
+                  // count down
+                  latch.countDown();
+                })
+            .start();
+      }
+
+      latch.await();
+
+      // assert state after all updates
+      String findJson =
+          """
+          {
+            "find": {
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs.count", everyItem(is(3)))
+          .body("data.count", is(5));
+    }
+  }
+
+  @Nested
   class ClientErrors {
 
     @Test
@@ -458,5 +528,28 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  private void insertDoc(String docJson) {
+    String doc =
+        """
+        {
+          "insertOne": {
+            "document": %s
+          }
+        }
+        """
+            .formatted(docJson);
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(doc)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        // Sanity check: let's look for non-empty inserted id
+        .body("status.insertedIds[0]", not(emptyString()))
+        .statusCode(200);
   }
 }

@@ -13,8 +13,10 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
@@ -1172,6 +1174,87 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           {
             "find": {
               "filter" : {"_id" : "update_doc_max"}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
+  @Nested
+  class Concurrency {
+
+    @RepeatedTest(10)
+    public void concurrentUpdates() throws Exception {
+      String document =
+          """
+          {
+             "_id": "concurrent",
+             "count": 0
+           }
+           """;
+      insertDoc(document);
+
+      // three threads ensures no retries exhausted
+      int threads = 3;
+      CountDownLatch latch = new CountDownLatch(threads);
+
+      String updateJson =
+          """
+          {
+            "updateOne": {
+              "filter" : {"_id" : "concurrent"},
+              "update" : {
+                "$inc" : {"count": 1}
+              }
+            }
+          }
+          """;
+      // start all threads
+      for (int i = 0; i < threads; i++) {
+        new Thread(
+                () -> {
+                  given()
+                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                      .contentType(ContentType.JSON)
+                      .body(updateJson)
+                      .when()
+                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                      .then()
+                      .statusCode(200)
+                      .body("status.matchedCount", is(1))
+                      .body("status.modifiedCount", is(1))
+                      .body("errors", is(nullValue()));
+
+                  // count down
+                  latch.countDown();
+                })
+            .start();
+      }
+
+      latch.await();
+
+      // assert state after all updates
+      String expectedDoc =
+          """
+          {
+            "_id": "concurrent",
+            "count": 3
+          }
+          """;
+      String findJson =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : "concurrent"}
             }
           }
           """;
