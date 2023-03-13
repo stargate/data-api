@@ -855,6 +855,76 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   }
 
   @Nested
+  class UpdateOneWithMul {
+    @Test
+    public void findByColumnAndMultiply() {
+      insertDoc(
+          """
+                             {
+                                "_id": "update_doc_mul",
+                                "number": 12,
+                                "numbers": {
+                                   "values": [ 2 ]
+                                 }
+                              }
+                              """);
+      String updateJson =
+          """
+                              {
+                                "updateOne": {
+                                  "filter" : {"_id" : "update_doc_mul"},
+                                  "update" : {"$mul" : {
+                                                  "number": -4,
+                                                  "newProp" : 0.25,
+                                                  "numbers.values.0" : 0.25,
+                                                  "numbers.values.1" : 5
+                                              }
+                                   }
+                                }
+                              }
+                              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      String expectedDoc =
+          """
+                    { "_id":"update_doc_mul",
+                      "number": -48,
+                      "newProp": 0,
+                      "numbers": {
+                        "values" : [ 0.5, 0 ]
+                      }
+                    }
+                    """;
+      String findJson =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_mul"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
+  @Nested
   class UpdateOneWithAddToSet {
 
     @Test

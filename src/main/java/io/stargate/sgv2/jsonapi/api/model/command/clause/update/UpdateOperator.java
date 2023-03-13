@@ -36,6 +36,13 @@ public enum UpdateOperator {
     }
   },
 
+  MUL("$mul") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return MulOperation.construct(arguments);
+    }
+  },
+
   POP("$pop") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {

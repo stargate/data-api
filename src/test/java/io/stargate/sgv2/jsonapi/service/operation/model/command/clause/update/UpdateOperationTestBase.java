@@ -30,4 +30,12 @@ abstract class UpdateOperationTestBase {
       throw new RuntimeException(e);
     }
   }
+
+  protected String asPrettyJson(JsonNode n) {
+    try {
+      return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(n);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
