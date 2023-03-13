@@ -5,9 +5,12 @@ This directory provides two ways to start the JSON API and Stargate coordinator 
 ## Stargate JSON API with 3-node DSE 6.8 cluster
 
 > **PREREQUISITES:** Please build the latest JSONAPI docker image first by running: 
+> 
 > ```bash
 > ./mvnw clean package -Dquarkus.container-image.build=true -DskipTests
 > ```
+> 
+> You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64` property.
 
 You can start a simple Stargate configuration with the following command:
 
