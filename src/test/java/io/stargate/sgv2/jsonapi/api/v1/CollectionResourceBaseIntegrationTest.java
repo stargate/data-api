@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -45,5 +47,36 @@ public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIn
         .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
         .then()
         .statusCode(200);
+  }
+
+  /**
+   * Utility to delete all documents from the test collection.
+   */
+  public void deleteAllDocuments() {
+    String json = """
+        {
+          "deleteMany": {
+          }
+        }
+        """;
+
+    while (true) {
+      Boolean moreData =
+              given()
+                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                      .contentType(ContentType.JSON)
+                      .body(json)
+                      .when()
+                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                      .then()
+                      .statusCode(200)
+                      .body("errors", is(nullValue()))
+                      .extract()
+                      .path("status.moreData");
+
+      if (!Boolean.TRUE.equals(moreData)) {
+        break;
+      }
+    }
   }
 }
