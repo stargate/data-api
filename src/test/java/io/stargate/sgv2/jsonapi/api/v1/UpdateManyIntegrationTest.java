@@ -3,10 +3,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -528,28 +526,5 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
-  }
-
-  private void insertDoc(String docJson) {
-    String doc =
-        """
-        {
-          "insertOne": {
-            "document": %s
-          }
-        }
-        """
-            .formatted(docJson);
-
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(doc)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        // Sanity check: let's look for non-empty inserted id
-        .body("status.insertedIds[0]", not(emptyString()))
-        .statusCode(200);
   }
 }
