@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -10,68 +12,112 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.UUID;
-import org.junit.jupiter.api.Order;
+import java.util.concurrent.CountDownLatch;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-@Execution(ExecutionMode.CONCURRENT)
 public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
-  /**
-   * Made the invocation to 3, so all the transactions should be successful because retrylimit is 3
-   */
-  @Test
-  @Order(2)
-  @RepeatedTest(3)
-  public void retryLWT() {
+  @RepeatedTest(10)
+  public void mixedOperations() throws Exception {
+    String document =
+        """
+        {
+           "_id": "doc1",
+           "count": 0
+         }
+         """;
+    insertDoc(document);
+
     String delete =
         """
-          {
-              "deleteOne": {
-                "filter": {
-                  "_id": "doc1"
-                }
-              }
+        {
+          "deleteOne": {
+            "filter": {
+              "_id": "doc1"
             }
-      """;
-
+          }
+        }
+        """;
     String update =
         """
-          {
-              "updateOne": {
-                "filter": {
-                  "_id": "doc1"
-                },
-                "update" : {
-                    "$set": {"counter": "%s"}
-                },
-                "options": {"upsert" : true}
-              }
+        {
+          "updateOne": {
+            "filter": {
+              "_id": "doc1"
+            },
+            "update" : {
+              "$inc": {"count": 1}
             }
+          }
+        }
         """;
 
+    CountDownLatch latch = new CountDownLatch(2);
+
+    // we know that delete must be executed eventually
+    // but for update we might see delete before read, before update or after
+    new Thread(
+            () -> {
+              given()
+                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                  .contentType(ContentType.JSON)
+                  .body(update)
+                  .when()
+                  .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                  .then()
+                  .statusCode(200)
+                  .body("status.matchedCount", anyOf(is(0), is(1)))
+                  .body("status.modifiedCount", anyOf(is(0), is(1)))
+                  .body("data", is(nullValue()))
+                  .body("errors", is(nullValue()));
+
+              latch.countDown();
+            })
+        .start();
+
+    new Thread(
+            () -> {
+              given()
+                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                  .contentType(ContentType.JSON)
+                  .body(delete)
+                  .when()
+                  .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                  .then()
+                  .statusCode(200)
+                  .body("status.deletedCount", is(1))
+                  .body("data", is(nullValue()))
+                  .body("errors", is(nullValue()));
+
+              latch.countDown();
+            })
+        .start();
+
+    latch.await();
+
+    // ensure there's nothing left
+    String json = """
+        {
+          "find": {
+          }
+        }
+        """;
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
-        .body(update.formatted(UUID.randomUUID().toString()))
+        .body(json)
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
         .then()
         .statusCode(200)
-        .body("errors", is(nullValue()));
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(delete)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200)
-        .body("errors", is(nullValue()));
+        .body("data.docs", is(empty()));
+  }
+
+  @AfterEach
+  public void cleanUpData() {
+    deleteAllDocuments();
   }
 }

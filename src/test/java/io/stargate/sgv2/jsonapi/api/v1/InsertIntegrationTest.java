@@ -29,21 +29,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
 
   @AfterEach
   public void cleanUpData() {
-    String json = """
-        {
-          "deleteMany": {
-          }
-        }
-        """;
-
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200);
+    deleteAllDocuments();
   }
 
   @Nested
