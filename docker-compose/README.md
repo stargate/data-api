@@ -12,7 +12,7 @@ This directory provides two ways to start the JSON API and Stargate coordinator 
 You can start a simple Stargate configuration with the following command:
 
 ```
-docker compose up -d
+docker-compose up -d
 ``` 
 
 This brings up the configuration described in the `docker-compose.yml` file. The configuration includes health criteria for each container that is used to ensure the containers come up in the correct order.
@@ -30,13 +30,13 @@ Whether you use the shell script or start `docker compose` directly, you can rem
 This alternate configuration runs the Stargate coordinator node in developer mode, so that no separate Cassandra cluster is required. This can be run with the command:
 
 ```
-docker compose -f docker-compose-dev-mode.yml up -d
+docker-compose -f docker-compose-dev-mode.yml up -d
 ``` 
 
 To stop the configuration, use the command:
 
 ```
-docker compose -f docker-compose-dev-mode.yml down
+docker-compose -f docker-compose-dev-mode.yml down
 ``` 
 
 This configuration is useful for development and testing since it initializes more quickly, but is not recommended for production deployments. This configuration also has a convenience script: `start_dse_68_dev_mode.sh`.
