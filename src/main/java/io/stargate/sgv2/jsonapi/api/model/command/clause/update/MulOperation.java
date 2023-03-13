@@ -83,8 +83,9 @@ public class MulOperation extends UpdateOperation {
     BigDecimal multiplier = multiplierValue.decimalValue();
     BigDecimal old = oldValue.decimalValue();
 
-    // Short-cuts to avoid calculation
-    if (BigDecimal.ONE.equals(multiplier) || BigDecimal.ZERO.equals(old)) {
+    // Short-cuts to avoid calculation in case old value was 0 (could check if multiplier
+    // is 1 but that seems less common)
+    if (BigDecimal.ZERO.equals(old)) {
       return oldValue;
     }
     return doc.numberNode(old.multiply(multiplier));
