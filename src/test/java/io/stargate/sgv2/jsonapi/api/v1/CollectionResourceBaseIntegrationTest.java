@@ -49,9 +49,7 @@ public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIn
         .statusCode(200);
   }
 
-  /**
-   * Utility to delete all documents from the test collection.
-   */
+  /** Utility to delete all documents from the test collection. */
   public void deleteAllDocuments() {
     String json = """
         {
@@ -62,17 +60,17 @@ public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIn
 
     while (true) {
       Boolean moreData =
-              given()
-                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                      .contentType(ContentType.JSON)
-                      .body(json)
-                      .when()
-                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-                      .then()
-                      .statusCode(200)
-                      .body("errors", is(nullValue()))
-                      .extract()
-                      .path("status.moreData");
+          given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+              .then()
+              .statusCode(200)
+              .body("errors", is(nullValue()))
+              .extract()
+              .path("status.moreData");
 
       if (!Boolean.TRUE.equals(moreData)) {
         break;
