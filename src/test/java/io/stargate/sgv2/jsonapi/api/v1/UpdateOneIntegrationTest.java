@@ -859,7 +859,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     @Test
     public void findByColumnAndMultiply() {
       insertDoc(
-              """
+          """
                              {
                                 "_id": "update_doc_mul",
                                 "number": 12,
@@ -869,7 +869,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                               }
                               """);
       String updateJson =
-              """
+          """
                               {
                                 "updateOne": {
                                   "filter" : {"_id" : "update_doc_mul"},
@@ -884,18 +884,18 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                               }
                               """;
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(updateJson)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-              .then()
-              .statusCode(200)
-              .body("status.matchedCount", is(1))
-              .body("status.modifiedCount", is(1));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
 
       String expectedDoc =
-              """
+          """
                     { "_id":"update_doc_mul",
                       "number": -48,
                       "newProp": 0,
@@ -905,7 +905,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                     }
                     """;
       String findJson =
-              """
+          """
                   {
                     "find": {
                       "filter" : {"_id" : "update_doc_mul"}
@@ -913,14 +913,14 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                   }
                   """;
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(findJson)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-              .then()
-              .statusCode(200)
-              .body("data.docs[0]", jsonEquals(expectedDoc));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1256,7 +1256,6 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .body("data.docs[0]", jsonEquals(expectedDoc));
     }
   }
-
 
   @Nested
   class Concurrency {
