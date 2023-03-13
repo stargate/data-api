@@ -108,8 +108,10 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultRead"),
                     @ExampleObject(ref = "resultFindOneAndUpdate"),
                     @ExampleObject(ref = "resultInsert"),
-                    @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateOne"),
+                    @ExampleObject(ref = "resultUpdateOneUpsert"),
+                    @ExampleObject(ref = "resultUpdateMany"),
+                    @ExampleObject(ref = "resultUpdateManyUpsert"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

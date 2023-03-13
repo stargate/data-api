@@ -358,16 +358,22 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                           "status": {
+                            "matchedCount": 1,
+                            "modifiedCount": 1
+                          }
+                        }
+                      """),
+              @ExampleObject(
+                  name = "resultUpdateOneUpsert",
+                  summary = "`updateOne` command with upsert result",
+                  value =
+                      """
+                      {
+                          "status": {
                             "upsertedId": "1",
                             "matchedCount": 0,
                             "modifiedCount": 1
-                            },
-                          "errors": [
-                            {
-                              "message": "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions",
-                              "errorCode": "CONCURRENCY_FAILURE"
-                            }
-                          ]
+                          }
                         }
                       """),
               @ExampleObject(
@@ -377,17 +383,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "status": {
+                          "matchedCount": 20,
+                          "modifiedCount": 20,
+                          "moreData": true
+                        }
+                      }
+                  """),
+              @ExampleObject(
+                  name = "resultUpdateManyUpsert",
+                  summary = "`updateMany` command with upsert result",
+                  value =
+                      """
+                      {
+                        "status": {
                           "upsertedId": "1",
                           "matchedCount": 0,
-                          "modifiedCount": 1,
-                          "moreData": true
-                        },
-                        "errors": [
-                          {
-                            "message": "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions",
-                            "errorCode": "CONCURRENCY_FAILURE"
-                          }
-                        ]
+                          "modifiedCount": 1
+                        }
                       }
                   """),
               @ExampleObject(

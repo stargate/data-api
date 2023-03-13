@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -11,58 +12,44 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegrationTest {
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class UpdateMany {
 
     private void insert(int countOfDocument) {
       for (int i = 1; i <= countOfDocument; i++) {
         String json =
             """
-                                    {
-                                      "insertOne": {
-                                        "document": {
-                                          "_id": "doc%s",
-                                          "username": "user%s",
-                                          "active_user" : true
-                                        }
-                                      }
-                                    }
-                                    """;
-        given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-            .contentType(ContentType.JSON)
-            .body(json.formatted(i, i))
-            .when()
-            .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-            .then()
-            .statusCode(200);
+            {
+              "_id": "doc%s",
+              "username": "user%s",
+              "active_user" : true
+            }
+            """;
+        insertDoc(json.formatted(i, i));
       }
     }
 
     @Test
-    @Order(2)
     public void updateManyById() {
-      insert(1);
+      insert(2);
       String json =
           """
-                                {
-                                  "updateMany": {
-                                    "filter" : {"_id" : "doc1"},
-                                    "update" : {"$set" : {"active_user": false}}
-                                  }
-                                }
-                                """;
+          {
+            "updateMany": {
+              "filter" : {"_id" : "doc1"},
+              "update" : {"$set" : {"active_user": false}}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -73,17 +60,53 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":false}";
+      // assert state after update, first changed document
+      String expected =
+          """
+          {
+            "_id":"doc1",
+            "username":"user1",
+            "active_user":false
+          }
+          """;
       json =
           """
-                        {
-                          "find": {
-                            "filter" : {"_id" : "doc1"}
-                          }
-                        }
-                        """;
+          {
+            "find": {
+              "filter" : {"_id" : "doc1"}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+
+      // then not changed document
+      expected =
+          """
+          {
+            "_id":"doc2",
+            "username":"user2",
+            "active_user":true
+          }
+          """;
+      json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : "doc2"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -96,18 +119,17 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    @Order(3)
     public void updateManyByColumn() {
       insert(5);
       String json =
           """
-                                {
-                                  "updateMany": {
-                                    "filter" : {"active_user": true},
-                                    "update" : {"$set" : {"active_user": false}}
-                                  }
-                                }
-                                """;
+          {
+            "updateMany": {
+              "filter" : {"active_user": true},
+              "update" : {"$set" : {"active_user": false}}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -118,17 +140,16 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("status.matchedCount", is(5))
           .body("status.modifiedCount", is(5))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":false}";
-      json =
-          """
-                        {
-                          "find": {
-                            "filter" : {"_id" : "doc1"}
-                          }
-                        }
-                        """;
+      // assert all updated
+      json = """
+          {
+            "find": {
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -137,22 +158,21 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs.active_user", everyItem(is(false)));
     }
 
     @Test
-    @Order(4)
     public void updateManyLimit() {
       insert(20);
       String json =
           """
-                                {
-                                  "updateMany": {
-                                    "filter" : {"active_user": true},
-                                    "update" : {"$set" : {"active_user": false}}
-                                  }
-                                }
-                                """;
+          {
+            "updateMany": {
+              "filter" : {"active_user": true},
+              "update" : {"$set" : {"active_user": false}}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -163,16 +183,17 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
       json =
           """
-                        {
-                          "find": {
-                            "filter" : {"active_user": false}
-                          }
-                        }
-                        """;
+          {
+            "find": {
+              "filter" : {"active_user": false}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -181,22 +202,23 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(20));
+          .body("data.docs.active_user", everyItem(is(false)))
+          .body("data.count", is(20))
+          .body("errors", is(nullValue()));
     }
 
     @Test
-    @Order(5)
-    public void deleteManyLimitMoreDataFlag() {
+    public void updateManyLimitMoreDataFlag() {
       insert(25);
       String json =
           """
-                                {
-                                  "updateMany": {
-                                    "filter" : {"active_user" : true},
-                                    "update" : {"$set" : {"active_user": false}}
-                                  }
-                                }
-                                """;
+          {
+            "updateMany": {
+              "filter" : {"active_user" : true},
+              "update" : {"$set" : {"active_user": false}}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -207,16 +229,17 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
-          .body("status.moreData", is(true));
+          .body("status.moreData", is(true))
+          .body("errors", is(nullValue()));
 
       json =
           """
-                        {
-                          "find": {
-                            "filter" : {"active_user": true}
-                          }
-                        }
-                        """;
+          {
+            "find": {
+              "filter" : {"active_user": true}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -225,23 +248,23 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("data.docs.active_user", everyItem(is(true)))
           .body("data.count", is(5));
     }
 
     @Test
-    @Order(6)
     public void updateManyUpsert() {
       insert(5);
       String json =
           """
-                                    {
-                                      "updateMany": {
-                                        "filter" : {"_id": "doc6"},
-                                        "update" : {"$set" : {"active_user": false}},
-                                        "options" : {"upsert" : true}
-                                      }
-                                    }
-                                    """;
+          {
+            "updateMany": {
+              "filter" : {"_id": "doc6"},
+              "update" : {"$set" : {"active_user": false}},
+              "options" : {"upsert" : true}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -253,17 +276,25 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .body("status.upsertedId", is("doc6"))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
-      String expected = "{\"_id\":\"doc6\", \"active_user\":false}";
+      // assert upsert
+      String expected =
+          """
+          {
+            "_id":"doc6",
+            "active_user":false
+          }
+          """;
       json =
           """
-                            {
-                              "find": {
-                                "filter" : {"_id" : "doc6"}
-                              }
-                            }
-                            """;
+          {
+            "find": {
+              "filter" : {"_id" : "doc6"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -276,18 +307,18 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    @Order(7)
     public void updateManyByIdNoChange() {
-      insert(1);
+      insert(2);
       String json =
           """
-                                    {
-                                      "updateMany": {
-                                        "filter" : {"_id" : "doc1"},
-                                        "update" : {"$set" : {"active_user": true}}
-                                      }
-                                    }
-                                    """;
+          {
+            "updateMany": {
+              "filter" : {"_id" : "doc1"},
+              "update" : {"$set" : {"active_user": true}}
+            }
+          }
+          """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -298,17 +329,25 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          """
+          {
+            "_id":"doc1",
+            "username":"user1",
+            "active_user":true
+          }
+          """;
       json =
           """
-                            {
-                              "find": {
-                                "filter" : {"_id" : "doc1"}
-                              }
-                            }
-                            """;
+          {
+            "find": {
+              "filter" : {"_id" : "doc1"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -321,19 +360,18 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    @Order(8)
     public void updateManyUpsertAddFilterColumn() {
       insert(5);
       String json =
           """
-                                        {
-                                          "updateMany": {
-                                            "filter" : {"_id": "doc6", "answer" : 42},
-                                            "update" : {"$set" : {"active_user": false}},
-                                            "options" : {"upsert" : true}
-                                          }
-                                        }
-                                        """;
+          {
+            "updateMany": {
+              "filter" : {"_id": "doc6", "answer" : 42},
+              "update" : {"$set" : {"active_user": false}},
+              "options" : {"upsert" : true}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -345,17 +383,26 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .body("status.upsertedId", is("doc6"))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.moreData", nullValue());
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
 
-      String expected = "{\"_id\":\"doc6\", \"answer\" : 42, \"active_user\":false}";
+      // assert state after update
+      String expected =
+          """
+          {
+            "_id":"doc6",
+            "answer": 42,
+            "active_user": false
+          }
+          """;
       json =
           """
-                                {
-                                  "find": {
-                                    "filter" : {"_id" : "doc6"}
-                                  }
-                                }
-                                """;
+          {
+            "find": {
+              "filter" : {"_id" : "doc6"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -366,24 +413,118 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
     }
+  }
 
-    @AfterEach
-    public void cleanUpData() {
-      String json =
+  @Nested
+  class Concurrency {
+
+    @RepeatedTest(10)
+    public void concurrentUpdates() throws Exception {
+      // with 5 docs
+      String document =
           """
-                                {
-                                  "deleteMany": {
-                                  }
-                                }
-                                """;
+          {
+             "_id": "concurrent-%s",
+             "count": 0
+           }
+           """;
+      for (int i = 0; i < 5; i++) {
+        insertDoc(document.formatted(i));
+      }
+
+      // three threads ensures no retries exhausted
+      int threads = 3;
+      CountDownLatch latch = new CountDownLatch(threads);
+
+      // find all docs
+      String updateJson =
+          """
+              {
+                "updateMany": {
+                  "update" : {
+                    "$inc" : {"count": 1}
+                  }
+                }
+              }
+              """;
+      // start all threads
+      for (int i = 0; i < threads; i++) {
+        new Thread(
+                () -> {
+                  given()
+                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                      .contentType(ContentType.JSON)
+                      .body(updateJson)
+                      .when()
+                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                      .then()
+                      .statusCode(200)
+                      .body("status.matchedCount", is(5))
+                      .body("status.modifiedCount", is(5))
+                      .body("errors", is(nullValue()));
+
+                  // count down
+                  latch.countDown();
+                })
+            .start();
+      }
+
+      latch.await();
+
+      // assert state after all updates
+      String findJson =
+          """
+          {
+            "find": {
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(findJson)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("data.docs.count", everyItem(is(3)))
+          .body("data.count", is(5));
     }
+  }
+
+  @Nested
+  class ClientErrors {
+
+    @Test
+    public void invalidCommand() {
+      String updateJson =
+          """
+          {
+            "updateMany": {
+              "filter" : {"something" : "matching"}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+    }
+  }
+
+  @AfterEach
+  public void cleanUpData() {
+    deleteAllDocuments();
   }
 }
