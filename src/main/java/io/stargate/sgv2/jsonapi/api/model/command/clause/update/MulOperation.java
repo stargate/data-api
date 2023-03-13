@@ -47,13 +47,13 @@ public class MulOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
       final String path = action.path;
       final NumericNode multiplier = action.value;
 
-      UpdateTarget target = targetLocator.findOrCreate(doc, path);
+      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Initialize as zero

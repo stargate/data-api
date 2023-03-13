@@ -46,14 +46,14 @@ public class IncOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
     for (IncAction action : actions) {
       final String path = action.path;
       final NumericNode toAdd = action.value;
 
-      UpdateTarget target = targetLocator.findOrCreate(doc, path);
+      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add number

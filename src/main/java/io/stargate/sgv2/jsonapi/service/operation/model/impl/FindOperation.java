@@ -10,7 +10,6 @@ import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTargetLocator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
@@ -65,7 +64,6 @@ public record FindOperation(
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    UpdateTargetLocator targetLocator = new UpdateTargetLocator();
     for (DBFilterBase filter : filters) {
       if (filter instanceof DBFilterBase.IDFilter) {
         documentId = ((DBFilterBase.IDFilter) filter).value;
@@ -75,7 +73,7 @@ public record FindOperation(
           JsonNode value = filter.asJson(objectMapper().getNodeFactory());
           if (value != null) {
             String filterPath = filter.getPath();
-            SetOperation.constructSet(filterPath, value).updateDocument(rootNode, targetLocator);
+            SetOperation.constructSet(filterPath, value).updateDocument(rootNode);
           }
         }
       }

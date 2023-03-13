@@ -19,7 +19,7 @@ public abstract class UpdateOperation {
    * @param doc Document to apply operation to
    * @return True if document was modified by operation; false if not.
    */
-  public abstract boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator);
+  public abstract boolean updateDocument(ObjectNode doc);
 
   /**
    * Method called to see if update operator should be applied for specific kind of update:

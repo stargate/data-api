@@ -40,7 +40,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -64,7 +64,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -88,7 +88,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       ObjectNode expected =
           objectFromJson(
               """
@@ -121,7 +121,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                               "fpArray" : [ 0, 0.25 ]
                             }
                             """);
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -150,7 +150,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                               "text" : "value"
                             }"
                             """);
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -187,7 +187,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                             }"
                             """);
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
@@ -243,7 +243,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc, targetLocator);
+                oper.updateDocument(doc);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -269,7 +269,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc, targetLocator);
+                oper.updateDocument(doc);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -299,7 +299,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc, targetLocator);
+                oper.updateDocument(doc);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)

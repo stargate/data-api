@@ -37,7 +37,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("paths", Set.of("a", "b"));
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABC();
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       // and be left with just one property
       assertThat(doc)
           .isEqualTo(fromJson("""
@@ -59,7 +59,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
           .hasFieldOrPropertyWithValue("paths", Set.of("missing", "nosuchvalue"));
       ObjectNode doc = defaultTestDocABC();
       // No modifications
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       // and be left with same as original (but get a new copy just to make sure)
       assertThat(doc).isEqualTo(defaultTestDocABC());
     }
@@ -100,7 +100,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                                  "array.x" : 1
                               }
                               """));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
 
       ObjectNode exp =
           objectFromJson(
@@ -134,7 +134,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
 
       UpdateOperation oper =
           UpdateOperator.UNSET.resolveOperation(objectFromJson("{\"subdoc.b\": 1, \"x.y\": 1 }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       // and no modifications expected
       assertThat(doc).isEqualTo(orig);
     }
@@ -168,7 +168,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                                  "array2" : 1
                               }
                               """));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
 
       // Note: in Array values, placeholder nulls must be added (to retain index positions);
       // but replacing WHOLE array is fine (no null left)

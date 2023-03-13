@@ -65,11 +65,11 @@ public class SetOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
-    for (SetAction addition : actions) {
-      UpdateTarget target = targetLocator.findOrCreate(doc, addition.path());
-      JsonNode newValue = addition.value();
+    for (SetAction action : actions) {
+      UpdateTarget target = UpdateTargetLocator.forPath(action.path()).findOrCreate(doc);
+      JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
 
       // Modify if no old value OR new value differs, as per Mongo-equality rules

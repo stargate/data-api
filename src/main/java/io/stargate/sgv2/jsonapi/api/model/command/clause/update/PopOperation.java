@@ -57,11 +57,11 @@ public class PopOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     boolean changes = false;
     for (PopAction action : actions) {
       final String path = action.path;
-      UpdateTarget target = targetLocator.findIfExists(doc, path);
+      UpdateTarget target = UpdateTargetLocator.forPath(path).findIfExists(doc);
 
       JsonNode value = target.valueNode();
       // If target does not match, nothing to do; not an error
