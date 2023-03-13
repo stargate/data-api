@@ -424,6 +424,37 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
   }
 
+  @Nested
+  class ClientErrors {
+
+    @Test
+    public void invalidCommand() {
+      String updateJson =
+          """
+          {
+            "updateMany": {
+              "filter" : {"something" : "matching"}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+    }
+  }
+
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
