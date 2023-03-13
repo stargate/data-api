@@ -8,6 +8,7 @@ Specifications and design documents for this service are defined in the [docs](d
 The project depends on the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common) module, which provides common functionality used by all Stargate V2 APIs.
 
 ##### Table of Contents
+* [Quick Start](#quick-start)
 * [Concepts](#concepts)
     * [Shared concepts](#shared-concepts)
 * [Configuration properties](#configuration-properties)
@@ -18,6 +19,26 @@ The project depends on the [sgv2-quarkus-common](https://github.com/stargate/sta
     * [Creating a native executable](#creating-a-native-executable)
     * [Creating a docker image](#creating-a-docker-image)
 * [Quarkus Extensions](#quarkus-extensions)
+
+## Quick Start
+
+Most users will want to use the JSON API through a client library such as the [stargate-mongoose](https://github.com/stargate/stargate-mongoose) for JavaScript development. See the [stargate-mongoose-sample-apps](https://github.com/stargate/stargate-mongoose-sample-apps) for a quick demonstration.
+
+The quickest way to test out the JSON API directly is to start a local copy of the service and supporting infrastructure using the [Docker compose](docker-compose) scripts:
+
+```shell
+cd docker-compose
+./start_dse_68_dev_mode.sh
+```
+
+This starts an instance of the JSON API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
+
+> **Warning**
+> Running this script with no options will use the latest `v1` tagged version of JSON API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
+
+Once the services are up, you can access the Swagger endpoint at: http://localhost:8080
+
+We also have a Postman collection you can use to learn about the various operations supported by the JSON API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
 
 ## Concepts
 
