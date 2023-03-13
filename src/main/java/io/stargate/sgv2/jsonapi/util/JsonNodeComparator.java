@@ -56,8 +56,9 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
     }
 
     switch (type1) {
+      case MISSING:
       case NULL:
-        return 0; // nulls are same so...
+        return 0; // nulls and missing are equal to each other so...
       case NUMBER:
         return compareNumbers(o1.decimalValue(), o2.decimalValue());
       case STRING:
@@ -133,20 +134,22 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
 
   private int typePriority(JsonNodeType type) {
     switch (type) {
-      case NULL:
+      case MISSING:
         return 0;
-      case NUMBER:
+      case NULL:
         return 1;
-      case STRING:
+      case NUMBER:
         return 2;
-      case OBJECT:
+      case STRING:
         return 3;
-      case ARRAY:
+      case OBJECT:
         return 4;
-      case BOOLEAN:
+      case ARRAY:
         return 5;
-      default:
+      case BOOLEAN:
         return 6;
+      default:
+        return 7;
     }
   }
 }

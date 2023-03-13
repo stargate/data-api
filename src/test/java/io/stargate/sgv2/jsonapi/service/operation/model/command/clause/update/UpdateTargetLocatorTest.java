@@ -12,16 +12,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTarget;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTargetLocator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class HappyPathFindIfExists {
     @Test
     public void findRootPropertyPath() {
@@ -139,7 +136,6 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FailForFindIfExists {
     @Test
     public void invalidEmptySegment() {
@@ -157,7 +153,6 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class HappyPathFindOrCreate {
     @Test
     public void findRootPropertyPath() {
@@ -249,7 +244,6 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FailForFindOrCreate {
     @Test
     public void invalidPathViaAtomic() {
@@ -305,6 +299,95 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
           .hasMessage(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
                   + ": cannot create field ('x') in path 'ob.array.0.a2.x'; only OBJECT nodes have properties (got ARRAY)");
+    }
+  }
+
+  @Nested
+  class HappyPathFindValueIn {
+    @Test
+    public void findRootPropertyPath() {
+      ObjectNode doc = objectFromJson("{\"a\" : 1 }");
+      JsonNode value = UpdateTargetLocator.forPath("a").findValueIn(doc);
+      assertThat(value).isEqualTo(objectMapper.getNodeFactory().numberNode(1));
+
+      // But cannot proceed via atomic node
+      value = UpdateTargetLocator.forPath("a.x").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+
+      // Can refer to missing property as well
+      value = UpdateTargetLocator.forPath("unknown").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+    }
+
+    @Test
+    public void findRootIndexPath() {
+      // Although main-level is always an Object, locator is not limited
+      // and can refer to array indexes too
+      JsonNode doc = fromJson("[ 3, 7 ]");
+      JsonNode value = UpdateTargetLocator.forPath("1").findValueIn(doc);
+      assertThat(value).isEqualTo(objectMapper.getNodeFactory().numberNode(7));
+
+      // May try to reference past end, no match
+      value = UpdateTargetLocator.forPath("9").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+    }
+
+    @Test
+    public void findNestedPropertyPath() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                            {
+                              "b" : {
+                                 "c" : true
+                              }
+                            }
+                            """);
+
+      // First: simple nested property:
+      JsonNode value = UpdateTargetLocator.forPath("b.c").findValueIn(doc);
+      assertThat(value).isEqualTo(fromJson("true"));
+
+      // But can also refer to its parent
+      value = UpdateTargetLocator.forPath("b").findValueIn(doc);
+      assertThat(value).isEqualTo(objectFromJson("{\"c\":true}"));
+
+      value = UpdateTargetLocator.forPath("b.unknown").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+
+      value = UpdateTargetLocator.forPath("b.unknown.bogus").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+    }
+
+    @Test
+    public void findNestedArrayPath() {
+      ObjectNode doc =
+          objectFromJson(
+              """
+                                      {
+                                        "array" : [ 1, 2,
+                                           { "a": 3,
+                                              "subArray" : [ true, false ]
+                                            }
+                                         ]
+                                      }
+                                      """);
+
+      // First, existing path
+      JsonNode value = UpdateTargetLocator.forPath("array.0").findValueIn(doc);
+      assertThat(value).isEqualTo(doc.numberNode(1));
+
+      // Then non-existing index
+      value = UpdateTargetLocator.forPath("array.5").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+
+      // and then non-existing property (no properties in Array)
+      value = UpdateTargetLocator.forPath("array.prop").findValueIn(doc);
+      assertThat(value.isMissingNode()).isTrue();
+
+      // But we can traverse through multiple nesting levels:
+      value = UpdateTargetLocator.forPath("array.2.subArray.1").findValueIn(doc);
+      assertThat(value).isEqualTo(doc.booleanNode(false));
     }
   }
 }
