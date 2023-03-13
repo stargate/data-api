@@ -61,7 +61,8 @@ public class MulOperation extends UpdateOperation {
         modified = true;
       } else if (oldValue.isNumber()) { // Otherwise, if existing number, can modify
         JsonNode newValue = multiply(doc, oldValue, multiplier);
-        if (!oldValue.equals(newValue)) {
+        // Method will return oldValue if no change needed; identity check is enough
+        if (newValue != oldValue) {
           target.replaceValue(newValue);
           modified = true;
         }
@@ -88,7 +89,12 @@ public class MulOperation extends UpdateOperation {
     if (BigDecimal.ZERO.equals(old)) {
       return oldValue;
     }
-    return doc.numberNode(old.multiply(multiplier));
+    // Let's check equality here to avoid constructing new DecimalNode if not needed:
+    BigDecimal newNumber = old.multiply(multiplier);
+    if (newNumber.equals(old)) {
+      return oldValue;
+    }
+    return doc.numberNode(newNumber);
   }
 
   /** Value class for per-field update operations. */
