@@ -22,6 +22,10 @@ public class UpdateTargetLocator {
     this.segments = segments;
   }
 
+  public String path() {
+    return dotPath;
+  }
+
   /**
    * Factory method for constructing path; also does minimal verification of path: currently only
    * verification is to ensure there are no empty segments.
