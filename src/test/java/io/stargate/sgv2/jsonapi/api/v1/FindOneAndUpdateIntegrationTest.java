@@ -62,7 +62,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           {
             "_id": "doc3",
             "username": "user3",
-            "active_user": false
+            "active_user": true
           }
           """;
       given()
@@ -82,9 +82,9 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       expected =
           """
           {
-            "_id":"doc3",
-            "username":"user3",
-            "active_user":true
+            "_id": "doc3",
+            "username": "user3",
+            "active_user": false
           }
           """;
       json =
