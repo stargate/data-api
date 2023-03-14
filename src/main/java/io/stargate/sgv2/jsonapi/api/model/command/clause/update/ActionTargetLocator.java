@@ -229,4 +229,17 @@ public class ActionTargetLocator {
             fullPath,
             context.getNodeType()));
   }
+
+  // Needed because Command Resolver unit tests rely in equality checks for Command equality
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof ActionTargetLocator)) return false;
+    return dotPath.equals(((ActionTargetLocator) o).dotPath);
+  }
+
+  @Override
+  public int hashCode() {
+    return dotPath.hashCode();
+  }
 }
