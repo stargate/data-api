@@ -1178,6 +1178,135 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
     }
+
+    @Test
+    public void findByColumnMinNonNumeric() {
+      insertDoc(
+          """
+              {
+                 "_id": "update_doc_min_text",
+                 "start": "abc",
+                 "end": "xyz"
+               }
+               """);
+      String updateJson =
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "update_doc_min_text"},
+                  "update" : {
+                    "$min" : {
+                      "start": "fff",
+                      "end" : "fff"
+                    }
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "end" changed
+      String expectedDoc =
+          """
+              {
+                 "_id": "update_doc_min_text",
+                 "start": "abc",
+                 "end": "fff"
+               }
+               """;
+      String findJson =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_min_text"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+
+    @Test
+    public void findByColumnMinMixedTypes() {
+      insertDoc(
+          """
+              {
+                 "_id": "update_doc_min_mixed",
+                 "start": "abc",
+                 "end": "xyz"
+               }
+               """);
+      String updateJson =
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "update_doc_min_mixed"},
+                  "update" : {
+                    "$min" : {
+                      "start": 123,
+                      "end" : true
+                    }
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "start" changed (numbers before strings), not
+      // "end" (boolean after strings)
+      String expectedDoc =
+          """
+              {
+                 "_id": "update_doc_min_mixed",
+                 "start": 123,
+                 "end": "xyz"
+               }
+               """;
+      String findJson =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_min_mixed"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
   }
 
   @Nested
@@ -1245,6 +1374,135 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
             }
           }
           """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+
+    @Test
+    public void findByColumnMaxNonNumeric() {
+      insertDoc(
+          """
+              {
+                 "_id": "update_doc_max_text",
+                 "start": "abc",
+                 "end": "xyz"
+               }
+               """);
+      String updateJson =
+          """
+                  {
+                    "updateOne": {
+                      "filter" : {"_id" : "update_doc_max_text"},
+                      "update" : {
+                        "$max" : {
+                          "start": "fff",
+                          "end" : "fff"
+                        }
+                      }
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "start" changed
+      String expectedDoc =
+          """
+                  {
+                     "_id": "update_doc_max_text",
+                     "start": "fff",
+                     "end": "xyz"
+                   }
+                   """;
+      String findJson =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_max_text"}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+
+    @Test
+    public void findByColumnMaxMixedTypes() {
+      insertDoc(
+          """
+              {
+                 "_id": "update_doc_max_mixed",
+                 "start": "abc",
+                 "end": "xyz"
+               }
+               """);
+      String updateJson =
+          """
+                  {
+                    "updateOne": {
+                      "filter" : {"_id" : "update_doc_max_mixed"},
+                      "update" : {
+                        "$max" : {
+                          "start": 123,
+                          "end" : true
+                        }
+                      }
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "end" changed (booleans after Strings), not
+      // "start" (numbers before Strings)
+      String expectedDoc =
+          """
+                  {
+                     "_id": "update_doc_max_mixed",
+                     "start": "abc",
+                     "end": true
+                   }
+                   """;
+      String findJson =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_max_mixed"}
+                    }
+                  }
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
