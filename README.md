@@ -206,6 +206,8 @@ You can create a Docker image named `io.stargate/jsonapi` using:
 ./mvnw clean package -Dquarkus.container-image.build=true
 ```
 
+> NOTE: Include the property `-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64` if you want to build for multiple platforms.
+
 Or, if you want to create a native-runnable Docker image named `io.stargate/jsonapi-native` using:
 ```shell script
 ./mvnw clean package -Pnative -Dquarkus.native.container-build=true
