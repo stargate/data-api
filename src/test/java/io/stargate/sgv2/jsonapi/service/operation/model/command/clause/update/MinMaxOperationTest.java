@@ -22,7 +22,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       // 3 updates: 2 for existing property, one for not
       UpdateOperation oper =
           UpdateOperator.MIN.resolveOperation(objectFromJson("{ \"x\": -1, \"y\":99, \"z\":0}"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"x\": -1, \"y\":2, \"z\":0}");
       assertThat(doc).isEqualTo(expected);
     }
@@ -35,7 +35,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
           UpdateOperator.MIN.resolveOperation(
               objectFromJson(
                   "{ \"subdoc.x\": \"afx\", \"subdoc.y\":\"\", \"subdoc.z\":\"value\"}"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson("{\"subdoc\":{\"x\": \"abc\", \"y\":\"\", \"z\":\"value\"}}");
       assertThat(doc).isEqualTo(expected);
@@ -47,7 +47,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = orig.deepCopy();
       UpdateOperation oper =
           UpdateOperator.MIN.resolveOperation(objectFromJson("{\"a\":2, \"b\":true }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       assertThat(doc).isEqualTo(orig);
     }
 
@@ -56,7 +56,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"a\":1, \"b\":true}");
       UpdateOperation oper =
           UpdateOperator.MIN.resolveOperation(objectFromJson("{\"a\":\"value\", \"b\":123 }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"a\":1, \"b\":123}");
       assertThat(doc).isEqualTo(expected);
     }
@@ -66,7 +66,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"a\":[1, true]}");
       UpdateOperation oper =
           UpdateOperator.MIN.resolveOperation(objectFromJson("{\"a\":[1, false] }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{\"a\":[1, false] }");
       assertThat(doc).isEqualTo(expected);
     }
@@ -80,7 +80,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       // 3 updates: 2 for existing property, one for not
       UpdateOperation oper =
           UpdateOperator.MAX.resolveOperation(objectFromJson("{ \"x\": -1, \"y\":99, \"z\":0}"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"x\": 1, \"y\":99, \"z\":0}");
       assertThat(doc).isEqualTo(expected);
     }
@@ -93,7 +93,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
           UpdateOperator.MAX.resolveOperation(
               objectFromJson(
                   "{ \"subdoc.x\": \"afx\", \"subdoc.y\":\"\", \"subdoc.z\":\"value\"}"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson("{\"subdoc\":{\"x\": \"afx\", \"y\":\"def\", \"z\":\"value\"}}");
       assertThat(doc).isEqualTo(expected);
@@ -105,7 +105,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = orig.deepCopy();
       UpdateOperation oper =
           UpdateOperator.MAX.resolveOperation(objectFromJson("{\"a\":0, \"b\":true }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       assertThat(doc).isEqualTo(orig);
     }
 
@@ -114,7 +114,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"a\":1, \"b\":true}");
       UpdateOperation oper =
           UpdateOperator.MAX.resolveOperation(objectFromJson("{\"a\":\"value\", \"b\":123 }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"a\":\"value\", \"b\":true}");
       assertThat(doc).isEqualTo(expected);
     }
@@ -124,7 +124,7 @@ public class MinMaxOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"arr\":[1, 2]}");
       UpdateOperation oper =
           UpdateOperator.MAX.resolveOperation(objectFromJson("{\"arr\":[1, 2, 3] }"));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{\"arr\":[1, 2, 3] }");
       assertThat(doc).isEqualTo(expected);
     }

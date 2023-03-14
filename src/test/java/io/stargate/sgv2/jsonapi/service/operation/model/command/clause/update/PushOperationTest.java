@@ -29,7 +29,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
           UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"array\" : 32 }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -44,7 +44,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
           UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"subdoc.array\" : 32 }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -59,7 +59,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
           UpdateOperator.PUSH.resolveOperation(objectFromJson("{ \"newArray\" : \"value\" }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\": 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -75,7 +75,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"subdoc.newArray\" : \"value\" }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -93,7 +93,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"subdoc.newArray\" : \"value\", \"array\": 3 }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -120,7 +120,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc, targetLocator);
+                oper.updateDocument(doc);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -198,7 +198,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                       """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -217,7 +217,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                   """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -236,7 +236,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                         """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -255,7 +255,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                     """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -274,7 +274,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                       """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ null ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -293,7 +293,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                       """));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"x\" : 1 }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -359,7 +359,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : 1 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"array\": [ 1, true, false, 2, 3, 4 ] }");
       assertThat(doc).isEqualTo(expected);
 
@@ -369,7 +369,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : 999 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       expected = objectFromJson("{ \"array\": [ 1, 2, 3, 4, true, false ] }");
       assertThat(doc).isEqualTo(expected);
     }
@@ -382,7 +382,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                   "{ \"nested.array\": { \"$each\" : [true, false], \"$position\" : 1 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\": [ 1, 2, 3, 4 ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson("{ \"nested\" : { \"array\": [ 1, true, false, 2, 3, 4 ] } }");
       assertThat(doc).isEqualTo(expected);
@@ -396,7 +396,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : -1 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"array\": [ 1, 2, 3, true, false, 4 ] }");
       assertThat(doc).isEqualTo(expected);
 
@@ -406,7 +406,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"array\": { \"$each\" : [true, false], \"$position\" : -999 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       doc = objectFromJson("{ \"array\": [ 1, 2, 3, 4 ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       expected = objectFromJson("{ \"array\": [ true, false, 1, 2, 3, 4 ] }");
       assertThat(doc).isEqualTo(expected);
     }
@@ -418,7 +418,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
               objectFromJson("{ \"newArray\": { \"$each\" : [true, false], \"$position\": 1 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ \"array\": [ 1, 2, 3 ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson("{ \"array\": [ 1, 2, 3 ], \"newArray\": [true, false] }");
       assertThat(doc).isEqualTo(expected);
@@ -432,7 +432,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
                   "{ \"nested.array\": { \"$each\" : [true, false], \"$position\": 1 } }"));
       assertThat(oper).isInstanceOf(PushOperation.class);
       ObjectNode doc = objectFromJson("{ }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected = objectFromJson("{ \"nested\": { \"array\": [true, false] } }");
       assertThat(doc).isEqualTo(expected);
     }

@@ -25,10 +25,10 @@ public class UnsetOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (UnsetAction action : actions) {
-      UpdateTarget target = targetLocator.findIfExists(doc, action.path());
+      UpdateTarget target = UpdateTargetLocator.forPath(action.path()).findIfExists(doc);
       modified |= (target.removeValue() != null);
     }
     return modified;

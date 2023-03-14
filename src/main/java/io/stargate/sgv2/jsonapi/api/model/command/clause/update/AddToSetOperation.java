@@ -43,7 +43,7 @@ public class AddToSetOperation extends UpdateOperation {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new AddToSetAction(name, entry.getValue(), false);
+        action = new AddToSetAction(UpdateTargetLocator.forPath(name), entry.getValue(), false);
       }
       updates.add(action);
     }
@@ -89,7 +89,7 @@ public class AddToSetOperation extends UpdateOperation {
               + ": $addToSet modifiers can only be used with $each modifier; none included");
     }
 
-    return new AddToSetAction(propName, eachArg, true);
+    return new AddToSetAction(UpdateTargetLocator.forPath(propName), eachArg, true);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -103,13 +103,10 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc, UpdateTargetLocator targetLocator) {
+  public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (AddToSetAction action : actions) {
-      final String path = action.path;
-      final JsonNode toAdd = action.value;
-
-      UpdateTarget target = targetLocator.findOrCreate(doc, path);
+      UpdateTarget target = action.target().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -124,11 +121,12 @@ public class AddToSetOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $addToSet requires target to be ARRAY; value at '"
-                + path
+                + action.target().path()
                 + "' of type "
                 + node.getNodeType());
       }
 
+      final JsonNode toAdd = action.value;
       if (action.each) {
         for (JsonNode element : toAdd) {
           modified |= addToSet(array, element);
@@ -153,6 +151,11 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record AddToSetAction(String path, JsonNode value, boolean each)
-      implements ActionWithPath {}
+  private record AddToSetAction(UpdateTargetLocator target, JsonNode value, boolean each)
+      implements ActionWithPath {
+    @Override // Only temporary until full refactoring
+    public String path() {
+      return target().path();
+    }
+  }
 }

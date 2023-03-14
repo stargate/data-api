@@ -26,7 +26,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"array\" : 32 }"));
       assertThat(oper).isInstanceOf(AddToSetOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -42,7 +42,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"array\" : [ true, \"foo\", 19 ] }");
       ObjectNode expected = doc.deepCopy();
       // Won't add since we already had same value
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -51,7 +51,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       UpdateOperation oper =
           UpdateOperator.ADD_TO_SET.resolveOperation(objectFromJson("{ \"subdoc.array\" : 32 }"));
       ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -68,7 +68,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       ObjectNode doc = objectFromJson("{ \"subdoc\" :  { \"array\" : [ \"a\", \"b\", \"c\" ] } }");
       ObjectNode expected = doc.deepCopy();
       // Already had "b", no change
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       assertThat(doc).isEqualTo(expected);
     }
 
@@ -78,7 +78,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson("{ \"newArray\" : \"value\" }"));
       ObjectNode doc = objectFromJson("{ \"a\": 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -93,7 +93,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
           UpdateOperator.ADD_TO_SET.resolveOperation(
               objectFromJson("{ \"subdoc.newArray\" : \"value\" }"));
       ObjectNode doc = objectFromJson("{ \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -121,7 +121,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                       }
                       """);
       // Should add, change
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -149,7 +149,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                       }
                       """);
       // No add, no change
-      assertThat(oper.updateDocument(doc, targetLocator)).isFalse();
+      assertThat(oper.updateDocument(doc)).isFalse();
       ObjectNode expected =
           objectFromJson(
               """
@@ -173,7 +173,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc, targetLocator);
+                oper.updateDocument(doc);
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -248,7 +248,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                   { "array" : { "$each" : [ 17, false ] } }
                   """));
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -266,7 +266,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                   { "nested.array" : { "$each" : [ 17, false ] } }
                   """));
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -284,7 +284,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                                       { "newArray" : { "$each" : [ -50, "abc" ] } }
                                         """));
       ObjectNode doc = objectFromJson("{ \"a\" : 1, \"array\" : [ true ] }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -302,7 +302,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                   { "nested.newArray" : { "$each" : [ -50, "abc" ] } }
                     """));
       ObjectNode doc = objectFromJson("{ \"nested\": { \"array\" : [ true ] } }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -321,7 +321,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                   """
                   { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
                   """));
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -339,7 +339,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                   { "array" : { "$each" : [ [ 1, 2], [ 3 ] ] } }
                   """));
       ObjectNode doc = objectFromJson("{ \"x\" : 1 }");
-      assertThat(oper.updateDocument(doc, targetLocator)).isTrue();
+      assertThat(oper.updateDocument(doc)).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
