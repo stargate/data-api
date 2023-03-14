@@ -19,7 +19,9 @@ public class UnsetOperation extends UpdateOperation {
     Iterator<String> it = args.fieldNames();
     List<UnsetAction> actions = new ArrayList<>();
     while (it.hasNext()) {
-      actions.add(new UnsetAction(validateUpdatePath(UpdateOperator.UNSET, it.next())));
+      actions.add(
+          new UnsetAction(
+              UpdateTargetLocator.forPath(validateUpdatePath(UpdateOperator.UNSET, it.next()))));
     }
     return new UnsetOperation(actions);
   }
@@ -28,7 +30,7 @@ public class UnsetOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (UnsetAction action : actions) {
-      UpdateTarget target = UpdateTargetLocator.forPath(action.path()).findIfExists(doc);
+      UpdateTarget target = action.target().findIfExists(doc);
       modified |= (target.removeValue() != null);
     }
     return modified;
@@ -38,5 +40,5 @@ public class UnsetOperation extends UpdateOperation {
     return actions.stream().map(UnsetAction::path).collect(Collectors.toSet());
   }
 
-  private record UnsetAction(String path) implements ActionWithPath {}
+  private record UnsetAction(UpdateTargetLocator target) implements ActionWithTarget {}
 }

@@ -152,10 +152,5 @@ public class AddToSetOperation extends UpdateOperation {
 
   /** Value class for per-field update operations. */
   private record AddToSetAction(UpdateTargetLocator target, JsonNode value, boolean each)
-      implements ActionWithPath {
-    @Override // Only temporary until full refactoring
-    public String path() {
-      return target().path();
-    }
-  }
+      implements ActionWithTarget {}
 }

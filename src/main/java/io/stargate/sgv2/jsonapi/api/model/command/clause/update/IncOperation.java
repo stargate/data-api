@@ -40,7 +40,7 @@ public class IncOperation extends UpdateOperation {
                 + ": $inc requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new IncAction(name, (NumericNode) value));
+      updates.add(new IncAction(UpdateTargetLocator.forPath(name), (NumericNode) value));
     }
     return new IncOperation(updates);
   }
@@ -50,10 +50,9 @@ public class IncOperation extends UpdateOperation {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
     for (IncAction action : actions) {
-      final String path = action.path;
       final NumericNode toAdd = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      UpdateTarget target = action.target().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add number
@@ -72,7 +71,7 @@ public class IncOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $inc requires target to be Number; value at '"
-                + path
+                + target.fullPath()
                 + "' of type "
                 + oldValue.getNodeType());
       }
@@ -92,5 +91,6 @@ public class IncOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record IncAction(String path, NumericNode value) implements ActionWithPath {}
+  private record IncAction(UpdateTargetLocator target, NumericNode value)
+      implements ActionWithTarget {}
 }

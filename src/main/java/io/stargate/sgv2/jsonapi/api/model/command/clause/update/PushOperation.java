@@ -43,7 +43,7 @@ public class PushOperation extends UpdateOperation {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new PushAction(name, entry.getValue(), false, null);
+        action = new PushAction(UpdateTargetLocator.forPath(name), entry.getValue(), false, null);
       }
       updates.add(action);
     }
@@ -110,7 +110,7 @@ public class PushOperation extends UpdateOperation {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new PushAction(propName, eachArg, true, position);
+    return new PushAction(UpdateTargetLocator.forPath(propName), eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -127,10 +127,9 @@ public class PushOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     for (PushAction action : actions) {
-      final String path = action.path;
       final JsonNode toAdd = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      UpdateTarget target = action.target().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -145,7 +144,7 @@ public class PushOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $push requires target to be ARRAY; value at '"
-                + path
+                + target.fullPath()
                 + "' of type "
                 + node.getNodeType());
       }
@@ -186,6 +185,7 @@ public class PushOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record PushAction(String path, JsonNode value, boolean each, Integer position)
-      implements ActionWithPath {}
+  private record PushAction(
+      UpdateTargetLocator target, JsonNode value, boolean each, Integer position)
+      implements ActionWithTarget {}
 }

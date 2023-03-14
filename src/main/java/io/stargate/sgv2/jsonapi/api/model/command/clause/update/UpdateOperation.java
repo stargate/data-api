@@ -73,16 +73,16 @@ public abstract class UpdateOperation {
     return path.startsWith("$");
   }
 
-  protected <P extends ActionWithPath> List<P> sortByPath(List<P> actions) {
+  protected <P extends ActionWithTarget> List<P> sortByPath(List<P> actions) {
     Collections.sort(actions, NameComparator.INSTANCE);
     return actions;
   }
 
-  static class NameComparator implements Comparator<ActionWithPath> {
+  static class NameComparator implements Comparator<ActionWithTarget> {
     public static final NameComparator INSTANCE = new NameComparator();
 
     @Override
-    public int compare(ActionWithPath o1, ActionWithPath o2) {
+    public int compare(ActionWithTarget o1, ActionWithTarget o2) {
       return o1.path().compareTo(o2.path());
     }
   }
