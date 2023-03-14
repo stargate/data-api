@@ -36,7 +36,7 @@ This starts an instance of the JSON API along with a Stargate coordinator node i
 > **Warning**
 > Running this script with no options will use the latest `v1` tagged version of JSON API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
 
-Once the services are up, you can access the Swagger endpoint at: http://localhost:8080
+Once the services are up, you can access the Swagger endpoint at: http://localhost:8080/swagger-ui/
 
 We also have a Postman collection you can use to learn about the various operations supported by the JSON API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
 
