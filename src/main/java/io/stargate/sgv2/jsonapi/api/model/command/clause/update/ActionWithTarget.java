@@ -5,7 +5,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
  */
 public interface ActionWithTarget {
   /** @return Path that the action targets (dotted notation) */
-  UpdateTargetLocator target();
+  ActionTargetLocator target();
 
   /** Convenience method: path from {@code action()} */
   default String path() {

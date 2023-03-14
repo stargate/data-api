@@ -51,7 +51,7 @@ public class PopOperation extends UpdateOperation {
                   + ": $pop requires argument of -1 or 1, instead got: "
                   + arg.intValue());
       }
-      actions.add(new PopAction(UpdateTargetLocator.forPath(path), first));
+      actions.add(new PopAction(ActionTargetLocator.forPath(path), first));
     }
     return new PopOperation(actions);
   }
@@ -60,7 +60,7 @@ public class PopOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     boolean changes = false;
     for (PopAction action : actions) {
-      UpdateTarget target = action.target().findIfExists(doc);
+      ActionTarget target = action.target().findIfExists(doc);
 
       JsonNode value = target.valueNode();
       // If target does not match, nothing to do; not an error
@@ -93,6 +93,6 @@ public class PopOperation extends UpdateOperation {
   }
 
   /** Value class for per-field Pop operation definitions. */
-  private record PopAction(UpdateTargetLocator target, boolean removeFirst)
+  private record PopAction(ActionTargetLocator target, boolean removeFirst)
       implements ActionWithTarget {}
 }

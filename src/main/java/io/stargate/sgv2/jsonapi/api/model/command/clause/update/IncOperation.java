@@ -40,7 +40,7 @@ public class IncOperation extends UpdateOperation {
                 + ": $inc requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new IncAction(UpdateTargetLocator.forPath(name), (NumericNode) value));
+      updates.add(new IncAction(ActionTargetLocator.forPath(name), (NumericNode) value));
     }
     return new IncOperation(updates);
   }
@@ -52,7 +52,7 @@ public class IncOperation extends UpdateOperation {
     for (IncAction action : actions) {
       final NumericNode toAdd = action.value;
 
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add number
@@ -91,6 +91,6 @@ public class IncOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record IncAction(UpdateTargetLocator target, NumericNode value)
+  private record IncAction(ActionTargetLocator target, NumericNode value)
       implements ActionWithTarget {}
 }

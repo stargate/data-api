@@ -36,7 +36,7 @@ public class SetOperation extends UpdateOperation {
   public static SetOperation constructSet(String filterPath, JsonNode value) {
     List<SetAction> additions = new ArrayList<>();
     String path = validateUpdatePath(UpdateOperator.SET, filterPath);
-    additions.add(new SetAction(UpdateTargetLocator.forPath(path), value));
+    additions.add(new SetAction(ActionTargetLocator.forPath(path), value));
     return new SetOperation(additions, false);
   }
 
@@ -54,7 +54,7 @@ public class SetOperation extends UpdateOperation {
     while (it.hasNext()) {
       var entry = it.next();
       String path = validateUpdatePath(operator, entry.getKey());
-      additions.add(new SetAction(UpdateTargetLocator.forPath(path), entry.getValue()));
+      additions.add(new SetAction(ActionTargetLocator.forPath(path), entry.getValue()));
     }
     return new SetOperation(additions, onlyOnInsert);
   }
@@ -68,7 +68,7 @@ public class SetOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (SetAction action : actions) {
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
 
@@ -91,6 +91,6 @@ public class SetOperation extends UpdateOperation {
     return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
 
-  private record SetAction(UpdateTargetLocator target, JsonNode value)
+  private record SetAction(ActionTargetLocator target, JsonNode value)
       implements ActionWithTarget {}
 }

@@ -7,8 +7,17 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.regex.Pattern;
 
-/** Helper class for resolving "dotted paths" into {@link UpdateTarget} instances. */
-public class UpdateTargetLocator {
+/**
+ * Helper classes built from "dotted paths" and evaluated in context of a JSON document to produce
+ * one of:
+ *
+ * <ul>
+ *   <li>{@link ActionTarget} instances for Document updates
+ *   <li>{@link JsonNode} when extracting value using {@link #findValueIn} (used for Sorting and
+ *       possibly Projection)
+ * </ul>
+ */
+public class ActionTargetLocator {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
 
   private static final Pattern INDEX_SEGMENT = Pattern.compile("0|[1-9][0-9]*");
@@ -17,7 +26,7 @@ public class UpdateTargetLocator {
 
   private final String[] segments;
 
-  private UpdateTargetLocator(String dotPath, String[] segments) {
+  private ActionTargetLocator(String dotPath, String[] segments) {
     this.dotPath = dotPath;
     this.segments = segments;
   }
@@ -34,22 +43,22 @@ public class UpdateTargetLocator {
    * @return Locator instance
    * @throws JsonApiException if dotPath invalid (empty path segment(s))
    */
-  public static UpdateTargetLocator forPath(String dotPath) throws JsonApiException {
-    return new UpdateTargetLocator(dotPath, splitAndVerify(dotPath));
+  public static ActionTargetLocator forPath(String dotPath) throws JsonApiException {
+    return new ActionTargetLocator(dotPath, splitAndVerify(dotPath));
   }
 
   /**
-   * Method that will create {@link UpdateTarget} that matches configured path within given
+   * Method that will create {@link ActionTarget} that matches configured path within given
    * document; if no such path exists, will not attempt to create path (nor report any problems) but
-   * simply return {@link UpdateTarget} with specific information that is available regarding path.
+   * simply return {@link ActionTarget} with specific information that is available regarding path.
    *
-   * <p>Resulting {@link UpdateTarget} will
+   * <p>Resulting {@link ActionTarget} will
    *
    * <p>Used for $unset operation.
    *
    * @param document Document that may contain target path
    */
-  public UpdateTarget findIfExists(JsonNode document) {
+  public ActionTarget findIfExists(JsonNode document) {
     JsonNode context = document;
     final int lastSegmentIndex = segments.length - 1;
 
@@ -68,7 +77,7 @@ public class UpdateTargetLocator {
         context = null;
       }
       if (context == null) {
-        return UpdateTarget.missingPath(dotPath);
+        return ActionTarget.missingPath(dotPath);
       }
     }
 
@@ -76,15 +85,15 @@ public class UpdateTargetLocator {
     // to denote how context refers to it (Object property vs Array index)
     final String segment = segments[lastSegmentIndex];
     if (context.isObject()) {
-      return UpdateTarget.pathViaObject(dotPath, context, context.get(segment), segment);
+      return ActionTarget.pathViaObject(dotPath, context, context.get(segment), segment);
     } else if (context.isArray()) {
       int index = findIndexFromSegment(segment);
       if (index < 0) {
-        return UpdateTarget.missingPath(dotPath);
+        return ActionTarget.missingPath(dotPath);
       }
-      return UpdateTarget.pathViaArray(dotPath, context, context.get(index), index);
+      return ActionTarget.pathViaArray(dotPath, context, context.get(index), index);
     } else {
-      return UpdateTarget.missingPath(dotPath);
+      return ActionTarget.missingPath(dotPath);
     }
   }
 
@@ -97,7 +106,7 @@ public class UpdateTargetLocator {
    *
    * @param document Document that is to contain target path
    */
-  public UpdateTarget findOrCreate(JsonNode document) {
+  public ActionTarget findOrCreate(JsonNode document) {
     String[] segments = splitAndVerify(dotPath);
     JsonNode context = document;
     final int lastSegmentIndex = segments.length - 1;
@@ -142,7 +151,7 @@ public class UpdateTargetLocator {
     // to denote how context refers to it (Object property vs Array index)
     final String segment = segments[lastSegmentIndex];
     if (context.isObject()) {
-      return UpdateTarget.pathViaObject(dotPath, context, context.get(segment), segment);
+      return ActionTarget.pathViaObject(dotPath, context, context.get(segment), segment);
     }
     if (context.isArray()) {
       int index = findIndexFromSegment(segment);
@@ -150,7 +159,7 @@ public class UpdateTargetLocator {
       if (index < 0) {
         throw cantCreatePropertyPath(dotPath, segment, context);
       }
-      return UpdateTarget.pathViaArray(dotPath, context, context.get(index), index);
+      return ActionTarget.pathViaArray(dotPath, context, context.get(index), index);
     }
     // Cannot create properties on Atomics either
     throw cantCreatePropertyPath(dotPath, segment, context);
@@ -158,7 +167,7 @@ public class UpdateTargetLocator {
 
   /**
    * Traversal method that is similar to {@link #findIfExists} but that will not return full {@link
-   * UpdateTarget}; instead a non-{@code null} {@link JsonNode} (possibly of type {@code
+   * ActionTarget}; instead a non-{@code null} {@link JsonNode} (possibly of type {@code
    * MissingNode} is returned matching value at given path (or lack thereof in case of {@code
    * MissingNode}).
    *

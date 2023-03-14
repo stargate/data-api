@@ -40,7 +40,7 @@ public class MinMaxOperation extends UpdateOperation {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we do not try to change doc id
       String path = validateUpdatePath(oper, entry.getKey());
-      actions.add(new MinMaxAction(UpdateTargetLocator.forPath(path), entry.getValue()));
+      actions.add(new MinMaxAction(ActionTargetLocator.forPath(path), entry.getValue()));
     }
     return new MinMaxOperation(isMax, actions);
   }
@@ -52,7 +52,7 @@ public class MinMaxOperation extends UpdateOperation {
     for (MinMaxAction action : actions) {
       final JsonNode value = action.value;
 
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add value
@@ -79,6 +79,6 @@ public class MinMaxOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record MinMaxAction(UpdateTargetLocator target, JsonNode value)
+  private record MinMaxAction(ActionTargetLocator target, JsonNode value)
       implements ActionWithTarget {}
 }

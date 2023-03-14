@@ -43,7 +43,7 @@ public class AddToSetOperation extends UpdateOperation {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new AddToSetAction(UpdateTargetLocator.forPath(name), entry.getValue(), false);
+        action = new AddToSetAction(ActionTargetLocator.forPath(name), entry.getValue(), false);
       }
       updates.add(action);
     }
@@ -89,7 +89,7 @@ public class AddToSetOperation extends UpdateOperation {
               + ": $addToSet modifiers can only be used with $each modifier; none included");
     }
 
-    return new AddToSetAction(UpdateTargetLocator.forPath(propName), eachArg, true);
+    return new AddToSetAction(ActionTargetLocator.forPath(propName), eachArg, true);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -106,7 +106,7 @@ public class AddToSetOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (AddToSetAction action : actions) {
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -151,6 +151,6 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record AddToSetAction(UpdateTargetLocator target, JsonNode value, boolean each)
+  private record AddToSetAction(ActionTargetLocator target, JsonNode value, boolean each)
       implements ActionWithTarget {}
 }

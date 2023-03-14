@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTarget;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateTargetLocator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.ActionTarget;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.ActionTargetLocator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import org.junit.jupiter.api.Nested;
@@ -23,17 +23,17 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
-      UpdateTarget target = UpdateTargetLocator.forPath("a").findIfExists(doc);
+      ActionTarget target = ActionTargetLocator.forPath("a").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(1));
 
       // But cannot proceed via atomic node
-      target = UpdateTargetLocator.forPath("a.x").findIfExists(doc);
+      target = ActionTargetLocator.forPath("a.x").findIfExists(doc);
       assertThat(target.contextNode()).isNull();
       assertThat(target.valueNode()).isNull();
 
       // Can refer to missing property as well
-      target = UpdateTargetLocator.forPath("unknown").findIfExists(doc);
+      target = ActionTargetLocator.forPath("unknown").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isEqualTo("unknown");
@@ -44,14 +44,14 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       // Although main-level is always an Object, locator is not limited
       // and can refer to array indexes too
       JsonNode doc = fromJson("[ 3, 7 ]");
-      UpdateTarget target = UpdateTargetLocator.forPath("1").findIfExists(doc);
+      ActionTarget target = ActionTargetLocator.forPath("1").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(7));
       assertThat(target.lastProperty()).isNull();
       assertThat(target.lastIndex()).isEqualTo(1);
 
       // May try to reference past end, no match
-      target = UpdateTargetLocator.forPath("9").findIfExists(doc);
+      target = ActionTargetLocator.forPath("9").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isNull();
@@ -71,25 +71,25 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                     """);
 
       // First: simple nested property:
-      UpdateTarget target = UpdateTargetLocator.forPath("b.c").findIfExists(doc);
+      ActionTarget target = ActionTargetLocator.forPath("b.c").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("b"));
       assertThat(target.valueNode()).isEqualTo(fromJson("true"));
       assertThat(target.lastProperty()).isEqualTo("c");
 
       // But can also refer to its parent
-      target = UpdateTargetLocator.forPath("b").findIfExists(doc);
+      target = ActionTargetLocator.forPath("b").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isEqualTo(objectFromJson("{\"c\":true}"));
       assertThat(target.lastProperty()).isEqualTo("b");
 
       // Or to missing property within existing Object:
-      target = UpdateTargetLocator.forPath("b.unknown").findIfExists(doc);
+      target = ActionTargetLocator.forPath("b.unknown").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("b"));
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isEqualTo("unknown");
 
       // But with deeper missing path, no more context
-      target = UpdateTargetLocator.forPath("b.unknown.bogus").findIfExists(doc);
+      target = ActionTargetLocator.forPath("b.unknown.bogus").findIfExists(doc);
       assertThat(target.contextNode()).isNull();
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isNull();
@@ -110,24 +110,24 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                               """);
 
       // First, existing path
-      UpdateTarget target = UpdateTargetLocator.forPath("array.0").findIfExists(doc);
+      ActionTarget target = ActionTargetLocator.forPath("array.0").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("array"));
       assertThat(target.valueNode()).isEqualTo(doc.numberNode(1));
       assertThat(target.lastProperty()).isNull();
       assertThat(target.lastIndex()).isEqualTo(0);
 
       // Then non-existing index, has context (could add)
-      target = UpdateTargetLocator.forPath("array.5").findIfExists(doc);
+      target = ActionTargetLocator.forPath("array.5").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("array"));
       assertThat(target.valueNode()).isNull();
 
       // and then non-existing property (no properties in Array); no context (not legal to set)
-      target = UpdateTargetLocator.forPath("array.prop").findIfExists(doc);
+      target = ActionTargetLocator.forPath("array.prop").findIfExists(doc);
       assertThat(target.contextNode()).isNull();
       assertThat(target.valueNode()).isNull();
 
       // But we can traverse through multiple nesting levels:
-      target = UpdateTargetLocator.forPath("array.2.subArray.1").findIfExists(doc);
+      target = ActionTargetLocator.forPath("array.2.subArray.1").findIfExists(doc);
       assertThat(target.contextNode()).isSameAs(doc.at("/array/2/subArray"));
       assertThat(target.valueNode()).isEqualTo(doc.booleanNode(false));
       assertThat(target.lastProperty()).isNull();
@@ -141,7 +141,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
     public void invalidEmptySegment() {
       Exception e =
           catchException(
-              () -> UpdateTargetLocator.forPath("a..x").findIfExists(objectFromJson("{}")));
+              () -> ActionTargetLocator.forPath("a..x").findIfExists(objectFromJson("{}")));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -157,12 +157,12 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
-      UpdateTarget target = UpdateTargetLocator.forPath("a").findOrCreate(doc);
+      ActionTarget target = ActionTargetLocator.forPath("a").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(1));
 
       // Can refer to missing property as well
-      target = UpdateTargetLocator.forPath("unknown").findOrCreate(doc);
+      target = ActionTargetLocator.forPath("unknown").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isEqualTo("unknown");
@@ -173,14 +173,14 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       // Although main-level is always an Object, locator is not limited
       // and can refer to array indexes too
       JsonNode doc = fromJson("[ 3, 7 ]");
-      UpdateTarget target = UpdateTargetLocator.forPath("1").findOrCreate(doc);
+      ActionTarget target = ActionTargetLocator.forPath("1").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isEqualTo(objectMapper.getNodeFactory().numberNode(7));
       assertThat(target.lastProperty()).isNull();
       assertThat(target.lastIndex()).isEqualTo(1);
 
       // May try to reference past end, no match
-      target = UpdateTargetLocator.forPath("9").findOrCreate(doc);
+      target = ActionTargetLocator.forPath("9").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc);
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isNull();
@@ -200,13 +200,13 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                               """);
 
       // First: simple nested property:
-      UpdateTarget target = UpdateTargetLocator.forPath("b.c").findOrCreate(doc);
+      ActionTarget target = ActionTargetLocator.forPath("b.c").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("b"));
       assertThat(target.valueNode()).isEqualTo(fromJson("true"));
       assertThat(target.lastProperty()).isEqualTo("c");
 
       // But can also go for not eisting
-      target = UpdateTargetLocator.forPath("b.x.y").findOrCreate(doc);
+      target = ActionTargetLocator.forPath("b.x.y").findOrCreate(doc);
       // will now have created path
       assertThat(target.contextNode()).isSameAs(doc.at("/b/x"));
       assertThat(target.valueNode()).isNull();
@@ -228,14 +228,14 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                               """);
 
       // First, existing path
-      UpdateTarget target = UpdateTargetLocator.forPath("array.0").findOrCreate(doc);
+      ActionTarget target = ActionTargetLocator.forPath("array.0").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc.get("array"));
       assertThat(target.valueNode()).isEqualTo(doc.numberNode(1));
       assertThat(target.lastProperty()).isNull();
       assertThat(target.lastIndex()).isEqualTo(0);
 
       // But then something past inner array's end
-      target = UpdateTargetLocator.forPath("array.2.subArray.3").findOrCreate(doc);
+      target = ActionTargetLocator.forPath("array.2.subArray.3").findOrCreate(doc);
       assertThat(target.contextNode()).isSameAs(doc.at("/array/2/subArray"));
       assertThat(target.valueNode()).isNull();
       assertThat(target.lastProperty()).isNull();
@@ -249,7 +249,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
     public void invalidPathViaAtomic() {
       Exception e =
           catchException(
-              () -> UpdateTargetLocator.forPath("a.x").findOrCreate(objectFromJson("{\"a\": 3}")));
+              () -> ActionTargetLocator.forPath("a.x").findOrCreate(objectFromJson("{\"a\": 3}")));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -261,7 +261,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       e =
           catchException(
               () ->
-                  UpdateTargetLocator.forPath("a.b.c.d")
+                  ActionTargetLocator.forPath("a.b.c.d")
                       .findOrCreate(objectFromJson("{\"a\": {\"b\": null}}")));
       assertThat(e)
           .isNotNull()
@@ -277,7 +277,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () ->
-                  UpdateTargetLocator.forPath("array.prop")
+                  ActionTargetLocator.forPath("array.prop")
                       .findOrCreate(objectFromJson("{\"array\": [1] }")));
       assertThat(e)
           .isNotNull()
@@ -290,7 +290,7 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       e =
           catchException(
               () ->
-                  UpdateTargetLocator.forPath("ob.array.0.a2.x")
+                  ActionTargetLocator.forPath("ob.array.0.a2.x")
                       .findOrCreate(objectFromJson("{\"ob\":{\"array\":[{\"a2\":[true]}]}} }")));
       assertThat(e)
           .isNotNull()
@@ -307,15 +307,15 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
     @Test
     public void findRootPropertyPath() {
       ObjectNode doc = objectFromJson("{\"a\" : 1 }");
-      JsonNode value = UpdateTargetLocator.forPath("a").findValueIn(doc);
+      JsonNode value = ActionTargetLocator.forPath("a").findValueIn(doc);
       assertThat(value).isEqualTo(objectMapper.getNodeFactory().numberNode(1));
 
       // But cannot proceed via atomic node
-      value = UpdateTargetLocator.forPath("a.x").findValueIn(doc);
+      value = ActionTargetLocator.forPath("a.x").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
 
       // Can refer to missing property as well
-      value = UpdateTargetLocator.forPath("unknown").findValueIn(doc);
+      value = ActionTargetLocator.forPath("unknown").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
     }
 
@@ -324,11 +324,11 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
       // Although main-level is always an Object, locator is not limited
       // and can refer to array indexes too
       JsonNode doc = fromJson("[ 3, 7 ]");
-      JsonNode value = UpdateTargetLocator.forPath("1").findValueIn(doc);
+      JsonNode value = ActionTargetLocator.forPath("1").findValueIn(doc);
       assertThat(value).isEqualTo(objectMapper.getNodeFactory().numberNode(7));
 
       // May try to reference past end, no match
-      value = UpdateTargetLocator.forPath("9").findValueIn(doc);
+      value = ActionTargetLocator.forPath("9").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
     }
 
@@ -345,17 +345,17 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                             """);
 
       // First: simple nested property:
-      JsonNode value = UpdateTargetLocator.forPath("b.c").findValueIn(doc);
+      JsonNode value = ActionTargetLocator.forPath("b.c").findValueIn(doc);
       assertThat(value).isEqualTo(fromJson("true"));
 
       // But can also refer to its parent
-      value = UpdateTargetLocator.forPath("b").findValueIn(doc);
+      value = ActionTargetLocator.forPath("b").findValueIn(doc);
       assertThat(value).isEqualTo(objectFromJson("{\"c\":true}"));
 
-      value = UpdateTargetLocator.forPath("b.unknown").findValueIn(doc);
+      value = ActionTargetLocator.forPath("b.unknown").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
 
-      value = UpdateTargetLocator.forPath("b.unknown.bogus").findValueIn(doc);
+      value = ActionTargetLocator.forPath("b.unknown.bogus").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
     }
 
@@ -374,19 +374,19 @@ public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
                                       """);
 
       // First, existing path
-      JsonNode value = UpdateTargetLocator.forPath("array.0").findValueIn(doc);
+      JsonNode value = ActionTargetLocator.forPath("array.0").findValueIn(doc);
       assertThat(value).isEqualTo(doc.numberNode(1));
 
       // Then non-existing index
-      value = UpdateTargetLocator.forPath("array.5").findValueIn(doc);
+      value = ActionTargetLocator.forPath("array.5").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
 
       // and then non-existing property (no properties in Array)
-      value = UpdateTargetLocator.forPath("array.prop").findValueIn(doc);
+      value = ActionTargetLocator.forPath("array.prop").findValueIn(doc);
       assertThat(value.isMissingNode()).isTrue();
 
       // But we can traverse through multiple nesting levels:
-      value = UpdateTargetLocator.forPath("array.2.subArray.1").findValueIn(doc);
+      value = ActionTargetLocator.forPath("array.2.subArray.1").findValueIn(doc);
       assertThat(value).isEqualTo(doc.booleanNode(false));
     }
   }

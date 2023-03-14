@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Objects;
 
 /**
- * Definition of a target for an {@link UpdateOperation}; built from "dot path" and document to
- * update, by {@link UpdateTargetLocator}.
+ * Definition of a target for an action, such as ones contained by {@link UpdateOperation}, or
+ * performed as part of Projection or in-memory Sort processing. Instances are created by {@link
+ * ActionTargetLocator} based on locator's configuration (decoded from "Dotted path") and JSON
+ * document to evalute against.
  */
-public record UpdateTarget(
+public record ActionTarget(
     /** Full path to target for error reporting purposes */
     String fullPath,
     /**
@@ -35,18 +37,18 @@ public record UpdateTarget(
      * that {@code contextNode} exists and is an Array node.
      */
     int lastIndex) {
-  public static UpdateTarget missingPath(String fullPath) {
-    return new UpdateTarget(fullPath, null, null, null, -1);
+  public static ActionTarget missingPath(String fullPath) {
+    return new ActionTarget(fullPath, null, null, null, -1);
   }
 
-  public static UpdateTarget pathViaArray(
+  public static ActionTarget pathViaArray(
       String fullPath, JsonNode contextNode, JsonNode valueNode, int index) {
-    return new UpdateTarget(fullPath, contextNode, valueNode, null, index);
+    return new ActionTarget(fullPath, contextNode, valueNode, null, index);
   }
 
-  public static UpdateTarget pathViaObject(
+  public static ActionTarget pathViaObject(
       String fullPath, JsonNode contextNode, JsonNode valueNode, String property) {
-    return new UpdateTarget(fullPath, contextNode, valueNode, property, -1);
+    return new ActionTarget(fullPath, contextNode, valueNode, property, -1);
   }
 
   /**

@@ -41,7 +41,7 @@ public class MulOperation extends UpdateOperation {
                 + ": $mul requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new Action(UpdateTargetLocator.forPath(name), (NumericNode) value));
+      updates.add(new Action(ActionTargetLocator.forPath(name), (NumericNode) value));
     }
     return new MulOperation(updates);
   }
@@ -52,7 +52,7 @@ public class MulOperation extends UpdateOperation {
     for (Action action : actions) {
       final NumericNode multiplier = action.value;
 
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Initialize as zero
@@ -97,6 +97,6 @@ public class MulOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record Action(UpdateTargetLocator target, NumericNode value)
+  private record Action(ActionTargetLocator target, NumericNode value)
       implements ActionWithTarget {}
 }

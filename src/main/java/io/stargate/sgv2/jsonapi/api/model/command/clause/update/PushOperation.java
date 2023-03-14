@@ -43,7 +43,7 @@ public class PushOperation extends UpdateOperation {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new PushAction(UpdateTargetLocator.forPath(name), entry.getValue(), false, null);
+        action = new PushAction(ActionTargetLocator.forPath(name), entry.getValue(), false, null);
       }
       updates.add(action);
     }
@@ -110,7 +110,7 @@ public class PushOperation extends UpdateOperation {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new PushAction(UpdateTargetLocator.forPath(propName), eachArg, true, position);
+    return new PushAction(ActionTargetLocator.forPath(propName), eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -129,7 +129,7 @@ public class PushOperation extends UpdateOperation {
     for (PushAction action : actions) {
       final JsonNode toAdd = action.value;
 
-      UpdateTarget target = action.target().findOrCreate(doc);
+      ActionTarget target = action.target().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -186,6 +186,6 @@ public class PushOperation extends UpdateOperation {
 
   /** Value class for per-field update operations. */
   private record PushAction(
-      UpdateTargetLocator target, JsonNode value, boolean each, Integer position)
+      ActionTargetLocator target, JsonNode value, boolean each, Integer position)
       implements ActionWithTarget {}
 }
