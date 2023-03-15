@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class UpdateTargetLocatorTest extends UpdateOperationTestBase {
+public class ActionTargetLocatorTest extends UpdateOperationTestBase {
   @Nested
   class HappyPathFindIfExists {
     @Test
