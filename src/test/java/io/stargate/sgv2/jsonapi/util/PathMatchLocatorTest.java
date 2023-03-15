@@ -1,23 +1,26 @@
-package io.stargate.sgv2.jsonapi.service.operation.model.command.clause.update;
+package io.stargate.sgv2.jsonapi.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.util.PathMatch;
-import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
+import java.io.IOException;
+import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class ActionTargetLocatorTest extends UpdateOperationTestBase {
+public class PathMatchLocatorTest {
+  @Inject protected ObjectMapper objectMapper;
+
   @Nested
   class HappyPathFindIfExists {
     @Test
@@ -387,6 +390,18 @@ public class ActionTargetLocatorTest extends UpdateOperationTestBase {
       // But we can traverse through multiple nesting levels:
       value = PathMatchLocator.forPath("array.2.subArray.1").findValueIn(doc);
       assertThat(value).isEqualTo(doc.booleanNode(false));
+    }
+  }
+
+  protected ObjectNode objectFromJson(String json) {
+    return (ObjectNode) fromJson(json);
+  }
+
+  protected JsonNode fromJson(String json) {
+    try {
+      return objectMapper.readTree(json);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }
