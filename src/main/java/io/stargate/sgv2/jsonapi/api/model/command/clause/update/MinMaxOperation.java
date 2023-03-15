@@ -14,10 +14,10 @@ import java.util.Map;
  * https://www.mongodb.com/docs/manual/reference/operator/update/min/} and {@href
  * https://www.mongodb.com/docs/manual/reference/operator/update/max/} for full explanations.
  */
-public class MinMaxOperation extends UpdateOperation<MinMaxOperation.MinMaxAction> {
+public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   private final boolean isMaxAction;
 
-  private MinMaxOperation(boolean isMaxAction, List<MinMaxAction> actions) {
+  private MinMaxOperation(boolean isMaxAction, List<Action> actions) {
     super(actions);
     this.isMaxAction = isMaxAction;
   }
@@ -33,12 +33,12 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.MinMaxActio
   private static MinMaxOperation construct(ObjectNode args, UpdateOperator oper, boolean isMax) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<MinMaxAction> actions = new ArrayList<>();
+    List<Action> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we do not try to change doc id
       String path = validateUpdatePath(oper, entry.getKey());
-      actions.add(new MinMaxAction(ActionTargetLocator.forPath(path), entry.getValue()));
+      actions.add(new Action(ActionTargetLocator.forPath(path), entry.getValue()));
     }
     return new MinMaxOperation(isMax, actions);
   }
@@ -47,7 +47,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.MinMaxActio
   public boolean updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (MinMaxAction action : actions) {
+    for (Action action : actions) {
       final JsonNode value = action.value;
 
       ActionTarget target = action.target().findOrCreate(doc);
@@ -77,5 +77,5 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.MinMaxActio
   }
 
   /** Value class for per-field update operations. */
-  record MinMaxAction(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
+  record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
 }

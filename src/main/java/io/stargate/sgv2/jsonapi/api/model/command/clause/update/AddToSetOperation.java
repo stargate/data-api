@@ -15,15 +15,15 @@ import java.util.Map;
  * Implementation of {@code $addToSet} update operation used to add distinct values in array fields
  * of documents.
  */
-public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSetAction> {
-  private AddToSetOperation(List<AddToSetAction> actions) {
+public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action> {
+  private AddToSetOperation(List<Action> actions) {
     super(actions);
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<AddToSetAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
@@ -37,18 +37,18 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSe
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
-      AddToSetAction action;
+      Action action;
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new AddToSetAction(ActionTargetLocator.forPath(name), entry.getValue(), false);
+        action = new Action(ActionTargetLocator.forPath(name), entry.getValue(), false);
       }
       updates.add(action);
     }
     return new AddToSetOperation(updates);
   }
 
-  private static AddToSetAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
+  private static Action buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We really only support "$each" but traverse in case more added in future
     JsonNode eachArg = null;
 
@@ -87,7 +87,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSe
               + ": $addToSet modifiers can only be used with $each modifier; none included");
     }
 
-    return new AddToSetAction(ActionTargetLocator.forPath(propName), eachArg, true);
+    return new Action(ActionTargetLocator.forPath(propName), eachArg, true);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -103,7 +103,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSe
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
-    for (AddToSetAction action : actions) {
+    for (Action action : actions) {
       ActionTarget target = action.target().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
@@ -149,6 +149,6 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSe
   }
 
   /** Value class for per-field update operations. */
-  record AddToSetAction(ActionTargetLocator target, JsonNode value, boolean each)
+  record Action(ActionTargetLocator target, JsonNode value, boolean each)
       implements ActionWithTarget {}
 }
