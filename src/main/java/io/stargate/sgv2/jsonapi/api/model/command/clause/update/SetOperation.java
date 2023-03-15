@@ -82,5 +82,6 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   public boolean equals(Object o) {
     return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
+
   record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
 }
