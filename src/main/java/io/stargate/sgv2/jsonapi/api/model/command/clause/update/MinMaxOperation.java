@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,14 +16,12 @@ import java.util.Map;
  * https://www.mongodb.com/docs/manual/reference/operator/update/min/} and {@href
  * https://www.mongodb.com/docs/manual/reference/operator/update/max/} for full explanations.
  */
-public class MinMaxOperation extends UpdateOperation {
-  private final List<MinMaxAction> actions;
-
+public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   private final boolean isMaxAction;
 
-  private MinMaxOperation(boolean isMaxAction, List<MinMaxAction> actions) {
+  private MinMaxOperation(boolean isMaxAction, List<Action> actions) {
+    super(actions);
     this.isMaxAction = isMaxAction;
-    this.actions = sortByPath(actions);
   }
 
   public static MinMaxOperation constructMax(ObjectNode args) {
@@ -35,12 +35,12 @@ public class MinMaxOperation extends UpdateOperation {
   private static MinMaxOperation construct(ObjectNode args, UpdateOperator oper, boolean isMax) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<MinMaxAction> actions = new ArrayList<>();
+    List<Action> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we do not try to change doc id
       String path = validateUpdatePath(oper, entry.getKey());
-      actions.add(new MinMaxAction(path, entry.getValue()));
+      actions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));
     }
     return new MinMaxOperation(isMax, actions);
   }
@@ -49,11 +49,10 @@ public class MinMaxOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (MinMaxAction action : actions) {
-      final String path = action.path;
+    for (Action action : actions) {
       final JsonNode value = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add value
@@ -80,5 +79,5 @@ public class MinMaxOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record MinMaxAction(String path, JsonNode value) implements ActionWithPath {}
+  record Action(PathMatchLocator locator, JsonNode value) implements ActionWithLocator {}
 }

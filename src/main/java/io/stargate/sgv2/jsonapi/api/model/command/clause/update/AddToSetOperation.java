@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,17 +17,15 @@ import java.util.Map;
  * Implementation of {@code $addToSet} update operation used to add distinct values in array fields
  * of documents.
  */
-public class AddToSetOperation extends UpdateOperation {
-  private List<AddToSetAction> actions;
-
-  private AddToSetOperation(List<AddToSetAction> actions) {
-    this.actions = sortByPath(actions);
+public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action> {
+  private AddToSetOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<AddToSetAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
@@ -39,18 +39,18 @@ public class AddToSetOperation extends UpdateOperation {
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
-      AddToSetAction action;
+      Action action;
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new AddToSetAction(UpdateTargetLocator.forPath(name), entry.getValue(), false);
+        action = new Action(PathMatchLocator.forPath(name), entry.getValue(), false);
       }
       updates.add(action);
     }
     return new AddToSetOperation(updates);
   }
 
-  private static AddToSetAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
+  private static Action buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We really only support "$each" but traverse in case more added in future
     JsonNode eachArg = null;
 
@@ -89,7 +89,7 @@ public class AddToSetOperation extends UpdateOperation {
               + ": $addToSet modifiers can only be used with $each modifier; none included");
     }
 
-    return new AddToSetAction(UpdateTargetLocator.forPath(propName), eachArg, true);
+    return new Action(PathMatchLocator.forPath(propName), eachArg, true);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -105,8 +105,8 @@ public class AddToSetOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
-    for (AddToSetAction action : actions) {
-      UpdateTarget target = action.target().findOrCreate(doc);
+    for (Action action : actions) {
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -121,7 +121,7 @@ public class AddToSetOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $addToSet requires target to be ARRAY; value at '"
-                + action.target().path()
+                + action.locator().path()
                 + "' of type "
                 + node.getNodeType());
       }
@@ -151,11 +151,6 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record AddToSetAction(UpdateTargetLocator target, JsonNode value, boolean each)
-      implements ActionWithPath {
-    @Override // Only temporary until full refactoring
-    public String path() {
-      return target().path();
-    }
-  }
+  record Action(PathMatchLocator locator, JsonNode value, boolean each)
+      implements ActionWithLocator {}
 }

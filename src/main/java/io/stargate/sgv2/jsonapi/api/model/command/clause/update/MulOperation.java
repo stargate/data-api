@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,11 +18,9 @@ import java.util.Map;
  * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/mul/} for full
  * explanation.
  */
-public class MulOperation extends UpdateOperation {
-  private final List<Action> actions;
-
+public class MulOperation extends UpdateOperation<MulOperation.Action> {
   private MulOperation(List<Action> actions) {
-    this.actions = sortByPath(actions);
+    super(actions);
   }
 
   public static MulOperation construct(ObjectNode args) {
@@ -41,7 +41,7 @@ public class MulOperation extends UpdateOperation {
                 + ": $mul requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new Action(name, (NumericNode) value));
+      updates.add(new Action(PathMatchLocator.forPath(name), (NumericNode) value));
     }
     return new MulOperation(updates);
   }
@@ -50,10 +50,9 @@ public class MulOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
-      final String path = action.path;
       final NumericNode multiplier = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Initialize as zero
@@ -71,7 +70,7 @@ public class MulOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $mul requires target to be Number; value at '"
-                + path
+                + target.fullPath()
                 + "' of type "
                 + oldValue.getNodeType());
       }
@@ -98,5 +97,5 @@ public class MulOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record Action(String path, NumericNode value) implements ActionWithPath {}
+  record Action(PathMatchLocator locator, NumericNode value) implements ActionWithLocator {}
 }

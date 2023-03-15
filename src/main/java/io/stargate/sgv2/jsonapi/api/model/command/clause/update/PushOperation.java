@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,17 +17,15 @@ import java.util.Objects;
  * Implementation of {@code $push} update operation used to append values in array fields of
  * documents.
  */
-public class PushOperation extends UpdateOperation {
-  private List<PushAction> actions;
-
-  private PushOperation(List<PushAction> actions) {
-    this.actions = sortByPath(actions);
+public class PushOperation extends UpdateOperation<PushOperation.Action> {
+  private PushOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static PushOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<PushAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
@@ -39,18 +39,18 @@ public class PushOperation extends UpdateOperation {
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
-      PushAction action;
+      Action action;
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new PushAction(name, entry.getValue(), false, null);
+        action = new Action(PathMatchLocator.forPath(name), entry.getValue(), false, null);
       }
       updates.add(action);
     }
     return new PushOperation(updates);
   }
 
-  private static PushAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
+  private static Action buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We know there is at least one modifier; and if so, all must be modifiers.
     // We support basic "$each" with optional "$position":
     JsonNode eachArg = null;
@@ -110,7 +110,7 @@ public class PushOperation extends UpdateOperation {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new PushAction(propName, eachArg, true, position);
+    return new Action(PathMatchLocator.forPath(propName), eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -126,11 +126,10 @@ public class PushOperation extends UpdateOperation {
 
   @Override
   public boolean updateDocument(ObjectNode doc) {
-    for (PushAction action : actions) {
-      final String path = action.path;
+    for (Action action : actions) {
       final JsonNode toAdd = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -145,7 +144,7 @@ public class PushOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $push requires target to be ARRAY; value at '"
-                + path
+                + target.fullPath()
                 + "' of type "
                 + node.getNodeType());
       }
@@ -186,6 +185,6 @@ public class PushOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record PushAction(String path, JsonNode value, boolean each, Integer position)
-      implements ActionWithPath {}
+  record Action(PathMatchLocator locator, JsonNode value, boolean each, Integer position)
+      implements ActionWithLocator {}
 }

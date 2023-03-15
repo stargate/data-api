@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,17 +17,15 @@ import java.util.Map;
  * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/inc/} for full
  * explanation.
  */
-public class IncOperation extends UpdateOperation {
-  private final List<IncAction> actions;
-
-  private IncOperation(List<IncAction> actions) {
-    this.actions = sortByPath(actions);
+public class IncOperation extends UpdateOperation<IncOperation.Action> {
+  private IncOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static IncOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<IncAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we have neither operators...
@@ -40,7 +40,7 @@ public class IncOperation extends UpdateOperation {
                 + ": $inc requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new IncAction(name, (NumericNode) value));
+      updates.add(new Action(PathMatchLocator.forPath(name), (NumericNode) value));
     }
     return new IncOperation(updates);
   }
@@ -49,11 +49,10 @@ public class IncOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (IncAction action : actions) {
-      final String path = action.path;
+    for (Action action : actions) {
       final NumericNode toAdd = action.value;
 
-      UpdateTarget target = UpdateTargetLocator.forPath(path).findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add number
@@ -72,7 +71,7 @@ public class IncOperation extends UpdateOperation {
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $inc requires target to be Number; value at '"
-                + path
+                + target.fullPath()
                 + "' of type "
                 + oldValue.getNodeType());
       }
@@ -92,5 +91,5 @@ public class IncOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record IncAction(String path, NumericNode value) implements ActionWithPath {}
+  record Action(PathMatchLocator locator, NumericNode value) implements ActionWithLocator {}
 }

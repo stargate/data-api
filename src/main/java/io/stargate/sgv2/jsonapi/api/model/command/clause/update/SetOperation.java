@@ -3,27 +3,25 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of {@code $set} update operation used to assign values to document fields; also
  * used for {@code $setOnInsert} with different configuration.
  */
-public class SetOperation extends UpdateOperation {
-  private final List<SetAction> actions;
-
+public class SetOperation extends UpdateOperation<SetOperation.Action> {
   /**
    * Setting to indicate that update should only be applied to inserts (part of upsert), not for
    * updates of existing rows.
    */
   private final boolean onlyOnInsert;
 
-  private SetOperation(List<SetAction> actions, boolean onlyOnInsert) {
-    this.actions = sortByPath(actions);
+  private SetOperation(List<Action> actions, boolean onlyOnInsert) {
+    super(actions);
     this.onlyOnInsert = onlyOnInsert;
   }
 
@@ -34,9 +32,9 @@ public class SetOperation extends UpdateOperation {
 
   /** Override method used to create an operation that $sets a single property */
   public static SetOperation constructSet(String filterPath, JsonNode value) {
-    List<SetAction> additions = new ArrayList<>();
+    List<Action> additions = new ArrayList<>();
     String path = validateUpdatePath(UpdateOperator.SET, filterPath);
-    additions.add(new SetAction(path, value));
+    additions.add(new Action(PathMatchLocator.forPath(path), value));
     return new SetOperation(additions, false);
   }
 
@@ -49,12 +47,12 @@ public class SetOperation extends UpdateOperation {
 
   private static SetOperation construct(
       ObjectNode args, boolean onlyOnInsert, UpdateOperator operator) {
-    List<SetAction> additions = new ArrayList<>();
+    List<Action> additions = new ArrayList<>();
     var it = args.fields();
     while (it.hasNext()) {
       var entry = it.next();
       String path = validateUpdatePath(operator, entry.getKey());
-      additions.add(new SetAction(path, entry.getValue()));
+      additions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));
     }
     return new SetOperation(additions, onlyOnInsert);
   }
@@ -67,8 +65,8 @@ public class SetOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
-    for (SetAction action : actions) {
-      UpdateTarget target = UpdateTargetLocator.forPath(action.path()).findOrCreate(doc);
+    for (Action action : actions) {
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
 
@@ -81,15 +79,11 @@ public class SetOperation extends UpdateOperation {
     return modified;
   }
 
-  public Set<String> getPaths() {
-    return actions.stream().map(SetAction::path).collect(Collectors.toSet());
-  }
-
-  // Just needed for tests
+  // Needed because some unit tests check for equality
   @Override
   public boolean equals(Object o) {
     return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
 
-  private record SetAction(String path, JsonNode value) implements ActionWithPath {}
+  record Action(PathMatchLocator locator, JsonNode value) implements ActionWithLocator {}
 }

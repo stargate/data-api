@@ -12,7 +12,17 @@ import java.util.List;
  * UpdateOperation represents one of update definitions from {@link UpdateClause} (like {@code $set}
  * or {@code $unset}): single operation can contain multiple actual changes.
  */
-public abstract class UpdateOperation {
+public abstract class UpdateOperation<A extends ActionWithLocator> {
+  protected final List<A> actions;
+
+  protected UpdateOperation(List<A> actions) {
+    Collections.sort(actions, NameComparator.INSTANCE);
+    this.actions = actions;
+  }
+
+  public List<A> actions() {
+    return actions;
+  }
   /**
    * Method called to apply operation to given document.
    *
@@ -73,16 +83,11 @@ public abstract class UpdateOperation {
     return path.startsWith("$");
   }
 
-  protected <P extends ActionWithPath> List<P> sortByPath(List<P> actions) {
-    Collections.sort(actions, NameComparator.INSTANCE);
-    return actions;
-  }
-
-  static class NameComparator implements Comparator<ActionWithPath> {
+  static class NameComparator implements Comparator<ActionWithLocator> {
     public static final NameComparator INSTANCE = new NameComparator();
 
     @Override
-    public int compare(ActionWithPath o1, ActionWithPath o2) {
+    public int compare(ActionWithLocator o1, ActionWithLocator o2) {
       return o1.path().compareTo(o2.path());
     }
   }

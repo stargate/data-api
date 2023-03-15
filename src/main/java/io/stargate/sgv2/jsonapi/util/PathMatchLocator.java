@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
+package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -7,8 +7,17 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.regex.Pattern;
 
-/** Helper class for resolving "dotted paths" into {@link UpdateTarget} instances. */
-public class UpdateTargetLocator {
+/**
+ * Helper class built from "dotted paths" and evaluated in context of a JSON document to produce one
+ * of:
+ *
+ * <ul>
+ *   <li>{@link PathMatch} instances for Document updates
+ *   <li>{@link JsonNode} when extracting value using {@link #findValueIn} (used for Sorting and
+ *       possibly Projection)
+ * </ul>
+ */
+public class PathMatchLocator {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
 
   private static final Pattern INDEX_SEGMENT = Pattern.compile("0|[1-9][0-9]*");
@@ -17,7 +26,7 @@ public class UpdateTargetLocator {
 
   private final String[] segments;
 
-  private UpdateTargetLocator(String dotPath, String[] segments) {
+  private PathMatchLocator(String dotPath, String[] segments) {
     this.dotPath = dotPath;
     this.segments = segments;
   }
@@ -34,22 +43,22 @@ public class UpdateTargetLocator {
    * @return Locator instance
    * @throws JsonApiException if dotPath invalid (empty path segment(s))
    */
-  public static UpdateTargetLocator forPath(String dotPath) throws JsonApiException {
-    return new UpdateTargetLocator(dotPath, splitAndVerify(dotPath));
+  public static PathMatchLocator forPath(String dotPath) throws JsonApiException {
+    return new PathMatchLocator(dotPath, splitAndVerify(dotPath));
   }
 
   /**
-   * Method that will create {@link UpdateTarget} that matches configured path within given
-   * document; if no such path exists, will not attempt to create path (nor report any problems) but
-   * simply return {@link UpdateTarget} with specific information that is available regarding path.
+   * Method that will create {@link PathMatch} that matches configured path within given document;
+   * if no such path exists, will not attempt to create path (nor report any problems) but simply
+   * return {@link PathMatch} with specific information that is available regarding path.
    *
-   * <p>Resulting {@link UpdateTarget} will
+   * <p>Resulting {@link PathMatch} will
    *
    * <p>Used for $unset operation.
    *
    * @param document Document that may contain target path
    */
-  public UpdateTarget findIfExists(JsonNode document) {
+  public PathMatch findIfExists(JsonNode document) {
     JsonNode context = document;
     final int lastSegmentIndex = segments.length - 1;
 
@@ -68,7 +77,7 @@ public class UpdateTargetLocator {
         context = null;
       }
       if (context == null) {
-        return UpdateTarget.missingPath(dotPath);
+        return PathMatch.missingPath(dotPath);
       }
     }
 
@@ -76,15 +85,15 @@ public class UpdateTargetLocator {
     // to denote how context refers to it (Object property vs Array index)
     final String segment = segments[lastSegmentIndex];
     if (context.isObject()) {
-      return UpdateTarget.pathViaObject(dotPath, context, context.get(segment), segment);
+      return PathMatch.pathViaObject(dotPath, context, context.get(segment), segment);
     } else if (context.isArray()) {
       int index = findIndexFromSegment(segment);
       if (index < 0) {
-        return UpdateTarget.missingPath(dotPath);
+        return PathMatch.missingPath(dotPath);
       }
-      return UpdateTarget.pathViaArray(dotPath, context, context.get(index), index);
+      return PathMatch.pathViaArray(dotPath, context, context.get(index), index);
     } else {
-      return UpdateTarget.missingPath(dotPath);
+      return PathMatch.missingPath(dotPath);
     }
   }
 
@@ -97,7 +106,7 @@ public class UpdateTargetLocator {
    *
    * @param document Document that is to contain target path
    */
-  public UpdateTarget findOrCreate(JsonNode document) {
+  public PathMatch findOrCreate(JsonNode document) {
     String[] segments = splitAndVerify(dotPath);
     JsonNode context = document;
     final int lastSegmentIndex = segments.length - 1;
@@ -142,7 +151,7 @@ public class UpdateTargetLocator {
     // to denote how context refers to it (Object property vs Array index)
     final String segment = segments[lastSegmentIndex];
     if (context.isObject()) {
-      return UpdateTarget.pathViaObject(dotPath, context, context.get(segment), segment);
+      return PathMatch.pathViaObject(dotPath, context, context.get(segment), segment);
     }
     if (context.isArray()) {
       int index = findIndexFromSegment(segment);
@@ -150,7 +159,7 @@ public class UpdateTargetLocator {
       if (index < 0) {
         throw cantCreatePropertyPath(dotPath, segment, context);
       }
-      return UpdateTarget.pathViaArray(dotPath, context, context.get(index), index);
+      return PathMatch.pathViaArray(dotPath, context, context.get(index), index);
     }
     // Cannot create properties on Atomics either
     throw cantCreatePropertyPath(dotPath, segment, context);
@@ -158,9 +167,8 @@ public class UpdateTargetLocator {
 
   /**
    * Traversal method that is similar to {@link #findIfExists} but that will not return full {@link
-   * UpdateTarget}; instead a non-{@code null} {@link JsonNode} (possibly of type {@code
-   * MissingNode} is returned matching value at given path (or lack thereof in case of {@code
-   * MissingNode}).
+   * PathMatch}; instead a non-{@code null} {@link JsonNode} (possibly of type {@code MissingNode}
+   * is returned matching value at given path (or lack thereof in case of {@code MissingNode}).
    *
    * @param document Document on which to evaluate configured path.
    * @return Value node in given document at configured path, if any; a "missing node" (one for
@@ -219,5 +227,18 @@ public class UpdateTargetLocator {
             prop,
             fullPath,
             context.getNodeType()));
+  }
+
+  // Needed because Command Resolver unit tests rely in equality checks for Command equality
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof PathMatchLocator)) return false;
+    return dotPath.equals(((PathMatchLocator) o).dotPath);
+  }
+
+  @Override
+  public int hashCode() {
+    return dotPath.hashCode();
   }
 }
