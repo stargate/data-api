@@ -389,7 +389,7 @@ h4(#commandDeleteManyResponse). deleteMany Command Response
 
 |_. Response Element |_. Description |
 | @data@ | Not present. |
-| @status@ | Preset with fields: @deletedCount: <zero-or-positive-integer>@ |
+| @status@ | Preset with fields: @deletedCount: <zero-or-positive-integer>@, @moreData@ with value @true@ if there are more documents that match the delete @filter@, but were not delete since the limit of documents to delete in the single operation was hit. |
 | @errors@ | Present if errors occur. |
 
 If an error occurs the command will still return @status@ as some documents may have been deleted. 
@@ -631,7 +631,7 @@ h4(#commandUpdateManyResponse). updateMany Command Response
 
 |_. Response Element |_. Description |
 | @data@ | Not present. |
-| @status@ |Present with fields: @matchedCount@ count of documents that matched the @filter@, @modifiedCount@ count of document updated (may be less than match count), @upsertedId@ if a document was upserted (when @matchCount@ is zero) not present otherwise.|
+| @status@ |Present with fields: @matchedCount@ count of documents that matched the @filter@, @modifiedCount@ count of document updated (may be less than match count), @upsertedId@ if a document was upserted (when @matchCount@ is zero) not present otherwise, @moreData@ with value @true@ if there are more documents that match the update @filter@, but were not updated since the limit of documents to update in the single operation was hit.|
 | @errors@ |Present if errors occur. |
 
 If an error occurs the command will still return @status@ as some documents may have been inserted. 
