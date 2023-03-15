@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -45,12 +46,12 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
 
     // First: verify $set and $unset do NOT have overlapping keys
 
-    SetOperation setOp = (SetOperation) operationMap.get(UpdateOperator.SET);
-    UnsetOperation unsetOp = (UnsetOperation) operationMap.get(UpdateOperator.UNSET);
+    UpdateOperation<?> setOp = operationMap.get(UpdateOperator.SET);
+    UpdateOperation<?> unsetOp = operationMap.get(UpdateOperator.UNSET);
 
     if ((setOp != null) && (unsetOp != null)) {
-      Set<String> paths = setOp.getPaths();
-      paths.retainAll(unsetOp.getPaths());
+      Set<String> paths = getPaths(setOp);
+      paths.retainAll(getPaths(unsetOp));
 
       if (!paths.isEmpty()) {
         throw new JsonApiException(
@@ -61,5 +62,9 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
     }
 
     return new ArrayList<>(operationMap.values());
+  }
+
+  private Set<String> getPaths(UpdateOperation<?> updateOp) {
+    return updateOp.actions().stream().map(act -> act.path()).collect(Collectors.toSet());
   }
 }

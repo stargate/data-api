@@ -5,9 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of {@code $set} update operation used to assign values to document fields; also
@@ -77,16 +74,6 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
       }
     }
     return modified;
-  }
-
-  public Set<String> getPaths() {
-    return actions.stream().map(Action::path).collect(Collectors.toSet());
-  }
-
-  // Just needed for tests
-  @Override
-  public boolean equals(Object o) {
-    return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
 
   record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}

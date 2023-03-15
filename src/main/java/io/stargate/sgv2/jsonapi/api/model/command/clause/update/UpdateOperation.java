@@ -20,6 +20,9 @@ public abstract class UpdateOperation<A extends ActionWithTarget> {
     this.actions = actions;
   }
 
+  public List<A> actions() {
+    return actions;
+  }
   /**
    * Method called to apply operation to given document.
    *

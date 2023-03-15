@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Implementation of {@code $unset} update operation used to remove fields from documents. */
 public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
@@ -32,10 +30,6 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
       modified |= (target.removeValue() != null);
     }
     return modified;
-  }
-
-  public Set<String> getPaths() {
-    return actions.stream().map(Action::path).collect(Collectors.toSet());
   }
 
   record Action(ActionTargetLocator target) implements ActionWithTarget {}
