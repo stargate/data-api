@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
+package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -6,12 +6,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Objects;
 
 /**
- * Definition of a target for an action, such as ones contained by {@link UpdateOperation}, or
- * performed as part of Projection or in-memory Sort processing. Instances are created by {@link
- * ActionTargetLocator} based on locator's configuration (decoded from "Dotted path") and JSON
- * document to evalute against.
+ * Definition of a target match for an action, such as ones contained by {@link
+ * io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation}, or performed as part
+ * of Projection or in-memory Sort processing. Instances are created by {@link PathMatchLocator}
+ * based on locator's configuration (decoded from "Dotted path") and JSON document to evalute
+ * against.
  */
-public record ActionTarget(
+public record PathMatch(
     /** Full path to target for error reporting purposes */
     String fullPath,
     /**
@@ -37,18 +38,18 @@ public record ActionTarget(
      * that {@code contextNode} exists and is an Array node.
      */
     int lastIndex) {
-  public static ActionTarget missingPath(String fullPath) {
-    return new ActionTarget(fullPath, null, null, null, -1);
+  public static PathMatch missingPath(String fullPath) {
+    return new PathMatch(fullPath, null, null, null, -1);
   }
 
-  public static ActionTarget pathViaArray(
+  public static PathMatch pathViaArray(
       String fullPath, JsonNode contextNode, JsonNode valueNode, int index) {
-    return new ActionTarget(fullPath, contextNode, valueNode, null, index);
+    return new PathMatch(fullPath, contextNode, valueNode, null, index);
   }
 
-  public static ActionTarget pathViaObject(
+  public static PathMatch pathViaObject(
       String fullPath, JsonNode contextNode, JsonNode valueNode, String property) {
-    return new ActionTarget(fullPath, contextNode, valueNode, property, -1);
+    return new PathMatch(fullPath, contextNode, valueNode, property, -1);
   }
 
   /**

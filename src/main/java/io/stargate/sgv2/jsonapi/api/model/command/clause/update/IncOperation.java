@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +40,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
                 + ": $inc requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new Action(ActionTargetLocator.forPath(name), (NumericNode) value));
+      updates.add(new Action(PathMatchLocator.forPath(name), (NumericNode) value));
     }
     return new IncOperation(updates);
   }
@@ -50,7 +52,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
     for (Action action : actions) {
       final NumericNode toAdd = action.value;
 
-      ActionTarget target = action.target().findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add number
@@ -89,5 +91,5 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
   }
 
   /** Value class for per-field update operations. */
-  record Action(ActionTargetLocator target, NumericNode value) implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, NumericNode value) implements ActionWithLocator {}
 }

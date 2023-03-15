@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,7 +19,7 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
     while (it.hasNext()) {
       actions.add(
           new Action(
-              ActionTargetLocator.forPath(validateUpdatePath(UpdateOperator.UNSET, it.next()))));
+              PathMatchLocator.forPath(validateUpdatePath(UpdateOperator.UNSET, it.next()))));
     }
     return new UnsetOperation(actions);
   }
@@ -26,11 +28,11 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
-      ActionTarget target = action.target().findIfExists(doc);
+      PathMatch target = action.locator().findIfExists(doc);
       modified |= (target.removeValue() != null);
     }
     return modified;
   }
 
-  record Action(ActionTargetLocator target) implements ActionWithTarget {}
+  record Action(PathMatchLocator locator) implements ActionWithLocator {}
 }

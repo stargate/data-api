@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,7 +34,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   public static SetOperation constructSet(String filterPath, JsonNode value) {
     List<Action> additions = new ArrayList<>();
     String path = validateUpdatePath(UpdateOperator.SET, filterPath);
-    additions.add(new Action(ActionTargetLocator.forPath(path), value));
+    additions.add(new Action(PathMatchLocator.forPath(path), value));
     return new SetOperation(additions, false);
   }
 
@@ -50,7 +52,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     while (it.hasNext()) {
       var entry = it.next();
       String path = validateUpdatePath(operator, entry.getKey());
-      additions.add(new Action(ActionTargetLocator.forPath(path), entry.getValue()));
+      additions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));
     }
     return new SetOperation(additions, onlyOnInsert);
   }
@@ -64,7 +66,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
-      ActionTarget target = action.target().findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
 
@@ -83,5 +85,5 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
   }
 
-  record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, JsonNode value) implements ActionWithLocator {}
 }

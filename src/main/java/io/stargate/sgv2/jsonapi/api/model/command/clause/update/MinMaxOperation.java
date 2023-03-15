@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +40,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we do not try to change doc id
       String path = validateUpdatePath(oper, entry.getKey());
-      actions.add(new Action(ActionTargetLocator.forPath(path), entry.getValue()));
+      actions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));
     }
     return new MinMaxOperation(isMax, actions);
   }
@@ -50,7 +52,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
     for (Action action : actions) {
       final JsonNode value = action.value;
 
-      ActionTarget target = action.target().findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode oldValue = target.valueNode();
 
       if (oldValue == null) { // No such property? Add value
@@ -77,5 +79,5 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   }
 
   /** Value class for per-field update operations. */
-  record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, JsonNode value) implements ActionWithLocator {}
 }

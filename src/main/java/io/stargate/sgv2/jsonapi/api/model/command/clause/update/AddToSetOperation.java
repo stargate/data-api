@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +43,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new Action(ActionTargetLocator.forPath(name), entry.getValue(), false);
+        action = new Action(PathMatchLocator.forPath(name), entry.getValue(), false);
       }
       updates.add(action);
     }
@@ -87,7 +89,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
               + ": $addToSet modifiers can only be used with $each modifier; none included");
     }
 
-    return new Action(ActionTargetLocator.forPath(propName), eachArg, true);
+    return new Action(PathMatchLocator.forPath(propName), eachArg, true);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -104,7 +106,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
-      ActionTarget target = action.target().findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -119,7 +121,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
             ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                 + ": $addToSet requires target to be ARRAY; value at '"
-                + action.target().path()
+                + action.locator().path()
                 + "' of type "
                 + node.getNodeType());
       }
@@ -149,6 +151,6 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
   }
 
   /** Value class for per-field update operations. */
-  record Action(ActionTargetLocator target, JsonNode value, boolean each)
-      implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, JsonNode value, boolean each)
+      implements ActionWithLocator {}
 }

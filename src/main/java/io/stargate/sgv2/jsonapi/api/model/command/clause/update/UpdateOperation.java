@@ -12,7 +12,7 @@ import java.util.List;
  * UpdateOperation represents one of update definitions from {@link UpdateClause} (like {@code $set}
  * or {@code $unset}): single operation can contain multiple actual changes.
  */
-public abstract class UpdateOperation<A extends ActionWithTarget> {
+public abstract class UpdateOperation<A extends ActionWithLocator> {
   protected final List<A> actions;
 
   protected UpdateOperation(List<A> actions) {
@@ -83,11 +83,11 @@ public abstract class UpdateOperation<A extends ActionWithTarget> {
     return path.startsWith("$");
   }
 
-  static class NameComparator implements Comparator<ActionWithTarget> {
+  static class NameComparator implements Comparator<ActionWithLocator> {
     public static final NameComparator INSTANCE = new NameComparator();
 
     @Override
-    public int compare(ActionWithTarget o1, ActionWithTarget o2) {
+    public int compare(ActionWithLocator o1, ActionWithLocator o2) {
       return o1.path().compareTo(o2.path());
     }
   }

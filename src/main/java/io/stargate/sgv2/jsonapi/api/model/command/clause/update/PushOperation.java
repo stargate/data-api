@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +43,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new Action(ActionTargetLocator.forPath(name), entry.getValue(), false, null);
+        action = new Action(PathMatchLocator.forPath(name), entry.getValue(), false, null);
       }
       updates.add(action);
     }
@@ -108,7 +110,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new Action(ActionTargetLocator.forPath(propName), eachArg, true, position);
+    return new Action(PathMatchLocator.forPath(propName), eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -127,7 +129,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     for (Action action : actions) {
       final JsonNode toAdd = action.value;
 
-      ActionTarget target = action.target().findOrCreate(doc);
+      PathMatch target = action.locator().findOrCreate(doc);
       JsonNode node = target.valueNode();
 
       ArrayNode array;
@@ -183,6 +185,6 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   }
 
   /** Value class for per-field update operations. */
-  record Action(ActionTargetLocator target, JsonNode value, boolean each, Integer position)
-      implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, JsonNode value, boolean each, Integer position)
+      implements ActionWithLocator {}
 }

@@ -1,14 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
+
 /**
  * Interface needed to allow easy sorting by {@code path} property exposed by Action record types.
  */
-public interface ActionWithTarget {
+public interface ActionWithLocator {
   /** @return Path that the action targets (dotted notation) */
-  ActionTargetLocator target();
+  PathMatchLocator locator();
 
   /** Convenience method: path from {@code action()} */
   default String path() {
-    return target().path();
+    return locator().path();
   }
 }

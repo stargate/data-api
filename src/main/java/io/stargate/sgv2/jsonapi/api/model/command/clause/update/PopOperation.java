@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatch;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -49,7 +51,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
                   + ": $pop requires argument of -1 or 1, instead got: "
                   + arg.intValue());
       }
-      actions.add(new Action(ActionTargetLocator.forPath(path), first));
+      actions.add(new Action(PathMatchLocator.forPath(path), first));
     }
     return new PopOperation(actions);
   }
@@ -58,7 +60,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
   public boolean updateDocument(ObjectNode doc) {
     boolean changes = false;
     for (Action action : actions) {
-      ActionTarget target = action.target().findIfExists(doc);
+      PathMatch target = action.locator().findIfExists(doc);
 
       JsonNode value = target.valueNode();
       // If target does not match, nothing to do; not an error
@@ -91,5 +93,5 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
   }
 
   /** Value class for per-field Pop operation definitions. */
-  record Action(ActionTargetLocator target, boolean removeFirst) implements ActionWithTarget {}
+  record Action(PathMatchLocator locator, boolean removeFirst) implements ActionWithLocator {}
 }
