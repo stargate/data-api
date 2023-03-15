@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of {@code $set} update operation used to assign values to document fields; also
@@ -76,5 +77,10 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     return modified;
   }
 
+  // Needed because some unit tests check for equality
+  @Override
+  public boolean equals(Object o) {
+    return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
+  }
   record Action(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
 }
