@@ -39,9 +39,14 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   public Operation resolveCommand(CommandContext ctx, FindOneAndUpdateCommand command) {
     ReadOperation readOperation = resolve(ctx, command);
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
+
+    // resolve options
+    FindOneAndUpdateCommand.Options options = command.options();
     boolean returnUpdatedDocument =
-        command.options() != null && "after".equals(command.options().returnDocument());
+        options != null && "after".equals(command.options().returnDocument());
     boolean upsert = command.options() != null && command.options().upsert();
+
+    // return
     return new ReadAndUpdateOperation(
         ctx,
         readOperation,
