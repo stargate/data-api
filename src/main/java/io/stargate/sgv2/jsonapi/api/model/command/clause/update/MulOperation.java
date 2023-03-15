@@ -16,11 +16,9 @@ import java.util.Map;
  * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/mul/} for full
  * explanation.
  */
-public class MulOperation extends UpdateOperation {
-  private final List<Action> actions;
-
+public class MulOperation extends UpdateOperation<MulOperation.Action> {
   private MulOperation(List<Action> actions) {
-    this.actions = sortByPath(actions);
+    super(actions);
   }
 
   public static MulOperation construct(ObjectNode args) {
@@ -97,6 +95,5 @@ public class MulOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record Action(ActionTargetLocator target, NumericNode value)
-      implements ActionWithTarget {}
+  record Action(ActionTargetLocator target, NumericNode value) implements ActionWithTarget {}
 }

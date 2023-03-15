@@ -14,14 +14,12 @@ import java.util.Map;
  * https://www.mongodb.com/docs/manual/reference/operator/update/min/} and {@href
  * https://www.mongodb.com/docs/manual/reference/operator/update/max/} for full explanations.
  */
-public class MinMaxOperation extends UpdateOperation {
-  private final List<MinMaxAction> actions;
-
+public class MinMaxOperation extends UpdateOperation<MinMaxOperation.MinMaxAction> {
   private final boolean isMaxAction;
 
   private MinMaxOperation(boolean isMaxAction, List<MinMaxAction> actions) {
+    super(actions);
     this.isMaxAction = isMaxAction;
-    this.actions = sortByPath(actions);
   }
 
   public static MinMaxOperation constructMax(ObjectNode args) {
@@ -79,6 +77,5 @@ public class MinMaxOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record MinMaxAction(ActionTargetLocator target, JsonNode value)
-      implements ActionWithTarget {}
+  record MinMaxAction(ActionTargetLocator target, JsonNode value) implements ActionWithTarget {}
 }

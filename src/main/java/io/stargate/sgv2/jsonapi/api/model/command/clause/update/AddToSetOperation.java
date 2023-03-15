@@ -15,11 +15,9 @@ import java.util.Map;
  * Implementation of {@code $addToSet} update operation used to add distinct values in array fields
  * of documents.
  */
-public class AddToSetOperation extends UpdateOperation {
-  private List<AddToSetAction> actions;
-
+public class AddToSetOperation extends UpdateOperation<AddToSetOperation.AddToSetAction> {
   private AddToSetOperation(List<AddToSetAction> actions) {
-    this.actions = sortByPath(actions);
+    super(actions);
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
@@ -151,6 +149,6 @@ public class AddToSetOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record AddToSetAction(ActionTargetLocator target, JsonNode value, boolean each)
+  record AddToSetAction(ActionTargetLocator target, JsonNode value, boolean each)
       implements ActionWithTarget {}
 }

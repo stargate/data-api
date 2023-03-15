@@ -15,17 +15,15 @@ import java.util.Map;
  * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/inc/} for full
  * explanation.
  */
-public class IncOperation extends UpdateOperation {
-  private final List<IncAction> actions;
-
-  private IncOperation(List<IncAction> actions) {
-    this.actions = sortByPath(actions);
+public class IncOperation extends UpdateOperation<IncOperation.Action> {
+  private IncOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static IncOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<IncAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       // Verify we have neither operators...
@@ -40,7 +38,7 @@ public class IncOperation extends UpdateOperation {
                 + ": $inc requires numeric parameter, got: "
                 + value.getNodeType());
       }
-      updates.add(new IncAction(ActionTargetLocator.forPath(name), (NumericNode) value));
+      updates.add(new Action(ActionTargetLocator.forPath(name), (NumericNode) value));
     }
     return new IncOperation(updates);
   }
@@ -49,7 +47,7 @@ public class IncOperation extends UpdateOperation {
   public boolean updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
-    for (IncAction action : actions) {
+    for (Action action : actions) {
       final NumericNode toAdd = action.value;
 
       ActionTarget target = action.target().findOrCreate(doc);
@@ -91,6 +89,5 @@ public class IncOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record IncAction(ActionTargetLocator target, NumericNode value)
-      implements ActionWithTarget {}
+  record Action(ActionTargetLocator target, NumericNode value) implements ActionWithTarget {}
 }

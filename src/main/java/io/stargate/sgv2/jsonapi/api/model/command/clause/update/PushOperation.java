@@ -15,17 +15,15 @@ import java.util.Objects;
  * Implementation of {@code $push} update operation used to append values in array fields of
  * documents.
  */
-public class PushOperation extends UpdateOperation {
-  private List<PushAction> actions;
-
-  private PushOperation(List<PushAction> actions) {
-    this.actions = sortByPath(actions);
+public class PushOperation extends UpdateOperation<PushOperation.Action> {
+  private PushOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static PushOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<PushAction> updates = new ArrayList<>();
+    List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
@@ -39,18 +37,18 @@ public class PushOperation extends UpdateOperation {
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
-      PushAction action;
+      Action action;
       if (value.isObject() && hasModifier((ObjectNode) value)) {
         action = buildActionWithModifiers(name, (ObjectNode) value);
       } else {
-        action = new PushAction(ActionTargetLocator.forPath(name), entry.getValue(), false, null);
+        action = new Action(ActionTargetLocator.forPath(name), entry.getValue(), false, null);
       }
       updates.add(action);
     }
     return new PushOperation(updates);
   }
 
-  private static PushAction buildActionWithModifiers(String propName, ObjectNode actionDef) {
+  private static Action buildActionWithModifiers(String propName, ObjectNode actionDef) {
     // We know there is at least one modifier; and if so, all must be modifiers.
     // We support basic "$each" with optional "$position":
     JsonNode eachArg = null;
@@ -110,7 +108,7 @@ public class PushOperation extends UpdateOperation {
               + ": $push modifiers can only be used with $each modifier; none included");
     }
 
-    return new PushAction(ActionTargetLocator.forPath(propName), eachArg, true, position);
+    return new Action(ActionTargetLocator.forPath(propName), eachArg, true, position);
   }
 
   private static boolean hasModifier(ObjectNode node) {
@@ -126,7 +124,7 @@ public class PushOperation extends UpdateOperation {
 
   @Override
   public boolean updateDocument(ObjectNode doc) {
-    for (PushAction action : actions) {
+    for (Action action : actions) {
       final JsonNode toAdd = action.value;
 
       ActionTarget target = action.target().findOrCreate(doc);
@@ -185,7 +183,6 @@ public class PushOperation extends UpdateOperation {
   }
 
   /** Value class for per-field update operations. */
-  private record PushAction(
-      ActionTargetLocator target, JsonNode value, boolean each, Integer position)
+  record Action(ActionTargetLocator target, JsonNode value, boolean each, Integer position)
       implements ActionWithTarget {}
 }

@@ -10,17 +10,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class PopOperation extends UpdateOperation {
-  private List<PopAction> actions;
-
-  private PopOperation(List<PopAction> actions) {
-    this.actions = sortByPath(actions);
+public class PopOperation extends UpdateOperation<PopOperation.Action> {
+  private PopOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static PopOperation construct(ObjectNode args) {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
 
-    List<PopAction> actions = new ArrayList<>();
+    List<Action> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String path = validateUpdatePath(UpdateOperator.POP, entry.getKey());
@@ -51,7 +49,7 @@ public class PopOperation extends UpdateOperation {
                   + ": $pop requires argument of -1 or 1, instead got: "
                   + arg.intValue());
       }
-      actions.add(new PopAction(ActionTargetLocator.forPath(path), first));
+      actions.add(new Action(ActionTargetLocator.forPath(path), first));
     }
     return new PopOperation(actions);
   }
@@ -59,7 +57,7 @@ public class PopOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean changes = false;
-    for (PopAction action : actions) {
+    for (Action action : actions) {
       ActionTarget target = action.target().findIfExists(doc);
 
       JsonNode value = target.valueNode();
@@ -93,6 +91,5 @@ public class PopOperation extends UpdateOperation {
   }
 
   /** Value class for per-field Pop operation definitions. */
-  private record PopAction(ActionTargetLocator target, boolean removeFirst)
-      implements ActionWithTarget {}
+  record Action(ActionTargetLocator target, boolean removeFirst) implements ActionWithTarget {}
 }

@@ -8,19 +8,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Implementation of {@code $unset} update operation used to remove fields from documents. */
-public class UnsetOperation extends UpdateOperation {
-  private List<UnsetAction> actions;
-
-  private UnsetOperation(List<UnsetAction> actions) {
-    this.actions = sortByPath(actions);
+public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
+  private UnsetOperation(List<Action> actions) {
+    super(actions);
   }
 
   public static UnsetOperation construct(ObjectNode args) {
     Iterator<String> it = args.fieldNames();
-    List<UnsetAction> actions = new ArrayList<>();
+    List<Action> actions = new ArrayList<>();
     while (it.hasNext()) {
       actions.add(
-          new UnsetAction(
+          new Action(
               ActionTargetLocator.forPath(validateUpdatePath(UpdateOperator.UNSET, it.next()))));
     }
     return new UnsetOperation(actions);
@@ -29,7 +27,7 @@ public class UnsetOperation extends UpdateOperation {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
-    for (UnsetAction action : actions) {
+    for (Action action : actions) {
       ActionTarget target = action.target().findIfExists(doc);
       modified |= (target.removeValue() != null);
     }
@@ -37,8 +35,8 @@ public class UnsetOperation extends UpdateOperation {
   }
 
   public Set<String> getPaths() {
-    return actions.stream().map(UnsetAction::path).collect(Collectors.toSet());
+    return actions.stream().map(Action::path).collect(Collectors.toSet());
   }
 
-  private record UnsetAction(ActionTargetLocator target) implements ActionWithTarget {}
+  record Action(ActionTargetLocator target) implements ActionWithTarget {}
 }
