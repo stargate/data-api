@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
   @Nested
-  class UpdateOne {
+  class UpdateOneWithSet {
     @Test
     public void findByIdAndSet() {
       String json =
@@ -297,66 +297,6 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByIdAndUnset() {
-      String document =
-          """
-          {
-            "_id": "update_doc3",
-            "username": "update_user3",
-            "unset_col": "val"
-          }
-          """;
-      insertDoc(document);
-
-      String json =
-          """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc3"},
-              "update" : {"$unset" : {"unset_col": ""}}
-            }
-          }
-          """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
-
-      // assert state after update
-      String expected =
-          """
-          {
-            "_id":"update_doc3",
-            "username":"update_user3"
-          }
-          """;
-      json =
-          """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc3"}
-            }
-          }
-          """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
-    }
-
-    @Test
     public void findByColumnAndSetArray() {
       String json =
           """
@@ -487,6 +427,69 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
             }
           }
           """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class UpdateOneWithUnset {
+    @Test
+    public void findByIdAndUnset() {
+      String document =
+          """
+              {
+                "_id": "update_doc3",
+                "username": "update_user3",
+                "unset_col": "val"
+              }
+              """;
+      insertDoc(document);
+
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc3"},
+                  "update" : {"$unset" : {"unset_col": ""}}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+              {
+                "_id":"update_doc3",
+                "username":"update_user3"
+              }
+              """;
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc3"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
