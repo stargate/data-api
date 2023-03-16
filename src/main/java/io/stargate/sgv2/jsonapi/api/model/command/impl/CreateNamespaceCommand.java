@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -16,7 +15,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a namespace.")
 @JsonTypeName("createNamespace")
 public record CreateNamespaceCommand(
-    @NotBlank @Size(min = 1, max = 48) @Schema(description = "Name of the namespace") String name,
+    @NotNull
+        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+        @Size(min = 1, max = 48)
+        @Schema(description = "Name of the namespace")
+        String name,
     @Nullable @Valid CreateNamespaceCommand.Options options)
     implements GeneralCommand {
 

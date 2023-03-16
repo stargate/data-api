@@ -8,7 +8,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -68,23 +67,22 @@ class ObjectMapperConfigurationTest {
                     .contains(
                         new SortExpression("user.name", true),
                         new SortExpression("user.age", false));
-              });
-      final ComparisonExpression expectedResult =
-          new ComparisonExpression(
-              "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindOneCommand.class,
-              findOne -> {
+
                 FilterClause filterClause = findOne.filterClause();
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.comparisonExpressions()).hasSize(1);
                 assertThat(filterClause.comparisonExpressions())
                     .singleElement()
-                    .isEqualTo(expectedResult);
+                    .satisfies(
+                        expression -> {
+                          ValueComparisonOperation<String> op =
+                              new ValueComparisonOperation<>(
+                                  ValueComparisonOperator.EQ,
+                                  new JsonLiteral<>("aaron", JsonType.STRING));
+
+                          assertThat(expression.path()).isEqualTo("username");
+                          assertThat(expression.filterOperations()).singleElement().isEqualTo(op);
+                        });
               });
     }
 
@@ -110,11 +108,11 @@ class ObjectMapperConfigurationTest {
     public void filterClauseOptional() throws Exception {
       String json =
           """
-                  {
-                    "findOne": {
-                    }
-                  }
-                  """;
+          {
+            "findOne": {
+            }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -161,13 +159,12 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                {
-                  "createCollection": {
-                    "name": "some_name",
-                    "options" :{}
-                  }
-                }
-                """;
+          {
+            "createCollection": {
+              "name": "some_name"
+            }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -187,15 +184,15 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                    {
-                      "find": {
-                        "filter" : {"username" : "user1"},
-                        "options" : {
-                          "limit" : 1
-                        }
-                      }
-                    }
-                    """;
+          {
+            "find": {
+              "filter" : {"username" : "user1"},
+              "options" : {
+                "limit" : 1
+              }
+            }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -218,14 +215,14 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                    {
-                      "updateOne": {
-                          "filter" : {"username" : "update_user5"},
-                          "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                          "options" : {}
-                        }
-                    }
-                    """;
+          {
+            "updateOne": {
+                "filter" : {"username" : "update_user5"},
+                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                "options" : {}
+              }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -250,14 +247,14 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                          {
-                            "findOneAndUpdate": {
-                                "filter" : {"username" : "update_user5"},
-                                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                                "options" : {}
-                              }
-                          }
-                          """;
+          {
+            "findOneAndUpdate": {
+                "filter" : {"username" : "update_user5"},
+                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                "options" : {}
+              }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -279,14 +276,14 @@ class ObjectMapperConfigurationTest {
     public void findOneAndUpdateWithOptions() throws Exception {
       String json =
           """
-                          {
-                            "findOneAndUpdate": {
-                                "filter" : {"username" : "update_user5"},
-                                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                                "options" : {"returnDocument" : "after", "upsert" : true}
-                              }
-                          }
-                          """;
+          {
+            "findOneAndUpdate": {
+                "filter" : {"username" : "update_user5"},
+                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                "options" : {"returnDocument" : "after", "upsert" : true}
+              }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -314,24 +311,26 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
+          {
+            "insertMany": {
+                "documents": [
                     {
-                      "insertMany": {
-                          "documents": [{
-                            "_id" : "1",
-                            "some": {
-                              "data": true
-                            }
-                          },
-                          {
-                            "_id" : "2",
-                            "some": {
-                              "data": false
-                            }
-                          }],
-                          "options" :{}
-                        }
+                      "_id" : "1",
+                      "some": {
+                        "data": true
+                      }
+                    },
+                    {
+                      "_id" : "2",
+                      "some": {
+                        "data": false
+                      }
                     }
-                    """;
+                ],
+                "options" :{}
+              }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -354,12 +353,12 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                  {
-                    "countDocuments": {
-                      "filter" : {"username" : "user1"}
-                    }
-                  }
-                  """;
+          {
+            "countDocuments": {
+              "filter" : {"username" : "user1"}
+            }
+          }
+          """;
 
       Command result = objectMapper.readValue(json, Command.class);
       assertThat(result)
