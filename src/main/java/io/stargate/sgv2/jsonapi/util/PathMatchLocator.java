@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  *       possibly Projection)
  * </ul>
  */
-public class PathMatchLocator {
+public class PathMatchLocator implements Comparable<PathMatchLocator> {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
 
   private static final Pattern INDEX_SEGMENT = Pattern.compile("0|[1-9][0-9]*");
@@ -240,5 +240,15 @@ public class PathMatchLocator {
   @Override
   public int hashCode() {
     return dotPath.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return dotPath;
+  }
+
+  @Override
+  public int compareTo(PathMatchLocator o) {
+    return dotPath.compareTo(o.dotPath);
   }
 }
