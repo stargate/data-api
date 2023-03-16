@@ -1601,7 +1601,6 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
 
   @Nested
   class ClientErrors {
-
     @Test
     public void invalidCommand() {
       String updateJson =
@@ -1627,6 +1626,38 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               "errors[0].message",
               is(
                   "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+    }
+
+    @Test
+    public void invalidSetAndUnsetPathConflict() {
+      // Cannot modify entries that conflict (same path, or parent/child):
+      String updateJson =
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "update_doc_whatever"},
+                  "update" : {
+                    "$set" : {"root.array.1": 13},
+                    "$unset" : {"root.array": 1}
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Update operator path conflict due to overlap: 'root.array' ($unset) vs 'root.array.1' ($set)"));
     }
   }
 
