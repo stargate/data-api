@@ -15,10 +15,10 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class CreateNamespaceResolverTest {
+class CreateNamespaceCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject CreateNamespaceResolver resolver;
+  @Inject CreateNamespaceCommandResolver resolver;
 
   @Nested
   class ResolveCommand {

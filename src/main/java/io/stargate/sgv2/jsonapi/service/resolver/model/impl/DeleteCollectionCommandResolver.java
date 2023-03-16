@@ -9,7 +9,7 @@ import javax.enterprise.context.ApplicationScoped;
 
 /** Resolver for the {@link DeleteCollectionCommand}. */
 @ApplicationScoped
-public class DeleteCollectionResolver implements CommandResolver<DeleteCollectionCommand> {
+public class DeleteCollectionCommandResolver implements CommandResolver<DeleteCollectionCommand> {
   @Override
   public Class<DeleteCollectionCommand> getCommandClass() {
     return DeleteCollectionCommand.class;

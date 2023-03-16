@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class CreateCollectionResolver implements CommandResolver<CreateCollectionCommand> {
+public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
   @Override
   public Class<CreateCollectionCommand> getCommandClass() {
     return CreateCollectionCommand.class;
