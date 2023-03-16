@@ -13,8 +13,12 @@ import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import org.apache.http.client.config.*;
 import org.apache.http.impl.client.*;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.params.HttpParams;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.RepeatedTest;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomUtils;
@@ -35,7 +39,9 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
             RestAssuredConfig.config()
                 .httpClient(
                     HttpClientConfig.httpClientConfig()
-                        .httpClientFactory(customHttpClientFactory())))
+                        .addParams(
+                            Collections.singletonMap(
+                                CoreProtocolPNames.USE_EXPECT_CONTINUE, true))))
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
         .body(inputStream)
@@ -51,8 +57,9 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
   @NotNull
   private static HttpClientConfig.HttpClientFactory customHttpClientFactory() {
     return () -> {
-      RequestConfig requestConfig = RequestConfig.custom().setExpectContinueEnabled(true).build();
-      return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+      HttpParams params = new BasicHttpParams();
+      params.setParameter(CoreProtocolPNames.USE_EXPECT_CONTINUE, true);
+      return new DefaultHttpClient(params);
     };
   }
 
