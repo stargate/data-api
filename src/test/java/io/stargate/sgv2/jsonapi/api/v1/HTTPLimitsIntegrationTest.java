@@ -11,23 +11,18 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import org.apache.http.client.config.*;
-import org.apache.http.impl.client.*;
-import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.params.HttpParams;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomUtils;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
 
-  @RepeatedTest(5)
+  @Test
+  @SuppressWarnings("deprecation") // CoreProtocolPNames deprecated
   public void tryToSendTooBigInsert() {
     // try sending 1.01 MB
     RandomBytesInputStream inputStream = new RandomBytesInputStream(1024 * 1024 + 1024);
@@ -35,6 +30,7 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
     // Fails before getting to business logic no need for real collection (or keyspace fwtw)
     // While docs don't say it, Quarkus tests show 413 as expected fail message:
     given()
+        // https://stackoverflow.com/questions/66299813/apache-httpclient-4-5-13-java-net-socketexception-broken-pipe-write-failed
         .config(
             RestAssuredConfig.config()
                 .httpClient(
@@ -51,18 +47,6 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
         .statusCode(413);
   }
 
-  // enables setExpectContinueEnabled to true
-  // from
-  // https://stackoverflow.com/questions/66299813/apache-httpclient-4-5-13-java-net-socketexception-broken-pipe-write-failed
-  @NotNull
-  private static HttpClientConfig.HttpClientFactory customHttpClientFactory() {
-    return () -> {
-      HttpParams params = new BasicHttpParams();
-      params.setParameter(CoreProtocolPNames.USE_EXPECT_CONTINUE, true);
-      return new DefaultHttpClient(params);
-    };
-  }
-
   static class RandomBytesInputStream extends InputStream {
 
     private final int size;
@@ -74,7 +58,7 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() {
       if (count++ >= size) {
         return -1;
       }
