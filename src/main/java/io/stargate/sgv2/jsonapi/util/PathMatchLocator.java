@@ -36,6 +36,27 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   }
 
   /**
+   * Method that will check whether this locator represents a "sub-path" of given locator: this is
+   * the case if the "parent" path is a proper prefix of this path, followed by a comma and path
+   * segment(s). For example: if this locator has path {@code a.b.c} and {@code possibleParent} has
+   * path {@code a.b} then method would return true (as suffix is {@code .c}).
+   *
+   * <p>Note: if paths are the same, will NOT be considered a sub-path (returns {@code false}).
+   *
+   * @param possibleParent Locator to check against
+   * @return True if this locator has a path that is sub-path of path of {@code possibleParent}
+   */
+  public boolean isSubPathOf(PathMatchLocator possibleParent) {
+    String parentPath = possibleParent.path();
+    String thisPath = path();
+    final int parentLen = parentPath.length();
+
+    return thisPath.startsWith(parentPath)
+        && parentLen < thisPath.length()
+        && thisPath.charAt(parentLen) == '.';
+  }
+
+  /**
    * Factory method for constructing path; also does minimal verification of path: currently only
    * verification is to ensure there are no empty segments.
    *

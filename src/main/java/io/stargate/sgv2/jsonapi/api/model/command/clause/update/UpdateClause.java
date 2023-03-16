@@ -63,24 +63,21 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
               }
             });
 
-    // First: build an ordered Map and check for exact conflicting paths:
+    // Second: check for sub-paths -- efficiently done by using alphabetic-sorted paths
+    // and comparing adjacent ones; for each pair see if later one is longer one and
+    // starts with dot.
+    // For example: "path.x" vs "path.x.some.more" we notice latter has suffix ".some.more"
+    // and is thereby conflicting.
+    if (!actionMap.isEmpty()) {
+      var it = actionMap.entrySet().iterator();
+      var prev = it.next();
 
-    /*
-    UpdateOperation<?> setOp = operationMap.get(UpdateOperator.SET);
-    UpdateOperation<?> unsetOp = operationMap.get(UpdateOperator.UNSET);
-
-    if ((setOp != null) && (unsetOp != null)) {
-      Set<String> paths = getPaths(setOp);
-      paths.retainAll(getPaths(unsetOp));
-
-      if (!paths.isEmpty()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            "Update operators '$set' and '$unset' must not refer to same path: '%s'"
-                .formatted(paths.iterator().next()));
+      while (it.hasNext()) {
+        var curr = it.next();
       }
     }
-     */
+    actionMap.entrySet().forEach(e -> {});
+
     return new ArrayList<>(operationMap.values());
   }
 
