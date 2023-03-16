@@ -39,19 +39,47 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
-      PathMatch src = action.locator().findIfExists(doc);
+      PathMatch src = action.sourceLocator().findIfExists(doc);
       JsonNode value = src.removeValue();
       if (value != null) {
+        // Mongo does not allow "renaming" of Array values
+        if (src.contextNode().isArray()) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": $rename does not allow ARRAY field as source ('"
+                  + action.sourceLocator()
+                  + "')");
+        }
+
         // If there is a value will be a modification (since source value will
         // disappear), regardless of whether target changes
         modified = true;
-        PathMatch dst = action.locator().findOrCreate(doc);
+        PathMatch dst = action.targetLocator().findOrCreate(doc);
+
+        // Also not allowed: destination as Array element:
+        if (dst.contextNode().isArray()) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": $rename does not allow ARRAY field as destination ('"
+                  + action.targetLocator()
+                  + "')");
+        }
+
         dst.replaceValue(value);
       }
     }
     return modified;
   }
 
-  record Action(PathMatchLocator locator, PathMatchLocator targetLocator)
-      implements ActionWithLocator {}
+  // Unlike most operations, we have 2 locators (src, dest), use explicit names
+  record Action(PathMatchLocator sourceLocator, PathMatchLocator targetLocator)
+      implements ActionWithLocator {
+    // Due src, dst names, need to decide which to return as sorting locator;
+    // use Source (should not greatly matter)
+    public PathMatchLocator locator() {
+      return sourceLocator;
+    }
+  }
 }
