@@ -57,6 +57,13 @@ public enum UpdateOperator {
     }
   },
 
+  RENAME("$rename") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return RenameOperation.construct(arguments);
+    }
+  },
+
   SET("$set") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
