@@ -272,5 +272,31 @@ public class DocumentUpdaterTest {
           .hasMessage(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
+
+    @Test
+    public void invalidSetOnParentPathWithDollar() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentUpdater.construct(
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.SET,
+                          (ObjectNode)
+                              objectMapper.readTree(
+                                  """
+          {
+            "root" : 7,
+            "x" : 3,
+            "root$x" : 5,
+            "y" : 5,
+            "root.a" : 3
+          }
+          """))));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasMessage(
+              "Update operator path conflict due to overlap: 'root' ($set) vs 'root.a' ($set)");
+    }
   }
 }

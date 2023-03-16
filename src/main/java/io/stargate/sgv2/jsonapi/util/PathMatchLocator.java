@@ -16,6 +16,11 @@ import java.util.regex.Pattern;
  *   <li>{@link JsonNode} when extracting value using {@link #findValueIn} (used for Sorting and
  *       possibly Projection)
  * </ul>
+ *
+ * <p>Implements {@link Comparable} so that locators are naturally sorted in "Segment-aware" way:
+ * meaning that sorting is segment-by-segment, alphabetically, so that parent path will be sorted
+ * immediately before its first child path (if any). This sorting is used to verify that update
+ * operations' locator paths do not overlap in ancestors/descendants dimensions.
  */
 public class PathMatchLocator implements Comparable<PathMatchLocator> {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
@@ -269,7 +274,19 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   }
 
   @Override
-  public int compareTo(PathMatchLocator o) {
-    return dotPath.compareTo(o.dotPath);
+  public int compareTo(PathMatchLocator other) {
+    // Instead of simple alphabetic sorting of dotPath, do segment-aware to
+    // ensure parent/children are sorted next to each other
+    final String[] s1 = this.segments;
+    final String[] s2 = other.segments;
+
+    for (int i = 0, end = Math.min(s1.length, s2.length); i < end; ++i) {
+      int diff = s1[i].compareTo(s2[i]);
+      if (diff != 0) {
+        return diff;
+      }
+    }
+    // If same prefix sort longer one after shorter one
+    return s1.length - s2.length;
   }
 }

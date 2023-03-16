@@ -404,6 +404,12 @@ public class PathMatchLocatorTest {
       verifyOrdering(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("rootValue"));
       verifyOrdering(PathMatchLocator.forPath("root.abc"), PathMatchLocator.forPath("root.abcdef"));
       verifyOrdering(PathMatchLocator.forPath("root.a"), PathMatchLocator.forPath("root.a.3"));
+
+      // Important! Need to ensure "dot-segment" sorts before continued value; "$" and "+"
+      // particular
+      // concerns as their ASCII/Unicode value below comma
+      verifyOrdering(PathMatchLocator.forPath("root.a"), PathMatchLocator.forPath("root$a"));
+      verifyOrdering(PathMatchLocator.forPath("x.y"), PathMatchLocator.forPath("x+y.a"));
     }
 
     private void verifyOrdering(PathMatchLocator loc1, PathMatchLocator loc2) {
@@ -419,6 +425,8 @@ public class PathMatchLocatorTest {
       verifyNotSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root"));
       // Nor siblings
       verifyNotSubPath(PathMatchLocator.forPath("root.x"), PathMatchLocator.forPath("root.y"));
+      // Nor with "weird" characters
+      verifyNotSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root$x"));
 
       // But with dot, is
       verifyIsSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root.Value"));
