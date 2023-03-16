@@ -16,8 +16,13 @@ import java.util.regex.Pattern;
  *   <li>{@link JsonNode} when extracting value using {@link #findValueIn} (used for Sorting and
  *       possibly Projection)
  * </ul>
+ *
+ * <p>Implements {@link Comparable} so that locators are naturally sorted in "Segment-aware" way:
+ * meaning that sorting is segment-by-segment, alphabetically, so that parent path will be sorted
+ * immediately before its first child path (if any). This sorting is used to verify that update
+ * operations' locator paths do not overlap in ancestors/descendants dimensions.
  */
-public class PathMatchLocator {
+public class PathMatchLocator implements Comparable<PathMatchLocator> {
   private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
 
   private static final Pattern INDEX_SEGMENT = Pattern.compile("0|[1-9][0-9]*");
@@ -33,6 +38,27 @@ public class PathMatchLocator {
 
   public String path() {
     return dotPath;
+  }
+
+  /**
+   * Method that will check whether this locator represents a "sub-path" of given locator: this is
+   * the case if the "parent" path is a proper prefix of this path, followed by a comma and path
+   * segment(s). For example: if this locator has path {@code a.b.c} and {@code possibleParent} has
+   * path {@code a.b} then method would return true (as suffix is {@code .c}).
+   *
+   * <p>Note: if paths are the same, will NOT be considered a sub-path (returns {@code false}).
+   *
+   * @param possibleParent Locator to check against
+   * @return True if this locator has a path that is sub-path of path of {@code possibleParent}
+   */
+  public boolean isSubPathOf(PathMatchLocator possibleParent) {
+    String parentPath = possibleParent.path();
+    String thisPath = path();
+    final int parentLen = parentPath.length();
+
+    return thisPath.startsWith(parentPath)
+        && parentLen < thisPath.length()
+        && thisPath.charAt(parentLen) == '.';
   }
 
   /**
@@ -240,5 +266,27 @@ public class PathMatchLocator {
   @Override
   public int hashCode() {
     return dotPath.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return dotPath;
+  }
+
+  @Override
+  public int compareTo(PathMatchLocator other) {
+    // Instead of simple alphabetic sorting of dotPath, do segment-aware to
+    // ensure parent/children are sorted next to each other
+    final String[] s1 = this.segments;
+    final String[] s2 = other.segments;
+
+    for (int i = 0, end = Math.min(s1.length, s2.length); i < end; ++i) {
+      int diff = s1[i].compareTo(s2[i]);
+      if (diff != 0) {
+        return diff;
+      }
+    }
+    // If same prefix sort longer one after shorter one
+    return s1.length - s2.length;
   }
 }

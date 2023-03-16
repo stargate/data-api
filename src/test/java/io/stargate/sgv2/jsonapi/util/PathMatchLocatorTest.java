@@ -393,6 +393,61 @@ public class PathMatchLocatorTest {
     }
   }
 
+  @Nested
+  class Sorting {
+    @Test
+    public void testOrdering() {
+      // Simple alphabetic ordering in general
+      verifyOrdering(PathMatchLocator.forPath("abc"), PathMatchLocator.forPath("def"));
+      verifyOrdering(PathMatchLocator.forPath("root.x"), PathMatchLocator.forPath("root.y"));
+      // Longer one later (if common prefix; parent/child)
+      verifyOrdering(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("rootValue"));
+      verifyOrdering(PathMatchLocator.forPath("root.abc"), PathMatchLocator.forPath("root.abcdef"));
+      verifyOrdering(PathMatchLocator.forPath("root.a"), PathMatchLocator.forPath("root.a.3"));
+
+      // Important! Need to ensure "dot-segment" sorts before continued value; "$" and "+"
+      // particular
+      // concerns as their ASCII/Unicode value below comma
+      verifyOrdering(PathMatchLocator.forPath("root.a"), PathMatchLocator.forPath("root$a"));
+      verifyOrdering(PathMatchLocator.forPath("x.y"), PathMatchLocator.forPath("x+y.a"));
+    }
+
+    private void verifyOrdering(PathMatchLocator loc1, PathMatchLocator loc2) {
+      assertThat(loc1.compareTo(loc2)).isLessThan(0);
+      assertThat(loc2.compareTo(loc1)).isGreaterThan(0);
+    }
+
+    @Test
+    public void testSubPath() {
+      // Not sub-path, no dot separator
+      verifyNotSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("rootValue"));
+      // Same path is NOT sub-path
+      verifyNotSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root"));
+      // Nor siblings
+      verifyNotSubPath(PathMatchLocator.forPath("root.x"), PathMatchLocator.forPath("root.y"));
+      // Nor with "weird" characters
+      verifyNotSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root$x"));
+
+      // But with dot, is
+      verifyIsSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root.Value"));
+      verifyIsSubPath(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("root.x.y.z"));
+      verifyIsSubPath(
+          PathMatchLocator.forPath("root.branch"), PathMatchLocator.forPath("root.branch.4"));
+    }
+
+    private void verifyIsSubPath(PathMatchLocator parent, PathMatchLocator child) {
+      // One way it is true; the other not
+      assertThat(child.isSubPathOf(parent)).isTrue();
+      assertThat(parent.isSubPathOf(child)).isFalse();
+    }
+
+    private void verifyNotSubPath(PathMatchLocator parent, PathMatchLocator child) {
+      // Neither is true
+      assertThat(child.isSubPathOf(parent)).isFalse();
+      assertThat(parent.isSubPathOf(child)).isFalse();
+    }
+  }
+
   protected ObjectNode objectFromJson(String json) {
     return (ObjectNode) fromJson(json);
   }

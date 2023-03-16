@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.UpdateClauseDeserializer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -37,27 +39,51 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
    */
   public List<UpdateOperation> buildOperations() {
     // First, resolve operations individually; this will handle basic validation
-    var operationMap = new EnumMap<UpdateOperator, UpdateOperation>(UpdateOperator.class);
+    final var operationMap = new EnumMap<UpdateOperator, UpdateOperation>(UpdateOperator.class);
     updateOperationDefs
         .entrySet()
         .forEach(e -> operationMap.put(e.getKey(), e.getKey().resolveOperation(e.getValue())));
 
-    // Then handle cross-operation validation
+    // Then handle cross-operation validation: first, exact path conflicts:
+    final var actionMap = new TreeMap<PathMatchLocator, UpdateOperator>();
+    operationMap
+        .entrySet()
+        .forEach(
+            e -> {
+              final UpdateOperator type = e.getKey();
+              List<ActionWithLocator> actions = e.getValue().actions();
+              for (ActionWithLocator action : actions) {
+                UpdateOperator prevType = actionMap.put(action.locator(), type);
+                if (prevType != null) {
+                  throw new JsonApiException(
+                      ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+                      "Update operators '%s' and '%s' must not refer to same path: '%s'"
+                          .formatted(prevType.operator(), type.operator(), action.locator()));
+                }
+              }
+            });
 
-    // First: verify $set and $unset do NOT have overlapping keys
+    // Second: check for sub-paths -- efficiently done by using alphabetic-sorted paths
+    // and comparing adjacent ones; for each pair see if later one is longer one and
+    // starts with dot.
+    // For example: "path.x" vs "path.x.some.more" we notice latter has suffix ".some.more"
+    // and is thereby conflicting.
+    if (!actionMap.isEmpty()) {
+      var it = actionMap.entrySet().iterator();
+      var prev = it.next();
 
-    UpdateOperation<?> setOp = operationMap.get(UpdateOperator.SET);
-    UpdateOperation<?> unsetOp = operationMap.get(UpdateOperator.UNSET);
-
-    if ((setOp != null) && (unsetOp != null)) {
-      Set<String> paths = getPaths(setOp);
-      paths.retainAll(getPaths(unsetOp));
-
-      if (!paths.isEmpty()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            "Update operators '$set' and '$unset' must not refer to same path: '%s'"
-                .formatted(paths.iterator().next()));
+      while (it.hasNext()) {
+        var curr = it.next();
+        PathMatchLocator prevLoc = prev.getKey();
+        PathMatchLocator currLoc = curr.getKey();
+        // So, if parent/child, parent always first so this check is enough
+        if (currLoc.isSubPathOf(prevLoc)) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+              "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)"
+                  .formatted(
+                      prevLoc, prev.getValue().operator(), currLoc, curr.getValue().operator()));
+        }
       }
     }
 

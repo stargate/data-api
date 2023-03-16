@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
   @Nested
-  class UpdateOne {
+  class UpdateOneWithSet {
     @Test
     public void findByIdAndSet() {
       String json =
@@ -297,66 +297,6 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByIdAndUnset() {
-      String document =
-          """
-          {
-            "_id": "update_doc3",
-            "username": "update_user3",
-            "unset_col": "val"
-          }
-          """;
-      insertDoc(document);
-
-      String json =
-          """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc3"},
-              "update" : {"$unset" : {"unset_col": ""}}
-            }
-          }
-          """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
-
-      // assert state after update
-      String expected =
-          """
-          {
-            "_id":"update_doc3",
-            "username":"update_user3"
-          }
-          """;
-      json =
-          """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc3"}
-            }
-          }
-          """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
-    }
-
-    @Test
     public void findByColumnAndSetArray() {
       String json =
           """
@@ -487,6 +427,69 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
             }
           }
           """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class UpdateOneWithUnset {
+    @Test
+    public void findByIdAndUnset() {
+      String document =
+          """
+              {
+                "_id": "update_doc3",
+                "username": "update_user3",
+                "unset_col": "val"
+              }
+              """;
+      insertDoc(document);
+
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc3"},
+                  "update" : {"$unset" : {"unset_col": ""}}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+              {
+                "_id":"update_doc3",
+                "username":"update_user3"
+              }
+              """;
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc3"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1515,6 +1518,78 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
   }
 
+  // Tests combining more than update operator, mostly for cross-validation
+  @Nested
+  class UpdateOneMultipleOperationTypes {
+    @Test
+    public void findByColumnUseSetAndUnset() {
+      insertDoc(
+          """
+                  {
+                     "_id": "update_doc_mixed_set_unset",
+                     "nested": {
+                        "old": "a"
+                     }
+                   }
+                   """);
+      String updateJson =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_mixed_set_unset"},
+                          "update" : {
+                            "$set" : {
+                              "nested.new": "b"
+                            },
+                            "$unset" : {
+                              "nested.old": 1
+                            }
+                          }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "end" changed (booleans after Strings), not
+      // "start" (numbers before Strings)
+      String expectedDoc =
+          """
+         {
+           "_id": "update_doc_mixed_set_unset",
+           "nested": {
+              "new": "b"
+           }
+         }
+         """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id": "update_doc_mixed_set_unset"}
+                }
+              }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
   @Nested
   class Concurrency {
 
@@ -1598,7 +1673,6 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
 
   @Nested
   class ClientErrors {
-
     @Test
     public void invalidCommand() {
       String updateJson =
@@ -1624,6 +1698,38 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               "errors[0].message",
               is(
                   "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+    }
+
+    @Test
+    public void invalidSetAndUnsetPathConflict() {
+      // Cannot modify entries that conflict (same path, or parent/child):
+      String updateJson =
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "update_doc_whatever"},
+                  "update" : {
+                    "$set" : {"root.array.1": 13},
+                    "$unset" : {"root.array": 1}
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Update operator path conflict due to overlap: 'root.array' ($unset) vs 'root.array.1' ($set)"));
     }
   }
 
