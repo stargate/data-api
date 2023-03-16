@@ -13,9 +13,9 @@ import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.InputStream;
 import java.util.Collections;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.http.params.CoreProtocolPNames;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.lang3.RandomUtils;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
