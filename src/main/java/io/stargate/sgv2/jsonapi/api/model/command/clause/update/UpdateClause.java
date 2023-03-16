@@ -86,7 +86,6 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
         }
       }
     }
-    actionMap.entrySet().forEach(e -> {});
 
     return new ArrayList<>(operationMap.values());
   }
