@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -16,13 +17,15 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class DeleteCollectionResolverTest {
+class DeleteCollectionCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject DeleteCollectionResolver resolver;
+  @Inject DeleteCollectionCommandResolver resolver;
 
   @Nested
   class ResolveCommand {
+
+    @Mock CommandContext commandContext;
 
     @Test
     public void happyPath() throws Exception {
@@ -36,15 +39,14 @@ class DeleteCollectionResolverTest {
           """;
 
       DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      CommandContext context = new CommandContext("my_namespace", null);
-      Operation result = resolver.resolveCommand(context, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
               DeleteCollectionOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("my_collection");
-                assertThat(op.context()).isEqualTo(context);
+                assertThat(op.context()).isEqualTo(commandContext);
               });
     }
   }

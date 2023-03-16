@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class DeleteCollectionCommandTest {
+class CreateCollectionCommandTest {
 
   @Inject ObjectMapper objectMapper;
 
@@ -26,17 +26,17 @@ class DeleteCollectionCommandTest {
   class Validation {
 
     @Test
-    public void noName() throws Exception {
+    public void nameNull() throws Exception {
       String json =
           """
           {
-            "deleteCollection": {
+            "createCollection": {
             }
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -49,14 +49,14 @@ class DeleteCollectionCommandTest {
       String json =
           """
           {
-            "deleteCollection": {
+            "createCollection": {
               "name": ""
             }
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -70,15 +70,15 @@ class DeleteCollectionCommandTest {
       String json =
           """
           {
-            "deleteCollection": {
+            "createCollection": {
               "name": "%s"
             }
           }
           """
               .formatted(name);
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -91,14 +91,14 @@ class DeleteCollectionCommandTest {
       String json =
           """
           {
-            "deleteCollection": {
+            "createCollection": {
               "name": "_not_possible"
             }
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
       assertThat(result)
           .isNotEmpty()
@@ -112,14 +112,14 @@ class DeleteCollectionCommandTest {
       String json =
           """
           {
-            "deleteCollection": {
+            "createCollection": {
               "name": "is_possible_10"
             }
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
       assertThat(result).isEmpty();
     }

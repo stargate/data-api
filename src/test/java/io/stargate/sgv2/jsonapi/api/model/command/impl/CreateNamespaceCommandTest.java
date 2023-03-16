@@ -41,7 +41,7 @@ class CreateNamespaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must not be blank");
+          .contains("must not be null");
     }
 
     @Test
@@ -63,6 +63,43 @@ class CreateNamespaceCommandTest {
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
           .contains("size must be between 1 and 48");
+    }
+
+    @Test
+    public void nameWrongPattern() throws Exception {
+      String json =
+          """
+          {
+            "createNamespace": {
+              "name": "_not_possible"
+            }
+          }
+          """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("must match \"[a-zA-Z][a-zA-Z0-9_]*\"");
+    }
+
+    @Test
+    public void nameCorrectPattern() throws Exception {
+      String json =
+          """
+          {
+            "createNamespace": {
+              "name": "is_possible_10"
+            }
+          }
+          """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
+
+      assertThat(result).isEmpty();
     }
 
     @Test

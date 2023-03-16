@@ -13,7 +13,7 @@ import javax.enterprise.context.ApplicationScoped;
  * map.
  */
 @ApplicationScoped
-public class CreateNamespaceResolver implements CommandResolver<CreateNamespaceCommand> {
+public class CreateNamespaceCommandResolver implements CommandResolver<CreateNamespaceCommand> {
 
   // default if omitted
   private static final String DEFAULT_REPLICATION_MAP =

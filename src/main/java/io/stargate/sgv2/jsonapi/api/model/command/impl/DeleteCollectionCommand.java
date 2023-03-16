@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -13,5 +15,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that deletes a collection if one exists.")
 @JsonTypeName("deleteCollection")
 public record DeleteCollectionCommand(
-    @NotBlank @Schema(description = "Name of the collection") String name)
+    @NotNull
+        @Size(min = 1, max = 48)
+        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+        @Schema(description = "Name of the collection")
+        String name)
     implements NamespaceCommand {}
