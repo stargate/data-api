@@ -397,8 +397,11 @@ public class PathMatchLocatorTest {
   class Sorting {
     @Test
     public void testOrdering() {
-      verifyOrdering(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("rootValue"));
+      // Simple alphabetic ordering in general
+      verifyOrdering(PathMatchLocator.forPath("abc"), PathMatchLocator.forPath("def"));
       verifyOrdering(PathMatchLocator.forPath("root.x"), PathMatchLocator.forPath("root.y"));
+      // Longer one later (if common prefix; parent/child)
+      verifyOrdering(PathMatchLocator.forPath("root"), PathMatchLocator.forPath("rootValue"));
       verifyOrdering(PathMatchLocator.forPath("root.abc"), PathMatchLocator.forPath("root.abcdef"));
       verifyOrdering(PathMatchLocator.forPath("root.a"), PathMatchLocator.forPath("root.a.3"));
     }

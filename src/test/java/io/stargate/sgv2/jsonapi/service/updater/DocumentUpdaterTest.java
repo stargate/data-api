@@ -244,18 +244,33 @@ public class DocumentUpdaterTest {
     public void invalidMulAndIncSameFieldNested() {
       Throwable t =
           catchThrowable(
-              () -> {
-                DocumentUpdater.construct(
-                    DocumentUpdaterUtils.updateClause(
-                        UpdateOperator.INC,
-                        (ObjectNode) objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
-                        UpdateOperator.MUL,
-                        (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}")));
-              });
+              () ->
+                  DocumentUpdater.construct(
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.INC,
+                          (ObjectNode) objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
+                          UpdateOperator.MUL,
+                          (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessage("Update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
+    }
+
+    @Test
+    public void invalidSetOnParentPath() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentUpdater.construct(
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.SET,
+                          (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasMessage(
+              "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
   }
 }

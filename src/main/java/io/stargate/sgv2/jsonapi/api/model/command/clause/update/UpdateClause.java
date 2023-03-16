@@ -74,6 +74,16 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
 
       while (it.hasNext()) {
         var curr = it.next();
+        PathMatchLocator prevLoc = prev.getKey();
+        PathMatchLocator currLoc = curr.getKey();
+        // So, if parent/child, parent always first so this check is enough
+        if (currLoc.isSubPathOf(prevLoc)) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
+              "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)"
+                  .formatted(
+                      prevLoc, prev.getValue().operator(), currLoc, curr.getValue().operator()));
+        }
       }
     }
     actionMap.entrySet().forEach(e -> {});
