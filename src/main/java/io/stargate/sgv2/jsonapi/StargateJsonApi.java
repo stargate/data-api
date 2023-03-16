@@ -284,8 +284,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     }
                                     """),
               @ExampleObject(
-                  name = "resultRead",
-                  summary = "Read command result",
+                  name = "resultFind",
+                  summary = "`find` command result",
                   value =
                       """
                       {
@@ -316,6 +316,28 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "resultFindOne",
+                  summary = "`findOne` command result",
+                  value =
+                      """
+                      {
+                        "data": {
+                          "docs": [
+                            {
+                               "_id": "1",
+                               "location": "London",
+                               "race": {
+                                 "competitors": 100,
+                                 "start_date": "2022-08-15"
+                               },
+                               "tags": [ "eu" ]
+                            }
+                          ],
+                          "count": 1
+                        }
+                      }
+                      """),
+              @ExampleObject(
                   name = "resultFindOneAndUpdate",
                   summary = "`findOneAndUpdate` command result",
                   value =
@@ -330,9 +352,28 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 "competitors": 100,
                                 "start_date": "2022-08-15"
                               },
-                              "tags": [
-                                "eu"
-                              ],
+                              "count": 3
+                            }
+                          ],
+                          "count": 1,
+                          "status": {
+                            "matchedCount": 1,
+                            "modifiedCount": 1
+                          }
+                        }
+                      }
+                  """),
+              @ExampleObject(
+                  name = "resultFindOneAndUpdateUpsert",
+                  summary = "`findOneAndUpdate` command with upsert result",
+                  value =
+                      """
+                      {
+                        "data": {
+                          "docs": [
+                            {
+                              "_id": "1",
+                              "location": "New York",
                               "count": 3
                             }
                           ],
@@ -341,13 +382,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             "upsertedId": "1",
                             "matchedCount": 0,
                             "modifiedCount": 1
-                          },
-                          "errors": [
-                            {
-                              "message": "Failed to update document with _id doc1: Unable to complete transaction due to concurrent transactions",
-                              "errorCode": "CONCURRENCY_FAILURE"
-                            }
-                          ]
+                          }
                         }
                       }
                   """),
