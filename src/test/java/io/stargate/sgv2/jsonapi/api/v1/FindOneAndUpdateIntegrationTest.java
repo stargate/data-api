@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -24,43 +25,24 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
     @Test
     public void findByIdAndSet() {
-      String json =
-          """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc3",
-                "username": "user3",
-                "active_user" : true
-              }
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
-      json =
-          """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "doc3"},
-              "update" : {"$set" : {"active_user": false}}
-            }
-          }
-          """;
-      String expected =
+      String document =
           """
           {
             "_id": "doc3",
             "username": "user3",
-            "active_user": true
+            "active_user" : true
+          }
+          """;
+      insertDoc(document);
+
+      String json =
+          """
+          {
+            "findOneAndUpdate": {
+              "filter" : {"_id" : "doc3"},
+              "update" : {"$set" : {"active_user": false}},
+              "options": {"upsert": true}
+            }
           }
           """;
       given()
@@ -71,13 +53,13 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs[0]", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
 
       // assert state after update
-      expected =
+      String expected =
           """
           {
             "_id": "doc3",
@@ -105,20 +87,16 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdReturnDocumentAfter() {
+    public void findByIdAndSetNotFound() {
       String json =
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "afterDoc3",
-                "username": "afterUser3",
-                "active_user" : true
-              }
+            "findOneAndUpdate": {
+              "filter" : {"_id" : "doc3"},
+              "update" : {"$set" : {"active_user": false}}
             }
           }
           """;
-
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -126,9 +104,26 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("data.docs", is(empty()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+    }
 
-      json =
+    @Test
+    public void findByIdReturnDocumentAfter() {
+      String document =
+          """
+          {
+            "_id": "afterDoc3",
+            "username": "afterUser3",
+            "active_user" : true
+          }
+          """;
+      insertDoc(document);
+
+      String json =
           """
           {
             "findOneAndUpdate": {
@@ -159,6 +154,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
 
+      // assert state after update
       json =
           """
           {
@@ -234,41 +230,22 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
     @Test
     public void findByColumnAndSet() {
-      String json =
+      String document =
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc4",
-                "username": "user4"
-              }
-            }
+            "_id": "doc4",
+            "username": "user4"
           }
           """;
+      insertDoc(document);
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
-      json =
+      String json =
           """
           {
             "findOneAndUpdate": {
               "filter" : {"username" : "user4"},
               "update" : {"$set" : {"new_col": "new_val"}}
             }
-          }
-          """;
-      String expected =
-          """
-          {
-            "_id":"doc4",
-            "username":"user4"
           }
           """;
       given()
@@ -279,13 +256,13 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs[0]", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
 
       // assert state after update
-      expected =
+      String expected =
           """
               {
                 "_id":"doc4",
@@ -314,43 +291,23 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
     @Test
     public void findByIdAndUnset() {
-      String json =
+      String document =
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc5",
-                "username": "user5",
-                "unset_col": "val"
-              }
-            }
+            "_id": "doc5",
+            "username": "user5",
+            "unset_col": "val"
           }
           """;
+      insertDoc(document);
 
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200);
-
-      json =
+      String json =
           """
           {
              "findOneAndUpdate": {
                "filter" : {"_id" : "doc5"},
                "update" : {"$unset" : {"unset_col": ""}}
              }
-          }
-          """;
-      String expected =
-          """
-          {
-            "_id":"doc5",
-            "username":"user5",
-            "unset_col":"val"
           }
           """;
       given()
@@ -361,12 +318,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs[0]", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
 
-      expected =
+      String expected =
           """
           {
             "_id":"doc5",
