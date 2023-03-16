@@ -1518,6 +1518,78 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
   }
 
+  // Tests combining more than update operator, mostly for cross-validation
+  @Nested
+  class UpdateOneMultipleOperationTypes {
+    @Test
+    public void findByColumnUseSetAndUnset() {
+      insertDoc(
+          """
+                  {
+                     "_id": "update_doc_mixed_set_unset",
+                     "nested": {
+                        "old": "a"
+                     }
+                   }
+                   """);
+      String updateJson =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_mixed_set_unset"},
+                          "update" : {
+                            "$set" : {
+                              "nested.new": "b"
+                            },
+                            "$unset" : {
+                              "nested.old": 1
+                            }
+                          }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update: only "end" changed (booleans after Strings), not
+      // "start" (numbers before Strings)
+      String expectedDoc =
+          """
+         {
+           "_id": "update_doc_mixed_set_unset",
+           "nested": {
+              "new": "b"
+           }
+         }
+         """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id": "update_doc_mixed_set_unset"}
+                }
+              }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
   @Nested
   class Concurrency {
 
