@@ -1518,6 +1518,82 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
   }
 
+  @Nested
+  class UpdateOneWithRename {
+
+    @Test
+    public void findByColumnAndRename() {
+      String document =
+          """
+                      {
+                         "_id": "update_doc_rename",
+                         "total": 1,
+                         "nested": {
+                            "x": true
+                          }
+                       }
+                       """;
+      insertDoc(document);
+
+      // 4 things to try to rename (2 root, 2 nested) of which only 2 exist
+      String updateJson =
+          """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "update_doc_rename"},
+                          "update" : {
+                            "$rename" : {
+                              "total": "sum",
+                              "x" : "y",
+                              "nested.x" : "nested.x0",
+                              "nested.z" : "nested.z2"
+                            }
+                          }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateJson)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expectedDoc =
+          """
+                      {
+                         "_id": "update_doc_rename",
+                         "sum": 1,
+                         "nested": {
+                            "x0": true
+                          }
+                       }
+                       """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "update_doc_rename"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedDoc));
+    }
+  }
+
   // Tests combining more than update operator, mostly for cross-validation
   @Nested
   class UpdateOneMultipleOperationTypes {
