@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.configuration;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.StreamReadFeature;
+import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,8 +34,10 @@ public class ObjectMapperConfiguration {
         .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
         // case insensitive enums, so "before" will match to "BEFORE" in an enum
         .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+        // Verify uniqueness of JSON Object properties
+        .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
         // Prevent use of Engineering Notation with trailing zeroes:
-        .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
+        .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
         .build();
   }
 }
