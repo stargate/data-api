@@ -50,7 +50,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       PathMatch src = action.sourceLocator().findIfExists(doc);
       JsonNode value = src.removeValue();
       if (value != null) {
-        // Mongo does not allow "renaming" of Array values
+        // $rename does not allow renaming of Array elements
         if (src.contextNode().isArray()) {
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
