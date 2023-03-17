@@ -1,11 +1,5 @@
 # JSON API Query Specification
 
-`<span id="tableOfContents">`{=html}
-
-{toc:maxLevel=3}
-
-`</span>`{=html}
-
 ## Preamble
 
 The target users for the JSON API are Javascript developers who interact
@@ -75,7 +69,7 @@ request includes:
     information. The nature of such out of band metadata is outside of
     the scope of this document.
 
-**TODO:** DO we need to have multiple commands in a single request?
+**TODO:** Do we need to have multiple commands in a single request?
 
 ## Conventions
 
@@ -83,11 +77,12 @@ To aid in specifying the JSON API, we will use the following conventions
 in this document:
 
 -   Language rules will be given in a
-    [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) -like
+    [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
     notation:
 
-bc(syntax). `<start>`{=html} ::= TERMINAL `<non-terminal1>`{=html}
-`<non-terminal1>`{=html}
+```
+<start> ::= TERMINAL <non-terminal1> <non-terminal1>
+```
 
 -   Nonterminal symbols will have `<angle brackets>`.
 -   As additional shortcut notations to BNF, we'll use traditional
@@ -98,20 +93,20 @@ bc(syntax). `<start>`{=html} ::= TERMINAL `<non-terminal1>`{=html}
 -   The grammar is provided for documentation purposes and leave some
     minor details out.
 -   Sample code will be provided in a code block:
-
-bc(sample). SELECT sample_usage FROM cql;
-
+    ```
+    SELECT sample_usage FROM cql;
+    ```
 -   References to keywords or API examples text will be shown in a
     `fixed-width font`.
 
 Samples of requests, operations, and clauses will be presented and
 encoded as a JSON document. This is illustrative of a suggested encoding
-as described in the [Preamble](#preamble)
+as described in the [Preamble](#preamble).
 
 ## Request and Response Messages {#messaging}
 
 The format of Request and Response messages is included in this document
-so that the format invoking a command, and the structrure of it's
+so that the format invoking a command, and the structrure of its
 response can be understood.
 
 ### Request Messages {#messagingRequest}
@@ -123,23 +118,23 @@ JSON document (a JSON Object) that represents the command to run.
 
 *Syntax:*
 
-bc(syntax)..\
-`<request-message>`{=html} ::= `<command-name>`{=html}
-`<command>`{=html}
+```
+<request-message> ::= <command-name> <command>
+```
 
-`<command-name>` and `<command>` are defined later in this document
-document.
+`<command-name>` and `<command>` are defined later in this document.
 
 *Sample:*
 
-bc(sample)..\
-{"find" : {\
-"filter" : {"name": "aaron"},\
-"projection" : {"name": 1, :"age" : 1}\
-}\
+```
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    }
 }
+```
 
-Top level names in the request message other than a command name are
+Top-level names in the request message other than a command name are
 ignored, except where specified in this document.
 
 ### Response Messages {#messagingResponse}
@@ -149,29 +144,31 @@ elements may be present depending on the command.
 
 *Syntax:*
 
-bc(syntax)..\
-`<response-message>`{=html} ::= (errors (`<error>`{=html})+)?,\
-(status (`<command-status>`{=html})+)?,\
-(data `<response-data>`{=html})?,
+```
+<response-message> ::= (errors (<error>)+)?,
+                       (status (<command-status>)+)?,
+                       (data `<response-data>` )?,
 
-\<`<error>`{=html} ::= message `<ascii-string>`{=html},\
-errorCode `<ascii-string>`{=html},\
-(`<error-field>`{=html})\*\
-`<error-field>`{=html} ::= `<error-field-name>`{=html}
-`<error-field-value>`{=html}\
-`<error-field-name>`{=html} ::= `<json-string>`{=html}\
-`<error-field-value>`{=html} ::= `<json-value>`{=html}
+<error> ::= message <ascii-string>,
+            errorCode <ascii-string>,
+            (<error-field>)*
 
-`<command-status>`{=html} ::= `<command-status-name>`{=html}
-`<command-status-value>`{=html}\
-`<command-status-name>`{=html} ::= `<json-string>`{=html}\
-`<command-status-value>`{=html} ::= `<json-value>`{=html}
+<error-field> ::= <error-field-name>
+<error-field-value>
+<error-field-name> ::= <json-string>
+<error-field-value> ::= <json-value>
 
-`<response-data>`{=html} ::= docs (`<document>`{=html})\*,\
-(nextPageState `<page-state>`{=html})?,\
-(count `<document-count>`{=html})?\
-`<page-state>`{=html} ::= `<ascii-string>`{=html}\
-`<document-count>`{=html} ::= `<positive-integer>`{=html}
+<command-status> ::= <command-status-name>
+<command-status-value>
+<command-status-name> ::= <json-string>
+<command-status-value>  ::= `<json-value>
+
+<response-data> ::= docs (<document>)*,
+                    (nextPageState <page-state>)?,
+                    (count <document-count>)?
+<page-state> ::= <ascii-string>
+<document-count> ::= <positive-integer>
+```
 
 The contents of the `<response-message>` depend on the command, in
 general though:
@@ -245,7 +242,7 @@ Namespace names must follow the regular expression pattern below:
 *Syntax:*
 
 bc(syntax)..\
-`<namespace-name>`{=html} ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
+`<namespace-name>`  ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
 
 The maximum length of a namespace name is 48 characters.
 
@@ -263,7 +260,7 @@ Collection names must follow the regular expression pattern below:
 *Syntax:*
 
 bc(syntax)..\
-`<collection-name>`{=html} ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
+`<collection-name>`  ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
 
 The maximum length of a collection name is 48 characters.
 
@@ -287,11 +284,11 @@ the rules for user defined field names.
 *Syntax:*
 
 bc(syntax)..\
-`<field-name>`{=html} ::= `<id-field-name>`{=html} \|\
-`<user-field-name>`{=html}
+`<field-name>`  ::= `<id-field-name>`  \|\
+`<user-field-name>` 
 
-`<id-field-name>`{=html} = \_id\
-`<user-field-name>`{=html} ::= \[a-zA-Z0-9\_\]+
+`<id-field-name>`  = \_id\
+`<user-field-name>`  ::= \[a-zA-Z0-9\_\]+
 
 The `_id` field is a "reserved name" and is always interpreted as the
 document identity field. See **TODO DOC ID LINK** for restrictions on
@@ -324,7 +321,7 @@ the array is indexed using a single zero `0`.
 *Syntax:*
 
 bc(syntax)..\
-`<array-index>`{=html} ::= ^0\$\|^\[1-9\]\[0-9\]\*\$
+`<array-index>`  ::= ^0\$\|^\[1-9\]\[0-9\]\*\$
 
 *Sample:*
 
@@ -355,7 +352,7 @@ Path](https://jsonpath.com/) like syntax.
 *Syntax:*
 
 bc(syntax)..\
-`<document-path>`{=html} ::= `<dotted-notation-path>`{=html}
+`<document-path>`  ::= `<dotted-notation-path>` 
 
 #### Dotted Notation Paths {#documentPathsDottedNotation}
 
@@ -370,9 +367,9 @@ additional whitespace.
 *Syntax:*
 
 bc(syntax)..\
-`<dotted-notation-path>`{=html} ::=
-`<field-name>`{=html}(.`<field-name>`{=html} \|
-`<array-index>`{=html})\*
+`<dotted-notation-path>`  ::=
+`<field-name>` (.`<field-name>`  \|
+`<array-index>` )\*
 
 *Sample:*
 
@@ -553,17 +550,17 @@ projection of each document.
 *Syntax:*
 
 bc(syntax)..\
-`<find-command>`{=html} ::= find `<find-command-payload>`{=html}\
-`<find-command-response>`{=html} ::=
-`<paginated-document-response>`{=html}
+`<find-command>`  ::= find `<find-command-payload>` \
+`<find-command-response>`  ::=
+`<paginated-document-response>` 
 
-`<find-command-payload>`{=html} ::= `<filter-clause>`{=html}?\
-`<projection-clause>`{=html}?\
-`<sort-clause>`{=html}?\
-`<find-command-options>`{=html}?
+`<find-command-payload>`  ::= `<filter-clause>` ?\
+`<projection-clause>` ?\
+`<sort-clause>` ?\
+`<find-command-options>` ?
 
-`<find-command-options>`{=html} ::= (`<find-option-name>`{=html}
-`<find-option-value>`{=html},)\*
+`<find-command-options>`  ::= (`<find-option-name>` 
+`<find-option-value>` ,)\*
 
 *Sample:*
 
@@ -639,20 +636,20 @@ after the update has been applied.
 *Syntax:*
 
 bc(syntax)..\
-`<find-one-and-update-command>`{=html} ::= findOneAndUpdate
-`<find-one-and-update-command-payload>`{=html}\
-`<find-one-and-update-command-response>`{=html} ::=
-`<single-document-response>`{=html}
+`<find-one-and-update-command>`  ::= findOneAndUpdate
+`<find-one-and-update-command-payload>` \
+`<find-one-and-update-command-response>`  ::=
+`<single-document-response>` 
 
-`<find-one-and-update-command-payload>`{=html} ::=
-`<filter-clause>`{=html}?\
-`<update-document-clause>`{=html}?\
-`<sort-clause>`{=html}?\
-`<projection-clause>`{=html} ?\
-`<find-one-and-update-command-options>`{=html}?
+`<find-one-and-update-command-payload>`  ::=
+`<filter-clause>` ?\
+`<update-document-clause>` ?\
+`<sort-clause>` ?\
+`<projection-clause>`  ?\
+`<find-one-and-update-command-options>` ?
 
-`<find-one-and-update-command-options>`{=html} ::=
-(`<find-option-name>`{=html} `<find-option-value>`{=html},)\*
+`<find-one-and-update-command-options>`  ::=
+(`<find-option-name>`  `<find-option-value>` ,)\*
 
 *Sample:*
 
@@ -998,69 +995,69 @@ bc(sample)..\
 *Syntax:*
 
 bc(syntax)..\
-`<filter-clause>`{=html} ::= `<filter-expression>`{=html}\*
+`<filter-clause>`  ::= `<filter-expression>` \*
 
-`<filter-expression>`{=html} ::= `<filter-comparison-expression>`{=html}
-\| `<filter-logical-expression>`{=html}\
-(, `<filter-comparison-expression>`{=html} \|
-`<filter-logical-expression>`{=html})\*
+`<filter-expression>`  ::= `<filter-comparison-expression>` 
+\| `<filter-logical-expression>` \
+(, `<filter-comparison-expression>`  \|
+`<filter-logical-expression>` )\*
 
-`<filter-comparison-expression>`{=html} ::=
-`<filter-comparison-path>`{=html} ( `<literal>`{=html} \|
-`<filter-operator-expression>`{=html})\
-`<filter-comparison-path>`{=html} :== `<document-path>`{=html}\
-`<filter-operator-expression>`{=html} ::= `<filter-operation>`{=html} (,
-`<filter-operation>`{=html})\*
+`<filter-comparison-expression>`  ::=
+`<filter-comparison-path>`  ( `<literal>`  \|
+`<filter-operator-expression>` )\
+`<filter-comparison-path>`  :== `<document-path>` \
+`<filter-operator-expression>`  ::= `<filter-operation>`  (,
+`<filter-operation>` )\*
 
-`<filter-operation>`{=html} ::= `<filter-comparison-operation>`{=html}
+`<filter-operation>`  ::= `<filter-comparison-operation>` 
 \|\
-`<filter-logical-unary-operation>`{=html} \|\
-`<filter-element-operation>`{=html} \|\
-`<filter-array-operation>`{=html}
+`<filter-logical-unary-operation>`  \|\
+`<filter-element-operation>`  \|\
+`<filter-array-operation>` 
 
-`<filter-comparison-operation>`{=html} ::=
-`<filter-comparison-value-operation>`{=html} \|
-`<filter-comparison-array-operation>`{=html}\
-`<filter-comparison-value-operation>`{=html} ::=
-`<filter-comparison-value-operator>`{=html},
-`<filter-comparison-value-operand>`{=html}\
-`<filter-comparison-value-operator>`{=html} ::= \$eq, \$gt, \$gte, \$lt,
+`<filter-comparison-operation>`  ::=
+`<filter-comparison-value-operation>`  \|
+`<filter-comparison-array-operation>` \
+`<filter-comparison-value-operation>`  ::=
+`<filter-comparison-value-operator>` ,
+`<filter-comparison-value-operand>` \
+`<filter-comparison-value-operator>`  ::= \$eq, \$gt, \$gte, \$lt,
 \$lte, \$ne\
-`<filter-comparison-value-operand>`{=html} ::= `<literal>`{=html}\
-`<filter-comparison-array-operation>`{=html} ::=
-`<filter-comparison-array-operator>`{=html},
-`<filter-comparison-array-operand>`{=html}\
-`<filter-comparison-array-operator>`{=html} ::= \$in, \$nin\
-`<filter-comparison-array-operand>`{=html} ::= `<literal-list>`{=html}
+`<filter-comparison-value-operand>`  ::= `<literal>` \
+`<filter-comparison-array-operation>`  ::=
+`<filter-comparison-array-operator>` ,
+`<filter-comparison-array-operand>` \
+`<filter-comparison-array-operator>`  ::= \$in, \$nin\
+`<filter-comparison-array-operand>`  ::= `<literal-list>` 
 
-`<filter-logical-unary-operation>`{=html} ::=
-`<filter-logical-unary-operator-not>`{=html}\
-`<filter-logical-unary-operator-not>`{=html} ::= \$not
-`<filter-operator-expression>`{=html}
+`<filter-logical-unary-operation>`  ::=
+`<filter-logical-unary-operator-not>` \
+`<filter-logical-unary-operator-not>`  ::= \$not
+`<filter-operator-expression>` 
 
-`<filter-element-operation>`{=html} ::=
-`<filter-element-operation-exists>`{=html}\
-`<filter-element-operation-exists>`{=html} ::= \$exists
-`<filter-element-operation-exists-operand>`{=html}\
-`<filter-element-operation-exists-operand>`{=html} ::= true \| false
+`<filter-element-operation>`  ::=
+`<filter-element-operation-exists>` \
+`<filter-element-operation-exists>`  ::= \$exists
+`<filter-element-operation-exists-operand>` \
+`<filter-element-operation-exists-operand>`  ::= true \| false
 
-`<filter-array-operation>`{=html} ::=
-`<filter-array-operation-all>`{=html} \|\
-`<filter-array-operation-elemMatch>`{=html} \|\
-`<filter-array-operation-size>`{=html}\
-`<filter-array-operation-all>`{=html} ::= \$all `<literal-list>`{=html}\
-`<filter-array-operation-elemMatch>`{=html} ::= \$elemMatch
-`<filter-comparison-operation>`{=html} (,
-`<filter-comparison-operation>`{=html})\*\
-`<filter-array-operation-size>`{=html} ::= \$size
-`<positive-integer>`{=html}
+`<filter-array-operation>`  ::=
+`<filter-array-operation-all>`  \|\
+`<filter-array-operation-elemMatch>`  \|\
+`<filter-array-operation-size>` \
+`<filter-array-operation-all>`  ::= \$all `<literal-list>` \
+`<filter-array-operation-elemMatch>`  ::= \$elemMatch
+`<filter-comparison-operation>`  (,
+`<filter-comparison-operation>` )\*\
+`<filter-array-operation-size>`  ::= \$size
+`<positive-integer>` 
 
-`<filter-logical-expression>`{=html} ::=
-`<filter-logical-compound-operator>`{=html}
-`<filter-logical-compound-operand>`{=html}\
-`<filter-logical-compound-operator>`{=html} ::= \$and, \$or, \$nor\
-`<filter-logical-compound-operand>`{=html} ::=
-\[`<filter-expression>`{=html} (, `<filter-expression>`{=html})\]\*
+`<filter-logical-expression>`  ::=
+`<filter-logical-compound-operator>` 
+`<filter-logical-compound-operand>` \
+`<filter-logical-compound-operator>`  ::= \$and, \$or, \$nor\
+`<filter-logical-compound-operand>`  ::=
+\[`<filter-expression>`  (, `<filter-expression>` )\]\*
 
 1.   BEGIN TODO =
     # 
@@ -1068,7 +1065,7 @@ bc(syntax)..\
     # \<filter-evaluation-operators\> ::= \$mod
     #  END TODO ===
 
-```{=html}
+``` 
 <!-- -->
 ```
 1.   BEGIN Excluded =
@@ -1333,37 +1330,37 @@ is missing a projected field it will not appear in the output document.
 *Syntax:*
 
 bc(syntax)..\
-`<projection-clause>`{=html} ::= `<projection-expression>`{=html}\*
+`<projection-clause>`  ::= `<projection-expression>` \*
 
-`<projection-expression>`{=html} ::=
-`<projection-field-expression>`{=html} \|\
-`<projection-array-expression>`{=html}
+`<projection-expression>`  ::=
+`<projection-field-expression>`  \|\
+`<projection-array-expression>` 
 
-`<projection-field-expression>`{=html} ::=
-`<projection-field-path>`{=html} `<projection-field-inclusion>`{=html}\
-`<projection-field-path>`{=html} ::= `<document-path>`{=html}\
-`<projection-field-inclusion>`{=html} ::= 0 \| 1 \| true \| false
+`<projection-field-expression>`  ::=
+`<projection-field-path>`  `<projection-field-inclusion>` \
+`<projection-field-path>`  ::= `<document-path>` \
+`<projection-field-inclusion>`  ::= 0 \| 1 \| true \| false
 
-`<projection-array-expression>`{=html} ::=
-`<projection-field-path>`{=html} `<projection-array-projection>`{=html}\
-`<projection-array-projection>`{=html} ::=
-`<projection-array-elem-match-projection>`{=html} \|\
-`<projection-array-slice-projection>`{=html} \|\
-`<projection-array-limit-projection>`{=html}
+`<projection-array-expression>`  ::=
+`<projection-field-path>`  `<projection-array-projection>` \
+`<projection-array-projection>`  ::=
+`<projection-array-elem-match-projection>`  \|\
+`<projection-array-slice-projection>`  \|\
+`<projection-array-limit-projection>` 
 
-`<projection-array-elem-match-projection>`{=html} ::= \$elemMatch
-`<filter-comparison-operation>`{=html} (,
-`<filter-comparison-operation>`{=html})\*
+`<projection-array-elem-match-projection>`  ::= \$elemMatch
+`<filter-comparison-operation>`  (,
+`<filter-comparison-operation>` )\*
 
-`<projection-array-slice-projection>`{=html} ::= \$slice
-`<slice-number>`{=html} \| `<slice-to-skip>`{=html}
-`<slice-to-return>`{=html}\
-`<slice-number>`{=html} ::= `<integer>`{=html}\
-`<slice-to-skip>`{=html} ::= `<integer>`{=html}\
-`<slice-to-return>`{=html} ::= `<positive-integer>`{=html}
+`<projection-array-slice-projection>`  ::= \$slice
+`<slice-number>`  \| `<slice-to-skip>` 
+`<slice-to-return>` \
+`<slice-number>`  ::= `<integer>` \
+`<slice-to-skip>`  ::= `<integer>` \
+`<slice-to-return>`  ::= `<positive-integer>` 
 
 \@TODO: this is \$ in projection, not sure if mquery supports this\
-`<projection-array-limit-projection>`{=html} ::= \$
+`<projection-array-limit-projection>`  ::= \$
 
 Each `<projection-clause>` is contains zero or more
 `<projection-expression>`'s which are all applied to each input document
@@ -1515,9 +1512,9 @@ be returned when only a single document is required.
 *Syntax:*
 
 bc(syntax)..\
-`<sort-clause>`{=html} ::= \[`<sort-expression>`{=html}\*\]
+`<sort-clause>`  ::= \[`<sort-expression>` \*\]
 
-`<sort-expression>`{=html} ::= (-)?`<document-path>`{=html}
+`<sort-expression>`  ::= (-)?`<document-path>` 
 
 Each `<sort-clause>` contains an ordered list of `<sort-expression>`'s
 which are used to sort a candidate set of documents. The order of
@@ -1562,4 +1559,4 @@ operations:
 
 ### Update Clause {#clauseUpdate}
 
-**TODO** BNF for update commands, need to use `<document-path>`{=html}
+**TODO** BNF for update commands, need to use `<document-path>` 
