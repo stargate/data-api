@@ -1,15 +1,9 @@
 # JSON HTTP API Specification
 
-`<span id="tableOfContents">`{=html}
-
-{toc:maxLevel=3}
-
-`</span>`{=html}
-
 ## Preamble
 
 This document specifies the HTTP API for the JSON API, how clients can
-communicate with the service. See the "JSON API Query Specification" for
+communicate with the service. See the [JSON API Query Specification](json-spec.md) for
 details of data modelling and queries.
 
 The target users for the JSON API are Javascript developers who interact
@@ -90,11 +84,12 @@ To aid in specifying the JSON API, we will use the following conventions
 in this document:
 
 -   Language rules will be given in a
-    [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) -like
+    [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
     notation:
 
-bc(syntax). `<start>`{=html} ::= TERMINAL `<non-terminal1>`{=html}
-`<non-terminal1>`{=html}
+```
+<start> ::= TERMINAL <non-terminal1> <non-terminal1>
+```
 
 -   Nonterminal symbols will have `<angle brackets>`.
 -   As additional shortcut notations to BNF, we'll use traditional
@@ -106,7 +101,9 @@ bc(syntax). `<start>`{=html} ::= TERMINAL `<non-terminal1>`{=html}
     minor details out.
 -   Sample code will be provided in a code block:
 
-bc(sample). SELECT sample_usage FROM cql; // :)
+```
+SELECT sample_usage FROM cql;
+```
 
 -   References to keywords or API examples text will be shown in a
     `fixed-width font`.
@@ -145,7 +142,7 @@ Both endpoints follow these rules:
 
 1.  All requests **must** use a HTTP `POST` verb.
 2.  Requests **must** supply a `Cassandra-Token` header **TODO:** Why
-    not just Authorization, current rest API is X-Cassandta-Token, using
+    not just Authorization, current rest API is X-Cassandra-Token, using
     X is deprecated
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 3.  Requests **must** be valid JSON documents and specify the
@@ -160,18 +157,17 @@ The Namespace Endpoint has the form:
 
 *Syntax:*
 
-bc(syntax)..\
-`<namespace-endpoint>`{=html} ::=
-`<server-address>`{=html}/`<namespace-name>`{=html}
+```
+<namespace-endpoint> ::= <server-address>/<namespace-name>
+```
 
-`<server-address>`{=html} is a Server URI using HTTP (S),
-scheme://host/path\
-`<namespace-name>`{=html} must begin with an alpha-numeric character and
+`<server-address>` is a Server URI using HTTP (S), scheme://host/path
+
+`<namespace-name>` must begin with an alpha-numeric character and
 can only contain alpha-numeric characters and underscores.
 
 *Sample:*
 
-bc(sample)..\
 https://stargate.mycompany.com/my-namespace
 
 #### Errors {#namespace-endpoint-errors}
@@ -185,16 +181,15 @@ Collection Endpoint has the form:
 
 *Syntax:*
 
-bc(syntax)..\
-`<collection-endpoint>`{=html} ::=
-`<server-address>`{=html}/`<namespace-name>`{=html}/`<collection-name>`{=html}
+```
+<collection-endpoint> ::= <server-address>/<namespace-name>/<collection-name>
+```
 
-`<collection-name>`{=html} must begin with an alpha-numeric character
+`<collection-name>` must begin with an alpha-numeric character
 and can only contain alpha-numeric characters and underscores.
 
 *Sample:*
 
-bc(sample)..\
 https://stargate.mycompany.com/my-namespace/users
 
 Requests sent to a Collection that does not exist (using a valid
@@ -206,4 +201,4 @@ existing Collection.
 
 ## Authentication and Authorization {#authn-authz}
 
-1.  TODO - basically we just use the tokens we have now
+1.  TODO - basically we just use the tokens we have now.
