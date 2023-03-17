@@ -30,6 +30,14 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
                 + value.getNodeType());
       }
       String dstPath = validateUpdatePath(UpdateOperator.RENAME, value.textValue());
+      if (srcPath.equals(dstPath)) {
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
+            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                + ": $rename requires that 'source' and `destination` differ ('"
+                + srcPath
+                + "')");
+      }
       actions.add(new Action(PathMatchLocator.forPath(srcPath), PathMatchLocator.forPath(dstPath)));
     }
     return new RenameOperation(actions);

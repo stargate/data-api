@@ -128,7 +128,23 @@ public class RenameOperationTest extends UpdateOperationTestBase {
   }
 
   @Nested
-  class InvalidCasesRoot {
+  class InvalidCasesOther {
+    @Test
+    public void testSourceAndDestinationMustDiffer() {
+      Exception e =
+          catchException(
+              () ->
+                  UpdateOperator.RENAME.resolveOperation(
+                      objectFromJson("{ \"field\": \"field\" }")));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasMessage(
+              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+                  + ": $rename requires that 'source' and `destination` differ ('field')");
+    }
+
     @Test
     public void testNoRenamingDocId() {
       Exception e =
