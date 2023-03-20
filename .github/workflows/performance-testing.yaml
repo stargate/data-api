@@ -41,7 +41,7 @@ jobs:
             docker-flags: ''
 
           - type: native
-            build-ops: '-Pnative -Dquarkus.native.container-build=true'
+            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
             docker-flags: '-n'
 
           - test: http-jsonapi-crud-basic
