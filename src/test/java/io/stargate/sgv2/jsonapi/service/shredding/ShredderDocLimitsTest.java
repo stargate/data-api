@@ -123,7 +123,51 @@ public class ShredderDocLimitsTest {
     }
   }
 
-  // Tests for size of atomic value violations
+  // Tests for size of atomic value / name length violations
   @Nested
-  class ValidationDocAtomicSizeViolations {}
+  class ValidationDocAtomicSizeViolations {
+    @Test
+    public void catchTooLongNames() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      ObjectNode ob = doc.putObject("subdoc");
+      final String propName =
+          "property-with-way-too-long-name-123456789-123456789-123456789-123456789";
+      ob.put(propName, true);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " Property name length ("
+                  + propName.length()
+                  + ") exceeds maximum allowed ("
+                  + docLimits.maxNameLength()
+                  + ")");
+    }
+
+    @Test
+    public void catchTooLongStringValues() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      ArrayNode arr = doc.putArray("arr");
+      // Let's add 50_000 char one (exceeds max of 16_000)
+      String str = RandomStringUtils.randomAscii(50_000);
+      arr.add(str);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " String value length (50000) exceeds maximum allowed ("
+                  + docLimits.maxStringLength()
+                  + ")");
+    }
+  }
 }
