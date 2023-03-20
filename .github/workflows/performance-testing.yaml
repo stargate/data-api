@@ -55,6 +55,7 @@ jobs:
       #  uses: aws-actions/amazon-ecr-login@v1
 
       # Install NB and required library
+      # See: https://github.com/AppImage/AppImageKit/wiki/FUSE
       - name: Download NoSQLBench
         run: |
           sudo add-apt-repository universe
@@ -71,6 +72,7 @@ jobs:
         run: |
           cd docker-compose
           ./start_dse_68_dev_mode.sh
+          docker-compose images
 
       - name: Run NoSQLBench Test
         run: |
