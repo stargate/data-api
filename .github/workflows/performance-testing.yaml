@@ -78,6 +78,6 @@ jobs:
         run: |
           cd nosqlbench
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
-          ./nb5 -v http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
+          ../nb5 -v http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
 
 
