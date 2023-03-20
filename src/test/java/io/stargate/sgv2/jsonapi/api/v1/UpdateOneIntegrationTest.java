@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -147,6 +148,53 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void findByColumnUpsert() {
+      String json =
+          """
+          {
+            "updateOne": {
+              "filter" : {"location" : "my_city"},
+              "update" : {"$set" : {"active_user": false}},
+              "options" : {"upsert" : true}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.upsertedId", is(notNullValue()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+            {
+              "find": {
+                "filter" : {"location" : "my_city"}
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", is(notNullValue()));
     }
 
     @Test

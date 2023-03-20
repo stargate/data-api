@@ -153,10 +153,12 @@ public record ReadAndUpdateOperation(
                   documentUpdater().applyUpdates(readDocument.document().deepCopy(), isInsert);
               JsonNode updatedDocument = documentUpdaterResponse.document();
               Uni<DocumentId> updated = Uni.createFrom().nullItem();
+              final WritableShreddedDocument writableShreddedDocument;
               if (documentUpdaterResponse.modified()) {
-                WritableShreddedDocument writableShreddedDocument =
-                    shredder().shred(updatedDocument, readDocument.txnId());
+                writableShreddedDocument = shredder().shred(updatedDocument, readDocument.txnId());
                 updated = updatedDocument(queryExecutor, writableShreddedDocument);
+              } else {
+                writableShreddedDocument = null;
               }
               final JsonNode documentToReturn =
                   returnUpdatedDocument ? updatedDocument : originalDocument;
@@ -168,7 +170,7 @@ public record ReadAndUpdateOperation(
                       v -> {
                         if (readDocument.txnId() != null) modifiedCount.incrementAndGet();
                         return new UpdatedDocument(
-                            readDocument.id(),
+                            writableShreddedDocument.id(),
                             readDocument.txnId() == null,
                             returnDocumentInResponse ? documentToReturn : null,
                             null);
