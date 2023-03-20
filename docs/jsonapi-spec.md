@@ -1,16 +1,20 @@
 # JSON API Query Specification
 
-## Preamble
-
 The target users for the JSON API are Javascript developers who interact
 with the service through a driver or Object Document Mapper (ODM)
-library such as [Mongoose](https://github.com/Automattic/mongoose). The
-nature of a JSON API lends itself to complex, structured queries that
+library such as [Mongoose](https://github.com/Automattic/mongoose). 
+
+**TODO:** TOC links here.
+
+
+## Preamble
+
+The nature of a JSON API lends itself to complex, structured queries that
 may express compound or multiple operations in a single request. Such as
 selecting one or more documents and projecting a selection of fields
 from each, or selecting one or more documents and updating them server
 side. We consider that most requests are generated via the ODM (for
-example via [mquery](https://github.com/aheckmann/mquery)) which makes
+example via [`mquery`](https://github.com/aheckmann/mquery) which makes
 it easy for the developer to create complex queries at code time, or at
 run time in response to the actions taken by a user (such as which
 fields were updated, or which fields the user wants to see). The
@@ -34,7 +38,7 @@ collection name. This approach makes it easier to integrate the JSON API
 service with other data services though the use of templates or code to
 generate a request.
 
-## High Level Concepts {#concepts}
+## High Level Concepts
 
 The JSON API consists of the following high level concepts that are
 composed to create a request:
@@ -76,9 +80,7 @@ request includes:
 To aid in specifying the JSON API, we will use the following conventions
 in this document:
 
--   Language rules will be given in a
-    [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
-    notation:
+- Language rules will be given in a [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like notation:
 
 ```
 <start> ::= TERMINAL <non-terminal1> <non-terminal1>
@@ -96,20 +98,19 @@ in this document:
     ```
     SELECT sample_usage FROM cql;
     ```
--   References to keywords or API examples text will be shown in a
-    `fixed-width font`.
+-   References to keywords or API examples text will be shown in a `fixed-width font`.
 
 Samples of requests, operations, and clauses will be presented and
 encoded as a JSON document. This is illustrative of a suggested encoding
 as described in the [Preamble](#preamble).
 
-## Request and Response Messages {#messaging}
+## Request and Response Messages
 
 The format of Request and Response messages is included in this document
-so that the format invoking a command, and the structrure of its
+so that the format invoking a command, and the structure of its
 response can be understood.
 
-### Request Messages {#messagingRequest}
+### Request Messages
 
 Request messages contain only a single command. Batch operations such as
 bulk loading are implementing using commands that support the inclusion
@@ -137,7 +138,7 @@ JSON document (a JSON Object) that represents the command to run.
 Top-level names in the request message other than a command name are
 ignored, except where specified in this document.
 
-### Response Messages {#messagingResponse}
+### Response Messages
 
 A single JSON format is used for all response messages, though different
 elements may be present depending on the command.
@@ -173,14 +174,14 @@ elements may be present depending on the command.
 The contents of the `<response-message>` depend on the command, in
 general though:
 
--   A successful command to read documents **must** have
+- A successful command to read documents **must** have
     `<response-data>` and **may** have `<command-status>` or `<error>`.
--   A successful command to insert or update data that does not return
+- A successful command to insert or update data that does not return
     documents **must** have one or more `<command-status>`.
--   A successful command to insert or update data that returns documents
+- A successful command to insert or update data that returns documents
     **must** have one or more `<command-status>` and **must** have
     `<response-data>`.
--   An unsuccessful command **must** have one or more `<error>`'s and
+- An unsuccessful command **must** have one or more `<error>`'s and
     may have other items.
 
 Error information or additional status, such as the `_id`s of inserted
@@ -201,115 +202,120 @@ state.
 
 *find Sample:*
 
-bc(sample)..\
-{\
-"data" : {\
-"docs" : \[\
-{"username" : "aaron"}\
-\]\
-}\
-}
+```
+{
+    "data" : {
+        "docs" : [
+            {"username" : "aaron"}
+        ] 
+    }
+} 
+```
 
 *insertMany Sample:*
 
-bc(sample)..\
-{\
-"status" : {\
-insertedIds : \["doc1", "doc2", "doc3"\]\
-}\
-}
+```
+{
+    "status" : {
+        insertedIds : ["doc1", "doc2", "doc3"]
+    }
+} 
+```
 
 *insertOne with error Sample:*
 
-bc(sample)..\
-{\
-"errors" : \[\
-{"message": "\_id cannot be Null", "errorCode" : "ID_NULL"}\
-\]\
-}
+```
+{
+    "errors" : [
+        {"message": "_id cannot be Null", "errorCode" : "ID_NULL"}
+    ]
+} 
+```
+
 
 ## Namespace
 
-**TODO:** define the namespace, it's properties etc . Do we define how
-to create one ?
+**TODO:** define the namespace, its properties etc. Do we define how to create one?
 
-### Namespace Limits {#namespaceLimits}
+### Namespace Limits
 
-#### Namespace Name Limit {#namespaceLimitsName}
+#### Namespace Name Limit
 
 Namespace names must follow the regular expression pattern below:
 
 *Syntax:*
 
-bc(syntax)..\
-`<namespace-name>`  ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
+```
+<namespace-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+```
 
 The maximum length of a namespace name is 48 characters.
 
+
 ## Collection
 
-**TODO:** define the collection, it's properties etc . Do we define how
-to create one ?
+**TODO:** define the collection, its properties etc. Do we define how to create one?
 
-### Collection Limits {#collectionLimits}
+### Collection Limits
 
-#### Collection Name Limit {#collectionLimitsName}
+#### Collection Name Limit
 
 Collection names must follow the regular expression pattern below:
 
 *Syntax:*
 
-bc(syntax)..\
-`<collection-name>`  ::= \[a-zA-Z\]\[a-zA-Z0-9\_\]\*
+```
+<collection-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+```
 
 The maximum length of a collection name is 48 characters.
 
+
 ## Documents {#document}
 
-**TODO:** Describe how do we define a document and then refer to the
-parts of a JSON document, e.g. key or path etc ?
+**TODO:** Describe how do we define a document and then refer to the parts of a JSON document, e.g. key or path etc.?
 
-### Field Names {#documentFieldNames}
+### JSON Document Field Names
 
-Fields names in the JSON document have additional restrictions not
-imposed on the "member names" by the [JSON
-Specification](https://www.json.org/). These restrictions are to ensure
-compatiblity with the underlaying storage system.
+Fields names in the JSON document have additional restrictions not imposed on the "member names" by the [JSON
+Specification](https://www.json.org/). These restrictions are to ensure compatibility with the underlying storage system.
 
 Fields names must adhere to the ASCII character set (though may be
-encoded using UTF-8) and follow the regular experession below. The field
+encoded using UTF-8) and follow the regular expression below. The field
 name `_id` is the only field name that can be used that does not match
 the rules for user defined field names.
 
 *Syntax:*
 
-bc(syntax)..\
-`<field-name>`  ::= `<id-field-name>`  \|\
-`<user-field-name>` 
+```
+<field-name> ::= <id-field-name> |
+                <user-field-name> 
 
-`<id-field-name>`  = \_id\
-`<user-field-name>`  ::= \[a-zA-Z0-9\_\]+
+<id-field-name> = _id
+<user-field-name> ::= [a-zA-Z0-9_]+
+```
 
 The `_id` field is a "reserved name" and is always interpreted as the
 document identity field. See **TODO DOC ID LINK** for restrictions on
-it's use.
+its use.
 
 **TODO** add support for allowing "." and "\$" in the field names, not
-needed for the intitial demo release.
+needed for the initial demo release.
 
 *Sample:*
 
-bc(sample)..\
-{\
-"\_id" : "my_doc",\
-"a_field" : "the value",\
-"sub_doc" : {\
-"inner_field" : 1\
-},\
-"\_\_v" : 1\
+```
+{
+    "_id" : "my_doc",
+    "a_field" : "the value", 
+    "sub_doc" : {
+        "inner_field" : 1
+    },
+    "__v" : 1
 }
+```
 
-### Array Indexes {#documentArrayIndexes}
+### Array Indexes
 
 Array indexes are used in query paths to identify elements in a array.
 They are zero based, and **must** not include leading zeros, i.e. `1` is
@@ -320,111 +326,114 @@ the array is indexed using a single zero `0`.
 
 *Syntax:*
 
-bc(syntax)..\
-`<array-index>`  ::= ^0\$\|^\[1-9\]\[0-9\]\*\$
+```
+<array-index> ::= ^0$|^[1-9][0-9]*$
+```
 
 *Sample:*
 
-bc(sample)..\
-// Second element of the \`tags\` array is equal to "foo"\
-{"find" : {\
-"filter" : {"tags.2": "foo"}\
-}\
-}\
-// Filter on the first element of the tags array\
-{"find" : {\
-"filter" : {"tags.0": "foo"}\
-}\
-}
+```
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+// Filter on the first element of the tags array
+{"find" : {
+    "filter" : {"tags.0": "foo"}
+    }
+} 
+```
 
-### Document Paths {#documentPaths}
+### Document Paths
 
 Document paths are used to identify fields in a JSON document in
 multiple contexts, such as a filter for a query or specifying fields to
 update.
 
-`<document-path>` in this specification are a [JSON
-Path](https://jsonpath.com/) like syntax.
+`<document-path>` in this specification use [JSON Path](https://jsonpath.com/)-like syntax.
 
-[Clauses](#clauses) specify where they support the use of
-`<document-path>` to filter, update, sort, or project documents.
+[Clauses](#clauses) specify where they support the use of `<document-path>` to filter, update, sort, or project documents.
 
 *Syntax:*
 
-bc(syntax)..\
-`<document-path>`  ::= `<dotted-notation-path>` 
+```
+<document-path> ::= <dotted-notation-path> 
+```
 
-#### Dotted Notation Paths {#documentPathsDottedNotation}
+#### Dotted Notation Paths
 
 Dotted Notation Paths support specifying top level fields, fields in
 embedded documents (nested fields), array elements, and nested
 structures in arrays.
 
 In general the dotted notation is one or more `<field-name>` or
-`<array-index>` concatenated with a period characher `.` and no
+`<array-index>` concatenated with a period character `.` and no
 additional whitespace.
 
 *Syntax:*
 
-bc(syntax)..\
-`<dotted-notation-path>`  ::=
-`<field-name>` (.`<field-name>`  \|
-`<array-index>` )\*
+```
+<dotted-notation-path> ::= <field-name>(.<field-name> | <array-index>)*
+```
 
 *Sample:*
 
-bc(sample)..\
-// \_id is equal to 1\
-{"find" : {\
-"filter" : {"\_id": 1}\
-}\
-}\
-// suburb field in the address sub document is equal to "banana"\
-{"find" : {\
-"filter" : {"address.suburb": "banana"}\
-}\
-}\
-// Second element of the \`tags\` array is equal to "foo"\
-{"find" : {\
-"filter" : {"tags.2": "foo"}\
-}\
-}
+```
+// _id is equal to 1 
+{"find" : {
+    "filter" : {"_id": 1}
+    }
+} 
+// suburb field in the address sub document is equal to "banana"
+{"find" : {
+    "filter" : {"address.suburb": "banana"}
+    }
+} 
+// Second element of the `tags` array is equal to "foo"
+{"find" : {
+    "filter" : {"tags.2": "foo"}
+    }
+} 
+```
 
-### Document Limits {#documentLimits}
+### Document Limits
 
-JSON documents must ahere to the following limits. Attempting to insert
+JSON documents must adhere to the following limits. Attempting to insert
 or modify a document beyond these limits will result in the command
 failing.
 
-#### Document Size Limit {#documentLimitsSize}
+#### Document Size Limit
 
 The maximum size of a single document is 1 megabyte. The size is
-determined by the JSON serialisation of the document.
+determined by the JSON serialization of the document.
 
-#### Document Depth Limit {#documentLimitsDepth}
+#### Document Depth Limit
 
 The maximum nesting depth for a single document is 8 levels deep. Each
-nested docment or array adds another level.
+nested document or array adds another level.
 
-#### Document Field Limits {#documentLimitsFields}
+#### Document Field Limits
 
-The maximum length of a [field name](#documentFieldNames) is 48
-characters.
+The maximum length of a [field name](#json-document-field-names) is 48 characters.
 
 The maximum number of fields allowed in a single JSON object is 64.
 
-#### Document Value Limits {#documentLimitsValues}
+#### Document Value Limits
 
-The maxium size of field values are:
+The maximum size of field values are:
 
+```
   JSON Type   Maximum Value
   ----------- ---------------------------------------------------------
   `string`    Maximum length of 16384 unicode characters
   `number`    TODO: define max num that is well handled by BigDecimal
+```
 
-#### Document Array Limits {#documentLimitsArray}
+#### Document Array Limits
 
 The maximum length of an array is 100 elements.
+
 
 ## Commands
 
@@ -448,27 +457,28 @@ The following commands are supported for collections:
 -   [`updateMany`](#commandUpdateMany)
 -   [`updateOne`](#commandUpdateOne)
 
-Each command always results in a single [response](#commandResponses) ,
-unless there is an unecpected exception. See the "JSON API HTTP
-Specification" for details.
+Each command always results in a single [response](#commandResponses),
+unless there is an unexpected exception. For details, see the [JSON API HTTP Specification](json-network-spec.md).
 
-Commands are defined using the BNF like syntax, with samples presented
+Commands are defined using the BNF-like syntax, with samples presented
 using a [JSON](https://www.json.org/) encoding of the language. The use
 of JSON in these samples does not preclude other encodings of the API in
 the future.
 
 *Sample:*
 
-bc(sample)..\
-// select all documents in a collection, return complete documents\
+```
+// select all documents in a collection, return complete documents
 {"find" : {} }
 
-// select where name == "aaron" and return selected fields\
-{"find" : {\
-"filter" : {"name": "aaron"},\
-"projection" : {"name": 1, :"age" : 1}\
-}\
-}
+// select where name == "aaron" and return selected fields
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
+```
+
 
 ### countDocuments Command {#commandCountDocuments}
 
@@ -696,7 +706,7 @@ Considerations](#considerationsMultiDocumentFailure).
   `status`           Preset with fields: `upsertedId: <json-value>` only if a document was upserted.
   `errors`           Present if errors occur.
 
-If `upsert` option was set to `true`, and no documentds matched a filter
+If `upsert` option was set to `true`, and no documents matched a filter
 a new document is created. The `_id` of the document is included in the
 status field `upsertedId`, otherwise no status is returned .
 
@@ -735,7 +745,7 @@ behavior applied when not provided.
 
   Option      Type      Description
   ----------- --------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `ordered`   Boolean   When `true` the server will insert the documents in sequential order, ensuring each doucument is succesfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure) for details. Defaults to `true`.
+  `ordered`   Boolean   When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure) for details. Defaults to `true`.
 
 #### insertMany Multi Document Failure Modes {#commandInsertManyFailure}
 
