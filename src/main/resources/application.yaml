@@ -3,15 +3,15 @@
 
 stargate:
 
+  # disable all sgv2 exception mappers, handled differently
+  exception-mappers:
+    enabled: false
+
   # metrics properties
   # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
       module: sgv2-jsonapi
-
-  # disable all sgv2 exception mappers, handled differently
-  exception-mappers:
-    enabled: false
 
 quarkus:
 
