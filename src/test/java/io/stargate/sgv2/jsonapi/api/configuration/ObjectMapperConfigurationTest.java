@@ -49,8 +49,7 @@ class ObjectMapperConfigurationTest {
                 "user.name",
                 "-user.age"
               ],
-              "filter": {"username": "aaron"},
-              "options": {}
+              "filter": {"username": "aaron"}
             }
           }
           """;

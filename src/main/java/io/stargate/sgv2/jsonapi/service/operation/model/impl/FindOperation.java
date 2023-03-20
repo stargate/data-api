@@ -33,40 +33,48 @@ public record FindOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    // get FindResponse
     return getDocuments(queryExecutor, pagingState(), null)
-        .onItem()
-        .transform(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+
+        // map the response to result
+        .map(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
   }
 
   @Override
   public Uni<FindResponse> getDocuments(
       QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
+
+    // ensure we pass failure down if read type is not DOCUMENT or KEY
+    // COUNT is not supported
     switch (readType) {
-      case DOCUMENT:
-      case KEY:
-        {
-          QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
-          return findDocument(
-              queryExecutor,
-              query,
-              pagingState,
-              pageSize,
-              ReadType.DOCUMENT == readType,
-              objectMapper);
-        }
-      default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_OPERATION, "Unsupported find operation read type " + readType);
+      case DOCUMENT, KEY -> {
+        QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
+        return findDocument(
+            queryExecutor,
+            query,
+            pagingState,
+            pageSize,
+            ReadType.DOCUMENT == readType,
+            objectMapper);
+      }
+      default -> {
+        JsonApiException failure =
+            new JsonApiException(
+                ErrorCode.UNSUPPORTED_OPERATION,
+                "Unsupported find operation read type " + readType);
+        return Uni.createFrom().failure(failure);
+      }
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
     for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.IDFilter) {
-        documentId = ((DBFilterBase.IDFilter) filter).value;
+      if (filter instanceof DBFilterBase.IDFilter idFilter) {
+        documentId = idFilter.value;
         rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
       } else {
         if (filter.canAddField()) {
@@ -78,20 +86,28 @@ public record FindOperation(
         }
       }
     }
-    ReadDocument doc = new ReadDocument(documentId, null, rootNode);
-    return doc;
+
+    return new ReadDocument(documentId, null, rootNode);
   }
 
+  // builds select query
   private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
+
+    // if we have id filter overwrite ignore existing IDFilter
+    boolean idFilterOverwrite = additionalIdFilter != null;
     for (DBFilterBase filter : filters) {
-      if (additionalIdFilter == null
-          || (additionalIdFilter != null && !(filter instanceof DBFilterBase.IDFilter)))
+      if (!(idFilterOverwrite && filter instanceof DBFilterBase.IDFilter)) {
         conditions.add(filter.get());
+      }
     }
-    if (additionalIdFilter != null) {
+
+    // then add id overwrite if there
+    if (idFilterOverwrite) {
       conditions.add(additionalIdFilter.get());
     }
+
+    // create query
     return new QueryBuilder()
         .select()
         .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
