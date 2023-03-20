@@ -1,0 +1,7 @@
+# @author Jeff Carpenter
+name: Run Performance Tests
+
+# runs on
+# * manual trigger
+on:
+  workflow_dispatch:
