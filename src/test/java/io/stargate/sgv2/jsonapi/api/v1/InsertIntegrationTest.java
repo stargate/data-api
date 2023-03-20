@@ -14,6 +14,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -26,7 +29,6 @@ import org.junit.jupiter.api.Test;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest {
-
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
@@ -267,6 +269,71 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+    }
+
+    @Test
+    public void tryInsertTooBigArray() {
+      final ObjectMapper mapper = new ObjectMapper();
+      // Max array elements: 100
+      ObjectNode doc = mapper.createObjectNode();
+      ArrayNode arr = doc.putArray("arr");
+      for (int i = 0; i < 500; ++i) {
+        arr.add(i);
+      }
+      final String json =
+          """
+              {
+                "insertOne": {
+                  "document": %s
+                }
+              }
+              """
+              .formatted(doc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Document size limitation violated: number of elements an Array has (500) exceeds maximum allowed (100)"));
+    }
+
+    @Test
+    public void tryInsertTooLongName() {
+      final ObjectMapper mapper = new ObjectMapper();
+      // Max property name: 48 characters, let's try 100
+      ObjectNode doc = mapper.createObjectNode();
+      doc.put(
+          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789",
+          72);
+      final String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": %s
+                    }
+                  }
+                  """
+              .formatted(doc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Document size limitation violated: Property name length (100) exceeds maximum allowed (48)"));
     }
   }
 
