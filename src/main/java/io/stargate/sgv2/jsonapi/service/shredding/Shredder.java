@@ -89,7 +89,7 @@ public class Shredder {
     }
     // Now that we have both the traversable document and serialization, verify
     // it does not violate document limits:
-    validateDocument(docWithId, documentLimits);
+    validateDocument(documentLimits, docWithId, docJson);
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
@@ -166,7 +166,17 @@ public class Shredder {
     }
   }
 
-  private void validateDocument(ObjectNode doc, DocumentLimitsConfig limits) {
-    ; // TO IMPLEMENT
+  private void validateDocument(DocumentLimitsConfig limits, ObjectNode doc, String docJson) {
+    // Is the resulting document size (as serialized) too big?
+
+    if (docJson.length() > limits.maxDocSize()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: document size (%d chars) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              docJson.length(),
+              limits.maxDocSize()));
+    }
   }
 }

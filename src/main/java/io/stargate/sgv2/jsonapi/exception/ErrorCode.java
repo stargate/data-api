@@ -26,6 +26,8 @@ public enum ErrorCode {
 
   SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
 
+  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
+
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
