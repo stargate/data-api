@@ -7,9 +7,16 @@ LOGLEVEL=INFO
 DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
 SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
 JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
+JSONIMAGE="jsonapi"
 
-while getopts "qr:t:j:" opt; do
+while getopts "qnr:t:j:" opt; do
   case $opt in
+    j)
+      JSONTAG=$OPTARG
+      ;;
+    n)
+      JSONIMAGE="jsonapi-native"
+      ;;
     q)
       REQUESTLOG=true
       ;;
@@ -17,15 +24,13 @@ while getopts "qr:t:j:" opt; do
       LOGLEVEL=$OPTARG
       ;;
     t)
-      SGTAG=$OPTARG
-      ;;
-    j)
       JSONTAG=$OPTARG
       ;;
     \?)
       echo "Valid options:"
-      echo "  -t <tag> - use Docker images tagged with specified Stargate version (will pull images from Docker Hub if needed)"
-      echo "  -j <tag> - use Docker images tagged with specified JSON API version (will pull images from Docker Hub if needed)"
+      echo "  -j <tag> - use JSON API Docker image tagged with specified JSON API version (will pull images from Docker Hub if needed)"
+      echo "  -n <tag> - use JSON API native image instead of default Java-based image"
+      echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
       exit 1
@@ -38,7 +43,8 @@ export REQUESTLOG
 export DSETAG
 export SGTAG
 export JSONTAG
+export JSONIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONTAG"
+echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
 
 docker-compose -f docker-compose-dev-mode.yml up -d
