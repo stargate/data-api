@@ -26,8 +26,9 @@ public class ShredderDocLimitsTest {
 
   @Inject DocumentLimitsConfig docLimits;
 
+  // Tests for Document size/depth violations
   @Nested
-  class ValidationDocShapeViolations {
+  class ValidationDocSizeViolations {
     @Test
     public void catchTooBigDoc() {
       // Let's construct document above 1 meg limit (but otherwise legal), with
@@ -73,4 +74,56 @@ public class ShredderDocLimitsTest {
               "document depth exceeds maximum allowed (" + docLimits.maxDocDepth() + ")");
     }
   }
+
+  // Tests for count of entities (array elements, doc properties) violations
+  @Nested
+  class ValidationDocCountViolations {
+    @Test
+    public void catchTooManyObjectProps() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      ObjectNode obNode = doc.putObject("subdoc");
+      // Let's add 200 props in a subdoc (max allowed: 64)
+      for (int i = 0; i < 200; ++i) {
+        obNode.put("prop" + i, i);
+      }
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " number of properties an Object has (200) exceeds maximum allowed ("
+                  + docLimits.maxObjectProperties()
+                  + ")");
+    }
+
+    @Test
+    public void catchTooManyArrayElements() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      ArrayNode arr = doc.putArray("arr");
+      // Let's add 200 elements (max allowed: 100)
+      for (int i = 0; i < 200; ++i) {
+        arr.add(i);
+      }
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " number of elements an Array has (200) exceeds maximum allowed ("
+                  + docLimits.maxArrayLength()
+                  + ")");
+    }
+  }
+
+  // Tests for size of atomic value violations
+  @Nested
+  class ValidationDocAtomicSizeViolations {}
 }
