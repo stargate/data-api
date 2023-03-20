@@ -167,16 +167,97 @@ public class Shredder {
   }
 
   private void validateDocument(DocumentLimitsConfig limits, ObjectNode doc, String docJson) {
-    // Is the resulting document size (as serialized) too big?
-
+    // First: is the resulting document size (as serialized) too big?
     if (docJson.length() > limits.maxDocSize()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
-              "%s: document size (%d chars) exceeds maximum allowed (%s)",
+              "%s: document size (%d chars) exceeds maximum allowed (%d)",
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
               docJson.length(),
               limits.maxDocSize()));
+    }
+
+    // Second: traverse to check for other constraints
+    validateObjectValue(limits, doc, 0);
+  }
+
+  private void validateDocValue(DocumentLimitsConfig limits, JsonNode value, int depth) {
+    if (value.isObject()) {
+      validateObjectValue(limits, value, depth);
+    } else if (value.isArray()) {
+      validateArrayValue(limits, value, depth);
+    } else if (value.isTextual()) {
+      validateStringValue(limits, value);
+    }
+  }
+
+  private void validateArrayValue(DocumentLimitsConfig limits, JsonNode arrayValue, int depth) {
+    ++depth;
+    validateDocDepth(limits, depth);
+
+    if (arrayValue.size() > limits.maxArrayLength()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              arrayValue.size(),
+              limits.maxArrayLength()));
+    }
+  }
+
+  private void validateObjectValue(DocumentLimitsConfig limits, JsonNode objectValue, int depth) {
+    ++depth;
+    validateDocDepth(limits, depth);
+
+    if (objectValue.size() > limits.maxObjectProperties()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: number of properties an Object has (%d) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              objectValue.size(),
+              limits.maxObjectProperties()));
+    }
+
+    var it = objectValue.fields();
+    while (it.hasNext()) {
+      var entry = it.next();
+      final String key = entry.getKey();
+      if (key.length() > documentLimits.maxNameLength()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: Property name length (%d) exceeds maximum allowed (%s)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                key.length(),
+                limits.maxNameLength()));
+      }
+      validateDocValue(limits, entry.getValue(), depth);
+    }
+  }
+
+  private void validateStringValue(DocumentLimitsConfig limits, JsonNode stringValue) {
+    final String value = stringValue.textValue();
+    if (value.length() > limits.maxStringLength()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: String value length (%d) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              value.length(),
+              limits.maxStringLength()));
+    }
+  }
+
+  private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
+    if (depth > limits.maxDocDepth()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: document depth (%d) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), depth, limits.maxDocDepth()));
     }
   }
 }
