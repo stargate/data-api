@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -15,6 +16,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
@@ -30,8 +32,12 @@ import javax.enterprise.context.ApplicationScoped;
 public class Shredder {
   private final ObjectMapper objectMapper;
 
-  public Shredder(ObjectMapper objectMapper) {
+  private final DocumentLimitsConfig documentLimits;
+
+  @Inject
+  public Shredder(ObjectMapper objectMapper, DocumentLimitsConfig documentLimits) {
     this.objectMapper = objectMapper;
+    this.documentLimits = documentLimits;
   }
 
   /**
@@ -81,6 +87,10 @@ public class Shredder {
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
     }
+    // Now that we have both the traversable document and serialization, verify
+    // it does not violate document limits:
+    validateDocument(docWithId, documentLimits);
+
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
 
@@ -154,5 +164,9 @@ public class Shredder {
           String.format(
               "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
     }
+  }
+
+  private void validateDocument(ObjectNode doc, DocumentLimitsConfig limits) {
+    ; // TO IMPLEMENT
   }
 }
