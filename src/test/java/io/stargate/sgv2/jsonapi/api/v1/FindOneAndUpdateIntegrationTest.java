@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -175,24 +176,71 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdUpsert() {
+    public void findByColumnUpsert() {
       String json =
           """
           {
             "findOneAndUpdate": {
-              "filter" : {"_id" : "afterDoc4"},
+              "filter" : {"location" : "my_city"},
               "update" : {"$set" : {"active_user": false}},
               "options" : {"returnDocument" : "after", "upsert" : true}
             }
           }
           """;
-      String expected =
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", is(notNullValue()))
+          .body("status.upsertedId", is(notNullValue()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
           """
           {
-            "_id":"afterDoc4",
-             "active_user":false
+            "find": {
+              "filter" : {"location" : "my_city"}
+            }
           }
           """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", is(notNullValue()));
+    }
+
+    @Test
+    public void findByIdUpsert() {
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "afterDoc4"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options" : {"returnDocument" : "after", "upsert" : true}
+                }
+              }
+              """;
+      String expected =
+          """
+              {
+                "_id":"afterDoc4",
+                 "active_user":false
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -211,12 +259,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "afterDoc4"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "afterDoc4"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
