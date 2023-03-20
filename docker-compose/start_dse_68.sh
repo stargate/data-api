@@ -8,7 +8,7 @@ DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.i
 SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
 JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
 
-while getopts "qr:t:" opt; do
+while getopts "qr:t:j:" opt; do
   case $opt in
     q)
       REQUESTLOG=true
@@ -19,9 +19,13 @@ while getopts "qr:t:" opt; do
     t)
       JSONTAG=$OPTARG
       ;;
+    j)
+      JSONTAG=$OPTARG
+      ;;
     \?)
       echo "Valid options:"
       echo "  -t <tag> - use Docker images tagged with specified Stargate version (will pull images from Docker Hub if needed)"
+      echo "  -j <tag> - use Docker images tagged with specified JSON API version (will pull images from Docker Hub if needed)"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
       exit 1
