@@ -1,10 +1,19 @@
 # JSON HTTP API Specification
 
-## Preamble
+This document specifies the HTTP API for the JSON API, how clients can communicate with the service. 
+See the [JSON API Query Specification](json-spec.md) for details of data modelling and queries.
 
-This document specifies the HTTP API for the JSON API, how clients can
-communicate with the service. See the [JSON API Query Specification](json-spec.md) for
-details of data modelling and queries.
+- [Preable](#preamble)
+- [High-level concepts](#high-level-concepts)
+- [Conventions](#conventions)
+- [Error handling](#error-handling)
+- [Endpoints](#endpoints)
+    - [Namespace endpoint](#namespace-endpoint)
+        - [Namespace endpoint errors](#errors)
+    - [Collection endpoint](#collection-endpoint)
+- [Authentication and Authorization](#authentication-and-authorization)
+
+## Preamble
 
 The target users for the JSON API are Javascript developers who interact
 with the service through a driver or Object Document Mapper (ODM)
@@ -61,7 +70,7 @@ API. The motivations for this decision are:
 This approach is informed by both [gRPC](https://grpc.io/) and
 [GraphQL](https://graphql.org/).
 
-## High Level Concepts {#concepts}
+## High Level Concepts
 
 Clients send a request message to the server over HTTP, and the server
 sends a response message for each request received. The high level
@@ -170,10 +179,9 @@ can only contain alpha-numeric characters and underscores.
 
 https://stargate.mycompany.com/my-namespace
 
-#### Errors {#namespace-endpoint-errors}
+#### Namespace endpoint errors
 
-1.  Requests sent to a Namespace that was not previously created via
-    administration tools results in a #TODO soft error.
+Requests sent to a Namespace that was not previously created via administration tools results in a *TODO* soft error.
 
 ### Collection Endpoint
 
@@ -199,6 +207,6 @@ existing Collection.
 
 **TODO** : Request and Response messages moved into the API Spec.
 
-## Authentication and Authorization {#authn-authz}
+## Authentication and Authorization
 
 1.  TODO - basically we just use the tokens we have now.
