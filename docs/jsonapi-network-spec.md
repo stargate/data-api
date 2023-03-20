@@ -3,7 +3,7 @@
 This document specifies the HTTP API for the JSON API, how clients can communicate with the service. 
 See the [JSON API Query Specification](json-spec.md) for details of data modelling and queries.
 
-- [Preable](#preamble)
+- [Preamble](#preamble)
 - [High-level concepts](#high-level-concepts)
 - [Conventions](#conventions)
 - [Error handling](#error-handling)
@@ -181,7 +181,7 @@ https://stargate.mycompany.com/my-namespace
 
 #### Namespace endpoint errors
 
-Requests sent to a Namespace that was not previously created via administration tools results in a *TODO* soft error.
+Requests sent to a Namespace that was not previously created via administration tools results in a **TODO** soft error.
 
 ### Collection Endpoint
 
@@ -209,4 +209,4 @@ existing Collection.
 
 ## Authentication and Authorization
 
-1.  TODO - basically we just use the tokens we have now.
+**TODO** - basically we just use the tokens we have now.
