@@ -274,7 +274,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
     @Test
     public void tryInsertTooBigArray() {
       final ObjectMapper mapper = new ObjectMapper();
-      // Max array elements: 100
+      // Max array elements allowed is 100; add a few more
       ObjectNode doc = mapper.createObjectNode();
       ArrayNode arr = doc.putArray("arr");
       for (int i = 0; i < 500; ++i) {
