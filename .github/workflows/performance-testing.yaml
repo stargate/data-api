@@ -23,8 +23,7 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ java ]
-        #type: [ java, native ]
+        type: [ java, native ]
 
         test: [ http-jsonapi-crud-basic ]
         #test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue, http-jsonapi-search-basic, http-jsonapi-search-advanced ]
@@ -32,9 +31,11 @@ jobs:
         include:
           - type: java
             build-ops: '-Dquarkus.container-image.build=true'
+            docker-flags: ''
 
-          #- type: native
-          #  build-ops: '-Pnative -Dquarkus.native.container-build=true'
+          - type: native
+            build-ops: '-Pnative -Dquarkus.native.container-build=true'
+            docker-flags: '-n'
 
           - test: http-jsonapi-crud-basic
             nb-params: ''
@@ -63,6 +64,7 @@ jobs:
 
       # Install NB and required library
       # See: https://github.com/AppImage/AppImageKit/wiki/FUSE
+      # Print version to affirm correct install
       - name: Download NoSQLBench
         run: |
           sudo add-apt-repository universe
@@ -75,12 +77,15 @@ jobs:
         run: |
           ./mvnw clean package -DskipTests ${{ matrix.build-ops }} 
 
+      # Use docker-compose to start required stack
+      # Print version of images used for verification
       - name: Start Docker Compose
         run: |
           cd docker-compose
-          ./start_dse_68_dev_mode.sh
+          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }}
           docker-compose images
 
+      # Run test after first obtaining an auth token
       - name: Run NoSQLBench Test
         run: |
           cd nosqlbench
