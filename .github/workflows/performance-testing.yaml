@@ -13,7 +13,7 @@ env:
 jobs:
   # runs performance tests
   performance-tests:
-    name: Integration tests
+    name: Performance tests
     runs-on: ubuntu-latest
 
     strategy:
@@ -25,12 +25,18 @@ jobs:
       matrix:
         type: [ java ]
         #type: [ java, native ]
+
+        test: [ crud-basic ]
+
         include:
           - type: java
             build-ops: '-Dquarkus.container-image.build=true'
 
           #- type: native
           #  build-ops: '-Pnative -Dquarkus.native.container-build=true'
+
+          - test: crud-basic
+            nb-params: ''
 
     steps:
       - uses: actions/checkout@v3
@@ -80,4 +86,9 @@ jobs:
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
           ../nb5 -v http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
 
+      - name: Save Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: http-jsonapi-${{ matrix.test }}
+          path: nosqlbench/logs
 
