@@ -205,6 +205,10 @@ public class Shredder {
               arrayValue.size(),
               limits.maxArrayLength()));
     }
+
+    for (JsonNode element : arrayValue) {
+      validateDocValue(limits, element, depth);
+    }
   }
 
   private void validateObjectValue(DocumentLimitsConfig limits, JsonNode objectValue, int depth) {
@@ -256,8 +260,8 @@ public class Shredder {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
-              "%s: document depth (%d) exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), depth, limits.maxDocDepth()));
+              "%s: document depth exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDocDepth()));
     }
   }
 }

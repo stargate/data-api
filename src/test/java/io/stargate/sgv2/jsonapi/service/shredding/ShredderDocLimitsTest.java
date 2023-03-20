@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -28,7 +29,7 @@ public class ShredderDocLimitsTest {
   @Nested
   class ValidationDocShapeViolations {
     @Test
-    public void catchTooBigDoc() throws Exception {
+    public void catchTooBigDoc() {
       // Let's construct document above 1 meg limit (but otherwise legal), with
       // 100 x 10k String values, divided in 10 sub documents of 10 properties
       final ObjectNode bigDoc = objectMapper.createObjectNode();
@@ -48,6 +49,28 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith("exceeds maximum allowed (" + docLimits.maxDocSize() + ")");
+    }
+
+    @Test
+    public void catchTooDeepDoc() {
+      // Let's construct document with 20 levels of nesting (above our configs)
+      final ObjectNode deepDoc = objectMapper.createObjectNode();
+      deepDoc.put("_id", 123);
+
+      ObjectNode obNode = deepDoc;
+      for (int i = 0; i < 10; ++i) {
+        ArrayNode array = obNode.putArray("a");
+        obNode = array.addObject();
+      }
+
+      Exception e = catchException(() -> shredder.shred(deepDoc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              "document depth exceeds maximum allowed (" + docLimits.maxDocDepth() + ")");
     }
   }
 }
