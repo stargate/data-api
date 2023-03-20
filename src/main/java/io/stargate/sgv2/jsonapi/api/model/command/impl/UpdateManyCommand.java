@@ -25,7 +25,7 @@ public record UpdateManyCommand(
   public record Options(
       @Schema(
               description =
-                  "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply the `update` clause to the empty document.",
+                  "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply the `update` clause and all equality filters to the empty document.",
               defaultValue = "false")
           boolean upsert) {}
 }
