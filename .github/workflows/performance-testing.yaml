@@ -49,16 +49,16 @@ jobs:
           cache: maven
 
       # login to ECR to we can pull coord image from there
-      # - name: Configure AWS credentials
-      #  uses: aws-actions/configure-aws-credentials@v2
-      #  with:
-      #    aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-      #    aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
-      #    aws-region: us-east-1
+       - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          aws-region: us-east-1
 
-      #- name: Login to Amazon ECR
-      #  id: login-ecr
-      #  uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       # Install NB and required library
       # See: https://github.com/AppImage/AppImageKit/wiki/FUSE
@@ -84,7 +84,7 @@ jobs:
         run: |
           cd nosqlbench
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
-          ../nb5 -v http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
+          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
 
       - name: Save Results
         uses: actions/upload-artifact@v3
