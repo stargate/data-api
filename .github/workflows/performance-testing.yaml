@@ -102,6 +102,6 @@ jobs:
       - name: Save Results
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.test }}
+          name: ${{ matrix.test }}-${{ matrix.type }}
           path: nosqlbench/logs
 
