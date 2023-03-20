@@ -5,6 +5,13 @@ name: Run Performance Tests
 # * manual trigger
 on:
   workflow_dispatch:
+    inputs:
+      docscount:
+        description: 'Number of documents to use for each test'
+        required: true
+        type: string
+        # TODO - set higher default?
+        default: '20000'
 
 # global env vars, available in all jobs and steps
 env:
@@ -90,7 +97,7 @@ jobs:
         run: |
           cd nosqlbench
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
-          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=20000
+          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log http-jsonapi-crud-basic jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }}
 
       - name: Save Results
         uses: actions/upload-artifact@v3
