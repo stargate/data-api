@@ -26,7 +26,8 @@ jobs:
         type: [ java ]
         #type: [ java, native ]
 
-        test: [ crud-basic ]
+        test: [ http-jsonapi-crud-basic ]
+        #test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue, http-jsonapi-search-basic, http-jsonapi-search-advanced ]
 
         include:
           - type: java
@@ -35,7 +36,7 @@ jobs:
           #- type: native
           #  build-ops: '-Pnative -Dquarkus.native.container-build=true'
 
-          - test: crud-basic
+          - test: http-jsonapi-crud-basic
             nb-params: ''
 
     steps:
@@ -89,6 +90,6 @@ jobs:
       - name: Save Results
         uses: actions/upload-artifact@v3
         with:
-          name: http-jsonapi-${{ matrix.test }}
+          name: ${{ matrix.test }}
           path: nosqlbench/logs
 
