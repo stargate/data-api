@@ -32,7 +32,7 @@ jobs:
       matrix:
         type: [ java, native ]
 
-        test: [ http-jsonapi-crud-basic ]
+        test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue ]
         #test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue, http-jsonapi-search-basic, http-jsonapi-search-advanced ]
 
         include:
@@ -43,9 +43,6 @@ jobs:
           - type: native
             build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
             docker-flags: '-n'
-
-          - test: http-jsonapi-crud-basic
-            nb-params: ''
 
     steps:
       - uses: actions/checkout@v3
