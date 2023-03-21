@@ -138,42 +138,52 @@ public record ReadAndUpdateOperation(
       ReadDocument document, QueryExecutor queryExecutor, AtomicInteger modifiedCount) {
     return Uni.createFrom()
         .item(document)
-        // Perform update operation and save only if data is modified.
-        .onItem()
-        .transformToUni(
+
+        // perform update operation and save only if data is modified.
+        .flatMap(
             readDocument -> {
+
+              // if there is no document return null item
               if (readDocument == null) {
                 return Uni.createFrom().nullItem();
               }
-              final JsonNode originalDocument =
-                  readDocument.txnId() == null ? null : readDocument.document();
-              final boolean isInsert = (originalDocument == null);
-              // Apply document updates
+
+              // upsert if we have no transaction if before
+              boolean upsert = readDocument.txnId() == null;
+              JsonNode originalDocument = upsert ? null : readDocument.document();
+
+              // apply document updates
+              // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                  documentUpdater().applyUpdates(readDocument.document().deepCopy(), isInsert);
-              JsonNode updatedDocument = documentUpdaterResponse.document();
-              Uni<DocumentId> updated = Uni.createFrom().nullItem();
-              final WritableShreddedDocument writableShreddedDocument;
-              if (documentUpdaterResponse.modified()) {
-                writableShreddedDocument = shredder().shred(updatedDocument, readDocument.txnId());
-                updated = updatedDocument(queryExecutor, writableShreddedDocument);
-              } else {
-                writableShreddedDocument = null;
+                  documentUpdater().applyUpdates(readDocument.document().deepCopy(), upsert);
+              if (!documentUpdaterResponse.modified()) {
+                return Uni.createFrom().nullItem();
               }
-              final JsonNode documentToReturn =
-                  returnUpdatedDocument ? updatedDocument : originalDocument;
-              // return updatedDocument if document is successfully updated
-              return updated
+
+              // otherwise shred
+              JsonNode updatedDocument = documentUpdaterResponse.document();
+              final WritableShreddedDocument writableShreddedDocument =
+                  shredder().shred(updatedDocument, readDocument.txnId());
+
+              // update the document
+              return updatedDocument(queryExecutor, writableShreddedDocument)
+
+                  // send result back depending on the input
                   .onItem()
                   .ifNotNull()
                   .transform(
                       v -> {
-                        if (readDocument.txnId() != null) modifiedCount.incrementAndGet();
+                        // if not insert increment modified count
+                        if (!upsert) modifiedCount.incrementAndGet();
+
+                        // resolve doc to return
+                        JsonNode documentToReturn = null;
+                        if (returnDocumentInResponse) {
+                          documentToReturn =
+                              returnUpdatedDocument ? updatedDocument : originalDocument;
+                        }
                         return new UpdatedDocument(
-                            writableShreddedDocument.id(),
-                            readDocument.txnId() == null,
-                            returnDocumentInResponse ? documentToReturn : null,
-                            null);
+                            writableShreddedDocument.id(), upsert, documentToReturn, null);
                       });
             });
   }
