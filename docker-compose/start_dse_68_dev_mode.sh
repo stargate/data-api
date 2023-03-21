@@ -7,7 +7,7 @@ LOGLEVEL=INFO
 DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
 SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
 JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
-JSONIMAGE="jsonapi"
+JSONIMAGE="stargateio/jsonapi"
 
 while getopts "qnr:t:j:" opt; do
   case $opt in
@@ -15,7 +15,7 @@ while getopts "qnr:t:j:" opt; do
       JSONTAG=$OPTARG
       ;;
     n)
-      JSONIMAGE="jsonapi-native"
+      JSONIMAGE="stargateio/jsonapi-native"
       ;;
     q)
       REQUESTLOG=true
