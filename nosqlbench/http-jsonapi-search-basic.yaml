@@ -10,8 +10,8 @@ scenarios:
   default:
     schema: run driver=http tags==block:schema threads==<<threads:1>> cycles==UNDEF
     rampup:
-      write: run driver=http tags==block:"rampup-put.*" cycles===TEMPLATE(docscount,10000000) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
-      read: run driver=http tags==block:"rampup-get.*" cycles===TEMPLATE(rampup-cycles, 10000000) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      write: run driver=http tags==block:"rampup-put.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
+      read: run driver=http tags==block:"rampup-get.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     main:
       all: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
       get-eq: run driver=http tags==block:main-get-eq,filter:eq cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
@@ -45,7 +45,7 @@ bindings:
 
   match1: Identity(); CoinFunc(<<match-ratio>>, FixedValue(0), FixedValue(1000))
   match2: Identity(); CoinFunc(<<match-ratio>>, FixedValue("true"), FixedValue("false"))
-  additional_fields: ListSizedStepped(<<docpadding:0>>,Template("\"{}\":{}",Identity(),Identity())); ToString(); ReplaceAll('\[\"', ',\"'); ReplaceAll('\[', ''); ReplaceAll('\]', '') -> String
+  #additional_fields: ListSizedStepped(<<docpadding:0>>,Template("\"{}\":{}",Identity(),Identity())); ToString(); ReplaceAll('\[\"', ',\"'); ReplaceAll('\[', ''); ReplaceAll('\]', '') -> String
 
 blocks:
   schema:
@@ -67,7 +67,7 @@ blocks:
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
