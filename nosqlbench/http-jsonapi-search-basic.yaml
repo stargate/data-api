@@ -8,12 +8,6 @@ description: |
 
 scenarios:
   default:
-    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
-    rampup: run driver=http tags==block:"rampup.*" cycles===TEMPLATE(rampup-cycles,10) threads=auto
-    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,10) threads=auto
-
-scenarios:
-  default:
     schema: run driver=http tags==block:schema threads==<<threads:1>> cycles==UNDEF
     rampup:
       write: run driver=http tags==block:"rampup-put.*" cycles===TEMPLATE(docscount,10000000) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
@@ -110,7 +104,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
-        ok-body: ".*\"insertedIds\".*"
+        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
         body: |
           {
             "insertOne": {
