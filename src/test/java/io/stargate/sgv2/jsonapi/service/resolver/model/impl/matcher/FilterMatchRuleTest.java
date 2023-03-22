@@ -11,8 +11,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
@@ -23,8 +24,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FilterMatchRuleTest {
   @Inject ObjectMapper objectMapper;
-
-  private ReadOperation readOperation = mock(ReadOperation.class);
+  private List<DBFilterBase> filters = mock(List.class);
 
   @Nested
   class FilterMatchRuleApply {
@@ -48,14 +48,15 @@ public class FilterMatchRuleTest {
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, ReadOperation> resolveFunction =
-          (commandContext, captures) -> {
-            return readOperation;
-          };
+      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
+          resolveFunction =
+              (commandContext, captures) -> {
+                return filters;
+              };
 
       FilterMatchRule<FindOneCommand> filterMatchRule =
           new FilterMatchRule(matcher, resolveFunction);
-      Optional<ReadOperation> response =
+      Optional<List<DBFilterBase>> response =
           filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isPresent();
 

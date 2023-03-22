@@ -26,7 +26,7 @@ import java.util.function.Supplier;
  * This operation method is used for 3 commands findOneAndUpdate, updateOne and updateMany
  *
  * @param commandContext
- * @param readOperation
+ * @param findOperation
  * @param documentUpdater
  * @param returnDocumentInResponse - if `true` return document
  * @param returnUpdatedDocument - if `true` return after update document, else before document
@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  */
 public record ReadAndUpdateOperation(
     CommandContext commandContext,
-    ReadOperation readOperation,
+    FindOperation findOperation,
     DocumentUpdater documentUpdater,
     boolean returnDocumentInResponse,
     boolean returnUpdatedDocument,
@@ -59,7 +59,7 @@ public record ReadAndUpdateOperation(
             () -> new AtomicReference<String>(null),
             stateRef -> {
               Uni<ReadOperation.FindResponse> docsToUpdate =
-                  readOperation().getDocuments(queryExecutor, stateRef.get(), null);
+                  findOperation().getDocuments(queryExecutor, stateRef.get(), null);
               return docsToUpdate
                   .onItem()
                   .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
@@ -72,7 +72,7 @@ public record ReadAndUpdateOperation(
             findResponse -> {
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
-                return Multi.createFrom().item(readOperation().getNewDocument());
+                return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
                 // Below conditionality is because we read up to updateLimit +1 record.
                 if (matchedCount.get() + docs.size() <= updateLimit) {
@@ -259,7 +259,7 @@ public record ReadAndUpdateOperation(
    */
   private Uni<ReadDocument> readDocumentAgain(
       QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
-    return readOperation()
+    return findOperation()
         .getDocuments(
             queryExecutor,
             null,

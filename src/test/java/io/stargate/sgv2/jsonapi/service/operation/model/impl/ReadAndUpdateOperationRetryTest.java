@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -213,7 +212,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
 
     DBFilterBase.TextFilter filter =
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
-    ReadOperation readOperation =
+    FindOperation findOperation =
         new FindOperation(
             COMMAND_CONTEXT,
             List.of(filter),
@@ -229,7 +228,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
+            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
 
     Supplier<CommandResult> execute =
         operation
@@ -416,7 +415,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
 
     DBFilterBase.TextFilter filter =
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
-    ReadOperation readOperation =
+    FindOperation findOperation =
         new FindOperation(
             COMMAND_CONTEXT,
             List.of(filter),
@@ -432,7 +431,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, false, shredder, 1, 3);
+            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
 
     Supplier<CommandResult> execute =
         operation
@@ -628,7 +627,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
 
     DBFilterBase.TextFilter filter =
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
-    ReadOperation readOperation =
+    FindOperation findOperation =
         new FindOperation(
             COMMAND_CONTEXT,
             List.of(filter),
@@ -644,7 +643,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, true, shredder, 1, 3);
+            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, true, shredder, 1, 3);
 
     Supplier<CommandResult> execute =
         operation
@@ -897,7 +896,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
 
     DBFilterBase.TextFilter filter =
         new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
-    ReadOperation readOperation =
+    FindOperation findOperation =
         new FindOperation(
             COMMAND_CONTEXT,
             List.of(filter),
@@ -913,7 +912,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, false, shredder, 2, 3);
+            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 2, 3);
 
     Supplier<CommandResult> execute =
         operation
@@ -1223,7 +1222,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
 
     DBFilterBase.TextFilter filter =
         new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
-    ReadOperation readOperation =
+    FindOperation findOperation =
         new FindOperation(
             COMMAND_CONTEXT,
             List.of(filter),
@@ -1239,7 +1238,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, readOperation, documentUpdater, true, false, false, shredder, 2, 3);
+            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 2, 3);
 
     Supplier<CommandResult> execute =
         operation

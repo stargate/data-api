@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +21,7 @@ import java.util.function.BiFunction;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<ReadOperation>>> matchRules =
+  private final List<BiFunction<CommandContext, T, Optional<List<DBFilterBase>>>> matchRules =
       new ArrayList<>();
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
@@ -43,7 +43,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      BiFunction<CommandContext, CaptureGroups<T>, ReadOperation> resolveFunction,
+      BiFunction<CommandContext, CaptureGroups<T>, List<DBFilterBase>> resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
         new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
@@ -58,7 +58,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public ReadOperation apply(CommandContext commandContext, T command) {
+  public List<DBFilterBase> apply(CommandContext commandContext, T command) {
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
@@ -72,7 +72,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   }
 
   @VisibleForTesting
-  protected List<BiFunction<CommandContext, T, Optional<ReadOperation>>> getMatchRules() {
+  protected List<BiFunction<CommandContext, T, Optional<List<DBFilterBase>>>> getMatchRules() {
     return matchRules;
   }
 }

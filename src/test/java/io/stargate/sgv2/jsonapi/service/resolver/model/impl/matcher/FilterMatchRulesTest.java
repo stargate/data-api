@@ -11,8 +11,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +23,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FilterMatchRulesTest {
   @Inject ObjectMapper objectMapper;
-  private ReadOperation readOperation = mock(ReadOperation.class);
+  private List<DBFilterBase> filters = mock(List.class);
 
   @Nested
   class FilterMatchRulesApply {
@@ -43,8 +44,8 @@ public class FilterMatchRulesTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, ReadOperation> resolveFunction =
-          (commandContext, captures) -> readOperation;
+      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
+          resolveFunction = (commandContext, captures) -> filters;
       filterMatchRules
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.EMPTY)
           .matcher()
@@ -55,7 +56,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      ReadOperation response =
+      List<DBFilterBase> response =
           filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isNotNull();
 
@@ -94,8 +95,8 @@ public class FilterMatchRulesTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, ReadOperation> resolveFunction =
-          (commandContext, captures) -> readOperation;
+      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
+          resolveFunction = (commandContext, captures) -> filters;
       filterMatchRules
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.EMPTY)
           .matcher()

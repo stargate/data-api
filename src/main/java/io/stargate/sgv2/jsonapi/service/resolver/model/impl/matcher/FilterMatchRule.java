@@ -4,7 +4,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -19,10 +20,10 @@ import java.util.function.BiFunction;
  */
 public record FilterMatchRule<T extends Command & Filterable>(
     FilterMatcher<T> matcher,
-    BiFunction<CommandContext, CaptureGroups<T>, ReadOperation> resolveFunction)
-    implements BiFunction<CommandContext, T, Optional<ReadOperation>> {
+    BiFunction<CommandContext, CaptureGroups<T>, List<DBFilterBase>> resolveFunction)
+    implements BiFunction<CommandContext, T, Optional<List<DBFilterBase>>> {
   @Override
-  public Optional<ReadOperation> apply(CommandContext commandContext, T command) {
+  public Optional<List<DBFilterBase>> apply(CommandContext commandContext, T command) {
     return matcher.apply(command).map(captures -> resolveFunction.apply(commandContext, captures));
   }
 }

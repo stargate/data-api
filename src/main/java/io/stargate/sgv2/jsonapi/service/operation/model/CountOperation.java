@@ -6,12 +6,9 @@ import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -43,16 +40,5 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
         .from(commandContext.namespace(), commandContext.collection())
         .where(conditions)
         .build();
-  }
-
-  @Override
-  public Uni<FindResponse> getDocuments(
-      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
-    return Uni.createFrom().failure(new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION));
-  }
-
-  @Override
-  public ReadDocument getNewDocument() {
-    throw new JsonApiException(ErrorCode.UNSUPPORTED_OPERATION);
   }
 }
