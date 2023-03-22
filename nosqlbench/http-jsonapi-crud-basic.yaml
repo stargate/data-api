@@ -165,6 +165,9 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        # because this is not an upsert, modified count could technically be 0 or 1,
+        # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
+        # every update during this phase should update exactly 1 document.
         ok-body: ".*\"modifiedCount\":1.*"
         body: |
           {

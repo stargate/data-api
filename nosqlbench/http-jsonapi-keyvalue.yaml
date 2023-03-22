@@ -132,7 +132,8 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
-        ok-body: ".*\"modifiedCount\":1.*"
+        # because this is not an upsert, modified count could be 0 or 1
+        ok-body: ".*\"modifiedCount\":[0,1].*"
         body: |          
           {
             "updateOne" : {
