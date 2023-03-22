@@ -10,7 +10,6 @@ on:
         description: 'Number of documents to use for each test'
         required: true
         type: string
-        # TODO - set higher default?
         default: '20000'
 
 # global env vars, available in all jobs and steps
@@ -33,7 +32,6 @@ jobs:
         type: [ java, native ]
 
         test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue ]
-        #test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue, http-jsonapi-search-basic, http-jsonapi-search-advanced ]
 
         include:
           - type: java
