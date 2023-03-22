@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -214,7 +215,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
     ReadOperation readOperation =
         new FindOperation(
-            COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+            COMMAND_CONTEXT,
+            List.of(filter),
+            null,
+            1,
+            1,
+            ReadType.DOCUMENT,
+            Optional.empty(),
+            objectMapper);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -410,7 +418,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
     ReadOperation readOperation =
         new FindOperation(
-            COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+            COMMAND_CONTEXT,
+            List.of(filter),
+            null,
+            1,
+            1,
+            ReadType.DOCUMENT,
+            Optional.empty(),
+            objectMapper);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -615,7 +630,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
         new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
     ReadOperation readOperation =
         new FindOperation(
-            COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+            COMMAND_CONTEXT,
+            List.of(filter),
+            null,
+            1,
+            1,
+            ReadType.DOCUMENT,
+            Optional.empty(),
+            objectMapper);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -877,7 +899,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
         new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
     ReadOperation readOperation =
         new FindOperation(
-            COMMAND_CONTEXT, List.of(filter), null, 3, 3, ReadType.DOCUMENT, objectMapper);
+            COMMAND_CONTEXT,
+            List.of(filter),
+            null,
+            3,
+            3,
+            ReadType.DOCUMENT,
+            Optional.empty(),
+            objectMapper);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -1196,7 +1225,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
         new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
     ReadOperation readOperation =
         new FindOperation(
-            COMMAND_CONTEXT, List.of(filter), null, 3, 3, ReadType.DOCUMENT, objectMapper);
+            COMMAND_CONTEXT,
+            List.of(filter),
+            null,
+            3,
+            3,
+            ReadType.DOCUMENT,
+            Optional.empty(),
+            objectMapper);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(

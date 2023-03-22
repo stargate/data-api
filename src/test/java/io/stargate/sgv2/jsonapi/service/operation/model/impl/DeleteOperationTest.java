@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -94,6 +95,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -146,6 +148,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
 
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -215,6 +218,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
@@ -321,6 +325,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
@@ -429,6 +434,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
@@ -532,6 +538,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
@@ -617,6 +624,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               2,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -700,6 +708,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -789,6 +798,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -849,6 +859,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
@@ -969,6 +980,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -1139,6 +1151,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
+              Optional.empty(),
               objectMapper);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 

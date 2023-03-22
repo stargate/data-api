@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,7 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -84,6 +86,7 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -119,6 +122,7 @@ public class FindCommandResolverTest {
               10,
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
@@ -153,6 +157,7 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)

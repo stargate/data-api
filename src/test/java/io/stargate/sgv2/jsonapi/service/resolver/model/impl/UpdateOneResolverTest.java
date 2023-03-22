@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,7 @@ public class UpdateOneResolverTest {
               1,
               1,
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
 
       DocumentUpdater documentUpdater =
@@ -104,6 +106,7 @@ public class UpdateOneResolverTest {
               1,
               1,
               ReadType.DOCUMENT,
+              Optional.empty(),
               objectMapper);
 
       DocumentUpdater documentUpdater =
