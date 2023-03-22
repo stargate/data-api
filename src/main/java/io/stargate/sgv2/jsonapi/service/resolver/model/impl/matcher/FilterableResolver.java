@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -10,11 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
@@ -48,15 +43,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  private final ObjectMapper objectMapper;
-
-  protected FilterableResolver() {
-    this(null);
-  }
-
   @Inject
-  public FilterableResolver(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  public FilterableResolver() {
     matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
 
     matchRules
@@ -91,17 +79,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC);
   }
 
-  protected ReadOperation resolve(CommandContext commandContext, T command) {
+  protected List<DBFilterBase> resolve(CommandContext commandContext, T command) {
     return matchRules.apply(commandContext, command);
   }
 
-  public record FilteringOptions(int limit, String pagingState, int pageSize, ReadType readType) {}
-
-  protected abstract FilteringOptions getFilteringOption(T command);
-
-  private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
+  private List<DBFilterBase> findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<DBFilterBase> filters = new ArrayList<>();
-
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
     if (idGroup != null) {
@@ -111,38 +94,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, expression.value())));
     }
-    FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.readType() == ReadType.COUNT) {
-      return new CountOperation(commandContext, filters);
-    } else {
-      return new FindOperation(
-          commandContext,
-          filters,
-          filteringOptions.pagingState(),
-          filteringOptions.limit(),
-          filteringOptions.pageSize(),
-          filteringOptions.readType(),
-          objectMapper);
-    }
+    return filters;
   }
 
-  private ReadOperation findNoFilter(CommandContext commandContext, CaptureGroups<T> captures) {
-    FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.readType() == ReadType.COUNT) {
-      return new CountOperation(commandContext, List.of());
-    } else {
-      return new FindOperation(
-          commandContext,
-          List.of(),
-          filteringOptions.pagingState(),
-          filteringOptions.limit(),
-          filteringOptions.pageSize(),
-          filteringOptions.readType(),
-          objectMapper);
-    }
+  private List<DBFilterBase> findNoFilter(
+      CommandContext commandContext, CaptureGroups<T> captures) {
+    return List.of();
   }
 
-  private ReadOperation findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
+  private List<DBFilterBase> findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
     List<DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<DocumentId> idGroup =
@@ -253,19 +213,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                   new DBFilterBase.SubDocEqualsFilter(
                       new DocValueHasher(), expression.path(), expression.value())));
     }
-
-    FilteringOptions filteringOptions = getFilteringOption(captures.command());
-    if (filteringOptions.readType() == ReadType.COUNT) {
-      return new CountOperation(commandContext, filters);
-    } else {
-      return new FindOperation(
-          commandContext,
-          filters,
-          filteringOptions.pagingState(),
-          filteringOptions.limit(),
-          filteringOptions.pageSize(),
-          filteringOptions.readType(),
-          objectMapper);
-    }
+    return filters;
   }
 }

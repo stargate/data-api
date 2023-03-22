@@ -77,7 +77,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
@@ -134,7 +134,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
@@ -188,7 +188,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
@@ -246,7 +246,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {

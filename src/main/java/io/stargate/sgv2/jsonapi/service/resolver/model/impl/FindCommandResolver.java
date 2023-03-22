@@ -7,8 +7,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
+import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -18,10 +21,12 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     implements CommandResolver<FindCommand> {
 
   private final DocumentConfig documentConfig;
+  private final ObjectMapper objectMapper;
 
   @Inject
   public FindCommandResolver(DocumentConfig documentConfig, ObjectMapper objectMapper) {
-    super(objectMapper);
+    super();
+    this.objectMapper = objectMapper;
     this.documentConfig = documentConfig;
   }
 
@@ -31,18 +36,15 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, FindCommand command) {
-    return resolve(ctx, command);
-  }
-
-  @Override
-  protected FilteringOptions getFilteringOption(FindCommand command) {
+  public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
+    List<DBFilterBase> filters = resolve(commandContext, command);
     int limit =
         command.options() != null && command.options().limit() != null
             ? command.options().limit()
             : documentConfig.maxLimit();
     int pageSize = documentConfig.defaultPageSize();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
-    return new FilteringOptions(limit, pagingState, pageSize, ReadType.DOCUMENT);
+    return new FindOperation(
+        commandContext, filters, pagingState, limit, pageSize, ReadType.DOCUMENT, objectMapper);
   }
 }

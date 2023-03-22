@@ -14,8 +14,6 @@ import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -752,29 +750,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       assertThat(failure).isEqualTo(exception);
-    }
-
-    @Test
-    public void countNotSupported() {
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
-      FindOperation operation =
-          new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.COUNT, objectMapper);
-
-      Throwable failure =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure()
-              .getFailure();
-
-      assertThat(failure)
-          .isInstanceOfSatisfying(
-              JsonApiException.class,
-              e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNSUPPORTED_OPERATION));
     }
   }
 
