@@ -72,8 +72,6 @@ services:
     ports:
       - "9042:9042"
       - "8081:8081"
-      - "8084:8084"
-      - "8090:8090"
     mem_limit: 2G
     environment:
       - JAVA_OPTS="-Xmx2G"
@@ -91,7 +89,7 @@ services:
       retries: 10
 
   jsonapi:
-    image: stargateio/jsonapi:${JSONTAG}
+    image: ${JSONIMAGE}:${JSONTAG}
     depends_on:
       coordinator:
         condition: service_healthy

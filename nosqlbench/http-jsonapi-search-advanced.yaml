@@ -15,19 +15,20 @@ description: |
 # complex2: (match1 LTE 0 OR match2 EQ "false") AND (match2 EQ "false" OR match3 EQ true)
 # complex3: (match1 LTE 0 AND match2 EQ "true") OR (match2 EQ "false" AND match3 EQ true)
 scenarios:
-  schema:             run driver=http tags==phase:schema threads==<<threads:1>> cycles==UNDEF
-  rampup:
-    write:            run driver=http tags==name:"rampup-put.*" cycles===TEMPLATE(docscount,10000000) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
-    read:             run driver=http tags==phase:"rampup-get.*" cycles===TEMPLATE(rampup-cycles, 10000000) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-  main:
-    all:               run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-in:            run driver=http tags==name:main-get-in,filter:in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-not-in:        run driver=http tags==name:main-get-not-in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-mem-and:       run driver=http tags==name:main-get-mem-and cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-mem-or:        run driver=http tags==name:main-get-mem-or cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-complex1:      run driver=http tags==name:main-get-complex1 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-complex2:      run driver=http tags==name:main-get-complex2 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
-    get-complex3:      run driver=http tags==name:main-get-complex3 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+  default:
+    schema:             run driver=http tags==phase:schema threads==<<threads:1>> cycles==UNDEF
+    rampup:
+      write:            run driver=http tags==name:"rampup-put.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
+      read:             run driver=http tags==phase:"rampup-get.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main:
+      all:               run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-in:            run driver=http tags==name:main-get-in,filter:in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-not-in:        run driver=http tags==name:main-get-not-in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-mem-and:       run driver=http tags==name:main-get-mem-and cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-mem-or:        run driver=http tags==name:main-get-mem-or cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-complex1:      run driver=http tags==name:main-get-complex1 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-complex2:      run driver=http tags==name:main-get-complex2 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      get-complex3:      run driver=http tags==name:main-get-complex3 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -60,7 +61,7 @@ bindings:
 
 blocks:
   schema:
-    statements:
+    ops:
       create-namespace:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
@@ -68,6 +69,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createNamespace": {
@@ -77,11 +79,12 @@ blocks:
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "deleteCollection": {
@@ -96,6 +99,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createCollection": {
@@ -112,6 +116,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
         body: |
           {
             "insertOne": {
@@ -153,6 +158,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -175,6 +181,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -197,6 +204,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -222,6 +230,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -253,6 +262,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -293,6 +303,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -342,6 +353,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -393,6 +405,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -415,6 +428,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -437,6 +451,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -462,6 +477,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -493,6 +509,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -533,6 +550,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {
@@ -582,6 +600,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "find" : {

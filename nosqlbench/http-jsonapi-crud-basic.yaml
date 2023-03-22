@@ -49,6 +49,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createNamespace": {
@@ -63,6 +64,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "deleteCollection": {
@@ -77,6 +79,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createCollection": {
@@ -94,6 +97,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
         body: |
           {
             "insertOne" : {
@@ -133,6 +137,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "findOne" : {
@@ -144,7 +149,7 @@ blocks:
 
   update:
     ops:
-      # aka findOneAndUpdate
+      # aka updateOne
       # for parity with other tests this only uses set, not unset, no return value
       update-document:
         method: POST
@@ -153,11 +158,12 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"modifiedCount\":1.*"
         body: |
           {
-            "findOneAndUpdate" : {
+            "updateOne" : {
               "filter": {
-                "_id" : "{random_key}
+                "_id" : "{random_key}"
               },
               "update": {
                 "$set": {
@@ -196,9 +202,10 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
         body: |
           {
-            "findOne" : {
+            "deleteOne" : {
               "filter" : {
                 "_id" : "{random_key}"
               }

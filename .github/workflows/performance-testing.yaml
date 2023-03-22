@@ -5,3 +5,98 @@ name: Run Performance Tests
 # * manual trigger
 on:
   workflow_dispatch:
+    inputs:
+      docscount:
+        description: 'Number of documents to use for each test'
+        required: true
+        type: string
+        default: '20000'
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+
+jobs:
+  # runs performance tests
+  performance-tests:
+    name: Performance tests
+    runs-on: ubuntu-latest
+
+    strategy:
+
+      # run all tests to completion
+      fail-fast: false
+
+      # matrix props:
+      matrix:
+        type: [ java, native ]
+
+        test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue ]
+
+        include:
+          - type: java
+            build-ops: '-Dquarkus.container-image.build=true'
+            docker-flags: ''
+
+          - type: native
+            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
+            docker-flags: '-n'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      # login to ECR to we can pull coord image from there
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Install NB and required library
+      # See: https://github.com/AppImage/AppImageKit/wiki/FUSE
+      # Print version to affirm correct install
+      - name: Download NoSQLBench
+        run: |
+          sudo add-apt-repository universe
+          sudo apt install libfuse2
+          curl -L -O https://github.com/nosqlbench/nosqlbench/releases/latest/download/nb5
+          chmod +x nb5
+          ./nb5 --version
+
+      - name: Build JSON API Docker image
+        run: |
+          ./mvnw clean package -DskipTests ${{ matrix.build-ops }} 
+
+      # Use docker-compose to start required stack
+      # Print version of images used for verification
+      - name: Start Docker Compose
+        run: |
+          cd docker-compose
+          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }}
+          docker-compose images
+
+      # Run test after first obtaining an auth token
+      - name: Run NoSQLBench Test
+        run: |
+          cd nosqlbench
+          export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
+          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }}
+
+      - name: Save Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.test }}-${{ matrix.type }}
+          path: nosqlbench/logs
+

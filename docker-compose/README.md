@@ -50,6 +50,8 @@ Both convenience scripts support the following options:
 
 * You can specify an image tag (version) of the JSON API using `-t [VERSION]`. 
 
+* The scripts default to using the Java-based image for JSON API, you can specify to use the native GraalVM based variant using `-n`.
+
 * You can change the default root log level using `-r [LEVEL]` (default `INFO`). Valid values: `ERROR`, `WARN`, `INFO`, `DEBUG`
 
 * You can enable reguest logging using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`

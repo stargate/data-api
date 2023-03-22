@@ -11,8 +11,8 @@ description: |
 scenarios:
   default:
     schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
-    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
-    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,10000000) threads=auto
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) threads=auto
+    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(docscount,10000000)) threads=auto
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -39,6 +39,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createNamespace": {
@@ -53,6 +54,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "deleteCollection": {
@@ -62,11 +64,12 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_keyvalue>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
         body: |
           {
             "createCollection": {
@@ -78,11 +81,12 @@ blocks:
     ops:
       rampup-insert:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
         body: |
           {
             "insertOne" : {
@@ -99,29 +103,32 @@ blocks:
     ops:
       main-select:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
         body: |
           {
             "findOne" : {
               "filter" : {
-                "_id" : "{random_key}"
+                "_id" : "{rw_key}"
               }
             }
           }
           
       main-write:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        ok-body: ".*\"modifiedCount\":1.*"
         body: |          
           {
-            "findOneAndUpdate" : {
+            "updateOne" : {
               "filter": {
                 "_id" : "{rw_key}"
               },
