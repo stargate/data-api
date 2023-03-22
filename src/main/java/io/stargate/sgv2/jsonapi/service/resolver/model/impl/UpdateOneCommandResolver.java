@@ -5,13 +5,15 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -21,11 +23,13 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     implements CommandResolver<UpdateOneCommand> {
   private final Shredder shredder;
   private final DocumentConfig documentConfig;
+  private final ObjectMapper objectMapper;
 
   @Inject
   public UpdateOneCommandResolver(
       ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
-    super(objectMapper);
+    super();
+    this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.documentConfig = documentConfig;
   }
@@ -36,8 +40,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, UpdateOneCommand command) {
-    ReadOperation readOperation = resolve(ctx, command);
+  public Operation resolveCommand(CommandContext commandContext, UpdateOneCommand command) {
+    FindOperation findOperation = getFindOperation(commandContext, command);
+
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert
@@ -46,8 +51,8 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
 
     // return op
     return new ReadAndUpdateOperation(
-        ctx,
-        readOperation,
+        commandContext,
+        findOperation,
         documentUpdater,
         false,
         false,
@@ -57,8 +62,8 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         documentConfig.lwt().retries());
   }
 
-  @Override
-  protected FilteringOptions getFilteringOption(UpdateOneCommand command) {
-    return new FilteringOptions(1, null, 1, ReadType.DOCUMENT);
+  private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {
+    List<DBFilterBase> filters = resolve(commandContext, command);
+    return new FindOperation(commandContext, filters, null, 1, 1, ReadType.DOCUMENT, objectMapper);
   }
 }

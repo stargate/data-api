@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  */
 public record DeleteOperation(
     CommandContext commandContext,
-    ReadOperation readOperation,
+    FindOperation findOperation,
     /**
      * Added parameter to pass number of document to be deleted, this is needed because read
      * documents limit changed to deleteLimit + 1
@@ -46,7 +46,7 @@ public record DeleteOperation(
             () -> new AtomicReference<String>(null),
             stateRef -> {
               Uni<ReadOperation.FindResponse> docsToDelete =
-                  readOperation().getDocuments(queryExecutor, stateRef.get(), null);
+                  findOperation().getDocuments(queryExecutor, stateRef.get(), null);
               return docsToDelete
                   .onItem()
                   .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
@@ -173,7 +173,7 @@ public record DeleteOperation(
   private Uni<ReadDocument> readDocumentAgain(
       QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     // Read again if retry flag is `true`
-    return readOperation()
+    return findOperation()
         .getDocuments(
             queryExecutor,
             null,

@@ -40,7 +40,16 @@ public record FindOperation(
         .map(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
   }
 
-  @Override
+  /**
+   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * used by other commands which needs a document to be read.
+   *
+   * @param queryExecutor
+   * @param pagingState
+   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   *     filters
+   * @return
+   */
   public Uni<FindResponse> getDocuments(
       QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
 
@@ -67,8 +76,12 @@ public record FindOperation(
     }
   }
 
-  /** {@inheritDoc} */
-  @Override
+  /**
+   * A operation method which can return ReadDocument with an empty document, if the filter
+   * condition has _id filter it will return document with this field added
+   *
+   * @return
+   */
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;

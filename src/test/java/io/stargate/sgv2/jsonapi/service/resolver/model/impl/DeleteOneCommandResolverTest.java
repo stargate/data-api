@@ -53,7 +53,7 @@ public class DeleteOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.deleteLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
@@ -92,7 +92,7 @@ public class DeleteOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.deleteLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
@@ -128,7 +128,7 @@ public class DeleteOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.deleteLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
-                assertThat(op.readOperation())
+                assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {

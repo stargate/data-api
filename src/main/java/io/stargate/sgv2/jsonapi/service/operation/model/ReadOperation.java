@@ -9,7 +9,6 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
@@ -111,27 +110,6 @@ public interface ReadOperation extends Operation {
               return new CountResponse(count);
             });
   }
-
-  /**
-   * A operation method which can return FindResponse instead of CommandResult. This method will be
-   * used by other commands which needs a document to be read.
-   *
-   * @param queryExecutor
-   * @param pagingState
-   * @param additionalIdFilter Used if a additional id filter need to be added to already available
-   *     filters
-   * @return
-   */
-  Uni<FindResponse> getDocuments(
-      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter);
-
-  /**
-   * A operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added
-   *
-   * @return
-   */
-  ReadDocument getNewDocument();
 
   record FindResponse(List<ReadDocument> docs, String pagingState) {}
 

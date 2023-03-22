@@ -5,11 +5,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
+import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -22,19 +24,21 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     implements CommandResolver<DeleteManyCommand> {
 
   private final DocumentConfig documentConfig;
+  private final ObjectMapper objectMapper;
 
   @Inject
   public DeleteManyCommandResolver(DocumentConfig documentConfig, ObjectMapper objectMapper) {
-    super(objectMapper);
+    super();
     this.documentConfig = documentConfig;
+    this.objectMapper = objectMapper;
   }
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
-    ReadOperation readOperation = resolve(commandContext, command);
+    final FindOperation findOperation = getFindOperation(commandContext, command);
     return new DeleteOperation(
         commandContext,
-        readOperation,
+        findOperation,
         documentConfig.maxDocumentDeleteCount(),
         documentConfig.lwt().retries());
   }
@@ -44,12 +48,16 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     return DeleteManyCommand.class;
   }
 
-  @Override
-  protected FilteringOptions getFilteringOption(DeleteManyCommand command) {
-    return new FilteringOptions(
-        documentConfig.maxDocumentDeleteCount() + 1,
+  private FindOperation getFindOperation(CommandContext commandContext, DeleteManyCommand command) {
+    List<DBFilterBase> filters = resolve(commandContext, command);
+    // Read One extra document than delete limit so return moreData flag
+    return new FindOperation(
+        commandContext,
+        filters,
         null,
+        documentConfig.maxDocumentDeleteCount() + 1,
         documentConfig.defaultPageSize(),
-        ReadType.KEY);
+        ReadType.KEY,
+        objectMapper);
   }
 }
