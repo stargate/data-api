@@ -67,6 +67,14 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   private FindOperation getFindOperation(
       CommandContext commandContext, FindOneAndUpdateCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
-    return new FindOperation(commandContext, filters, null, 1, 1, ReadType.DOCUMENT, objectMapper);
+    return new FindOperation(
+        commandContext,
+        filters,
+        command.buildProjector(),
+        null,
+        1,
+        1,
+        ReadType.DOCUMENT,
+        objectMapper);
   }
 }

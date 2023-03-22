@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -67,6 +68,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     return new FindOperation(
         commandContext,
         filters,
+        DocumentProjector.identityProjector(),
         null,
         documentConfig.maxDocumentUpdateCount() + 1,
         documentConfig.defaultPageSize(),

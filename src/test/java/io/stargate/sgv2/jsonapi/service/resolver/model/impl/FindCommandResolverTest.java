@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import javax.inject.Inject;
@@ -49,6 +50,7 @@ public class FindCommandResolverTest {
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              DocumentProjector.identityProjector(),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
@@ -80,6 +82,7 @@ public class FindCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(),
+              DocumentProjector.identityProjector(),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
@@ -115,6 +118,7 @@ public class FindCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(),
+              DocumentProjector.identityProjector(),
               "dlavjhvbavkjbna",
               10,
               documentConfig.defaultPageSize(),
@@ -149,6 +153,7 @@ public class FindCommandResolverTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
+              DocumentProjector.identityProjector(),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),

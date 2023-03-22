@@ -9,11 +9,14 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
  * various {@code find} commands.
  */
 public class DocumentProjector {
+  /** Pseudo-projector that makes no modifications to documents */
+  private static final DocumentProjector IDENTITY_PROJECTOR = new DocumentProjector();
+
   private DocumentProjector() {}
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
     if (projectionDefinition == null) {
-      return null;
+      return identityProjector();
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -23,9 +26,13 @@ public class DocumentProjector {
               + projectionDefinition.getNodeType());
     }
     if (projectionDefinition.isEmpty()) {
-      return null;
+      return identityProjector();
     }
     return new DocumentProjector();
+  }
+
+  public static DocumentProjector identityProjector() {
+    return IDENTITY_PROJECTOR;
   }
 
   public void applyProjection(JsonNode document) {

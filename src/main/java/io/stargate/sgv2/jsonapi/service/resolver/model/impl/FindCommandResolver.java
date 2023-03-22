@@ -45,6 +45,13 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     int pageSize = documentConfig.defaultPageSize();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     return new FindOperation(
-        commandContext, filters, pagingState, limit, pageSize, ReadType.DOCUMENT, objectMapper);
+        commandContext,
+        filters,
+        command.buildProjector(),
+        pagingState,
+        limit,
+        pageSize,
+        ReadType.DOCUMENT,
+        objectMapper);
   }
 }

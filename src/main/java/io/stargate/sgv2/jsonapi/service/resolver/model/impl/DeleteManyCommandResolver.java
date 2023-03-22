@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import java.util.List;
@@ -54,6 +55,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     return new FindOperation(
         commandContext,
         filters,
+        DocumentProjector.identityProjector(),
         null,
         documentConfig.maxDocumentDeleteCount() + 1,
         documentConfig.defaultPageSize(),

@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
@@ -90,6 +91,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -142,6 +144,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -211,6 +214,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -317,6 +321,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -425,6 +430,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -528,6 +534,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -613,6 +620,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               3,
               2,
@@ -696,6 +704,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               3,
               1,
@@ -785,6 +794,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               3,
               1,
@@ -845,6 +855,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               1,
               1,
@@ -965,6 +976,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               3,
               3,
@@ -1135,6 +1147,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              DocumentProjector.identityProjector(),
               null,
               3,
               3,
