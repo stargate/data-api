@@ -34,6 +34,8 @@ public enum ErrorCode {
 
   UNSUPPORTED_OPERATION("Unsupported operation class"),
 
+  UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
+
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
