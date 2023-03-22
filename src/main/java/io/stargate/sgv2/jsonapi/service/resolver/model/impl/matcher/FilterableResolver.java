@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -15,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -99,6 +102,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   protected abstract FilteringOptions getFilteringOption(T command);
 
+  protected Optional<DocumentProjector> getProjector(T command) {
+    if (command instanceof Projectable) {
+      return Optional.ofNullable(((Projectable) command).buildProjector());
+    }
+    return Optional.empty();
+  }
+
   private ReadOperation findById(CommandContext commandContext, CaptureGroups<T> captures) {
     List<DBFilterBase> filters = new ArrayList<>();
 
@@ -122,6 +132,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           filteringOptions.limit(),
           filteringOptions.pageSize(),
           filteringOptions.readType(),
+          getProjector(captures.command()),
           objectMapper);
     }
   }
@@ -138,6 +149,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           filteringOptions.limit(),
           filteringOptions.pageSize(),
           filteringOptions.readType(),
+          getProjector(captures.command()),
           objectMapper);
     }
   }
@@ -265,6 +277,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           filteringOptions.limit(),
           filteringOptions.pageSize(),
           filteringOptions.readType(),
+          getProjector(captures.command()),
           objectMapper);
     }
   }

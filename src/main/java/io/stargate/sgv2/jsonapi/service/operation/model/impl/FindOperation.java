@@ -15,9 +15,11 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /** Operation that returns the documents or its key based on the filter condition. */
@@ -28,6 +30,7 @@ public record FindOperation(
     int limit,
     int pageSize,
     ReadType readType,
+    Optional<DocumentProjector> projector,
     ObjectMapper objectMapper)
     implements ReadOperation {
 
