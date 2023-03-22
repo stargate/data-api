@@ -39,3 +39,4 @@ Above command creates a dataset with 5.000 latest unconfirmed transactions.
 
 - `docscount` - the number of documents to process in each step of a scenario (default: `10_000_000`)
 - `dataset_file` - the file to read the JSON documents from (note that if number of documents in a file is smaller than the `docscount` parameter, the documents will be reused)
+- `connections` - number of HTTP2 connections to be shared between the threads (default: `20`) 

@@ -26,6 +26,10 @@ bindings:
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -97,6 +101,7 @@ blocks:
   rampup:
     ops:
       rampup-put:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -139,6 +144,7 @@ blocks:
 
       # where={"match3":{"$eq":true}}
       rampup-get-eq:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -160,6 +166,7 @@ blocks:
 
       # where={"match1":{"$lt":1}}
       rampup-get-lt:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -181,6 +188,7 @@ blocks:
 
       # where={"match1":{"$lt":1},"match2":{"$eq":"true"}}
       rampup-get-and:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -203,6 +211,7 @@ blocks:
 
       # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$eq":true}}]}
       rampup-get-or:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -227,6 +236,7 @@ blocks:
 
       # where={"$or":[{"match1":{"$lt":1}},{"match2":{"$eq":"notamatch"}}]}
       rampup-get-or-single-match:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -253,6 +263,7 @@ blocks:
     ops:
       # where={"match3":{"$eq":true}}
       main-get-eq:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -274,6 +285,7 @@ blocks:
 
       # where={"match1":{"$lt":1}}
       main-get-lt:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -295,6 +307,7 @@ blocks:
 
       # where={"match1":{"$lt":1},"match2":{"$eq":"true"}}
       main-get-and:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -317,6 +330,7 @@ blocks:
 
       # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$eq":true}}]}
       main-get-or:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -341,6 +355,7 @@ blocks:
 
       # where={"$or":[{"match1":{"$lt":1}},{"match2":{"$eq":"notamatch"}}]}
       main-get-or-single-match:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
         Accept: "application/json"

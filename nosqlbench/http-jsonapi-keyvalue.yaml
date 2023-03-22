@@ -21,6 +21,10 @@ bindings:
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -80,6 +84,7 @@ blocks:
   rampup:
     ops:
       rampup-insert:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -102,6 +107,7 @@ blocks:
       ratio: <<read_ratio:5>>
     ops:
       main-select:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -119,6 +125,7 @@ blocks:
           }
           
       main-write:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
