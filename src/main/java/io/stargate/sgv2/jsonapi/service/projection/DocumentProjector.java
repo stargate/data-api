@@ -29,10 +29,10 @@ public class DocumentProjector {
               + ": definition must be OBJECT, was "
               + projectionDefinition.getNodeType());
     }
-    if (projectionDefinition.isEmpty()) {
+    PathCollector paths = PathCollector.collectPaths(projectionDefinition);
+    if (paths.isIdentityProjection()) {
       return identityProjector();
     }
-    PathCollector paths = PathCollector.collectPaths(projectionDefinition);
 
     return new DocumentProjector();
   }
@@ -59,10 +59,15 @@ public class DocumentProjector {
     return 1;
   }
 
-  /** Helper object used to traverse and collection inclusion/exclusion definitions */
+  /**
+   * Helper object used to traverse and collection inclusion/exclusion path definitions and verify
+   * that there are only one or the other (except for doc id). Does not build data structures for
+   * actual matching.
+   */
   private static class PathCollector {
-    private Set<String> exclusions;
-    private Set<String> inclusions;
+    private Set<String> paths = new HashSet<>();
+
+    private int exclusions, inclusions;
 
     private Boolean idInclusion = null;
 
@@ -70,6 +75,16 @@ public class DocumentProjector {
 
     static PathCollector collectPaths(JsonNode def) {
       return new PathCollector().collectFromObject(def, null);
+    }
+
+    /**
+     * Accessor to use for checking if collected paths indicate "empty" (no-operation) projection:
+     * if so, caller can avoid actual construction or evaluation.
+     */
+    boolean isIdentityProjection() {
+      // Only the case if we have no non-doc-id inclusions/exclusions AND
+      // doc-id is included (by default or explicitly)
+      return paths.isEmpty() && !Boolean.FALSE.equals(idInclusion);
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
@@ -115,19 +130,17 @@ public class DocumentProjector {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = false;
       } else {
-        if (exclusions == null) {
-          // Must not mix exclusions and inclusions
-          if (inclusions != null) {
-            throw new JsonApiException(
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                    + ": cannot exclude '"
-                    + path
-                    + "' on inclusion projection");
-          }
-          exclusions = new HashSet<>();
+        // Must not mix exclusions and inclusions
+        if (inclusions > 0) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": cannot exclude '"
+                  + path
+                  + "' on inclusion projection");
         }
-        exclusions.add(path);
+        ++exclusions;
+        paths.add(path);
       }
     }
 
@@ -135,19 +148,17 @@ public class DocumentProjector {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = true;
       } else {
-        if (inclusions == null) {
-          // Must not mix exclusions and inclusions
-          if (exclusions != null) {
-            throw new JsonApiException(
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                    + ": cannot include '"
-                    + path
-                    + "' on exclusion projection");
-          }
-          inclusions = new HashSet<>();
+        // Must not mix exclusions and inclusions
+        if (exclusions > 0) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": cannot include '"
+                  + path
+                  + "' on exclusion projection");
         }
-        inclusions.add(path);
+        ++inclusions;
+        paths.add(path);
       }
     }
   }
