@@ -22,6 +22,10 @@ bindings:
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -91,6 +95,7 @@ blocks:
     ops:
       # aka insertOne
       write-document:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -131,6 +136,7 @@ blocks:
     ops:
       # aka findOne with _id as filter
       read-document:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -152,12 +158,16 @@ blocks:
       # aka updateOne
       # for parity with other tests this only uses set, not unset, no return value
       update-document:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
+        # because this is not an upsert, modified count could technically be 0 or 1,
+        # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
+        # every update during this phase should update exactly 1 document.
         ok-body: ".*\"modifiedCount\":1.*"
         body: |
           {
@@ -196,6 +206,7 @@ blocks:
   delete:
     ops:
       delete-document:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
