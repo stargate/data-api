@@ -58,6 +58,7 @@ Note that error handling is set to `errors=timer,warn`, which means that in case
 ## Workload Parameters
 
 - `docscount` - the number of documents to process in each step of a scenario (default: `10_000_000`)
+- `connections` - number of HTTP2 connections to be shared between the threads (default: `20`) 
 
 Note that if number of documents is higher than `read-cycles` you would experience misses, which will result in `HTTP 404` and smaller latencies.
 
