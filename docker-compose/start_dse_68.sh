@@ -47,4 +47,11 @@ export JSONIMAGE
 
 echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
 
-docker-compose up -d
+COMPOSE_ARGS=("-d")
+
+# only use --wait flag if Docker Compose is v2
+if [[ $(docker-compose version) =~ "v2" ]]; then
+   COMPOSE_ARGS+=("--wait")
+fi
+
+docker-compose up "${COMPOSE_ARGS[@]}"
