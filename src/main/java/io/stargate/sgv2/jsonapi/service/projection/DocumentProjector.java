@@ -38,4 +38,18 @@ public class DocumentProjector {
   public void applyProjection(JsonNode document) {
     ; // To implement
   }
+
+  // Mostly for deserialization tests
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof DocumentProjector) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }
