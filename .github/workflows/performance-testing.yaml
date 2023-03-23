@@ -73,8 +73,8 @@ jobs:
       - name: Start Docker Compose
         run: |
           JSONTAG=$(git show -s --format="%H")
-          docker pull ${{ secrets.ECR_REGISTRY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG
-          docker image tag ${{ secrets.ECR_REGISTRY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG stargateio/${{ matrix.docker-image }}:$JSONTAG
+          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG
+          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG stargateio/${{ matrix.docker-image }}:$JSONTAG
           cd docker-compose
           ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
           docker-compose images
