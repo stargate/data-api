@@ -65,6 +65,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      # Use docker-compose to start required stack
+      # Print version of images used for verification
+      # Get latest commit from main branch
+      - name: Start Docker Compose
+        run: |
+          docker info
+          JSONTAG=$(git show -s --format="%H")
+          cd docker-compose
+          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
+          docker-compose images
+
       # Install NB and required library
       # See: https://github.com/AppImage/AppImageKit/wiki/FUSE
       # Print version to affirm correct install
@@ -75,16 +86,6 @@ jobs:
           curl -L -O https://github.com/nosqlbench/nosqlbench/releases/latest/download/nb5
           chmod +x nb5
           ./nb5 --version
-
-      # Use docker-compose to start required stack
-      # Print version of images used for verification
-      # Get latest commit from main branch
-      - name: Start Docker Compose
-        run: |
-          JSONTAG=$(git show -s --format="%H")
-          cd docker-compose
-          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
-          docker-compose images
 
       # Run test after first obtaining an auth token
       - name: Run NoSQLBench Test
