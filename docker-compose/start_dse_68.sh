@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Default to INFO as root log level
 LOGLEVEL=INFO
