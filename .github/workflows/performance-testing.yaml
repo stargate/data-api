@@ -73,7 +73,7 @@ jobs:
       - name: Start Docker Compose
         run: |
           cd docker-compose
-          JSONTAG=$(git show -s --format="%H" main)
+          JSONTAG=$(git show -s --format="%H" origin/main)
           ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
           docker-compose images
 
