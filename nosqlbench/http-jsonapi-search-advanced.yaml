@@ -18,8 +18,8 @@ scenarios:
   default:
     schema:             run driver=http tags==phase:schema threads==<<threads:1>> cycles==UNDEF
     rampup:
-      write:            run driver=http tags==name:"rampup-put.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
-      read:             run driver=http tags==phase:"rampup-get.*" cycles===TEMPLATE(rampup-cycles, TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+      write:            run driver=http tags==name:"rampup-put.*" cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
+      read:             run driver=http tags==phase:"rampup-get.*" cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     main:
       all:               run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
       get-in:            run driver=http tags==name:main-get-in,filter:in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
@@ -37,6 +37,10 @@ bindings:
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -110,6 +114,7 @@ blocks:
   rampup:
     ops:
       rampup-put:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -152,6 +157,7 @@ blocks:
 
       # where={"match1":{"$in":[0]}}
       rampup-get-in:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -175,6 +181,7 @@ blocks:
 
       # where={"match2":{"$nin":["false"]}}
       rampup-get-not-in:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -198,6 +205,7 @@ blocks:
 
       # where={"match2":{"$eq":"true"},"match3":{"$ne": false}}
       rampup-get-mem-and:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -222,8 +230,9 @@ blocks:
             }
           }
 
-      rampup-get-mem-or:
       # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$exists":true}}]}
+      rampup-get-mem-or:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -256,6 +265,7 @@ blocks:
 
       # where={"$and":[{"match1":{"$eq":0}},{"$or":[{"match2":{"$eq":"true"}},{"match3":{"$eq":false}}]}]}
       rampup-get-complex1:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -295,8 +305,9 @@ blocks:
             }
           }
 
-      rampup-get-complex2:
       # where={"$and":[{"$or":[{"match1":{"$lte":0}},{"match2":{"$eq":"false"}}]},{"$or":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
+      rampup-get-complex2:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -347,6 +358,7 @@ blocks:
 
       # where={"$or":[{"$and":[{"match1":{"$lte":0}},{"match2":{"$eq":"true"}}]},{"$and":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
       rampup-get-complex3:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -399,6 +411,7 @@ blocks:
     ops:
       # where={"match1":{"$in":[0]}}
       main-get-in:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -422,6 +435,7 @@ blocks:
 
       # where={"match2":{"$nin":["false"]}}
       main-get-not-in:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -445,6 +459,7 @@ blocks:
 
       # where={"match2":{"$eq":"true"},"match3":{"$ne": false}}
       main-get-mem-and:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -471,6 +486,7 @@ blocks:
 
       # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$exists":true}}]}
       main-get-mem-or:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -503,6 +519,7 @@ blocks:
 
       # where={"$and":[{"match1":{"$eq":0}},{"$or":[{"match2":{"$eq":"true"}},{"match3":{"$eq":false}}]}]}
       main-get-complex1:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -544,6 +561,7 @@ blocks:
 
       # where={"$and":[{"$or":[{"match1":{"$lte":0}},{"match2":{"$eq":"false"}}]},{"$or":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
       main-get-complex2:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -594,6 +612,7 @@ blocks:
 
       # where={"$or":[{"$and":[{"match1":{"$lte":0}},{"match2":{"$eq":"true"}}]},{"$and":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
       main-get-complex3:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<table:docs_collection>>
         Accept: "application/json"

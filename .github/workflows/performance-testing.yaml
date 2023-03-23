@@ -10,7 +10,12 @@ on:
         description: 'Number of documents to use for each test'
         required: true
         type: string
-        default: '20000'
+        default: '1000000'
+      connections:
+        description: 'Number of HTTP connections to use for each test'
+        required: true
+        type: string
+        default: '20'
 
 # global env vars, available in all jobs and steps
 env:
@@ -86,10 +91,11 @@ jobs:
         run: |
           cd nosqlbench
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
-          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }}
+          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }} connections=${{ inputs.connections }}
 
       - name: Save Results
         uses: actions/upload-artifact@v3
+        if: ${{ always() }}
         with:
           name: ${{ matrix.test }}-${{ matrix.type }}
           path: nosqlbench/logs

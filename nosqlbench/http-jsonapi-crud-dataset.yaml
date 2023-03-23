@@ -20,6 +20,10 @@ bindings:
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -80,6 +84,7 @@ blocks:
     ops:
       # TODO expect the document have the ID in it?
       write-document:
+        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
@@ -90,6 +95,7 @@ blocks:
         body: "{document_json}"
 
       read-document:
+        space: "{space}"
         method: GET
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
         Accept: "application/json"
@@ -99,6 +105,7 @@ blocks:
         ok-body: ".*\"data\".*"
 
       update-document:
+        space: "{space}"
         method: PUT
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
         Accept: "application/json"
@@ -108,6 +115,7 @@ blocks:
         body: "{document_json}"
 
       delete-document:
+        space: "{space}"
         method: DELETE
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{seq_key}
         Accept: "application/json"
