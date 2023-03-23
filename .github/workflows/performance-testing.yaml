@@ -42,10 +42,12 @@ jobs:
           - type: java
             build-ops: '-Dquarkus.container-image.build=true'
             docker-flags: ''
+            docker-image: 'jsonapi'
 
           - type: native
             build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
             docker-flags: '-n'
+            docker-image: 'jsonapi-native'
 
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
@@ -70,8 +72,9 @@ jobs:
       # Get latest commit from main branch
       - name: Start Docker Compose
         run: |
-          docker info
           JSONTAG=$(git show -s --format="%H")
+          docker pull ${{ secrets.ECR_REGISTRY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG
+          docker image tag ${{ secrets.ECR_REGISTRY }}/stargateio/${{ matrix.docker-image }}:$JSONTAG stargateio/${{ matrix.docker-image }}:$JSONTAG
           cd docker-compose
           ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
           docker-compose images
