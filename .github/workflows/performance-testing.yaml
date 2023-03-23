@@ -43,7 +43,10 @@ jobs:
             docker-flags: '-n'
 
     steps:
+      # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
+        with:
+          ref: main
 
       # login to ECR to we can pull coord image from there
       - name: Configure AWS credentials
@@ -73,8 +76,7 @@ jobs:
       - name: Start Docker Compose
         run: |
           cd docker-compose
-          JSONTAG=$(git show -s --format="%H" origin/main)
-          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $JSONTAG
+          ./start_dse_68_dev_mode.sh ${{ matrix.docker-flags }} -j $GITHUB_SHA
           docker-compose images
 
       # Run test after first obtaining an auth token
