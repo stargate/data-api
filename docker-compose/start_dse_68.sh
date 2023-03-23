@@ -24,7 +24,7 @@ while getopts "qnr:t:j:" opt; do
       LOGLEVEL=$OPTARG
       ;;
     t)
-      JSONTAG=$OPTARG
+      SGTAG=$OPTARG
       ;;
     \?)
       echo "Valid options:"
