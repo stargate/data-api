@@ -66,7 +66,8 @@ public record FindOperation(
             pagingState,
             pageSize,
             ReadType.DOCUMENT == readType,
-            objectMapper);
+            objectMapper,
+            projection);
       }
       default -> {
         JsonApiException failure =
