@@ -47,6 +47,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     final SortClause sortClause = command.sortClause();
     if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
+
       List<FindOperation.OrderBy> orderBy =
           command.sortClause().sortExpressions().stream()
               .map(
@@ -57,7 +58,11 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           options != null && options.skip() != null && options.skip().intValue() > 0
               ? options.skip()
               : 0;
+      // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
       pageSize = documentConfig.defaultSortPageSize();
+      // For in memory sorting if no limit provided in the request will use
+      // documentConfig.defaultPageSize() as limit
+      limit = Math.min(limit, documentConfig.defaultPageSize());
       return new FindOperation(
           commandContext,
           filters,

@@ -841,7 +841,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(20))
+          .body("data.count", is(10))
           .body("data.docs", contains((expected)));
     }
 

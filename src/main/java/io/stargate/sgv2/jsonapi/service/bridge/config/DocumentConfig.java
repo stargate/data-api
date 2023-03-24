@@ -32,7 +32,7 @@ public interface DocumentConfig {
   @WithDefault("20")
   int defaultPageSize();
 
-  /** @return Defines the default document page size, defaults to <code>20</code>. */
+  /** @return Defines the default document page size, defaults to <code>100</code>. */
   @Max(500)
   @Positive
   @WithDefault("100")
