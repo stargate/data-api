@@ -51,6 +51,40 @@ public class DocumentProjectorTest {
     }
 
     @Test
+    public void verifyNoPathOverlap() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      { "branch" : 1,
+                        "branch.x.leaf" : 1,
+                        "include.me" : 1
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: projection path conflict between 'branch' and 'branch.x.leaf'");
+
+      // Should be caught regardless of ordering (longer vs shorter path first)
+      JsonNode def2 =
+          objectMapper.readTree(
+              """
+                      { "a.y.leaf" : 1,
+                        "a" : 1,
+                        "value" : 1
+                      }
+                      """);
+      Throwable t2 = catchThrowable(() -> DocumentProjector.createFromDefinition(def2));
+      assertThat(t2)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: projection path conflict between 'a' and 'a.y.leaf'");
+    }
+
+    @Test
     public void verifyNoExcludeAfterInclude() throws Exception {
       JsonNode def =
           objectMapper.readTree(
@@ -76,12 +110,14 @@ public class DocumentProjectorTest {
     @Test
     public void verifyProjectionEquality() throws Exception {
       String defStr1 = "{ \"field1\" : 1, \"field2\": 1 }";
-      String defStr2 = "{ \"field1\" : 1, \"field3\": 1 }";
+      String defStr2 = "{ \"field1\" : 0, \"field2\": 0 }";
 
       DocumentProjector proj1 =
           DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1));
+      assertThat(proj1.isInclusion()).isTrue();
       DocumentProjector proj2 =
           DocumentProjector.createFromDefinition(objectMapper.readTree(defStr2));
+      assertThat(proj2.isInclusion()).isFalse();
 
       // First, verify equality of identical definitions
       assertThat(proj1)
@@ -89,7 +125,11 @@ public class DocumentProjectorTest {
       assertThat(proj2)
           .isEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr2)));
 
-      // TODO: inequality
+      // Then inequality
+      assertThat(proj1)
+          .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr2)));
+      assertThat(proj2)
+          .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1)));
     }
   }
 }
