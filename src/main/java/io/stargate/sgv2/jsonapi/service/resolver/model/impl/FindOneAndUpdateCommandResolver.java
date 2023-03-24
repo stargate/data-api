@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -70,7 +71,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     return new FindOperation(
         commandContext,
         filters,
-        command.buildProjector(),
+        // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
+        // read path, hence pass identity projector.
+        DocumentProjector.identityProjector(),
         null,
         1,
         1,
