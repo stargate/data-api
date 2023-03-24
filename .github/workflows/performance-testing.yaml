@@ -76,7 +76,8 @@ jobs:
 
       # Use docker-compose to start required stack
       # Pull JSON API image from ECR corresponding to latest commit on main branch
-      # Retag JSON API image to remove repository name since start script does not expect it
+      # Pull Stargate coordinator image from ECR corresponding to version dependency in project pom
+      # Retag images to remove repository name since start script does not expect it
       # Print version of images used for verification
       - name: Start Docker Compose
         run: |
