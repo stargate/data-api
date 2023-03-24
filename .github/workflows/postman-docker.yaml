@@ -30,7 +30,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: maven
-          
+
       # login to ECR to we can pull coord image from there
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -59,7 +59,7 @@ jobs:
           JSONTAG=$(git show -s --format="%H")
           docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG
           docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG stargateio/jsonapi:$JSONTAG
-          SGTAG="$(./mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+          SGTAG="$(./mvnw -f . help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
           docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG
           docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG stargateio/coordinator-dse-68:$SGTAG
           cd docker-compose
