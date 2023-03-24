@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -808,7 +807,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(20))
-          .body("data.docs", contains((expected)));
+          .body("data.docs", jsonEquals((expected)));
     }
 
     @Test
@@ -842,7 +841,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(10))
-          .body("data.docs", contains((expected)));
+          .body("data.docs", jsonEquals((expected)));
     }
 
     @Test
@@ -873,7 +872,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(20))
-          .body("data.docs", contains((expected)));
+          .body("data.docs", jsonEquals((expected)));
     }
 
     private void insert(Map<String, String> documents) {
