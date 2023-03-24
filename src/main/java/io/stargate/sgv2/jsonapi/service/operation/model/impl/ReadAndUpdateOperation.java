@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -181,6 +182,10 @@ public record ReadAndUpdateOperation(
                         if (returnDocumentInResponse) {
                           documentToReturn =
                               returnUpdatedDocument ? updatedDocument : originalDocument;
+                          // In this case, we'll apply projection on before/after document (was
+                          // not applied during find() phase
+                          DocumentProjector projector = findOperation().projection();
+                          projector.applyProjection(documentToReturn);
                         }
                         return new UpdatedDocument(
                             writableShreddedDocument.id(), upsert, documentToReturn, null);
