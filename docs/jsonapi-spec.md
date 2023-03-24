@@ -480,20 +480,19 @@ the future.
 ```
 
 
-### countDocuments Command {#commandCountDocuments}
+### countDocuments Command
 
-#### countDocuments Command Options {#commandCountDocumentsOptions}
+#### countDocuments Command Options
 
 The `countDocuments` command does not support any options.
 
-#### countDocuments Multi Document Failure Modes {#commandCountDocumentsFailure}
+#### countDocuments Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#considerations-multi-docuemnt-failure).
 
-#### countDocuments Command Response {#commandCountDocumentsResponse}
+#### countDocuments Command Response
 
   Response Element   Description
   ------------------ ---------------------------------------------------------
@@ -503,21 +502,19 @@ Considerations](#considerationsMultiDocumentFailure).
 
 If an error occurs the command will not return `status`.
 
-### deleteMany Command {#commandDeleteMany}
+### deleteMany Command
 
-#### deleteMany Command Options {#commandDeleteManyOptions}
+#### deleteMany Command Options
 
 The `deleteMany` command does not support any options.
 
-#### deleteMany Multi Document Failure Modes {#commandDeleteManyFailure}
+#### deleteMany Multi Document Failure Modes
 
-Fail Silently, a storage failure does not stop the command from
-processing.
+Fail Silently, a storage failure does not stop the command from processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### deleteMany Command Response {#commandDeleteManyResponse}
+#### deleteMany Command Response
 
   Response Element   Description
   ------------------ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -525,23 +522,21 @@ Considerations](#considerationsMultiDocumentFailure).
   `status`           Preset with fields: `deletedCount: <zero-or-positive-integer>`, `moreData` with value `true` if there are more documents that match the delete `filter`, but were not deleted since the limit of documents to delete in the single operation was hit.
   `errors`           Present if errors occur.
 
-If an error occurs the command will still return `status` as some
-documents may have been deleted.
+If an error occurs the command will still return `status` as some documents may have been deleted.
 
-### deleteOne Command {#commandDeleteOne}
+### deleteOne Command
 
-#### deleteOne Command Options {#commandDeleteOneOptions}
+#### deleteOne Command Options
 
 The `deleteOne` command does not support any options.
 
-#### deleteOne Multi Document Failure Modes {#commandDeleteOneFailure}
+#### deleteOne Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure).
 
-#### deleteOne Command Response {#commandDeleteOneResponse}
+#### deleteOne Command Response
 
   Response Element   Description
   ------------------ -----------------------------------------------------------
@@ -551,7 +546,7 @@ Considerations](#considerationsMultiDocumentFailure).
 
 If an error occurs the command will not return `status`.
 
-### find Command {#commandFind}
+### find Command
 
 `find` selects zero or more documents from a collection that match a
 selection filter, and returns either the complete documents or a partial
@@ -559,33 +554,33 @@ projection of each document.
 
 *Syntax:*
 
-bc(syntax)..\
-`<find-command>`  ::= find `<find-command-payload>` \
-`<find-command-response>`  ::=
-`<paginated-document-response>` 
+```
+<find-command> ::= find <find-command-payload> 
+<find-command-response> ::= <paginated-document-response> 
 
-`<find-command-payload>`  ::= `<filter-clause>` ?\
-`<projection-clause>` ?\
-`<sort-clause>` ?\
-`<find-command-options>` ?
+<find-command-payload> ::= <filter-clause>?
+                             <projection-clause>? 
+                             <sort-clause>? 
+                             <find-command-options>?
 
-`<find-command-options>`  ::= (`<find-option-name>` 
-`<find-option-value>` ,)\*
+<find-command-options> ::= (<find-option-name> <find-option-value>,)*
+```
 
 *Sample:*
 
-bc(sample)..\
-// select all documents in a collection, return complete documents\
+```
+// select all documents in a collection, return complete documents
 {"find" : {} }
 
-// select where name == "aaron" and return selected fields\
-{"find" : {\
-"filter" : {"name": "aaron"},\
-"projection" : {"name": 1, :"age" : 1}\
-}\
-}
+// select where name == "aaron" and return selected fields
+{"find" : {
+    "filter" : {"name": "aaron"},
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
+```
 
-#### find Command Order of Operations {#commandFindOrderOfOperation}
+#### find Command Order of Operations
 
 TODO: add how cursor state fits into the processing
 
@@ -605,7 +600,7 @@ TODO: add how cursor state fits into the processing
     `<find-command-response>`, if no `<projection-clause>` is specified
     the complete candidate documents are included in the response.
 
-#### find Command Options {#commandFindOptions}
+#### find Command Options
 
 `<find-command-options>` is a map of key-value pairs that modify the
 behavior of the command. All options are optional, with default behavior
@@ -617,14 +612,14 @@ applied when not provided.
   `pageState`   ASCII String       The page state of the previous page, when supplied the `find` command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.
   `skip`        Positive Integer   Skips the specified number of documents, in sort order, before returning any documents.
 
-#### find Multi Document Failure Modes {#commandFindOptionsFailure}
+#### find Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi Document Failure
 Considerations](#considerationsMultiDocumentFailure).
 
-#### find Command Response {#commandFindResponse}
+#### find Command Response
 
   Response Element   Description
   ------------------ ---------------------------------------------------------------------------------------------------------------------------
@@ -645,42 +640,38 @@ after the update has been applied.
 
 *Syntax:*
 
-bc(syntax)..\
-`<find-one-and-update-command>`  ::= findOneAndUpdate
-`<find-one-and-update-command-payload>` \
-`<find-one-and-update-command-response>`  ::=
-`<single-document-response>` 
+```
+<find-one-and-update-command> ::= findOneAndUpdate <find-one-and-update-command-payload> 
+<find-one-and-update-command-response> ::= <single-document-response> 
 
-`<find-one-and-update-command-payload>`  ::=
-`<filter-clause>` ?\
-`<update-document-clause>` ?\
-`<sort-clause>` ?\
-`<projection-clause>`  ?\
-`<find-one-and-update-command-options>` ?
+<find-one-and-update-command-payload> ::= <filter-clause>? 
+                             <update-document-clause>? 
+                             <sort-clause>? 
+                             <projection-clause> ?
+                             <find-one-and-update-command-options>?
 
-`<find-one-and-update-command-options>`  ::=
-(`<find-option-name>`  `<find-option-value>` ,)\*
+<find-one-and-update-command-options> ::= (<find-option-name> <find-option-value>,)*
+```
 
 *Sample:*
 
-bc(sample)..\
-// Update the first document (by natural order) to increase the points
-field by 5\
-{"findOneAndUpdate" :\
-"filter": {} ,\
-"update": { \$inc: { "points" : 5 } }\
+```
+// Update the first document (by natural order) to increase the points field by 5
+{"findOneAndUpdate" : 
+    "filter": {} ,
+    "update": { $inc: { "points" : 5 } } 
 }
 
-// Increase the age for the document with id 123, and return the name
-and age\
-{"findOneAndUpdate" : {\
-"filter" : {"\_id": "123"},\
-"update": { \$inc: { "age" : 5 } },\
-"projection" : {"name": 1, :"age" : 1}\
-}\
-}
+// Increase the age for the document with id 123, and return the name and age 
+{"findOneAndUpdate" : {
+    "filter" : {"_id": "123"},
+    "update": { $inc: { "age" : 5 } }, 
+    "projection" : {"name": 1, :"age" : 1}
+    } 
+} 
+```
 
-#### findOneAndUpdate Command Options {#commandFindOneAndUpdateOptions}
+#### findOneAndUpdate Command Options
 
 `<find-one-and-update-command-options>` is a map of key-value pairs that
 modify the behavior of the command. All options are optional, with
@@ -691,14 +682,13 @@ default behavior applied when not provided.
   `returnDocument`   String Enum   Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied, if `"after"` the document projection is from the document after the update. Defaults to `"before"`.
   `upsert`           Boolean       When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
 
-#### findOneAndUpdate Multi Document Failure Modes {#commandFindOneAndUpdateFailure}
+#### findOneAndUpdate Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### findOneAndUpdate Command Response {#commandFindOneAndUpdateResponse}
+#### findOneAndUpdate Command Response
 
   Response Element   Description
   ------------------ --------------------------------------------------------------------------------------------------------------------------------------------
@@ -712,20 +702,19 @@ status field `upsertedId`, otherwise no status is returned .
 
 If an error occurs the command will not return `data` or `status`.
 
-### findOne Command {#commandFindOne}
+### findOne Command
 
-#### findOne Command Options {#commandFindOneOptions}
+#### findOne Command Options
 
 The `findOne` command does not support any options.
 
-#### findOne Multi Document Failure Modes {#commandFindOneFailure}
+#### findOne Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### findOne Command Response {#commandFindOneResponse}
+#### findOne Command Response
 
   Response Element   Description
   ------------------ -----------------------------------
@@ -735,9 +724,9 @@ Considerations](#considerationsMultiDocumentFailure).
 
 If an error occurs the command will not return `data`.
 
-### insertMany Command {#commandInsertMany}
+### insertMany Command
 
-#### insertMany Command Options {#commandInsertManyOptions}
+#### insertMany Command Options
 
 `<insert-many-command-options>` is a map of key-value pairs that modify
 the behavior of the command. All options are optional, with default
@@ -745,21 +734,19 @@ behavior applied when not provided.
 
   Option      Type      Description
   ----------- --------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `ordered`   Boolean   When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure) for details. Defaults to `true`.
+  `ordered`   Boolean   When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#multi-document-failure-considerations) for details. Defaults to `true`.
 
-#### insertMany Multi Document Failure Modes {#commandInsertManyFailure}
+#### insertMany Multi Document Failure Modes
 
 Depends on the `ordered` option. When `true` the command uses Fail Fast
 to stop processing at the first fault, when `false` the command uses
 Fail Silently and attempts to insert all documents.
 
-See [insertMany Command Options](#commandInsertManyOptions) for
-`ordered`.
+See [insertMany Command Options](#insertMany-command-options) for `ordered`.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### insertMany Command Response {#commandInsertManyResponse}
+#### insertMany Command Response
 
   Response Element   Description
   ------------------ -----------------------------------------------------------------------------------
@@ -767,23 +754,21 @@ Considerations](#considerationsMultiDocumentFailure).
   `status`           Present with field: `insertedIds` and array of doc `_id` 's that were inserted. .
   `errors`           Present if errors occur.
 
-If an error occurs the command will still return `status` as some
-documents may have been inserted.
+If an error occurs the command will still return `status` as some documents may have been inserted.
 
-### insertOne Command {#commandInsertOne}
+### insertOne Command
 
-#### insertOne Command Options {#commandInsertOneOptions}
+#### insertOne Command Options
 
 The `insertOne` command does not support any options.
 
-#### insertOne Multi Document Failure Modes {#commandInsertOneFailure}
+#### insertOne Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### insertOne Command Response {#commandInsertOneResponse}
+#### insertOne Command Response
 
   Response Element   Description
   ------------------ ------------------------------------------------------------------------------------
@@ -793,9 +778,9 @@ Considerations](#considerationsMultiDocumentFailure).
 
 If an error occurs the command will not return `status`.
 
-### updateMany Command {#commandUpdateMany}
+### updateMany Command
 
-#### updateMany Command Options {#commandUpdateManyOptions}
+#### updateMany Command Options
 
 `<update-many-command-options>` is a map of key-value pairs that modify
 the behavior of the command. All options are optional, with default
@@ -805,15 +790,13 @@ behavior applied when not provided.
   ---------- --------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   `upsert`   Boolean   When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
 
-#### updateMany Multi Document Failure Modes {#commandUpdateManyFailure}
+#### updateMany Multi Document Failure Modes
 
-Fail Silently, a storage failure does not stop the command from
-processing.
+Fail Silently, a storage failure does not stop the command from processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
-#### updateMany Command Response {#commandUpdateManyResponse}
+#### updateMany Command Response
 
   Response Element   Description
   ------------------ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -824,9 +807,9 @@ Considerations](#considerationsMultiDocumentFailure).
 If an error occurs the command will still return `status` as some
 documents may have been inserted.
 
-### updateOne Command {#commandUpdateOne}
+### updateOne Command
 
-#### updateOne Command Options {#commandUpdateOneOptions}
+#### updateOne Command Options
 
 `<update-one-command-options>` is a map of key-value pairs that modify
 the behavior of the command. All options are optional, with default
