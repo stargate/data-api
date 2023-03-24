@@ -61,7 +61,7 @@ jobs:
   int-tests:
     name: Integration tests
     needs: [ build ]
-    runs-on: ubuntu-latest-4-cores
+    runs-on: sg-ubuntu-latest-4-cores
 
     # max run time 20 minutes
     timeout-minutes: 20
