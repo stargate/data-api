@@ -811,7 +811,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     public void sortWithSkipLimit() {
       deleteAllDocuments();
       Map<String, String> sorted = getDocuments(25, true);
@@ -845,7 +845,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void sortDescending() {
       deleteAllDocuments();
       Map<String, String> sorted = getDocuments(25, false);
