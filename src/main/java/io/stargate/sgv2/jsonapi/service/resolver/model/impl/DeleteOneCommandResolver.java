@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import java.util.List;
@@ -46,6 +47,14 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
 
   private FindOperation getFindOperation(CommandContext commandContext, DeleteOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
-    return new FindOperation(commandContext, filters, null, 1, 1, ReadType.KEY, objectMapper);
+    return new FindOperation(
+        commandContext,
+        filters,
+        DocumentProjector.identityProjector(),
+        null,
+        1,
+        1,
+        ReadType.KEY,
+        objectMapper);
   }
 }

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.BytesValues;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,7 +20,7 @@ import java.util.Optional;
 
 /**
  * ReadOperation interface which all find command operations will use. It also provides the
- * implementation to excute and query and parse the result set as {@link FindResponse}
+ * implementation to execute and query and parse the result set as {@link FindResponse}
  */
 public interface ReadOperation extends Operation {
   String[] documentColumns = {"key", "tx_id", "doc_json"};
@@ -41,7 +43,8 @@ public interface ReadOperation extends Operation {
       String pagingState,
       int pageSize,
       boolean readDocument,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      DocumentProjector projection) {
     return queryExecutor
         .executeRead(query, Optional.ofNullable(pagingState), pageSize)
         .onItem()
@@ -55,13 +58,16 @@ public interface ReadOperation extends Operation {
                 QueryOuterClass.Row row = rowIterator.next();
                 ReadDocument document = null;
                 try {
+                  JsonNode root =
+                      readDocument ? objectMapper.readTree(Values.string(row.getValues(2))) : null;
+                  if (root != null) {
+                    projection.applyProjection(root);
+                  }
                   document =
                       new ReadDocument(
                           getDocumentId(row.getValues(0)), // key
                           Values.uuid(row.getValues(1)), // tx_id
-                          readDocument
-                              ? objectMapper.readTree(Values.string(row.getValues(2)))
-                              : null);
+                          root);
                 } catch (JsonProcessingException e) {
                   throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
                 }

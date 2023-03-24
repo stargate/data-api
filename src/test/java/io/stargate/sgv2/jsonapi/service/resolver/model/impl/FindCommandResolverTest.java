@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import javax.inject.Inject;
@@ -49,6 +51,7 @@ public class FindCommandResolverTest {
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              DocumentProjector.identityProjector(),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
@@ -80,6 +83,7 @@ public class FindCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(),
+              DocumentProjector.identityProjector(),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
@@ -115,6 +119,7 @@ public class FindCommandResolverTest {
           new FindOperation(
               commandContext,
               List.of(),
+              DocumentProjector.identityProjector(),
               "dlavjhvbavkjbna",
               10,
               documentConfig.defaultPageSize(),
@@ -149,6 +154,95 @@ public class FindCommandResolverTest {
               List.of(
                   new DBFilterBase.TextFilter(
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
+              DocumentProjector.identityProjector(),
+              null,
+              documentConfig.maxLimit(),
+              documentConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+  }
+
+  @Nested
+  class FindCommandResolveWithProjection {
+    @Test
+    public void idFilterConditionAndProjection() throws Exception {
+      final JsonNode projectionDef =
+          objectMapper.readTree(
+              """
+              {
+                "field1" : 1,
+                "field2" : 1
+               }
+               """);
+      String json =
+          """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "id"},
+                          "projection": %s
+                        }
+                      }
+                      """
+              .formatted(projectionDef);
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              DocumentProjector.createFromDefinition(projectionDef),
+              null,
+              documentConfig.maxLimit(),
+              documentConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void noFilterConditionWithProjection() throws Exception {
+      final JsonNode projectionDef =
+          objectMapper.readTree(
+              """
+              {
+                "field1" : 1,
+                "field2" : 1
+               }
+               """);
+      String json =
+          """
+                  {
+                    "find": {
+                      "projection" : %s
+                    }
+                  }
+                  """
+              .formatted(projectionDef);
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation =
+          findCommandResolver.resolveCommand(commandContext, findOneCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(),
+              DocumentProjector.createFromDefinition(projectionDef),
               null,
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),

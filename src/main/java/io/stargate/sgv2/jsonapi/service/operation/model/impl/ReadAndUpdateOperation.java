@@ -181,6 +181,11 @@ public record ReadAndUpdateOperation(
                         if (returnDocumentInResponse) {
                           documentToReturn =
                               returnUpdatedDocument ? updatedDocument : originalDocument;
+                          // 24-Mar-2023, tatu: Will need to add projection in follow-up PR;
+                          //   one we get here is identity-projection which does nothing.
+                          //
+                          // DocumentProjector projector = findOperation().projection();
+                          // projector.applyProjection(documentToReturn);
                         }
                         return new UpdatedDocument(
                             writableShreddedDocument.id(), upsert, documentToReturn, null);

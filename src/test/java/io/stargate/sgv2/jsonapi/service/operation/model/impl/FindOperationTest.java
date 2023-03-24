@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
@@ -98,7 +99,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(), null, 20, 20, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(),
+              DocumentProjector.identityProjector(),
+              null,
+              20,
+              20,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -166,7 +174,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -219,7 +234,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -284,7 +306,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -351,7 +380,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true);
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -414,7 +450,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.ExistsFilter filter = new DBFilterBase.ExistsFilter("registration_active", true);
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -480,7 +523,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"),
               new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
       FindOperation operation =
-          new FindOperation(COMMAND_CONTEXT, filters, null, 1, 1, ReadType.DOCUMENT, objectMapper);
+          new FindOperation(
+              COMMAND_CONTEXT,
+              filters,
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -544,7 +595,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.SizeFilter filter = new DBFilterBase.SizeFilter("tags", 2);
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -610,7 +668,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.ArrayEqualsFilter(new DocValueHasher(), "tags", List.of("tag1", "tag2"));
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -677,7 +742,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               new DocValueHasher(), "sub_doc", Map.of("col", "val"));
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -735,7 +807,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Throwable failure =
           operation
@@ -803,7 +882,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -868,7 +954,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -931,7 +1024,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation findOperation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -996,7 +1096,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation findOperation =
           new FindOperation(
-              COMMAND_CONTEXT, List.of(filter), null, 1, 1, ReadType.DOCUMENT, objectMapper);
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper);
 
       DBFilterBase.IDFilter idFilter =
           new DBFilterBase.IDFilter(
