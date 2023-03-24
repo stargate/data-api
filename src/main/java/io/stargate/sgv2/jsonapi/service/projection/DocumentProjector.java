@@ -94,7 +94,16 @@ public class DocumentProjector {
         return DocumentProjector.identityProjector();
       }
 
-      return new DocumentProjector(ProjectionLayer.buildLayers(paths), inclusions > 0);
+      // One more thing: do we need to add document id?
+      if (inclusions > 0) { // inclusion-based projection
+        // doc-id included unless explicitly excluded
+        return new DocumentProjector(
+            ProjectionLayer.buildLayers(paths, !Boolean.FALSE.equals(idInclusion)), true);
+      } else { // exclusion-based
+        // doc-id excluded only if explicitly excluded
+        return new DocumentProjector(
+            ProjectionLayer.buildLayers(paths, Boolean.FALSE.equals(idInclusion)), false);
+      }
     }
 
     /**
@@ -208,12 +217,17 @@ public class DocumentProjector {
       nextLayers = isTerminal ? null : new HashMap<>();
     }
 
-    public static ProjectionLayer buildLayers(Collection<String> dotPaths) {
+    public static ProjectionLayer buildLayers(Collection<String> dotPaths, boolean addDocId) {
       // Root is always branch (not terminal):
       ProjectionLayer root = new ProjectionLayer(false, "");
       for (String fullPath : dotPaths) {
         String[] segments = DOT.split(fullPath);
         buildPath(fullPath, root, segments);
+      }
+      // May need to add doc-id inclusion/exclusion as well
+      if (addDocId) {
+        buildPath(
+            DocumentConstants.Fields.DOC_ID, root, new String[] {DocumentConstants.Fields.DOC_ID});
       }
       return root;
     }
