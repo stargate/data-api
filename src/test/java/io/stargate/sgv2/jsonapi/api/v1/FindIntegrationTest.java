@@ -11,10 +11,8 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.junit.jupiter.api.MethodOrderer;
@@ -794,9 +792,9 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
         }
         """;
 
-      List<String> expected = new ArrayList<>(20);
+      String[] expected = new String[20];
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
-      for (int i = 0; i < 20; i++) expected.add(iterator.next().getValue());
+      for (int i = 0; i < 20; i++) expected[i] = iterator.next().getValue();
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -807,7 +805,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(20))
-          .body("data.docs", jsonEquals((expected)));
+          .body("data.docs", jsonEquals(expected));
     }
 
     @Test
@@ -826,10 +824,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
 
-      List<String> expected = new ArrayList<>(10);
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
+      String[] expected = new String[10];
+      int j = 0;
       for (int i = 0; i < 20; i++) {
-        if (i >= 10) expected.add(iterator.next().getValue());
+        String value = iterator.next().getValue();
+        if (i >= 10) {
+          expected[j] = value;
+          j++;
+        }
       }
 
       given()
@@ -859,9 +862,9 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
               """;
 
-      List<String> expected = new ArrayList<>(20);
+      String[] expected = new String[20];
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
-      for (int i = 0; i < 20; i++) expected.add(iterator.next().getValue());
+      for (int i = 0; i < 20; i++) expected[i] = iterator.next().getValue();
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
