@@ -784,7 +784,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     @Order(3)
     public void sort() {
       deleteAllDocuments();
-      Map<Integer, String> sorted = getDocuments(25, true);
+      Map<String, String> sorted = getDocuments(25, true);
       insert(sorted);
       String json =
           """
@@ -796,7 +796,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
         """;
 
       List<String> expected = new ArrayList<>(20);
-      final Iterator<Map.Entry<Integer, String>> iterator = sorted.entrySet().iterator();
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
       for (int i = 0; i < 20; i++) expected.add(iterator.next().getValue());
 
       given()
@@ -815,7 +815,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     @Order(3)
     public void sortWithSkipLimit() {
       deleteAllDocuments();
-      Map<Integer, String> sorted = getDocuments(25, true);
+      Map<String, String> sorted = getDocuments(25, true);
       insert(sorted);
       String json =
           """
@@ -828,7 +828,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               """;
 
       List<String> expected = new ArrayList<>(10);
-      final Iterator<Map.Entry<Integer, String>> iterator = sorted.entrySet().iterator();
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
       for (int i = 0; i < 20; i++) {
         if (i >= 10) expected.add(iterator.next().getValue());
       }
@@ -849,7 +849,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     @Order(4)
     public void sortDescending() {
       deleteAllDocuments();
-      Map<Integer, String> sorted = getDocuments(25, false);
+      Map<String, String> sorted = getDocuments(25, false);
       insert(sorted);
       String json =
           """
@@ -861,7 +861,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               """;
 
       List<String> expected = new ArrayList<>(20);
-      final Iterator<Map.Entry<Integer, String>> iterator = sorted.entrySet().iterator();
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
       for (int i = 0; i < 20; i++) expected.add(iterator.next().getValue());
 
       given()
@@ -876,22 +876,22 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .body("data.docs", contains((expected)));
     }
 
-    private void insert(Map<Integer, String> documents) {
+    private void insert(Map<String, String> documents) {
       documents.values().forEach(doc -> insertDoc(doc));
     }
 
-    private Map<Integer, String> getDocuments(int countOfDocuments, boolean asc) {
+    private Map<String, String> getDocuments(int countOfDocuments, boolean asc) {
       String json = "{\"_id\":\"doc%s\", \"username\":\"user%s\", \"active_user\":true}";
-      Map<Integer, String> data =
-          new TreeMap<Integer, String>(
-              new Comparator<Integer>() {
+      Map<String, String> data =
+          new TreeMap<String, String>(
+              new Comparator<String>() {
                 @Override
-                public int compare(Integer o1, Integer o2) {
+                public int compare(String o1, String o2) {
                   return asc ? o1.compareTo(o2) : o2.compareTo(o1);
                 }
               });
       for (int docId = 1; docId <= countOfDocuments; docId++) {
-        data.put(docId, json.formatted(docId, docId));
+        data.put("user%s".formatted(docId), json.formatted(docId, docId));
       }
       return data;
     }
