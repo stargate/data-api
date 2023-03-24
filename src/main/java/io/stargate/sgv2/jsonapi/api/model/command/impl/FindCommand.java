@@ -28,6 +28,12 @@ public record FindCommand(
           Integer limit,
       @Valid
           @Schema(
+              description = "Skips provided number of documents before returning sorted documents.",
+              type = SchemaType.INTEGER,
+              implementation = Integer.class)
+          Integer skip,
+      @Valid
+          @Schema(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
@@ -12,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -38,12 +40,36 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
+    final FindCommand.Options options = command.options();
     int limit =
-        command.options() != null && command.options().limit() != null
-            ? command.options().limit()
-            : documentConfig.maxLimit();
+        options != null && options.limit() != null ? options.limit() : documentConfig.maxLimit();
     int pageSize = documentConfig.defaultPageSize();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
+    final SortClause sortClause = command.sortClause();
+    if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
+      List<FindOperation.OrderBy> orderBy =
+          command.sortClause().sortExpressions().stream()
+              .map(
+                  sortExpression ->
+                      new FindOperation.OrderBy(sortExpression.path(), sortExpression.ascending()))
+              .collect(Collectors.toList());
+      int skip =
+          options != null && options.skip() != null && options.skip().intValue() > 0
+              ? options.skip()
+              : 0;
+      pageSize = documentConfig.defaultSortPageSize();
+      return new FindOperation(
+          commandContext,
+          filters,
+          pagingState,
+          limit,
+          pageSize,
+          ReadType.SORTED_DOCUMENT,
+          objectMapper,
+          orderBy,
+          skip,
+          documentConfig.maxSortReadLimit());
+    }
     return new FindOperation(
         commandContext, filters, pagingState, limit, pageSize, ReadType.DOCUMENT, objectMapper);
   }

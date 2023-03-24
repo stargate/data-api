@@ -3,8 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.cql.ColumnUtils;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -13,12 +15,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindOperation(
@@ -28,8 +32,22 @@ public record FindOperation(
     int limit,
     int pageSize,
     ReadType readType,
-    ObjectMapper objectMapper)
+    ObjectMapper objectMapper,
+    List<OrderBy> orderBy,
+    int skip,
+    int maxSortReadLimit)
     implements ReadOperation {
+
+  public FindOperation(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      String pagingState,
+      int limit,
+      int pageSize,
+      ReadType readType,
+      ObjectMapper objectMapper) {
+    this(commandContext, filters, pagingState, limit, pageSize, readType, objectMapper, null, 0, 0);
+  }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
@@ -56,6 +74,19 @@ public record FindOperation(
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
     switch (readType) {
+      case SORTED_DOCUMENT -> {
+        QueryOuterClass.Query query = buildSortedSelectQuery(additionalIdFilter);
+        return findOrderDocument(
+            queryExecutor,
+            query,
+            pageSize,
+            objectMapper(),
+            new ChainedComparator(orderBy()),
+            orderBy().size(),
+            skip(),
+            limit(),
+            maxSortReadLimit());
+      }
       case DOCUMENT, KEY -> {
         QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
         return findDocument(
@@ -128,5 +159,39 @@ public record FindOperation(
         .where(conditions)
         .limit(limit)
         .build();
+  }
+
+  private QueryOuterClass.Query buildSortedSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
+    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
+    for (DBFilterBase filter : filters) {
+      if (additionalIdFilter == null
+          || (additionalIdFilter != null && !(filter instanceof DBFilterBase.IDFilter)))
+        conditions.add(filter.get());
+    }
+    if (additionalIdFilter != null) {
+      conditions.add(additionalIdFilter.get());
+    }
+    String[] columns = sortedDataColumns;
+
+    if (orderBy() != null) {
+      List<String> sortColumns = Lists.newArrayList(columns);
+      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumn()));
+      columns = new String[sortColumns.size()];
+      sortColumns.toArray(columns);
+    }
+    ColumnUtils.maybeQuote("aaa");
+    return new QueryBuilder()
+        .select()
+        .column(columns)
+        .from(commandContext.namespace(), commandContext.collection())
+        .where(conditions)
+        .limit(maxSortReadLimit())
+        .build();
+  }
+
+  public record OrderBy(String column, boolean ascending) {
+    public List<String> getOrderingColumn() {
+      return sortColumns.stream().map(col -> col.formatted(column())).collect(Collectors.toList());
+    }
   }
 }

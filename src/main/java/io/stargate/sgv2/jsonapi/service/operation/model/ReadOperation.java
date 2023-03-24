@@ -1,7 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.google.common.collect.MinMaxPriorityQueue;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.BytesValues;
 import io.stargate.bridge.grpc.Values;
@@ -12,9 +16,13 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * ReadOperation interface which all find command operations will use. It also provides the
@@ -23,7 +31,13 @@ import java.util.Optional;
 public interface ReadOperation extends Operation {
   String[] documentColumns = {"key", "tx_id", "doc_json"};
   String[] documentKeyColumns = {"key", "tx_id"};
-
+  String[] sortedDataColumns = {"key", "doc_json"};
+  int SORTED_DATA_COLUMNS = sortedDataColumns.length;
+  List<String> sortColumns =
+      List.of(
+          "query_text_values['%s']",
+          "query_dbl_values['%s']", "query_bool_values['%s']", "query_null_values['%s']");
+  int SORT_INDEX_COLUMNS_SIZE = sortColumns.size();
   /**
    * Default implementation to query and parse the result set
    *
@@ -68,6 +82,146 @@ public interface ReadOperation extends Operation {
                 documents.add(document);
               }
               return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
+            });
+  }
+
+  /**
+   * This method reads upto system fixed limit
+   *
+   * @param queryExecutor
+   * @param query
+   * @param pageSize
+   * @param objectMapper
+   * @param comparator -
+   * @param numberOfOrderByColumn - Number of order by columns
+   * @param skip - Skip `skip` # of document from the sorted collection before returning the
+   *     documents
+   * @param limit - How many documents to return
+   * @param errorLimit - Count of record on which system to error out, this will be (maximum read
+   *     count for sort + 1)
+   * @return
+   */
+  default Uni<FindResponse> findOrderDocument(
+      QueryExecutor queryExecutor,
+      QueryOuterClass.Query query,
+      int pageSize,
+      ObjectMapper objectMapper,
+      Comparator<ReadDocument> comparator,
+      int numberOfOrderByColumn,
+      int skip,
+      int limit,
+      int errorLimit) {
+    final AtomicInteger documentCounter = new AtomicInteger(0);
+    MinMaxPriorityQueue<ReadDocument> sortedData =
+        MinMaxPriorityQueue.orderedBy(comparator).maximumSize(skip + limit).create();
+    final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<String>(null),
+            stateRef -> {
+              return queryExecutor.executeRead(
+                  query, Optional.ofNullable(stateRef.get()), pageSize);
+            })
+        // Read document while pagingState exists, limit for read is set at updateLimit +1
+        .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null)
+        .onItem()
+        .transformToUniAndMerge(
+            resultSet -> {
+              Iterator<QueryOuterClass.Row> rowIterator =
+                  resultSet.getRowsList().stream().iterator();
+              int remaining = resultSet.getRowsCount();
+              documentCounter.addAndGet(remaining);
+              while (--remaining >= 0 && rowIterator.hasNext()) {
+                ReadDocument document = null;
+                QueryOuterClass.Row row = rowIterator.next();
+                List<JsonNode> sortValues = new ArrayList<>(numberOfOrderByColumn);
+                for (int sortColumnCount = 0;
+                    sortColumnCount < numberOfOrderByColumn;
+                    sortColumnCount++) {
+                  int columnCounter =
+                      SORTED_DATA_COLUMNS + ((sortColumnCount) * SORT_INDEX_COLUMNS_SIZE);
+                  QueryOuterClass.Value value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.textNode(Values.string(value)));
+                    continue;
+                  }
+                  columnCounter++;
+                  value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.numberNode(Values.decimal(value)));
+                    continue;
+                  }
+                  columnCounter++;
+                  value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.booleanNode(Values.bool(value)));
+                    continue;
+                  }
+                  columnCounter++;
+                  value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.nullNode());
+                    continue;
+                  }
+
+                  sortValues.add(nodeFactory.missingNode());
+                }
+                // Create ReadDocument with document id, grpc value for doc json and list of sort
+                // values
+                document =
+                    new ReadDocument(
+                        getDocumentId(row.getValues(0)), // key
+                        row.getValues(1), // Deserialized value of doc_json
+                        sortValues);
+                sortedData.add(document);
+              }
+              return Uni.createFrom().item(true);
+            })
+        .collect()
+        .last()
+        .onItem()
+        .transform(
+            flag -> {
+              if (documentCounter.get() == errorLimit)
+                throw new JsonApiException(ErrorCode.DATASET_TOO_BIG);
+
+              // begin value to read from the sorted list
+              int begin = skip;
+
+              // If the begin index is >= sorted list size, return empty response
+              if (begin >= sortedData.size()) return new FindResponse(List.of(), null);
+              // Last index to which we need to read
+              int end = Math.min(skip + limit, sortedData.size());
+              // Create a sublist of the required rage
+
+              List<ReadDocument> subList = new ArrayList<>(limit);
+              int i = 0;
+              while (i < end) {
+                ReadDocument readDocument = sortedData.poll();
+                if (i >= begin) {
+                  subList.add(readDocument);
+                }
+                i++;
+              }
+
+              // deserialize the doc_json field
+              List<ReadDocument> responseDocuments =
+                  subList.stream()
+                      .map(
+                          readDoc -> {
+                            try {
+                              final JsonNode jsonNode =
+                                  objectMapper.readTree(Values.string(readDoc.docJsonValue()));
+                              return new ReadDocument(readDoc.id(), readDoc.txnId(), jsonNode);
+                              // This error should never happen because we are creating Json object
+                              // out of the validated json stored in DB.
+                            } catch (JsonProcessingException e) {
+                              throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
+                            }
+                          })
+                      .collect(Collectors.toList());
+              return new FindResponse(responseDocuments, null);
             });
   }
 
