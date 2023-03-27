@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -84,6 +86,65 @@ class ProjectionLayer {
       reportPathConflict(fullPath, next.fullPath);
     }
     nextLayers.put(segment, new ProjectionLayer(true, fullPath));
+  }
+
+  public void applyInclusions(JsonNode subtree) {
+    // For both inclusions and exclusions, Arrays are "skipped" in that
+    // inclusion only affects Objects (inside Arrays or other Objects)
+    if (subtree.isArray()) {
+      subtree.forEach(e -> applyInclusions(e));
+      return;
+    }
+
+    // For Object inclusions we need to traverse existing properties and see if layer
+    // has a match; three possibilities:
+    // 1. Match, terminal -> include path, value (no-op, skip)
+    // 2. Match, non-terminal -> continue checking recursively
+    // 3. No match, prune (remove)
+
+    var it = subtree.fields();
+    while (it.hasNext()) {
+      var entry = it.next();
+      ProjectionLayer nextLayer = nextLayers.get(entry.getKey());
+
+      if (nextLayer == null) { // case 3: no match, remove
+        it.remove();
+      } else if (nextLayer.isTerminal) { // case 1: leave as-is
+        ;
+      } else { // case 2: recurse
+        nextLayer.applyInclusions(entry.getValue());
+      }
+    }
+  }
+
+  public void applyExclusions(JsonNode subtree) {
+    // For both inclusions and exclusions, Arrays are "skipped" in that
+    // inclusion only affects Objects (inside Arrays or other Objects)
+    if (subtree.isArray()) {
+      subtree.forEach(e -> applyExclusions(e));
+      return;
+    }
+
+    // For Object inclusions we can traverse next-layer mappings and see if there
+    // is a matching property; this gives us three possibilities:
+    // 1. Match, terminal -> remove property
+    // 2. Match, non-terminal -> continue checking recursively
+    // 3. No match, nothing to do
+    var it = nextLayers.entrySet().iterator();
+    while (it.hasNext()) {
+      var entry = it.next();
+      final String propName = entry.getKey();
+      ProjectionLayer nextLayer = entry.getValue();
+      JsonNode propValue = subtree.get(propName);
+
+      if (propValue == null) { // case 3: no match, leave
+        ;
+      } else if (nextLayer.isTerminal) { // case 1: remove
+        ((ObjectNode) subtree).remove(propName);
+      } else { // case 2: recurse
+        nextLayer.applyExclusions(propValue);
+      }
+    }
   }
 
   void reportPathConflict(String fullPath1, String fullPath2) {

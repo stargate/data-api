@@ -132,4 +132,260 @@ public class DocumentProjectorTest {
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1)));
     }
   }
+
+  @Nested
+  class ProjectorApplyInclusions {
+    @Test
+    public void testSimpleIncludeWithId() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "_id" : 1,
+                         "value1" : true,
+                         "value2" : false,
+                         "nested" : {
+                            "x": 3,
+                            "y": 4,
+                            "z": -1
+                         },
+                         "nested2" : {
+                            "z": 5
+                         }
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                      { "value2" : 1,
+                        "nested" : {
+                           "x": 1
+                        },
+                        "nested.z": 1,
+                        "nosuchprop": 1
+                      }
+                      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+              { "_id" : 1,
+                 "value2" : false,
+                 "nested" : {
+                    "x": 3,
+                    "z": -1
+                 }
+              }
+                      """));
+    }
+
+    @Test
+    public void testSimpleIncludeWithoutId() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "_id" : 1,
+                         "value1" : true,
+                         "nested" : {
+                            "x": 3,
+                            "z": -1
+                         },
+                         "nested2" : {
+                            "z": 5
+                         }
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                      { "value1" : 1,
+                        "nested" : {
+                           "x": 1
+                        },
+                        "_id": 0,
+                        "nested2.unknown": 1
+                      }
+                      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+              {
+                 "value1": true,
+                 "nested" : {
+                    "x": 3
+                 },
+                 "nested2" : { }
+              }
+              """));
+    }
+
+    @Test
+    public void testSimpleIncludeInArray() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ {
+                           "x": 1,
+                           "y": 2
+                        }, {
+                           "y": false,
+                           "z": true
+                        } ]
+                      }
+              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree("{ \"values.y\": 1, \"values.z\":1}"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                      { "values" : [ {
+                           "y": 2
+                        }, {
+                           "y": false,
+                           "z": true
+                        } ]
+                      }
+                      """));
+    }
+  }
+
+  @Nested
+  class ProjectorApplyExclusions {
+    @Test
+    public void testExcludeWithIdIncluded() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                      {  "_id" : 123,
+                         "value1" : true,
+                         "value2" : false,
+                         "nested" : {
+                            "x": 3,
+                            "y": 4,
+                            "z": -1
+                         },
+                         "nested2" : {
+                            "z": 5
+                         }
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                  {
+                                    "value1" : 0,
+                                    "nested" : {
+                                       "x": 0
+                                    },
+                                    "nested.z": 0,
+                                    "nosuchprop": 0
+                                  }
+                                  """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          {
+                             "_id" : 123,
+                             "value2" : false,
+                             "nested" : {
+                                "y": 4
+                             },
+                             "nested2" : {
+                               "z": 5
+                             }
+                          }
+                                  """));
+    }
+
+    @Test
+    public void testExcludeWithIdExcluded() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "_id" : 123,
+                         "value1" : true,
+                         "nested" : {
+                            "x": 3,
+                            "z": -1
+                         },
+                         "nested2" : {
+                            "z": 5
+                         }
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                  {
+                                    "_id": 0,
+                                    "value1" : 0,
+                                    "nested" : {
+                                       "x": 0
+                                    },
+                                    "nested2.unknown": 0
+                                  }
+                                  """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          {
+                             "nested" : {
+                                "z": -1
+                             },
+                             "nested2" : {
+                               "z" : 5
+                             }
+                          }
+                          """));
+    }
+
+    @Test
+    public void testSimpleExcludeInArray() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ {
+                                   "x": 1,
+                                   "y": 2
+                                }, {
+                                   "y": false,
+                                   "z": true
+                                } ]
+                              }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree("{ \"values.y\": 0, \"values.z\":0}"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                  { "values" : [ {
+                                       "x": 1
+                                    }, {
+                                    } ]
+                                  }
+                                  """));
+    }
+  }
 }
