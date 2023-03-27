@@ -32,7 +32,10 @@ public interface DocumentConfig {
   @WithDefault("20")
   int defaultPageSize();
 
-  /** @return Defines the default document page size, defaults to <code>100</code>. */
+  /**
+   * @return Defines the default document page size for sorting, having separate config because sort
+   *     will more rows in per page, defaults to <code>100</code>.
+   */
   @Max(500)
   @Positive
   @WithDefault("100")

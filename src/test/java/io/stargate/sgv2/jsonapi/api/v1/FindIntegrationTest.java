@@ -780,7 +780,11 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
     }
+  }
 
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOperationWithSortTest {
     @Test
     @Order(3)
     public void sort() {
@@ -789,12 +793,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       insert(sorted);
       String json =
           """
-            {
-              "find": {
-                "sort" : ["username"]
-              }
-            }
-          """;
+                {
+                  "find": {
+                    "sort" : ["username"]
+                  }
+                }
+              """;
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
@@ -824,13 +828,13 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       insert(sorted);
       String json =
           """
-          {
-            "find": {
-              "sort" : ["username"],
-              "options" : {"skip": 10, "limit" : 10}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "sort" : ["username"],
+                  "options" : {"skip": 10, "limit" : 10}
+                }
+              }
+              """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(10);
@@ -866,12 +870,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       insert(sorted);
       String json =
           """
-          {
-            "find": {
-              "sort" : ["-username"]
-            }
-          }
-          """;
+              {
+                "find": {
+                  "sort" : ["-username"]
+                }
+              }
+              """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);

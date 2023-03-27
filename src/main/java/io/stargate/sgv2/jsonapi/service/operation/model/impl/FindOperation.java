@@ -122,7 +122,7 @@ public record FindOperation(
       }
     }
 
-    return new ReadDocument(documentId, null, rootNode);
+    return ReadDocument.from(documentId, null, rootNode);
   }
 
   // builds select query
@@ -192,7 +192,9 @@ public record FindOperation(
      * @return
      */
     public List<String> getOrderingColumn() {
-      return sortColumns.stream().map(col -> col.formatted(column())).collect(Collectors.toList());
+      return sortIndexColumns.stream()
+          .map(col -> col.formatted(column()))
+          .collect(Collectors.toList());
     }
   }
 }

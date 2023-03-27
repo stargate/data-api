@@ -21,12 +21,13 @@ public record ReadDocument(
     JsonNode document,
     List<JsonNode> sortColumns,
     QueryOuterClass.Value docJsonValue) {
-  public ReadDocument(DocumentId id, UUID txnId, JsonNode document) {
-    this(id, txnId, document, null, null);
+
+  public static ReadDocument from(DocumentId id, UUID txnId, JsonNode document) {
+    return new ReadDocument(id, txnId, document, null, null);
   }
 
-  public ReadDocument(
+  public static ReadDocument from(
       DocumentId id, QueryOuterClass.Value docJsonValue, List<JsonNode> sortColumns) {
-    this(id, null, null, sortColumns, docJsonValue);
+    return new ReadDocument(id, null, null, sortColumns, docJsonValue);
   }
 }

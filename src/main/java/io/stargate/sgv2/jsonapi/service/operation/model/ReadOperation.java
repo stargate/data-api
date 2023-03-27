@@ -34,11 +34,11 @@ public interface ReadOperation extends Operation {
   String[] documentKeyColumns = {"key", "tx_id"};
   String[] sortedDataColumns = {"key", "doc_json"};
   int SORTED_DATA_COLUMNS = sortedDataColumns.length;
-  List<String> sortColumns =
+  List<String> sortIndexColumns =
       List.of(
           "query_text_values['%s']",
           "query_dbl_values['%s']", "query_bool_values['%s']", "query_null_values['%s']");
-  int SORT_INDEX_COLUMNS_SIZE = sortColumns.size();
+  int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
   /**
    * Default implementation to query and parse the result set
    *
@@ -77,7 +77,7 @@ public interface ReadOperation extends Operation {
                     projection.applyProjection(root);
                   }
                   document =
-                      new ReadDocument(
+                      ReadDocument.from(
                           getDocumentId(row.getValues(0)), // key
                           Values.uuid(row.getValues(1)), // tx_id
                           root);
@@ -175,7 +175,7 @@ public interface ReadOperation extends Operation {
                 // Create ReadDocument with document id, grpc value for doc json and list of sort
                 // values
                 document =
-                    new ReadDocument(
+                    ReadDocument.from(
                         getDocumentId(row.getValues(0)), // key
                         row.getValues(1), // Deserialized value of doc_json
                         sortValues);
@@ -218,7 +218,7 @@ public interface ReadOperation extends Operation {
                             try {
                               final JsonNode jsonNode =
                                   objectMapper.readTree(Values.string(readDoc.docJsonValue()));
-                              return new ReadDocument(readDoc.id(), readDoc.txnId(), jsonNode);
+                              return ReadDocument.from(readDoc.id(), readDoc.txnId(), jsonNode);
                               // This error should never happen because we are creating Json object
                               // out of the validated json stored in DB.
                             } catch (JsonProcessingException e) {
