@@ -19,6 +19,7 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
@@ -297,7 +298,9 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           """;
       // start all threads
       AtomicInteger reportedDeletions = new AtomicInteger(0);
+      AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
       for (int i = 0; i < threads; i++) {
+        int index = i;
         new Thread(
                 () -> {
                   try {
@@ -322,6 +325,10 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
 
                     // add reported deletes
                     reportedDeletions.addAndGet(deletedCount);
+                  } catch (Exception e) {
+
+                    // set exception so we can rethrow
+                    exceptions.set(index, e);
                   } finally {
 
                     // count down
@@ -332,6 +339,15 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
       }
 
       latch.await();
+
+      // check if there are any exceptions
+      // throw first that is seen
+      for (int i = 0; i < threads; i++) {
+        Exception exception = exceptions.get(i);
+        if (null != exception) {
+          throw exception;
+        }
+      }
 
       // assert reported deletes are exactly one
       assertThat(reportedDeletions.get()).isEqualTo(totalDocuments);

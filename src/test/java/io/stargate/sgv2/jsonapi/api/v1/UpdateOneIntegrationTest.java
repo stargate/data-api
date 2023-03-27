@@ -13,6 +13,7 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
@@ -1744,7 +1745,9 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           }
           """;
       // start all threads
+      AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
       for (int i = 0; i < threads; i++) {
+        int index = i;
         new Thread(
                 () -> {
                   try {
@@ -1759,6 +1762,10 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                         .body("status.matchedCount", is(1))
                         .body("status.modifiedCount", is(1))
                         .body("errors", is(nullValue()));
+                  } catch (Exception e) {
+
+                    // set exception so we can rethrow
+                    exceptions.set(index, e);
                   } finally {
 
                     // count down
@@ -1769,6 +1776,15 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       }
 
       latch.await();
+
+      // check if there are any exceptions
+      // throw first that is seen
+      for (int i = 0; i < threads; i++) {
+        Exception exception = exceptions.get(i);
+        if (null != exception) {
+          throw exception;
+        }
+      }
 
       // assert state after all updates
       String expectedDoc =
