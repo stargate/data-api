@@ -15,5 +15,5 @@ else
    exit 1
 fi
 
-# Note: brackets around version needed for parent (version "range") but not for child modules
-./mvnw -B versions:update-parent -DparentVersion="[${STARGATE_VERSION_NUMBER}]" -DgenerateBackupPoms=false -DallowSnapshots=true
+# update parent version only
+sed -i '0,/<\/parent>/ { /<version>/ { s|<version>[^<]*<\/version>|<version>'"$STARGATE_VERSION_NUMBER"'<\/version>|; } }' pom.xml
