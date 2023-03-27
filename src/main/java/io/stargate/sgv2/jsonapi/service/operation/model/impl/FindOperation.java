@@ -39,17 +39,6 @@ public record FindOperation(
     int maxSortReadLimit)
     implements ReadOperation {
 
-  public FindOperation(
-      CommandContext commandContext,
-      List<DBFilterBase> filters,
-      String pagingState,
-      int limit,
-      int pageSize,
-      ReadType readType,
-      ObjectMapper objectMapper) {
-    this(commandContext, filters, pagingState, limit, pageSize, readType, objectMapper, null, 0, 0);
-  }
-
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     // get FindResponse

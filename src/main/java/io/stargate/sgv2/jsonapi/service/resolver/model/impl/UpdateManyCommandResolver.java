@@ -73,6 +73,9 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         documentConfig.maxDocumentUpdateCount() + 1,
         documentConfig.defaultPageSize(),
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

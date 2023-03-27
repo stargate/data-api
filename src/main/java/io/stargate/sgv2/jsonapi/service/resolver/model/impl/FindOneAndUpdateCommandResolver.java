@@ -78,6 +78,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         1,
         1,
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

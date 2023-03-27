@@ -106,7 +106,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               20,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -181,7 +184,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -241,7 +247,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -313,7 +322,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -387,7 +399,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -457,7 +472,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -531,7 +549,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -602,7 +623,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -675,7 +699,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -749,7 +776,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Supplier<CommandResult> execute =
           operation
@@ -814,7 +844,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       Throwable failure =
           operation
@@ -957,6 +990,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               COMMAND_CONTEXT,
               List.of(),
+              DocumentProjector.identityProjector(),
               null,
               5,
               20,
@@ -1118,6 +1152,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               COMMAND_CONTEXT,
               List.of(),
+              DocumentProjector.identityProjector(),
               null,
               5,
               20,
@@ -1271,6 +1306,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new FindOperation(
               COMMAND_CONTEXT,
               List.of(),
+              DocumentProjector.identityProjector(),
               null,
               5,
               20,
@@ -1364,7 +1400,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -1436,7 +1475,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -1506,7 +1548,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -1578,7 +1623,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       DBFilterBase.IDFilter idFilter =
           new DBFilterBase.IDFilter(

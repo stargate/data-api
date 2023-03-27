@@ -73,6 +73,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         1,
         1,
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }
