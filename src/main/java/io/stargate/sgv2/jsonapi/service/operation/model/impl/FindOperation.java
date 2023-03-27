@@ -187,7 +187,18 @@ public record FindOperation(
         .build();
   }
 
+  /**
+   * Represents sort field name and option to be sorted ascending/descending.
+   *
+   * @param column
+   * @param ascending
+   */
   public record OrderBy(String column, boolean ascending) {
+    /**
+     * Returns index column name with field name as entry key like query_text_values['username']
+     *
+     * @return
+     */
     public List<String> getOrderingColumn() {
       return sortColumns.stream().map(col -> col.formatted(column())).collect(Collectors.toList());
     }
