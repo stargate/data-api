@@ -187,7 +187,8 @@ public record ReadAndUpdateOperation(
                         if (returnDocumentInResponse) {
                           documentToReturn =
                               returnUpdatedDocument ? updatedDocument : originalDocument;
-                          // Some operations (findOneAndUpdate) define projection to apply to result:
+                          // Some operations (findOneAndUpdate) define projection to apply to
+                          // result:
                           resultProjection.applyProjection(documentToReturn);
                         }
                         return new UpdatedDocument(
