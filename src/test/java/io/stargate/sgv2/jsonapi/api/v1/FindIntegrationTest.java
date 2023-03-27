@@ -839,7 +839,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
         for (int i = 0; i < 20; i++) {
           String value = iterator.next().getValue();
           if (i >= 10) {
-            arrayNode.add(objectMapper.readTree(iterator.next().getValue()));
+            arrayNode.add(objectMapper.readTree(value));
           }
         }
       } catch (Exception e) {
