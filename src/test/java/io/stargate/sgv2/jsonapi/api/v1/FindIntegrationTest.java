@@ -809,7 +809,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(20))
-          .body("data.docs", jsonEquals(arrayNode.textValue()));
+          .body("data.docs", jsonEquals(arrayNode.toString()));
     }
 
     @Test
@@ -849,7 +849,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(10))
-          .body("data.docs", jsonEquals(arrayNode.textValue()));
+          .body("data.docs", jsonEquals(arrayNode.toString()));
     }
 
     @Test
@@ -881,7 +881,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.count", is(20))
-          .body("data.docs", jsonEquals(arrayNode.textValue()));
+          .body("data.docs", jsonEquals(arrayNode.toString()));
     }
 
     private void insert(Map<String, String> documents) {
