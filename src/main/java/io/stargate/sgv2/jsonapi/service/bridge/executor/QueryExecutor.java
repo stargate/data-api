@@ -7,7 +7,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import java.util.Base64;
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
@@ -18,17 +17,11 @@ public class QueryExecutor {
 
   private final QueriesConfig queriesConfig;
 
-  private final DocumentConfig documentConfig;
-
   private final StargateRequestInfo stargateRequestInfo;
 
   @Inject
-  public QueryExecutor(
-      QueriesConfig queriesConfig,
-      DocumentConfig documentConfig,
-      StargateRequestInfo stargateRequestInfo) {
+  public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
     this.queriesConfig = queriesConfig;
-    this.documentConfig = documentConfig;
     this.stargateRequestInfo = stargateRequestInfo;
   }
 
@@ -51,8 +44,7 @@ public class QueryExecutor {
       params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState.get()))));
     }
 
-    int page = Math.min(pageSize, documentConfig.maxPageSize());
-    params.setPageSize(Int32Value.of(page));
+    params.setPageSize(Int32Value.of(pageSize));
     return queryBridge(
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }

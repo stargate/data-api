@@ -8,6 +8,8 @@ public enum ErrorCode {
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
+  DATASET_TOO_BIG("Response data set too big, add more filters"),
+
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
 
   DOCUMENT_UNPARSEABLE("Unable to parse the document"),

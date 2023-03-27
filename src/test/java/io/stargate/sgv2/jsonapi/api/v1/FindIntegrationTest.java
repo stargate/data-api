@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -11,6 +12,10 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -755,12 +760,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     public void findByBooleanColumn() {
       String json =
           """
-                                      {
-                                        "find": {
-                                          "filter" : {"active_user" : true}
-                                        }
-                                      }
-                                      """;
+            {
+              "find": {
+                "filter" : {"active_user" : true}
+              }
+            }
+            """;
       String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -771,6 +776,127 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(3)
+    public void sort() {
+      deleteAllDocuments();
+      Map<String, String> sorted = getDocuments(25, true);
+      insert(sorted);
+      String json =
+          """
+        {
+          "find": {
+            "sort" : ["username"]
+          }
+        }
+        """;
+
+      String[] expected = new String[20];
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
+      for (int i = 0; i < 20; i++) expected[i] = iterator.next().getValue();
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(20))
+          .body("data.docs", contains(expected));
+    }
+
+    @Test
+    @Order(4)
+    public void sortWithSkipLimit() {
+      deleteAllDocuments();
+      Map<String, String> sorted = getDocuments(25, true);
+      insert(sorted);
+      String json =
+          """
+              {
+                "find": {
+                  "sort" : ["username"],
+                  "options" : {"skip": 10, "limit" : 10}
+                }
+              }
+              """;
+
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
+      String[] expected = new String[10];
+      int j = 0;
+      for (int i = 0; i < 20; i++) {
+        String value = iterator.next().getValue();
+        if (i >= 10) {
+          expected[j] = value;
+          j++;
+        }
+      }
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(10))
+          .body("data.docs", contains(expected));
+    }
+
+    @Test
+    @Order(5)
+    public void sortDescending() {
+      deleteAllDocuments();
+      Map<String, String> sorted = getDocuments(25, false);
+      insert(sorted);
+      String json =
+          """
+              {
+                "find": {
+                  "sort" : ["-username"]
+                }
+              }
+              """;
+
+      String[] expected = new String[20];
+      final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
+      for (int i = 0; i < 20; i++) expected[i] = iterator.next().getValue();
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(20))
+          .body("data.docs", contains(expected));
+    }
+
+    private void insert(Map<String, String> documents) {
+      documents.values().forEach(doc -> insertDoc(doc));
+    }
+
+    private Map<String, String> getDocuments(int countOfDocuments, boolean asc) {
+      String json = "{\"_id\":\"doc%s\", \"username\":\"user%s\", \"active_user\":true}";
+      Map<String, String> data =
+          new TreeMap<String, String>(
+              new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                  return asc ? o1.compareTo(o2) : o2.compareTo(o1);
+                }
+              });
+      for (int docId = 1; docId <= countOfDocuments; docId++) {
+        data.put("user%s".formatted(docId), json.formatted(docId, docId));
+      }
+      return data;
     }
   }
 }

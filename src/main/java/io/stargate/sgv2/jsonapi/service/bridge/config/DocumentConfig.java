@@ -26,17 +26,17 @@ import javax.validation.constraints.Positive;
 @ConfigMapping(prefix = "stargate.document")
 public interface DocumentConfig {
 
-  /** @return Defines the maximum document page size, defaults to <code>500</code>. */
-  @Max(500)
-  @Positive
-  @WithDefault("100")
-  int maxPageSize();
-
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
   @Positive
   @WithDefault("20")
   int defaultPageSize();
+
+  /** @return Defines the default document page size, defaults to <code>100</code>. */
+  @Max(500)
+  @Positive
+  @WithDefault("100")
+  int defaultSortPageSize();
 
   /**
    * @return Defines the maximum limit of document that can be returned for a request, defaults to
@@ -46,6 +46,15 @@ public interface DocumentConfig {
   @Positive
   @WithDefault("1000")
   int maxLimit();
+
+  /**
+   * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
+   *     </code>.
+   */
+  @Max(10000)
+  @Positive
+  @WithDefault("10000")
+  int maxSortReadLimit();
 
   /**
    * @return Defines the maximum limit of document that can be deleted for a request, defaults to
