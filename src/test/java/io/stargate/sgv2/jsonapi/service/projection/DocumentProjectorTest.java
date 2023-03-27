@@ -236,12 +236,14 @@ public class DocumentProjectorTest {
                         }, {
                            "y": false,
                            "z": true
-                        } ]
+                        } ],
+                        "array2": [1, 2],
+                        "array3": [2, 3]
                       }
               """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
-              objectMapper.readTree("{ \"values.y\": 1, \"values.z\":1}"));
+              objectMapper.readTree("{ \"values.y\": 1, \"values.z\":1, \"array3\":1}"));
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc);
       assertThat(doc)
@@ -253,7 +255,8 @@ public class DocumentProjectorTest {
                         }, {
                            "y": false,
                            "z": true
-                        } ]
+                        } ],
+                        "array3": [2, 3]
                       }
                       """));
     }
@@ -368,12 +371,14 @@ public class DocumentProjectorTest {
                                 }, {
                                    "y": false,
                                    "z": true
-                                } ]
+                                } ],
+                                "array2": [2, 3],
+                                "array3": [2, 3]
                               }
                       """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
-              objectMapper.readTree("{ \"values.y\": 0, \"values.z\":0}"));
+              objectMapper.readTree("{ \"values.y\": 0, \"values.z\":0,\"array3\":0}"));
       assertThat(projection.isInclusion()).isFalse();
       projection.applyProjection(doc);
       assertThat(doc)
@@ -383,7 +388,8 @@ public class DocumentProjectorTest {
                                   { "values" : [ {
                                        "x": 1
                                     }, {
-                                    } ]
+                                    } ],
+                                    "array2": [2, 3]
                                   }
                                   """));
     }

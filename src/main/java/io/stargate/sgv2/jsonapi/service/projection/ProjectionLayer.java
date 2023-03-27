@@ -88,9 +88,16 @@ class ProjectionLayer {
     nextLayers.put(segment, new ProjectionLayer(true, fullPath));
   }
 
+  /**
+   * Method called to apply Inclusion-based projection, in which everything to be included is
+   * enumerated, and the rest need to be removed (this includes document id as well as regular
+   * properties).
+   *
+   * @param subtree Document level to process
+   */
   public void applyInclusions(JsonNode subtree) {
-    // For both inclusions and exclusions, Arrays are "skipped" in that
-    // inclusion only affects Objects (inside Arrays or other Objects)
+    // Arrays are "skipped" in that inclusion only affects Objects
+    // (inside Arrays or other Objects)
     if (subtree.isArray()) {
       subtree.forEach(e -> applyInclusions(e));
       return;
@@ -117,9 +124,15 @@ class ProjectionLayer {
     }
   }
 
+  /**
+   * Method called to apply Exclusion-based projection, in which only things to be removed are
+   * enumerated, and the rest of properties are left as-is.
+   *
+   * @param subtree Document level to process
+   */
   public void applyExclusions(JsonNode subtree) {
-    // For both inclusions and exclusions, Arrays are "skipped" in that
-    // inclusion only affects Objects (inside Arrays or other Objects)
+    // Arrays are "skipped" in that exclusion only affects Objects
+    // (inside Arrays or other Objects)
     if (subtree.isArray()) {
       subtree.forEach(e -> applyExclusions(e));
       return;
