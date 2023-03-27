@@ -25,6 +25,11 @@ import java.util.function.Supplier;
 public record FindOperation(
     CommandContext commandContext,
     List<DBFilterBase> filters,
+    /**
+     * Projection used on document to return; if no changes desired, identity projection. Defined
+     * for "pure" read operations: for updates (like {@code findOneAndUpdate}) is passed differently
+     * to avoid projection from getting applied before updates.
+     */
     DocumentProjector projection,
     String pagingState,
     int limit,

@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -44,6 +45,11 @@ public record ReadAndUpdateOperation(
     boolean returnUpdatedDocument,
     boolean upsert,
     Shredder shredder,
+    /**
+     * Projection used on document to return (whether before or after updates), if projection
+     * needed: if not, an identity projection.
+     */
+    DocumentProjector resultProjection,
     int updateLimit,
     int retryLimit)
     implements ModifyOperation {
@@ -181,11 +187,9 @@ public record ReadAndUpdateOperation(
                         if (returnDocumentInResponse) {
                           documentToReturn =
                               returnUpdatedDocument ? updatedDocument : originalDocument;
-                          // 24-Mar-2023, tatu: Will need to add projection in follow-up PR;
-                          //   one we get here is identity-projection which does nothing.
-                          //
-                          // DocumentProjector projector = findOperation().projection();
-                          // projector.applyProjection(documentToReturn);
+                          // Some operations (findOneAndUpdate) define projection to apply to
+                          // result:
+                          resultProjection.applyProjection(documentToReturn);
                         }
                         return new UpdatedDocument(
                             writableShreddedDocument.id(), upsert, documentToReturn, null);
