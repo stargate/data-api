@@ -798,8 +798,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
-      for (int i = 0; i < 20; i++) arrayNode.add(nodefactory.textNode(iterator.next().getValue()));
-
+      try {
+        for (int i = 0; i < 20; i++)
+          arrayNode.add(objectMapper.readTree(iterator.next().getValue()));
+      } catch (Exception e) {
+        // ignore the object node creation error should never happen
+      }
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -831,13 +835,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(10);
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
-      for (int i = 0; i < 20; i++) arrayNode.add(nodefactory.textNode(iterator.next().getValue()));
-
-      for (int i = 0; i < 20; i++) {
-        String value = iterator.next().getValue();
-        if (i >= 10) {
-          arrayNode.add(nodefactory.textNode(value));
+      try {
+        for (int i = 0; i < 20; i++) {
+          String value = iterator.next().getValue();
+          if (i >= 10) {
+            arrayNode.add(objectMapper.readTree(iterator.next().getValue()));
+          }
         }
+      } catch (Exception e) {
+        // ignore the object node creation error should never happen
       }
 
       given()
@@ -870,7 +876,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
       final Iterator<Map.Entry<String, String>> iterator = sorted.entrySet().iterator();
-      for (int i = 0; i < 20; i++) arrayNode.add(nodefactory.textNode(iterator.next().getValue()));
+      try {
+        for (int i = 0; i < 20; i++)
+          arrayNode.add(objectMapper.readTree(iterator.next().getValue()));
+      } catch (Exception e) {
+        // ignore the object node creation error should never happen
+      }
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
