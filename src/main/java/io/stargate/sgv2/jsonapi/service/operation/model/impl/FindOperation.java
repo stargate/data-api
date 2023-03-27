@@ -25,7 +25,11 @@ import java.util.function.Supplier;
 public record FindOperation(
     CommandContext commandContext,
     List<DBFilterBase> filters,
-    DocumentProjector projection,
+    /**
+     * Projection used on input document; if no changes desired, identity projection. Only used for
+     * "pure" read operations: for updates (like {@code findOneAndUpdate}) is passed differently.
+     */
+    DocumentProjector inputProjection,
     String pagingState,
     int limit,
     int pageSize,
@@ -67,7 +71,7 @@ public record FindOperation(
             pageSize,
             ReadType.DOCUMENT == readType,
             objectMapper,
-            projection);
+            inputProjection);
       }
       default -> {
         JsonApiException failure =

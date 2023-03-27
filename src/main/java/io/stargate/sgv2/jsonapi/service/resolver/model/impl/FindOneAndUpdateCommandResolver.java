@@ -61,6 +61,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         returnUpdatedDocument,
         upsert,
         shredder,
+        command.buildProjector(),
         1,
         documentConfig.lwt().retries());
   }

@@ -228,7 +228,16 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
+            COMMAND_CONTEXT,
+            findOperation,
+            documentUpdater,
+            true,
+            false,
+            false,
+            shredder,
+            DocumentProjector.identityProjector(),
+            1,
+            3);
 
     Supplier<CommandResult> execute =
         operation
@@ -431,7 +440,16 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
+            COMMAND_CONTEXT,
+            findOperation,
+            documentUpdater,
+            true,
+            false,
+            false,
+            shredder,
+            DocumentProjector.identityProjector(),
+            1,
+            3);
 
     Supplier<CommandResult> execute =
         operation
@@ -643,7 +661,16 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, true, shredder, 1, 3);
+            COMMAND_CONTEXT,
+            findOperation,
+            documentUpdater,
+            true,
+            false,
+            true,
+            shredder,
+            DocumentProjector.identityProjector(),
+            1,
+            3);
 
     Supplier<CommandResult> execute =
         operation
@@ -912,7 +939,16 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 2, 3);
+            COMMAND_CONTEXT,
+            findOperation,
+            documentUpdater,
+            true,
+            false,
+            false,
+            shredder,
+            DocumentProjector.identityProjector(),
+            2,
+            3);
 
     Supplier<CommandResult> execute =
         operation
@@ -1238,7 +1274,16 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
     ReadAndUpdateOperation operation =
         new ReadAndUpdateOperation(
-            COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 2, 3);
+            COMMAND_CONTEXT,
+            findOperation,
+            documentUpdater,
+            true,
+            false,
+            false,
+            shredder,
+            DocumentProjector.identityProjector(),
+            2,
+            3);
 
     Supplier<CommandResult> execute =
         operation
