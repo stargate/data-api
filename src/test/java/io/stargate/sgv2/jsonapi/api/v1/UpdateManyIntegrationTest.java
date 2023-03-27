@@ -499,20 +499,23 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
       for (int i = 0; i < threads; i++) {
         new Thread(
                 () -> {
-                  given()
-                      .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                      .contentType(ContentType.JSON)
-                      .body(updateJson)
-                      .when()
-                      .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-                      .then()
-                      .statusCode(200)
-                      .body("status.matchedCount", is(5))
-                      .body("status.modifiedCount", is(5))
-                      .body("errors", is(nullValue()));
+                  try {
+                    given()
+                        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                        .contentType(ContentType.JSON)
+                        .body(updateJson)
+                        .when()
+                        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                        .then()
+                        .statusCode(200)
+                        .body("status.matchedCount", is(5))
+                        .body("status.modifiedCount", is(5))
+                        .body("errors", is(nullValue()));
+                  } finally {
 
-                  // count down
-                  latch.countDown();
+                    // count down
+                    latch.countDown();
+                  }
                 })
             .start();
       }

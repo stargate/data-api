@@ -329,26 +329,31 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
       for (int i = 0; i < threads; i++) {
         new Thread(
                 () -> {
-                  Integer deletedCount =
-                      given()
-                          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                          .contentType(ContentType.JSON)
-                          .body(deleteJson)
-                          .when()
-                          .post(
-                              CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-                          .then()
-                          .statusCode(200)
-                          .body("status.deletedCount", anyOf(is(0), is(1)))
-                          .body("errors", is(nullValue()))
-                          .extract()
-                          .path("status.deletedCount");
+                  try {
+                    Integer deletedCount =
+                        given()
+                            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                            .contentType(ContentType.JSON)
+                            .body(deleteJson)
+                            .when()
+                            .post(
+                                CollectionResource.BASE_PATH,
+                                keyspaceId.asInternal(),
+                                collectionName)
+                            .then()
+                            .statusCode(200)
+                            .body("status.deletedCount", anyOf(is(0), is(1)))
+                            .body("errors", is(nullValue()))
+                            .extract()
+                            .path("status.deletedCount");
 
-                  // add reported deletes
-                  reportedDeletions.addAndGet(deletedCount);
+                    // add reported deletes
+                    reportedDeletions.addAndGet(deletedCount);
+                  } finally {
 
-                  // count down
-                  latch.countDown();
+                    // count down
+                    latch.countDown();
+                  }
                 })
             .start();
       }

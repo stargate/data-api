@@ -300,28 +300,33 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
       for (int i = 0; i < threads; i++) {
         new Thread(
                 () -> {
-                  Integer deletedCount =
-                      given()
-                          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                          .contentType(ContentType.JSON)
-                          .body(deleteJson)
-                          .when()
-                          .post(
-                              CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-                          .then()
-                          .statusCode(200)
-                          .body(
-                              "status.deletedCount",
-                              anyOf(greaterThanOrEqualTo(0), lessThanOrEqualTo(totalDocuments)))
-                          .body("errors", is(nullValue()))
-                          .extract()
-                          .path("status.deletedCount");
+                  try {
+                    Integer deletedCount =
+                        given()
+                            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                            .contentType(ContentType.JSON)
+                            .body(deleteJson)
+                            .when()
+                            .post(
+                                CollectionResource.BASE_PATH,
+                                keyspaceId.asInternal(),
+                                collectionName)
+                            .then()
+                            .statusCode(200)
+                            .body(
+                                "status.deletedCount",
+                                anyOf(greaterThanOrEqualTo(0), lessThanOrEqualTo(totalDocuments)))
+                            .body("errors", is(nullValue()))
+                            .extract()
+                            .path("status.deletedCount");
 
-                  // add reported deletes
-                  reportedDeletions.addAndGet(deletedCount);
+                    // add reported deletes
+                    reportedDeletions.addAndGet(deletedCount);
+                  } finally {
 
-                  // count down
-                  latch.countDown();
+                    // count down
+                    latch.countDown();
+                  }
                 })
             .start();
       }
