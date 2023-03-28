@@ -34,11 +34,11 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOperationWithSort {
     private ObjectMapper objectMapper = new ObjectMapper();
+    private List<Object> testDatas = getDocuments(25);
 
     @Test
     @Order(1)
     public void setUp() {
-      testDatas = getDocuments(25);
       Collections.shuffle(testDatas);
       insert(testDatas);
     }
@@ -434,8 +434,6 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           .body("data.count", is(datas.size()))
           .body("data.docs", jsonEquals(arrayNode.toString()));
     }
-
-    private List<Object> testDatas = null;
 
     private void sortByUserNameUserId(
         List<Object> testDatas, boolean ascUserName, boolean ascUserId) {
