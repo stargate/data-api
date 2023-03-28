@@ -89,9 +89,9 @@ request includes:
 To aid in specifying the JSON API, we will use the following conventions
 in this document:
 
-- Language rules will be given in a [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like notation:
+- Language rules will be given in a [BNF](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form)-like notation:
 
-```
+```bnf
 <start> ::= TERMINAL <non-terminal1> <non-terminal1>
 ```
 
@@ -104,7 +104,7 @@ in this document:
 -   The grammar is provided for documentation purposes and leave some
     minor details out.
 -   Sample code will be provided in a code block:
-    ```
+    ```cql
     SELECT sample_usage FROM cql;
     ```
 -   References to keywords or API examples text will be shown in a `fixed-width font`.
@@ -128,7 +128,7 @@ JSON document (a JSON Object) that represents the command to run.
 
 *Syntax:*
 
-```json
+```bnf
 <request-message> ::= <command-name> <command>
 ```
 
@@ -154,7 +154,7 @@ elements may be present depending on the command.
 
 *Syntax:*
 
-```json
+```bnf
 <response-message> ::= (errors (<error>)+)?,
                        (status (<command-status>)+)?,
                        (data `<response-data>` )?,
@@ -254,7 +254,7 @@ Namespace names must follow the regular expression pattern below:
 
 *Syntax:*
 
-```json
+```bnf
 <namespace-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
 ```
 
