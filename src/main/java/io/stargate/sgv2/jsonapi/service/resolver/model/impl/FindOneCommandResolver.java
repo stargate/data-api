@@ -41,6 +41,9 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
         1,
         1,
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

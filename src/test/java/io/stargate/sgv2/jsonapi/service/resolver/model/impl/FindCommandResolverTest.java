@@ -35,12 +35,12 @@ public class FindCommandResolverTest {
     public void idFilterCondition() throws Exception {
       String json =
           """
-                {
-                  "find": {
-                    "filter" : {"_id" : "id"}
-                  }
-                }
-                """;
+          {
+            "find": {
+              "filter" : {"_id" : "id"}
+            }
+          }
+          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final CommandContext commandContext = new CommandContext("namespace", "collection");
@@ -56,7 +56,10 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -88,7 +91,119 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void sort() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "sort" : ["username"]
+            }
+          }
+          """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation =
+          findCommandResolver.resolveCommand(commandContext, findOneCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(),
+              DocumentProjector.identityProjector(),
+              null,
+              documentConfig.defaultPageSize(),
+              documentConfig.defaultSortPageSize(),
+              ReadType.SORTED_DOCUMENT,
+              objectMapper,
+              List.of(new FindOperation.OrderBy("username", true)),
+              0,
+              documentConfig.maxSortReadLimit());
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void sortDesc() throws Exception {
+      String json =
+          """
+        {
+          "find": {
+            "sort" : ["-username"]
+          }
+        }
+        """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation =
+          findCommandResolver.resolveCommand(commandContext, findOneCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(),
+              DocumentProjector.identityProjector(),
+              null,
+              documentConfig.defaultPageSize(),
+              documentConfig.defaultSortPageSize(),
+              ReadType.SORTED_DOCUMENT,
+              objectMapper,
+              List.of(new FindOperation.OrderBy("username", false)),
+              0,
+              documentConfig.maxSortReadLimit());
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void noFilterConditionSortAndOptions() throws Exception {
+      String json =
+          """
+        {
+          "find": {
+            "sort" : ["username"],
+            "options" : {"skip" : 5, "limit" : 10}
+          }
+        }
+        """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation =
+          findCommandResolver.resolveCommand(commandContext, findOneCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(),
+              DocumentProjector.identityProjector(),
+              null,
+              10,
+              documentConfig.defaultSortPageSize(),
+              ReadType.SORTED_DOCUMENT,
+              objectMapper,
+              List.of(new FindOperation.OrderBy("username", true)),
+              5,
+              documentConfig.maxSortReadLimit());
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -124,7 +239,10 @@ public class FindCommandResolverTest {
               10,
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -159,7 +277,10 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -205,7 +326,10 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -247,7 +371,10 @@ public class FindCommandResolverTest {
               documentConfig.maxLimit(),
               documentConfig.defaultPageSize(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(

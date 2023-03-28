@@ -96,7 +96,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -149,7 +152,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
 
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -219,7 +225,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -326,7 +335,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -435,7 +447,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -539,7 +554,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -625,7 +643,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               2,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -709,7 +730,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -799,7 +823,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -860,7 +887,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -981,7 +1011,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1152,7 +1185,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DeleteOperation operation = new DeleteOperation(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
