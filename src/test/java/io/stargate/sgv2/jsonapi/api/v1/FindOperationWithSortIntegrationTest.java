@@ -467,7 +467,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               JsonNode o1j = getUserNameAsJsonNode(o1);
               JsonNode o2j = getUserNameAsJsonNode(o2);
               int compareVal = compareNode(o1j, o2j, asc);
-              if (compareVal == 0) {
+              if (compareVal != 0) {
                 return compareVal;
               } else {
                 return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
@@ -485,7 +485,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               JsonNode o1j = getUserIdAsJsonNode(o1);
               JsonNode o2j = getUserIdAsJsonNode(o2);
               int compareVal = compareNode(o1j, o2j, asc);
-              if (compareVal == 0) {
+              if (compareVal != 0) {
                 return compareVal;
               } else {
                 return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
@@ -503,7 +503,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               JsonNode o1j = getActiveUserAsJsonNode(o1);
               JsonNode o2j = getActiveUserAsJsonNode(o2);
               int compareVal = compareNode(o1j, o2j, asc);
-              if (compareVal == 0) {
+              if (compareVal != 0) {
                 return compareVal;
               } else {
                 return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
