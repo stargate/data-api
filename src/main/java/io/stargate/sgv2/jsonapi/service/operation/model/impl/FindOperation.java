@@ -76,7 +76,7 @@ public record FindOperation(
             query,
             pageSize,
             objectMapper(),
-            new ChainedComparator(orderBy()),
+            new ChainedComparator(orderBy(), objectMapper()),
             orderBy().size(),
             skip(),
             limit(),
