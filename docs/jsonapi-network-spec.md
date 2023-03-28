@@ -96,7 +96,7 @@ in this document:
     [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
     notation:
 
-```
+```json
 <start> ::= TERMINAL <non-terminal1> <non-terminal1>
 ```
 
@@ -110,7 +110,7 @@ in this document:
     minor details out.
 -   Sample code will be provided in a code block:
 
-```
+```cql
 SELECT sample_usage FROM cql;
 ```
 
@@ -166,7 +166,7 @@ The Namespace Endpoint has the form:
 
 *Syntax:*
 
-```
+```json
 <namespace-endpoint> ::= <server-address>/<namespace-name>
 ```
 
@@ -189,7 +189,7 @@ Collection Endpoint has the form:
 
 *Syntax:*
 
-```
+```json
 <collection-endpoint> ::= <server-address>/<namespace-name>/<collection-name>
 ```
 

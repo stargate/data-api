@@ -4,7 +4,16 @@ The target users for the JSON API are Javascript developers who interact
 with the service through a driver or Object Document Mapper (ODM)
 library such as [Mongoose](https://github.com/Automattic/mongoose). 
 
-**TODO:** TOC links here.
+- [Preamble](#preamble)
+- [High-level concepts](#high-level-concepts)
+- [Conventions](#conventions)
+- [Request and Response Messages](#request-and-response-messages)
+- [Namespace](#namespace)
+- [Collection](#collection)
+- [Documents](#documents)
+- [Commands](#commands)
+- [Command Considerations](#command-considerations)
+- [Clauses](#clauses)
 
 
 ## Preamble
@@ -119,7 +128,7 @@ JSON document (a JSON Object) that represents the command to run.
 
 *Syntax:*
 
-```
+```json
 <request-message> ::= <command-name> <command>
 ```
 
@@ -127,10 +136,10 @@ JSON document (a JSON Object) that represents the command to run.
 
 *Sample:*
 
-```
+```json
 {"find" : {
     "filter" : {"name": "aaron"},
-    "projection" : {"name": 1, :"age" : 1}
+    "projection" : {"name": 1, "age" : 1}
     }
 }
 ```
@@ -145,7 +154,7 @@ elements may be present depending on the command.
 
 *Syntax:*
 
-```
+```json
 <response-message> ::= (errors (<error>)+)?,
                        (status (<command-status>)+)?,
                        (data `<response-data>` )?,
@@ -202,7 +211,7 @@ state.
 
 *find Sample:*
 
-```
+```json
 {
     "data" : {
         "docs" : [
@@ -214,17 +223,17 @@ state.
 
 *insertMany Sample:*
 
-```
+```json
 {
     "status" : {
-        insertedIds : ["doc1", "doc2", "doc3"]
+        "insertedIds" : ["doc1", "doc2", "doc3"]
     }
 } 
 ```
 
 *insertOne with error Sample:*
 
-```
+```json
 {
     "errors" : [
         {"message": "_id cannot be Null", "errorCode" : "ID_NULL"}
@@ -245,14 +254,14 @@ Namespace names must follow the regular expression pattern below:
 
 *Syntax:*
 
-```
-<namespace-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+```json
+<namespace-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
 ```
 
 The maximum length of a namespace name is 48 characters.
 
 
-## Collection
+## Collections
 
 **TODO:** define the collection, its properties etc. Do we define how to create one?
 
@@ -264,14 +273,14 @@ Collection names must follow the regular expression pattern below:
 
 *Syntax:*
 
-```
-<collection-name> ::= [a-zA-Z][a-zA-Z0-9_]*
+```json
+<collection-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
 ```
 
 The maximum length of a collection name is 48 characters.
 
 
-## Documents {#document}
+## Documents
 
 **TODO:** Describe how do we define a document and then refer to the parts of a JSON document, e.g. key or path etc.?
 
@@ -287,12 +296,12 @@ the rules for user defined field names.
 
 *Syntax:*
 
-```
+```json
 <field-name> ::= <id-field-name> |
                 <user-field-name> 
 
 <id-field-name> = _id
-<user-field-name> ::= [a-zA-Z0-9_]+
+<user-field-name> ::= ["a-zA-Z0-9_"]+
 ```
 
 The `_id` field is a "reserved name" and is always interpreted as the
@@ -304,7 +313,7 @@ needed for the initial demo release.
 
 *Sample:*
 
-```
+```json
 {
     "_id" : "my_doc",
     "a_field" : "the value", 
@@ -326,13 +335,13 @@ the array is indexed using a single zero `0`.
 
 *Syntax:*
 
-```
+```json
 <array-index> ::= ^0$|^[1-9][0-9]*$
 ```
 
 *Sample:*
 
-```
+```json
 // Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
@@ -357,7 +366,7 @@ update.
 
 *Syntax:*
 
-```
+```json
 <document-path> ::= <dotted-notation-path> 
 ```
 
@@ -373,13 +382,13 @@ additional whitespace.
 
 *Syntax:*
 
-```
+```json
 <dotted-notation-path> ::= <field-name>(.<field-name> | <array-index>)*
 ```
 
 *Sample:*
 
-```
+```json
 // _id is equal to 1 
 {"find" : {
     "filter" : {"_id": 1}
@@ -423,12 +432,11 @@ The maximum number of fields allowed in a single JSON object is 64.
 
 The maximum size of field values are:
 
-```
-  JSON Type   Maximum Value
-  ----------- ---------------------------------------------------------
-  `string`    Maximum length of 16384 unicode characters
-  `number`    TODO: define max num that is well handled by BigDecimal
-```
+| JSON Type   | Maximum Value                                           |
+| ----------- | ------------------------------------------------------- |
+| `string`    | Maximum length of 16384 unicode characters              |
+| `number`    | TODO: define max num that is well handled by BigDecimal |
+
 
 #### Document Array Limits
 
@@ -467,7 +475,7 @@ the future.
 
 *Sample:*
 
-```
+```json
 // select all documents in a collection, return complete documents
 {"find" : {} }
 
@@ -494,12 +502,12 @@ See [Multi Document Failure Considerations](#considerations-multi-docuemnt-failu
 
 #### countDocuments Command Response
 
-  Response Element   Description
-  ------------------ ---------------------------------------------------------
-  `data`             Not present.
-  `status`           Preset with fields: `count: <zero-or-positive-integer>`
-  `errors`           Present if errors occur.
-
+| Response Elements | Description                                             |
+| ----------------- | ------------------------------------------------------- |
+| `data`            | Not present                                             |
+| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
+| `errors`          | Present if errors occur.                                |
+ 
 If an error occurs the command will not return `status`.
 
 ### deleteMany Command
@@ -837,7 +845,7 @@ Considerations](#considerationsMultiDocumentFailure).
 If an error occurs the command will still return `status` as some
 documents may have been inserted.
 
-## Command Considerations {#commandConsierations}
+## Command Considerations
 
 Additional considerations that apply to multiple commands.
 
