@@ -335,9 +335,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
         for (int i = 0; i < datas.size(); i++)
           arrayNode.add(
               objectMapper.readTree(
-                  objectMapper
-                      .writerWithDefaultPrettyPrinter()
-                      .writeValueAsString(testDatas.get(i))));
+                  objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
       } catch (Exception e) {
         // ignore the object node creation error should never happen
       }
@@ -416,9 +414,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
         for (int i = 0; i < datas.size(); i++)
           arrayNode.add(
               objectMapper.readTree(
-                  objectMapper
-                      .writerWithDefaultPrettyPrinter()
-                      .writeValueAsString(testDatas.get(i))));
+                  objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
       } catch (Exception e) {
         // ignore the object node creation error should never happen
       }
