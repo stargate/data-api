@@ -59,6 +59,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         false,
         upsert,
         shredder,
+        DocumentProjector.identityProjector(),
         documentConfig.maxDocumentUpdateCount(),
         documentConfig.lwt().retries());
   }
@@ -73,6 +74,9 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         documentConfig.maxDocumentUpdateCount() + 1,
         documentConfig.defaultPageSize(),
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

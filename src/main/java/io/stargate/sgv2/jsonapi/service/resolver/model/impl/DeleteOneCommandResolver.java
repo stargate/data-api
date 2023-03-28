@@ -55,6 +55,9 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
         1,
         1,
         ReadType.KEY,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

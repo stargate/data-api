@@ -59,6 +59,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         false,
         upsert,
         shredder,
+        DocumentProjector.identityProjector(),
         1,
         documentConfig.lwt().retries());
   }
@@ -73,6 +74,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         1,
         1,
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }

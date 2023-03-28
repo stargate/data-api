@@ -163,14 +163,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
 
       Supplier<CommandResult> execute =
           operation
@@ -290,14 +302,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, true, shredder, 1, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              true,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
 
       Supplier<CommandResult> execute =
           operation
@@ -361,14 +385,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 1, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
 
       Supplier<CommandResult> execute =
           operation
@@ -564,14 +600,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 20, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              20,
+              3);
 
       Supplier<CommandResult> execute =
           operation
@@ -692,14 +740,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, true, shredder, 20, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              true,
+              shredder,
+              DocumentProjector.identityProjector(),
+              20,
+              3);
 
       Supplier<CommandResult> execute =
           operation
@@ -759,14 +819,26 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              null,
+              0,
+              0);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT, findOperation, documentUpdater, true, false, false, shredder, 20, 3);
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              20,
+              3);
 
       Supplier<CommandResult> execute =
           operation

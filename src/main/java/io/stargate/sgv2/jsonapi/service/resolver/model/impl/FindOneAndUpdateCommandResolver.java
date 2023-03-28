@@ -61,6 +61,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         returnUpdatedDocument,
         upsert,
         shredder,
+        command.buildProjector(),
         1,
         documentConfig.lwt().retries());
   }
@@ -78,6 +79,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         1,
         1,
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        null,
+        0,
+        0);
   }
 }
