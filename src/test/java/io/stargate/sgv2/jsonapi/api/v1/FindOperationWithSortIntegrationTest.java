@@ -397,7 +397,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           testDatas.stream()
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
-      sortByUserNameUserId(testDatas, true, false);
+      sortByUserNameUserId(datas, true, false);
       String json =
           """
               {
@@ -423,7 +423,6 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
-          .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)

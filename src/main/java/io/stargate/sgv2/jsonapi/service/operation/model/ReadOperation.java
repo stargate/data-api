@@ -161,7 +161,7 @@ public interface ReadOperation extends Operation {
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.booleanNode(Values.bool(value)));
+                    sortValues.add(nodeFactory.booleanNode(Values.int_(value) == 1));
                     continue;
                   }
                   columnCounter++;
