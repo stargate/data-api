@@ -445,7 +445,9 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               int compareField1 = compareNode(o1j1, o2j1, ascUserName);
               if (compareField1 != 0) return compareField1;
               else {
-                return compareNode(o1j2, o2j2, ascUserId);
+                int compareField2 = compareNode(o1j2, o2j2, ascUserId);
+                if (compareField2 != 0) return compareField2;
+                else return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
               }
             }
           });
@@ -464,7 +466,12 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getUserNameAsJsonNode(o1);
               JsonNode o2j = getUserNameAsJsonNode(o2);
-              return compareNode(o1j, o2j, asc);
+              int compareVal = compareNode(o1j, o2j, asc);
+              if (compareVal == 0) {
+                return compareVal;
+              } else {
+                return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
+              }
             }
           });
     }
@@ -477,7 +484,12 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getUserIdAsJsonNode(o1);
               JsonNode o2j = getUserIdAsJsonNode(o2);
-              return compareNode(o1j, o2j, asc);
+              int compareVal = compareNode(o1j, o2j, asc);
+              if (compareVal == 0) {
+                return compareVal;
+              } else {
+                return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
+              }
             }
           });
     }
@@ -490,7 +502,12 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getActiveUserAsJsonNode(o1);
               JsonNode o2j = getActiveUserAsJsonNode(o2);
-              return compareNode(o1j, o2j, asc);
+              int compareVal = compareNode(o1j, o2j, asc);
+              if (compareVal == 0) {
+                return compareVal;
+              } else {
+                return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
+              }
             }
           });
     }
@@ -506,6 +523,21 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
 
       if (data instanceof TestDataUserIdAsText td) {
         return objectMapper.getNodeFactory().textNode(td.username());
+      }
+
+      return objectMapper.getNodeFactory().missingNode();
+    }
+
+    private JsonNode getIDJsonNode(Object data) {
+      if (data instanceof TestData td) {
+        return objectMapper.getNodeFactory().textNode(td._id());
+      }
+      if (data instanceof TestDataMissingBoolean td) {
+        return objectMapper.getNodeFactory().textNode(td._id());
+      }
+
+      if (data instanceof TestDataUserIdAsText td) {
+        return objectMapper.getNodeFactory().textNode(td._id());
       }
 
       return objectMapper.getNodeFactory().missingNode();

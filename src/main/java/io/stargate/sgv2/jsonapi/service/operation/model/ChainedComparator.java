@@ -1,13 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.Comparator;
 import java.util.List;
 
-public record ChainedComparator(List<FindOperation.OrderBy> sortColumns)
+public record ChainedComparator(List<FindOperation.OrderBy> sortColumns, ObjectMapper objectMapper)
     implements Comparator<ReadDocument> {
   @Override
   public int compare(ReadDocument o1, ReadDocument o2) {
@@ -22,6 +23,8 @@ public record ChainedComparator(List<FindOperation.OrderBy> sortColumns)
       if (compareValue != 0) return compareValue;
       i++;
     }
+    JsonNodeComparator.ascending()
+        .compare(o1.id().asJson(objectMapper), o2.id().asJson(objectMapper));
     return 0;
   }
 }
