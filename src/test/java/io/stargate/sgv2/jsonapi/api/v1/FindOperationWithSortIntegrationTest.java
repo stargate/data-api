@@ -447,16 +447,16 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               JsonNode o1j2 = getUserIdAsJsonNode(o1);
               JsonNode o2j2 = getUserIdAsJsonNode(o2);
 
-              int compareField1 = compare(o1j1, o2j1);
+              int compareField1 = compareNode(o1j1, o2j1, ascUserName);
               if (compareField1 != 0) return compareField1;
               else {
-                return compare(o1j2, o2j2);
+                return compareNode(o1j2, o2j2, ascUserId);
               }
             }
           });
     }
 
-    private int compare(JsonNode field1, JsonNode field2, boolean asc) {
+    private int compareNode(JsonNode field1, JsonNode field2, boolean asc) {
       if (asc) return JsonNodeComparator.ascending().compare(field1, field2);
       else return JsonNodeComparator.descending().compare(field1, field2);
     }
@@ -469,7 +469,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getUserNameAsJsonNode(o1);
               JsonNode o2j = getUserNameAsJsonNode(o2);
-              return compare(o1j, o2j);
+              return compareNode(o1j, o2j, asc);
             }
           });
     }
@@ -482,7 +482,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getUserIdAsJsonNode(o1);
               JsonNode o2j = getUserIdAsJsonNode(o2);
-              return compare(o1j, o2j);
+              return compareNode(o1j, o2j, asc);
             }
           });
     }
@@ -495,7 +495,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getActiveUserAsJsonNode(o1);
               JsonNode o2j = getActiveUserAsJsonNode(o2);
-              return compare(o1j, o2j);
+              return compareNode(o1j, o2j, asc);
             }
           });
     }
