@@ -482,7 +482,7 @@ the future.
 // select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
-    "projection" : {"name": 1, :"age" : 1}
+    "projection" : {"name": 1, "age" : 1}
     } 
 } 
 ```
@@ -524,11 +524,14 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### deleteMany Command Response
 
-  Response Element   Description
-  ------------------ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `data`             Not present.
-  `status`           Preset with fields: `deletedCount: <zero-or-positive-integer>`, `moreData` with value `true` if there are more documents that match the delete `filter`, but were not deleted since the limit of documents to delete in the single operation was hit.
-  `errors`           Present if errors occur.
+| Response Elements | Description                                                     |
+| ----------------- | --------------------------------------------------------------- |
+| `data`            | Not present                                                     |
+| `status`          | Preset with fields: `deletedCount: <zero-or-positive-integer>`, 
+                      `moreData` with value `true` if there are more documents that 
+                      match the delete `filter`, but were not deleted since the limit 
+                      of documents to delete in the single operation was hit.         |
+| `errors`          | Present if errors occur.                                        |
 
 If an error occurs the command will still return `status` as some documents may have been deleted.
 
@@ -546,12 +549,12 @@ See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure)
 
 #### deleteOne Command Response
 
-  Response Element   Description
-  ------------------ -----------------------------------------------------------
-  `data`             Not present.
-  `status`           Preset with fields: `deletedCount: <zero-or-one-integer>`
-  `errors`           Present if errors occur.
-
+| Response Elements | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| `data`            | Not present                                               |
+| `status`          | Preset with fields: `deletedCount: <zero-or-one-integer>` |
+| `errors`          | Present if errors occur.                                  |
+ 
 If an error occurs the command will not return `status`.
 
 ### find Command
@@ -562,7 +565,7 @@ projection of each document.
 
 *Syntax:*
 
-```
+```json
 <find-command> ::= find <find-command-payload> 
 <find-command-response> ::= <paginated-document-response> 
 
@@ -576,14 +579,14 @@ projection of each document.
 
 *Sample:*
 
-```
+```json
 // select all documents in a collection, return complete documents
 {"find" : {} }
 
 // select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
-    "projection" : {"name": 1, :"age" : 1}
+    "projection" : {"name": 1, "age": 1}
     } 
 } 
 ```
@@ -614,11 +617,17 @@ TODO: add how cursor state fits into the processing
 behavior of the command. All options are optional, with default behavior
 applied when not provided.
 
-  Option        Type               Description
-  ------------- ------------------ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `limit`       Positive Integer   Limits the number of documents to be returned by the command. If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages.
-  `pageState`   ASCII String       The page state of the previous page, when supplied the `find` command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned.
-  `skip`        Positive Integer   Skips the specified number of documents, in sort order, before returning any documents.
+| Option       | Type               | Description                                                     |
+| ------------ | ------------------ | --------------------------------------------------------------- |
+| `limit`      | Positive Integer   | Limits the number of documents to be returned by the command. 
+                                      If unspecified, or 0, there is no limit on number of documents 
+                                      returned. Note that results may still be broken into pages.     |
+| `pageState`  | ASCII String       | The page state of the previous page, when supplied the `find` 
+                                      command will return the next page from the result set. If 
+                                      unspecified, null, or an empty string the first page is 
+                                      returned.                                                       |
+| `skip`       | Positive Integer   | Skips the specified number of documents, in sort order, before 
+                                      returning any documents.                                        |
 
 #### find Multi Document Failure Modes
 
@@ -637,7 +646,7 @@ Considerations](#considerationsMultiDocumentFailure).
 
 If an error occurs the command will not return `data`.
 
-### findOneAndUpdate Command {#commandFindOneAndUpdate}
+### findOneAndUpdate Command
 
 `findOneAndUpdate` selects one document from a collection using a match
 filter that is updated by the server using an atomic transaction, either
@@ -663,7 +672,7 @@ after the update has been applied.
 
 *Sample:*
 
-```
+```json
 // Update the first document (by natural order) to increase the points field by 5
 {"findOneAndUpdate" : 
     "filter": {} ,
@@ -724,11 +733,11 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### findOne Command Response
 
-  Response Element   Description
-  ------------------ -----------------------------------
-  `data`             Present with fields : `docs` only
-  `status`           Not present.
-  `errors`           Present if errors occur.
+| Response Element | Description                       |                     
+| ---------------- | ----------------------------------|
+| `data`           | Present with fields : `docs` only |
+| `status`         | Not present.                      |
+| `errors`         | Present if errors occur.          |
 
 If an error occurs the command will not return `data`.
 
@@ -756,11 +765,11 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### insertMany Command Response
 
-  Response Element   Description
-  ------------------ -----------------------------------------------------------------------------------
-  `data`             Not present.
-  `status`           Present with field: `insertedIds` and array of doc `_id` 's that were inserted. .
-  `errors`           Present if errors occur.
+| Response Element | Description                                                                     | 
+| ---------------- | --------------------------------------------------------------------------------|
+| `data`           | Not present.                                                                    |
+| `status`         | Present with field: `insertedIds` and array of doc `_id` 's that were inserted. |
+| `errors`         | Present if errors occur.                                                        |
 
 If an error occurs the command will still return `status` as some documents may have been inserted.
 
@@ -778,11 +787,11 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### insertOne Command Response
 
-  Response Element   Description
-  ------------------ ------------------------------------------------------------------------------------
-  `data`             Not present.
-  `status`           Present with field: `insertedId` with the single document `_id` that was inserted.
-  `errors`           Present if errors occur.
+| Response Element |  Description                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `data`           | Not present.                                                                        |
+| `status`         | Present with field: `insertedId` with the single document `_id` that was inserted.  |
+| `errors`         | Present if errors occur.                                                           |
 
 If an error occurs the command will not return `status`.
 
@@ -827,14 +836,14 @@ behavior applied when not provided.
   ---------- --------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   `upsert`   Boolean   When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
 
-#### updateOne Multi Document Failure Modes {#commandUpdateOneFailure}
+#### updateOne Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi Document Failure
 Considerations](#considerationsMultiDocumentFailure).
 
-#### updateOne Command Response {#commandUpdateOneResponse}
+#### updateOne Command Response
 
   Response Element   Description
   ------------------ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -849,11 +858,11 @@ documents may have been inserted.
 
 Additional considerations that apply to multiple commands.
 
-### Upsert Considerations {#considerationsUpsert}
+### Upsert Considerations
 
 Multiple concurrent requests that use upsert may result in multiple
 documents created when the intention was to only create one. This is
-because the default behaviour of upsert is to create a new document with
+because the default behavior of upsert is to create a new document with
 a random, server assigned, `_id` and then apply the updates to that
 document.
 
@@ -865,7 +874,7 @@ Overlapping commands may read the new document and update it.
 Fields included in the filter clause in addition to the `_id` are
 ignored.
 
-### Multi Document Failure Considerations {#considerationsMultiDocumentFailure}
+### Multi Document Failure Considerations
 
 Commands that modify multiple documents in a single operation, such as
 `updateMany` or `insertMany`, do not perform all of the modification in
@@ -887,11 +896,11 @@ There are two category of storage failures under consideration:
     operations, if operations still fail after retrying the operation
     will be considered to have failed.
 2.  **Concurrency Faults**: These occur when the a document is under
-    very high concurrenct modification which make it impossible for the
+    very high concurrent modification which make it impossible for the
     JSON API to complete an optimistic "compare-and-set" update.
     Modification operations read documents from the storage platform and
     update or delete it only if it has not changed since being read. If
-    the document has changed, the filter that seleted the document is
+    the document has changed, the filter that selected the document is
     tested again on that document, and the modification is re-tried.
     Under high contention it is possible for one request to "starve" and
     be unable to complete.
@@ -914,10 +923,10 @@ which is always atomically updated. And they maintain cluster wide
 consistency through the user of cluster wide "compare-and-set"
 operations.
 
-#### Fail Fast Multi Document Failure {#considerationsMultiDocumentFailureFailFast}
+#### Fail Fast Multi Document Failure
 
 Under the "fail fast" mode each operation on the database is performed
-sequentially, ensuring the previous operation has succedded before
+sequentially, ensuring the previous operation has succeeded before
 starting the next. In this mode a single failure causes the command to
 stop processing and return information on the work that has completed
 together with an error.
@@ -930,7 +939,7 @@ return both the `_id` of the first document and an error describing the
 failure inserting the second. No attempt will be made to insert the
 third document.
 
-#### Fail Silently Multi Document Failure {#considerationsMultiDocumentFailureFailSilently}
+#### Fail Silently Multi Document Failure
 
 Under the "fail silently" mode the command will attempt to perform all
 operations on the database, which may include successfully processing
@@ -947,7 +956,7 @@ Commands that use Fail Silently may return an error(s) and status
 information about what was successfully completed. See [Response
 Messages](#messagingResponse) for the structure of responses, and
 [Commands](#commands) for individual command responses. Multiple errors
-may be returned, the server should rationalise the errors by category.
+may be returned, the server should rationalize the errors by category.
 e.g. it should not return 10 errors that each say "DB service timeout",
 rather it should return a single error that covers the 10 documents this
 happened to.
@@ -969,12 +978,12 @@ a count of deleted documents and an error describing any failures.
 
 ## Clauses
 
--   [Filter Clause](#clauseFilter)
--   [Projection Clause](#clauseProjection)
--   [Sort Clause](#clauseSort)
--   [Update Clause](#clauseUpdate)
+-   [Filter Clause](#filter-clause)
+-   [Projection Clause](#projection-clause)
+-   [Sort Clause](#sort-clause)
+-   [Update Clause](#update-clause)
 
-### Filter Clause {#clauseFilter}
+### Filter Clause
 
 The filter clause is used to select zero or more documents from
 collection, how the documents are operated on depends on the command the
@@ -982,7 +991,7 @@ clause is used with.
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Identity filter that returns all documents\
 {}
 
@@ -992,10 +1001,11 @@ bc(sample)..\
 
 // Combination of literal and operator expressions\
 {"name" : "aaron", "age" : {"\$gt" : 40}}
+```
 
 *Syntax:*
 
-bc(syntax)..\
+```json
 `<filter-clause>`  ::= `<filter-expression>` \*
 
 `<filter-expression>`  ::= `<filter-comparison-expression>` 
@@ -1059,19 +1069,24 @@ bc(syntax)..\
 `<filter-logical-compound-operator>`  ::= \$and, \$or, \$nor\
 `<filter-logical-compound-operand>`  ::=
 \[`<filter-expression>`  (, `<filter-expression>` )\]\*
+```
 
-1.   BEGIN TODO =
+1.   
+```json
+BEGIN TODO =
     # 
     # filter-element-operation - type 
     # \<filter-evaluation-operators\> ::= \$mod
     #  END TODO ===
-
 ``` 
-<!-- -->
+
 ```
-1.   BEGIN Excluded =
+1.   
+```json
+BEGIN Excluded =
     \$expr, \$jsonSchema, \$regex, \$text, \$where, all geo things 
     #  END Excluded ===
+```
 
 A `<filter-expression>` may either apply to a node in the document
 identified by a path (`<filter-comparison-expression>`), or be a logical
@@ -1089,7 +1104,7 @@ the `<filter-operator-expression>` to evaluate to `True`.
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Comparison expression using a literal value\
 {"name" : "aaron"}\
 // Comparison expression using a single operator expression, equivalent
@@ -1100,6 +1115,7 @@ expression\
 {"name" : {"eq" : "aaron"}, "age" : {"\$gt" : 40, "\$lt" : 50}}\
 // Comparison expression testing metadata about the context node\
 {"name" : {"\$exists" : False}}
+```
 
 The `<document-path>` may fail to select a context node, either for all
 documents in the collection or only some. Whenever this happens a
@@ -1121,7 +1137,7 @@ does not specify a context node for operations to be evaluated.
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Logical expression using a literal value and single operator
 expressions\
 { "\$and" : \[{"name" : "aaron"}, {"age" : {"\$gt" : 40}}\]}\
@@ -1130,8 +1146,9 @@ expressions, so this is equivalent\
 {{"name" : "aaron"}, {"age" : {"\$gt" : 40}}}\
 // Logical expression using multiple operator expressions\
 { "\$or" : \[{"name" : {"eq" : "aaron"}}, {"age" : {"\$gt" : 40}}\]}
+```
 
-#### Filter Clause Order of Operations {#clauseFilterOrderOfOperation}
+#### Filter Clause Order of Operations
 
 The filter clause is made up of zero or more expressions that evaluate
 to `True` or `False`.
@@ -1148,13 +1165,13 @@ operations:
     `<filter-expression>` then all documents in the collection where all
     expressions evaluate to `True` are selected.
 
-#### `<literal>` comparison {#comparisonOperationLiteral}
+#### `<literal>` comparison 
 
 A literal comparison operation performs the `$eq` operation on the
 context node using the supplied literal value. See
 [\$eq](#comparisonOperationEq) for the definition.
 
-#### \$eq operation {#comparisonOperationEq}
+#### \$eq operation 
 
 `$eq` applies a type sensitive equals operation to the value context
 node and the `<literal>` operand.
@@ -1174,23 +1191,23 @@ between arrays or sub documents.
     comparisons use string binary comparison i.e. it is sensitive to
     case and other modifiers.
 
-#### \$gt operation {#comparisonOperationGt}
+#### \$gt operation
 
 TODO: node must exist
 
-#### \$gte operation {#comparisonOperationGte}
+#### \$gte operation
 
 TODO: node must exist
 
-#### \$lt operation {#comparisonOperationLt}
+#### \$lt operation
 
 TODO: node must exist
 
-#### \$lte operation {#comparisonOperationLte}
+#### \$lte operation
 
 TODO: node must exist
 
-#### \$ne operation {#comparisonOperationNe}
+#### \$ne operation
 
 `$ne` applies a type sensitive not-equals operation to the value of the
 context node and the `<literal>` operand.
@@ -1209,7 +1226,7 @@ are `True`:
     String comparisons use string binary comparison i.e. it is sensitive
     to case and other modifiers.
 
-#### \$in operation {#comparisonOperationIn}
+#### \$in operation
 
 `$in` applies to context node values that are either atomic or an array,
 in either case the RHS operand is a list of literals. The operation
@@ -1229,7 +1246,7 @@ When the value of the context node is an array, `$in` evaluates to
 2.  `$eq` evaluates to `True` for any pair of a value from the node
     array or value in the RHS operand.
 
-#### \$nin operation {#comparisonOperationNin}
+#### \$nin operation
 
 `$nin` applies to context node values that are either atomic or an
 array, in either case the RHS operand is a list of literals. The
@@ -1250,11 +1267,11 @@ When the value of the context node is an array, `$nin` evaluates to
 2.  `$eq` evaluates to `False` for all pairs of a value from the node
     array and a value in the RHS operand.
 
-#### \$not operation {#logicalOperationNot}
+#### \$not operation
 
 `$not` applies a logical *Not* to a `<filter-operator-expression>`,
 which is evaluated against the context node identified by the
-`<filter-comparison-path>` of hte comparison express. While `$not` is
+`<filter-comparison-path>` of the comparison express. While `$not` is
 logical operation it behaves differently to `$and`, `$or`, and `$nor` as
 they apply logical operations to the results of 1 or more sub
 `<filter-expression>` while `$not` applies to a single
@@ -1262,9 +1279,10 @@ they apply logical operations to the results of 1 or more sub
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Applying \$not to an \$eq operation\
 {"name" : {"\$not" : {"eq" : "aaron"}}}
+```
 
 Note that the behavior of `$not` when the context node does not exist
 means that it can change the behavior of operations and should not
@@ -1288,7 +1306,7 @@ applying NOT to the output of the `<filter-operator-expression>` means
 that all operations must be tested (and evaluate to TRUE) for document
 to be excluded.
 
-#### \$exists operation {#elementOperationExists}
+#### \$exists operation
 
 `$exists` applies to the metadata of the context node, to test if it
 exists. The RHS operand is a boolean value that controls the return
@@ -1296,11 +1314,12 @@ value of the operation.
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Select documents that have a name\
 {"name" : {"\$exists" : true}}\
 // Select documents that do not have a name\
 {"name" : {"\$exists" : false}}
+```
 
 `$exists` evaluates to `True` when all of the following conditions are
 `True`:
@@ -1308,19 +1327,19 @@ bc(sample)..\
 1.  The context node exits.
 2.  The value of the RHS operand is `true`.
 
-#### \$all operation {#arrayOperationAll}
+#### \$all operation
 
 TODO:
 
-#### \$elemMatch operation {#arrayOperationAll}
+#### \$elemMatch operation
 
 TODO:
 
-#### \$size operation {#arrayOperationAll}
+#### \$size operation
 
 TODO:
 
-### Projection Clause {#clauseProjection}
+### Projection Clause
 
 A Projection clause is applied to zero or more input documents to
 project all of part of each document into an output document. Each input
@@ -1369,7 +1388,7 @@ in an order decided by the server. The output of all
 `<projection-expression>`'s evaluated for a single input document create
 a single output document.
 
-#### Projection Clause Order of Operations {#clauseProjectionOrderOfOperation}
+#### Projection Clause Order of Operations
 
 The `<projection-clause>` is evaluated using the following order of
 operations:
@@ -1382,7 +1401,7 @@ operations:
 3.  Unless excluded via a `<projection-field-expression>` the `<_id>`
     field is included in the output document.
 
-#### `<projection-field-expression>` {#projectionFieldExpression}
+#### `<projection-field-expression>`
 
 `<projection-field-expression>` is the simplest form of expression. It
 identifies a field using a `<document-path>` and includes or
@@ -1396,13 +1415,14 @@ the `_id` field.
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Identity projection, selects the entire document\
 {}\
 // Select top level and lower level fields\
 { "name" : 1, "address.country" : true}\
 // Select top level and lower level fields and exclude the \_id\
 { "name" : 1, "address.country" : true, "\_id": 0}
+```
 
 When the `<document-path>` does not exist in the input document:
 
@@ -1416,12 +1436,12 @@ When the `<document-path>` does exist in the input document:
 2.  If `<projection-field-inclusion>` is `0` or `false` the output
     document will not include a field with that key
 
-#### `<projection-array-elem-match-projection>` \$elemMatch {#projectionElemMatchExpression}
+#### `<projection-array-elem-match-projection>` \$elemMatch
 
 **TODO:** confirm this is supported by mquery, not in the docs - should
 be supported, cannot see where
 
-#### \$slice {#projectionArraySliceExpression}
+#### \$slice
 
 `<projection-array-slice-projection>` is used to select a 1 or more
 elements from a source document array for the output document based on
@@ -1472,10 +1492,10 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
     selecting elements. For a 0 based array a value of 1 indicates
     elements should be selected starting at the second element at index
     1.
-3.  If `<slice-to-skip>` is a negative integer and it's absolute value
+3.  If `<slice-to-skip>` is a negative integer and its absolute value
     is greater than or equal to the size of the input array the starting
     position is the start of the array.
-4.  If `<slice-to-skip>` is a negative integer and it's absolute value
+4.  If `<slice-to-skip>` is a negative integer and its absolute value
     is less than the size of the input array, it is the number of
     elements to skip backwards from the end of the array. For a 0 based
     array a value of --1 indicates elements should be selected starting
@@ -1485,7 +1505,7 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
 
 *Sample:*
 
-bc(sample)..\
+```json
 // With the input array \["foo", "bar", "baz"\]\
 // Select first 2 elements \["foo", "bar"\]\
 {"\$slice" : 2}\
@@ -1495,13 +1515,14 @@ bc(sample)..\
 {"\$slice" : \[1,1\]}\
 // Select the last element, same as --1 \["baz"\]\
 {"\$slice" : \[--1,1\]}
+```
 
-#### `<projection-array-limit-projection>` \$ {#projectionArrayLimitExpression}
+#### `<projection-array-limit-projection>` \$
 
 **TODO:** not sure if supported by mquery, this is the \$ - should be
 supported, cannot see where
 
-### Sort Clause {#clauseSort}
+### Sort Clause
 
 A sort clause is applied to a set of documents to order them. Examples
 of this include ordering a large result set that will returned as pages,
@@ -1512,10 +1533,11 @@ be returned when only a single document is required.
 
 *Syntax:*
 
-bc(syntax)..\
+```json
 `<sort-clause>`  ::= \[`<sort-expression>` \*\]
 
 `<sort-expression>`  ::= (-)?`<document-path>` 
+```
 
 Each `<sort-clause>` contains an ordered list of `<sort-expression>`'s
 which are used to sort a candidate set of documents. The order of
@@ -1530,13 +1552,14 @@ maximum of **TODO** number of `<sort-expression>`'s may be included in a
 
 *Sample:*
 
-bc(sample)..\
+```json
 // Sort by one field ascending\
 \["name"\]\
 // Sort by one field descending, and a second ascending\
 \["-age", "name"\]
+```
 
-#### Sort Clause Order of Operations {#clauseSortOrderOfOperation}
+#### Sort Clause Order of Operations
 
 The `<sort-clause>` is evaluated using the following order of
 operations:
@@ -1554,10 +1577,10 @@ operations:
     expression. A third `<sort-expression>` is used to sort documents
     with a duplicate value for the second expression and so on.
 
-#### Sort Order {#clauseSortOrder}
+#### Sort Order
 
 **TODO:** type coercion, missing fields
 
-### Update Clause {#clauseUpdate}
+### Update Clause
 
 **TODO** BNF for update commands, need to use `<document-path>` 
