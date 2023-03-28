@@ -573,10 +573,10 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           });
     }
 
-    record TestData(String id, String username, int userId, boolean activeUser) {}
+    record TestData(String _id, String username, int userId, boolean activeUser) {}
 
-    record TestDataMissingBoolean(String id, String username, int userId) {}
+    record TestDataMissingBoolean(String _id, String username, int userId) {}
 
-    record TestDataUserIdAsText(String id, String username, String userId) {}
+    record TestDataUserIdAsText(String _id, String username, String userId) {}
   }
 }
