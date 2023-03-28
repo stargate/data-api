@@ -164,15 +164,8 @@ public record FindOperation(
   }
 
   private QueryOuterClass.Query buildSortedSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-    for (DBFilterBase filter : filters) {
-      if (additionalIdFilter == null
-          || (additionalIdFilter != null && !(filter instanceof DBFilterBase.IDFilter)))
-        conditions.add(filter.get());
-    }
-    if (additionalIdFilter != null) {
-      conditions.add(additionalIdFilter.get());
-    }
+    List<BuiltCondition> conditions = buildConditions(additionalIdFilter);
+
     String[] columns = sortedDataColumns;
 
     if (orderBy() != null) {
