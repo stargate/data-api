@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Represents a document read from the database
@@ -20,14 +20,14 @@ public record ReadDocument(
     UUID txnId,
     JsonNode document,
     List<JsonNode> sortColumns,
-    QueryOuterClass.Value docJsonValue) {
+    Supplier<JsonNode> docJsonValue) {
 
   public static ReadDocument from(DocumentId id, UUID txnId, JsonNode document) {
     return new ReadDocument(id, txnId, document, null, null);
   }
 
   public static ReadDocument from(
-      DocumentId id, QueryOuterClass.Value docJsonValue, List<JsonNode> sortColumns) {
+      DocumentId id, Supplier<JsonNode> docJsonValue, List<JsonNode> sortColumns) {
     return new ReadDocument(id, null, null, sortColumns, docJsonValue);
   }
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -177,7 +178,8 @@ public interface ReadOperation extends Operation {
                 document =
                     ReadDocument.from(
                         getDocumentId(row.getValues(0)), // key
-                        row.getValues(1), // Deserialized value of doc_json
+                        new DocJsonValue(
+                            objectMapper, row.getValues(1)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
               }
@@ -214,17 +216,9 @@ public interface ReadOperation extends Operation {
               List<ReadDocument> responseDocuments =
                   subList.stream()
                       .map(
-                          readDoc -> {
-                            try {
-                              final JsonNode jsonNode =
-                                  objectMapper.readTree(Values.string(readDoc.docJsonValue()));
-                              return ReadDocument.from(readDoc.id(), readDoc.txnId(), jsonNode);
-                              // This error should never happen because we are creating Json object
-                              // out of the validated json stored in DB.
-                            } catch (JsonProcessingException e) {
-                              throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
-                            }
-                          })
+                          readDoc ->
+                              ReadDocument.from(
+                                  readDoc.id(), readDoc.txnId(), readDoc.docJsonValue().get()))
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);
             });
@@ -273,4 +267,17 @@ public interface ReadOperation extends Operation {
   record FindResponse(List<ReadDocument> docs, String pagingState) {}
 
   record CountResponse(int count) {}
+
+  record DocJsonValue(ObjectMapper objectMapper, QueryOuterClass.Value docJsonValue)
+      implements Supplier<JsonNode> {
+    public JsonNode get() {
+      try {
+        return objectMapper.readTree(Values.string(docJsonValue));
+      } catch (JsonProcessingException e) {
+        // These are data stored in the DB so the error should never happen
+        // e.printStackTrace();
+        return null;
+      }
+    }
+  }
 }
