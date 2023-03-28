@@ -132,6 +132,19 @@ public record FindOperation(
 
   // builds select query
   private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
+    List<BuiltCondition> conditions = buildConditions(additionalIdFilter);
+
+    // create query
+    return new QueryBuilder()
+        .select()
+        .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+        .from(commandContext.namespace(), commandContext.collection())
+        .where(conditions)
+        .limit(limit)
+        .build();
+  }
+
+  private List<BuiltCondition> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
 
     // if we have id filter overwrite ignore existing IDFilter
@@ -147,14 +160,7 @@ public record FindOperation(
       conditions.add(additionalIdFilter.get());
     }
 
-    // create query
-    return new QueryBuilder()
-        .select()
-        .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-        .from(commandContext.namespace(), commandContext.collection())
-        .where(conditions)
-        .limit(limit)
-        .build();
+    return conditions;
   }
 
   private QueryOuterClass.Query buildSortedSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
@@ -171,7 +177,7 @@ public record FindOperation(
 
     if (orderBy() != null) {
       List<String> sortColumns = Lists.newArrayList(columns);
-      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumn()));
+      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
       columns = new String[sortColumns.size()];
       sortColumns.toArray(columns);
     }
@@ -196,7 +202,7 @@ public record FindOperation(
      *
      * @return
      */
-    public List<String> getOrderingColumn() {
+    public List<String> getOrderingColumns() {
       return sortIndexColumns.stream()
           .map(col -> col.formatted(column()))
           .collect(Collectors.toList());

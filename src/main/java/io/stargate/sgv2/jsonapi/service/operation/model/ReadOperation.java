@@ -117,8 +117,6 @@ public interface ReadOperation extends Operation {
       int limit,
       int errorLimit) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
-    MinMaxPriorityQueue<ReadDocument> sortedData =
-        MinMaxPriorityQueue.orderedBy(comparator).maximumSize(skip + limit).create();
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createBy()
         .repeating()
@@ -136,7 +134,9 @@ public interface ReadOperation extends Operation {
               Iterator<QueryOuterClass.Row> rowIterator =
                   resultSet.getRowsList().stream().iterator();
               int remaining = resultSet.getRowsCount();
-              documentCounter.addAndGet(remaining);
+              int count = documentCounter.addAndGet(remaining);
+              if (count == errorLimit) throw new JsonApiException(ErrorCode.DATASET_TOO_BIG);
+              List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 ReadDocument document = null;
                 QueryOuterClass.Row row = rowIterator.next();
@@ -179,18 +179,19 @@ public interface ReadOperation extends Operation {
                         getDocumentId(row.getValues(0)), // key
                         row.getValues(1), // Deserialized value of doc_json
                         sortValues);
-                sortedData.add(document);
+                documents.add(document);
               }
-              return Uni.createFrom().item(true);
+              return Uni.createFrom().item(documents);
             })
         .collect()
-        .last()
+        .in(
+            () -> MinMaxPriorityQueue.orderedBy(comparator).maximumSize(skip + limit).create(),
+            (sortedData, documents) -> {
+              documents.forEach(doc -> sortedData.add(doc));
+            })
         .onItem()
         .transform(
-            flag -> {
-              if (documentCounter.get() == errorLimit)
-                throw new JsonApiException(ErrorCode.DATASET_TOO_BIG);
-
+            sortedData -> {
               // begin value to read from the sorted list
               int begin = skip;
 
@@ -209,7 +210,6 @@ public interface ReadOperation extends Operation {
                 }
                 i++;
               }
-
               // deserialize the doc_json field
               List<ReadDocument> responseDocuments =
                   subList.stream()
