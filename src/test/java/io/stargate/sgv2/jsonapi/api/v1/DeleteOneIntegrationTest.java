@@ -16,6 +16,7 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -326,34 +327,54 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           """;
       // start all threads
       AtomicInteger reportedDeletions = new AtomicInteger(0);
+      AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
       for (int i = 0; i < threads; i++) {
+        int index = i;
         new Thread(
                 () -> {
-                  Integer deletedCount =
-                      given()
-                          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                          .contentType(ContentType.JSON)
-                          .body(deleteJson)
-                          .when()
-                          .post(
-                              CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-                          .then()
-                          .statusCode(200)
-                          .body("status.deletedCount", anyOf(is(0), is(1)))
-                          .body("errors", is(nullValue()))
-                          .extract()
-                          .path("status.deletedCount");
+                  try {
+                    Integer deletedCount =
+                        given()
+                            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                            .contentType(ContentType.JSON)
+                            .body(deleteJson)
+                            .when()
+                            .post(
+                                CollectionResource.BASE_PATH,
+                                keyspaceId.asInternal(),
+                                collectionName)
+                            .then()
+                            .statusCode(200)
+                            .body("status.deletedCount", anyOf(is(0), is(1)))
+                            .body("errors", is(nullValue()))
+                            .extract()
+                            .path("status.deletedCount");
 
-                  // add reported deletes
-                  reportedDeletions.addAndGet(deletedCount);
+                    // add reported deletes
+                    reportedDeletions.addAndGet(deletedCount);
+                  } catch (Exception e) {
 
-                  // count down
-                  latch.countDown();
+                    // set exception so we can rethrow
+                    exceptions.set(index, e);
+                  } finally {
+
+                    // count down
+                    latch.countDown();
+                  }
                 })
             .start();
       }
 
       latch.await();
+
+      // check if there are any exceptions
+      // throw first that is seen
+      for (int i = 0; i < threads; i++) {
+        Exception exception = exceptions.get(i);
+        if (null != exception) {
+          throw exception;
+        }
+      }
 
       // assert reported deletes are exactly one
       assertThat(reportedDeletions.get()).isOne();
