@@ -498,7 +498,7 @@ The `countDocuments` command does not support any options.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure Considerations](#considerations-multi-docuemnt-failure).
+See [Multi-Document Failure Considerations](#considerations-multi-docuemnt-failure).
 
 #### countDocuments Command Response
 
@@ -520,7 +520,7 @@ The `deleteMany` command does not support any options.
 
 Fail Silently, a storage failure does not stop the command from processing.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### deleteMany Command Response
 
@@ -542,7 +542,7 @@ The `deleteOne` command does not support any options.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure Considerations](#considerationsMultiDocumentFailure).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### deleteOne Command Response
 
@@ -576,11 +576,13 @@ projection of each document.
 
 *Sample:*
 
-```json
+```json5
 // Select all documents in a collection, return complete documents
+
 {"find" : {} }
 
 // Select where name == "aaron" and return selected fields
+
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age": 1}
@@ -624,8 +626,7 @@ applied when not provided.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### find Command Response
 
@@ -664,14 +665,16 @@ after the update has been applied.
 
 *Sample:*
 
-```
+```json5
 // Update the first document (by natural order) to increase the points field by 5
+
 {"findOneAndUpdate" : 
     "filter": {} ,
     "update": { $inc: { "points" : 5 } } 
 }
 
 // Increase the age for the document with id 123, and return the name and age 
+
 {"findOneAndUpdate" : {
     "filter" : {"_id": "123"},
     "update": { $inc: { "age" : 5 } }, 
@@ -696,7 +699,7 @@ default behavior applied when not provided.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### findOneAndUpdate Command Response
 
@@ -721,7 +724,7 @@ The `findOne` command does not support any options.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### findOne Command Response
 
@@ -741,7 +744,7 @@ If an error occurs the command will not return `data`.
 
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
-| `ordered`         | Boolean     | When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#multi-document-failure-considerations) for details. Defaults to `true`. |
+| `ordered`         | Boolean     | When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi-Document Failure Considerations](#multi-document-failure-considerations) for details. Defaults to `true`. |
 
 
 #### insertMany Multi Document Failure Modes
@@ -750,7 +753,7 @@ Depends on the `ordered` option. When `true` the command uses Fail Fast to stop 
 
 See [insertMany Command Options](#insertMany-command-options) for `ordered`.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### insertMany Command Response
 
@@ -772,7 +775,7 @@ The `insertOne` command does not support any options.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### insertOne Command Response
 
@@ -801,7 +804,7 @@ behavior applied when not provided.
 
 Fail Silently, a storage failure does not stop the command from processing.
 
-See [Multi Document Failure Considerations](#multi-document-failure-considerations).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### updateMany Command Response
  
@@ -822,16 +825,15 @@ If an error occurs the command will still return `status` as some documents may 
 
 
 | Response Element |  Type   |  Description                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| `upsert          | Boolean | When `true` if no documents match the `filter` clause the command will create a                      new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used. See [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
+| ---------------- | ------- | ---------------------------------------------------------------------------------- |
+| `upsert          | Boolean | When `true`, if no documents match the `filter` clause, the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter`, the new document will use this `_id`, otherwise a random value will be used. See [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 
 #### updateOne Multi Document Failure Modes
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi Document Failure
-Considerations](#considerationsMultiDocumentFailure).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### updateOne Command Response
 
@@ -968,16 +970,16 @@ clause is used with.
 
 *Sample:*
 
-```json
- # Identity filter that returns all documents
- {}
+```json5
+// Identity filter that returns all documents
+{}
 
- # Equality match for a single field\
- {"name" : "aaron"}
- {"name" : {"eq" : "aaron"}}
+// Equality match for a single field\
+{"name" : "aaron"}
+{"name" : {"eq" : "aaron"}}
 
- # Combination of literal and operator expressions
- {"name" : "aaron", "age" : {"$gt" : 40}}
+// Combination of literal and operator expressions
+{"name" : "aaron", "age" : {"$gt" : 40}}
 ```
 
 *Syntax:*
@@ -1079,7 +1081,7 @@ the `<filter-operator-expression>` to evaluate to `True`.
 
 *Sample:*
 
-```json
+```json5
 // Comparison expression using a literal value
 {"name" : "aaron"}
 // Comparison expression using a single operator expression, equivalent to the previous example
