@@ -1,5 +1,7 @@
 h1. JSON API Query Specification
 
+**IMPORTANT:** Starting with PR 276, once it's merged, we'll work on the Markdown version of this specification. Do not edit this jsonapi-spec.textile file. Instead, edit [jsonapi-spec.md](jsonapi-spec.md). When we're certain that all content from this *.textile file is properly set up in the *.md source, we will archive the textile file. Questions? Ask John Smart.
+
 <span id="tableOfContents">
 
 {toc:maxLevel=3}
