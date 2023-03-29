@@ -1,7 +1,6 @@
 # JSON API Query Specification
 
-The target users for the JSON API are Javascript developers who interact
-with the service through a driver or Object Document Mapper (ODM)
+The target users for the JSON API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM)
 library such as [Mongoose](https://github.com/Automattic/mongoose). 
 
 - [Preamble](#preamble)
@@ -18,76 +17,34 @@ library such as [Mongoose](https://github.com/Automattic/mongoose).
 
 ## Preamble
 
-The nature of a JSON API lends itself to complex, structured queries that
-may express compound or multiple operations in a single request. Such as
-selecting one or more documents and projecting a selection of fields
-from each, or selecting one or more documents and updating them server
-side. We consider that most requests are generated via the ODM (for
-example via [`mquery`](https://github.com/aheckmann/mquery) which makes
-it easy for the developer to create complex queries at code time, or at
-run time in response to the actions taken by a user (such as which
-fields were updated, or which fields the user wants to see). The
-implementation of the JSON API should therefor be optimized for
-expressing complex and compound machine generated queries, rather than
-developers making direct queries via the wire protocol API.
+The nature of a JSON API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via [`mquery`](https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the JSON API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
 
-The API should be implemented using HTTP 1 or 2 using JSON as the
-accepted and returned content type, however adherence to a design
-pattern such REST is not recommended. This is because of the above
-expected use through an ODM, and due to the complexity that can be
-expressed in the JSON API. The specification includes compound
-operations, such as find and update, to be implemented in the server
-which do not have a clear mapping to the REST verbs.
+The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the JSON API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
 
-Additionally consideration should be given to implementing that API such
-that the body of a request can be machine generated and includes all
-possible information needed to process the request. With the exception
-of any out of band information such as authentication and possibly the
-collection name. This approach makes it easier to integrate the JSON API
-service with other data services though the use of templates or code to
-generate a request.
+Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the JSON API service with other data services though the use of templates or code to generate a request.
 
 ## High Level Concepts
 
-The JSON API consists of the following high level concepts that are
-composed to create a request:
+The JSON API consists of the following high level concepts that are composed to create a request:
 
--   **Namespace:** A logical container representing a distinct storage
-    location and query boundary which can contain multiple collections.
-    May map to a keyspace or database.
--   **Collection:** A logical container of documents that have some
-    meaning to the developer using the API. Often an ODM may map a
-    single developer defined class or type to a collection.
--   **Document:** A document is a hierarchical
-    [JSON](https://www.json.org/) document with a single reserved `_id`
-    field. All documents in a collection may have different fields and
-    structure.
--   **Command:** Commands are performed on Collections of Documents.
-    Commands may return zero or more documents from the collection,
-    update or insert zero or more documents, or both.
--   **Clause:** Clauses are included in operations to control or extend
-    the behavior of an operation. Clauses may be required or optional
-    for an operation, when optional a default behavior is expected.
+-   **Namespace:** A logical container representing a distinct storage location and query boundary which can contain multiple collections. May map to a keyspace or database.
+-   **Collection:** A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.
+-   **Document:** A document is a hierarchical [JSON](https://www.json.org/) document with a single reserved `_id` field. All documents in a collection may have different fields and structure.
+-   **Command:** Commands are performed on Collections of Documents. Commands may return zero or more documents from the collection, update or insert zero or more documents, or both.
+-   **Clause:** Clauses are included in operations to control or extend the behavior of an operation. Clauses may be required or optional for an operation, when optional a default behavior is expected.
 
-These concepts are grouped together to form a **Request** sent by client
-software for the API to process, the API responds with a response
-document whose format depends on the command being executed. Each
-request includes:
+These concepts are grouped together to form a **Request** sent by client software for the API to process, the API responds with a response document whose format depends on the command being executed. Each request includes:
 
--   The name of a collection of documents to execute against, a single
-    request may only execute against a single collection.
+-   The name of a collection of documents to execute against, a single request may only execute against a single collection.
 -   A command to execute.
 -   The required and optional clauses.
--   Any out of band metadata such as authentication or tracing
-    information. The nature of such out of band metadata is outside of
-    the scope of this document.
+-   Any out of band metadata such as authentication or tracing information. The nature of such out of band metadata is outside of the scope of this document.
 
 **TODO:** Do we need to have multiple commands in a single request?
 
 ## Conventions
 
-To aid in specifying the JSON API, we will use the following conventions
-in this document:
+To aid in specifying the JSON API, we will use the following conventions in this document:
 
 - Language rules will be given in a [BNF](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form)-like notation:
 
@@ -341,12 +298,13 @@ the array is indexed using a single zero `0`.
 
 *Sample:*
 
-```json
+```json5
 // Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
     }
 } 
+
 // Filter on the first element of the tags array
 {"find" : {
     "filter" : {"tags.0": "foo"}
@@ -388,17 +346,19 @@ additional whitespace.
 
 *Sample:*
 
-```json
+```json5
 // _id is equal to 1 
 {"find" : {
     "filter" : {"_id": 1}
     }
 } 
+
 // suburb field in the address sub document is equal to "banana"
 {"find" : {
     "filter" : {"address.suburb": "banana"}
     }
 } 
+
 // Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
@@ -475,7 +435,7 @@ the future.
 
 *Sample:*
 
-```json
+```json5
 // Select all documents in a collection, return complete documents
 {"find" : {} }
 
@@ -578,11 +538,9 @@ projection of each document.
 
 ```json5
 // Select all documents in a collection, return complete documents
-
 {"find" : {} }
 
 // Select where name == "aaron" and return selected fields
-
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age": 1}
@@ -667,14 +625,12 @@ after the update has been applied.
 
 ```json5
 // Update the first document (by natural order) to increase the points field by 5
-
 {"findOneAndUpdate" : 
     "filter": {} ,
     "update": { $inc: { "points" : 5 } } 
 }
 
 // Increase the age for the document with id 123, and return the name and age 
-
 {"findOneAndUpdate" : {
     "filter" : {"_id": "123"},
     "update": { $inc: { "age" : 5 } }, 
@@ -693,7 +649,7 @@ default behavior applied when not provided.
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
 | `returnDocument`  | String Enum | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied, if `"after"` the document projection is from the document after the update. Defaults to `"before"`. |
-| `upsert`          | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
+| `upsert`          | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### findOneAndUpdate Multi Document Failure Modes
 
@@ -798,7 +754,7 @@ behavior applied when not provided.
 
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
-| `upsert `         | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
+| `upsert `         | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### updateMany Multi Document Failure Modes
 
@@ -1047,7 +1003,7 @@ clause is used with.
 [`<filter-expression>`  (, `<filter-expression>` )]*
 ```
 
-#### TODO work
+#### TODO work (?) for Filter Clauses
 
 ```
 BEGIN TODO =
@@ -1084,10 +1040,13 @@ the `<filter-operator-expression>` to evaluate to `True`.
 ```json5
 // Comparison expression using a literal value
 {"name" : "aaron"}
+
 // Comparison expression using a single operator expression, equivalent to the previous example
 {"name" : {"eq" : "aaron"}}
+
 // Comparison expression using a single and a multiple operator expression
 {"name" : {"eq" : "aaron"}, "age" : {"$gt" : 40, "$lt" : 50}}
+
 // Comparison expression testing metadata about the context node
 {"name" : {"$exists" : false}}
 ```
@@ -1112,11 +1071,13 @@ does not specify a context node for operations to be evaluated.
 
 *Sample:*
 
-```json
+```json5
 // Logical expression using a literal value and single operator expressions
 { "$and" : [{"name" : "aaron"}, {"age" : {"$gt" : 40}}]}
+
 // Note, there is an implicit $and operator for all top level expressions, so this is equivalent
 { "name" : "aaron"}, {"age" : {"$gt" : 40}} }
+
 // Logical expression using multiple operator expressions
 { "$or" : [{"name" : {"eq" : "aaron"}}, {"age" : {"$gt" : 40}}]}
 ```
@@ -1251,7 +1212,7 @@ they apply logical operations to the results of 1 or more sub
 
 *Sample:*
 
-```json
+```json5
 // Applying $not to an $eq operation
 {"name" : {"$not" : {"eq" : "aaron"}}}
 ```
@@ -1285,15 +1246,15 @@ value of the operation.
 
 *Sample:*
 
-```json
+```json5
 // Select documents that have a name
 {"name" : {"$exists" : true}}
+
 // Select documents that do not have a name
 {"name" : {"$exists" : false}}
 ```
 
-`$exists` evaluates to `True` when all of the following conditions are
-`True`:
+`$exists` evaluates to `True` when all of the following conditions are `True`:
 
 1.  The context node exits.
 2.  The value of the RHS operand is `true`.
@@ -1312,7 +1273,7 @@ TODO:
 
 ### Projection Clause
 
-A Projection clause is applied to zero or more input documents to project all of part of each document into an output document. Each input document maps to a single output document, although each output document may have a different document layout. For example when an input document is missing a projected field it will not appear in the output document.
+A Projection clause is applied to zero or more input documents to project all of part of each document into an output document. Each input document maps to a single output document, although each output document may have a different document layout. For example, when an input document is missing a projected field, it will not appear in the output document.
 
 *Syntax:*
 
@@ -1368,11 +1329,13 @@ The `<projection-clause>` is evaluated using the following order of operations:
 
 *Sample:*
 
-```json
+```json5
 // Identity projection, selects the entire document
 {}
+
 // Select top level and lower level fields
 { "name" : 1, "address.country" : true}
+
 // Select top level and lower level fields and exclude the _id
 { "name" : 1, "address.country" : true, "_id": 0}
 ```
@@ -1455,15 +1418,18 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
 
 *Sample:*
 
-```json
+```json5
 // With the input array ["foo", "bar", "baz"]
 // Select first 2 elements ["foo", "bar"]
 {"$slice" : 2}
+
 // Select last 2 elements ["bar", "baz"]
 {"$slice" : -2}
+
 // Select one element starting at second ["bar"]
 {"$slice" : [1,1]}
-// Select the last element, same as --1 ["baz"]
+
+// Select the last element, same as -1 ["baz"]
 {"$slice" : [-1,1]}
 ```
 
