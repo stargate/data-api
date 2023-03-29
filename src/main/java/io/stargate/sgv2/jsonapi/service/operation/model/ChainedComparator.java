@@ -23,8 +23,7 @@ public record ChainedComparator(List<FindOperation.OrderBy> sortColumns, ObjectM
       if (compareValue != 0) return compareValue;
       i++;
     }
-    JsonNodeComparator.ascending()
+    return JsonNodeComparator.ascending()
         .compare(o1.id().asJson(objectMapper), o2.id().asJson(objectMapper));
-    return 0;
   }
 }
