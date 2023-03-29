@@ -1,7 +1,7 @@
 # JSON HTTP API Specification
 
-This document specifies the HTTP API for the JSON API, how clients can communicate with the service. 
-See the [JSON API Query Specification](json-spec.md) for details of data modelling and queries.
+This document specifies the HTTP API for the JSON API. That is how clients can communicate with the service. 
+See the [JSON API Query Specification](jsonapi-spec.md) for details of data modelling and queries.
 
 - [Preamble](#preamble)
 - [High-level concepts](#high-level-concepts)

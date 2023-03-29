@@ -466,7 +466,7 @@ The following commands are supported for collections:
 -   [`updateOne`](#commandUpdateOne)
 
 Each command always results in a single [response](#commandResponses),
-unless there is an unexpected exception. For details, see the [JSON API HTTP Specification](json-network-spec.md).
+unless there is an unexpected exception. For details, see the [JSON API HTTP Specification](jsonapi-network-spec.md).
 
 Commands are defined using the BNF-like syntax, with samples presented
 using a [JSON](https://www.json.org/) encoding of the language. The use
@@ -969,15 +969,15 @@ clause is used with.
 *Sample:*
 
 ```json
-// Identity filter that returns all documents
-{}
+ # Identity filter that returns all documents
+ {}
 
-// Equality match for a single field\
-{"name" : "aaron"}
-{"name" : {"eq" : "aaron"}}
+ # Equality match for a single field\
+ {"name" : "aaron"}
+ {"name" : {"eq" : "aaron"}}
 
-// Combination of literal and operator expressions
-{"name" : "aaron", "age" : {"$gt" : 40}}
+ # Combination of literal and operator expressions
+ {"name" : "aaron", "age" : {"$gt" : 40}}
 ```
 
 *Syntax:*
@@ -1045,7 +1045,8 @@ clause is used with.
 [`<filter-expression>`  (, `<filter-expression>` )]*
 ```
 
-1.
+#### TODO work
+
 ```
 BEGIN TODO =
     # 
@@ -1054,8 +1055,8 @@ BEGIN TODO =
     #  END TODO ===
 ``` 
 
-```
-1.
+Also:
+
 ```
 BEGIN Excluded =
     $expr, $jsonSchema, $regex, $text, $where, all geo things 
