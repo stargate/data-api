@@ -7,6 +7,19 @@ stargate:
   exception-mappers:
     enabled: false
 
+  # custom grpc settings
+  grpc:
+
+    # default client timeout 2x from max server side timeout
+    # see https://docs.datastax.com/en/dse/6.8/dse-dev/datastax_enterprise/config/configCassandra_yaml.html#Networktimeoutsettings
+    call-deadline: PT20S
+
+    # retries use custom policy, see io.stargate.sgv2.jsonapi.grpc.retries.impl.JsonApiGrpcRetryPolicy
+    retires:
+      enabled: true
+      max-attempts: 1
+      policy: custom
+
   # metrics properties
   # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
