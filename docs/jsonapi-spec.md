@@ -342,12 +342,12 @@ the array is indexed using a single zero `0`.
 *Sample:*
 
 ```json
-# Second element of the `tags` array is equal to "foo"
+// Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
     }
 } 
-# Filter on the first element of the tags array
+// Filter on the first element of the tags array
 {"find" : {
     "filter" : {"tags.0": "foo"}
     }
@@ -389,17 +389,17 @@ additional whitespace.
 *Sample:*
 
 ```json
-# _id is equal to 1 
+// _id is equal to 1 
 {"find" : {
     "filter" : {"_id": 1}
     }
 } 
-# suburb field in the address sub document is equal to "banana"
+// suburb field in the address sub document is equal to "banana"
 {"find" : {
     "filter" : {"address.suburb": "banana"}
     }
 } 
-# Second element of the `tags` array is equal to "foo"
+// Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
     }
@@ -476,10 +476,10 @@ the future.
 *Sample:*
 
 ```json
-# Select all documents in a collection, return complete documents
+// Select all documents in a collection, return complete documents
 {"find" : {} }
 
-# Select where name == "aaron" and return selected fields
+// Select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age" : 1}
@@ -562,7 +562,7 @@ projection of each document.
 
 *Syntax:*
 
-```json
+```bnf
 <find-command> ::= find <find-command-payload> 
 <find-command-response> ::= <paginated-document-response> 
 
@@ -577,10 +577,10 @@ projection of each document.
 *Sample:*
 
 ```json
-# Select all documents in a collection, return complete documents
+// Select all documents in a collection, return complete documents
 {"find" : {} }
 
-# Select where name == "aaron" and return selected fields
+// Select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age": 1}
@@ -616,15 +616,9 @@ applied when not provided.
 
 | Option       | Type               | Description                                                     |
 | ------------ | ------------------ | --------------------------------------------------------------- |
-| `limit`      | Positive Integer   | Limits the number of documents to be returned by the command. 
-                                      If unspecified, or 0, there is no limit on number of documents 
-                                      returned. Note that results may still be broken into pages.     |
-| `pageState`  | ASCII String       | The page state of the previous page, when supplied the `find` 
-                                      command will return the next page from the result set. If 
-                                      unspecified, null, or an empty string the first page is 
-                                      returned.                                                       |
-| `skip`       | Positive Integer   | Skips the specified number of documents, in sort order, before 
-                                      returning any documents.                                        |
+| `limit`      | Positive Integer   | Limits the number of documents to be returned by the command. If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages. |
+| `pageState`  | ASCII String       | The page state of the previous page, when supplied the `find` command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned. |
+| `skip`       | Positive Integer   | Skips the specified number of documents, in sort order, before returning any documents. |
 
 #### find Multi Document Failure Modes
 
@@ -635,11 +629,12 @@ Considerations](#considerationsMultiDocumentFailure).
 
 #### find Command Response
 
-  Response Element   Description
-  ------------------ ---------------------------------------------------------------------------------------------------------------------------
-  `data`             Present with fields : `docs`, `count` and `nextPageState`. `nextPageState` may be `null` if no further data is available.
-  `status`           Not preset.
-  `errors`           Present if errors occur.
+| Response Elements | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `data`            | Present with fields : `docs`, `count` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
+| `status`          | Not preset. |
+| `errors`          | Present if errors occur. |
+
 
 If an error occurs the command will not return `data`.
 
@@ -654,7 +649,7 @@ after the update has been applied.
 
 *Syntax:*
 
-```
+```bnf
 <find-one-and-update-command> ::= findOneAndUpdate <find-one-and-update-command-payload> 
 <find-one-and-update-command-response> ::= <single-document-response> 
 
@@ -669,14 +664,14 @@ after the update has been applied.
 
 *Sample:*
 
-```json
-# Update the first document (by natural order) to increase the points field by 5
+```
+// Update the first document (by natural order) to increase the points field by 5
 {"findOneAndUpdate" : 
     "filter": {} ,
     "update": { $inc: { "points" : 5 } } 
 }
 
-# Increase the age for the document with id 123, and return the name and age 
+// Increase the age for the document with id 123, and return the name and age 
 {"findOneAndUpdate" : {
     "filter" : {"_id": "123"},
     "update": { $inc: { "age" : 5 } }, 
@@ -691,10 +686,11 @@ after the update has been applied.
 modify the behavior of the command. All options are optional, with
 default behavior applied when not provided.
 
-  Option             Type          Description
-  ------------------ ------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `returnDocument`   String Enum   Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied, if `"after"` the document projection is from the document after the update. Defaults to `"before"`.
-  `upsert`           Boolean       When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
+
+| Option            | Type        | Description                                                                     |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| `returnDocument`  | String Enum | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied, if `"after"` the document projection is from the document after the update. Defaults to `"before"`. |
+| `upsert`          | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### findOneAndUpdate Multi Document Failure Modes
 
@@ -704,15 +700,14 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### findOneAndUpdate Command Response
 
-  Response Element   Description
-  ------------------ --------------------------------------------------------------------------------------------------------------------------------------------
-  `data`             Present with fields : `docs` only, see [findOneAndUpdate Command Options](#commandFindOneAndUpdateOptions) for controlling the projection.
-  `status`           Preset with fields: `upsertedId: <json-value>` only if a document was upserted.
-  `errors`           Present if errors occur.
+| Response Elements | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `data`            | Present with fields : `docs` only, see [findOneAndUpdate Command Options](#commandFindOneAndUpdateOptions) for controlling the projection. |
+| `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted. |
+| `errors`          | Present if errors occur. |
 
-If `upsert` option was set to `true`, and no documents matched a filter
-a new document is created. The `_id` of the document is included in the
-status field `upsertedId`, otherwise no status is returned .
+
+If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned .
 
 If an error occurs the command will not return `data` or `status`.
 
@@ -742,19 +737,16 @@ If an error occurs the command will not return `data`.
 
 #### insertMany Command Options
 
-`<insert-many-command-options>` is a map of key-value pairs that modify
-the behavior of the command. All options are optional, with default
-behavior applied when not provided.
+`<insert-many-command-options>` is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior applied when not provided.
 
-  Option      Type      Description
-  ----------- --------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `ordered`   Boolean   When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#multi-document-failure-considerations) for details. Defaults to `true`.
+| Option            | Type        | Description                                                                     |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| `ordered`         | Boolean     | When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will "fail fast", failing the first document that fails to insert. When `false` the server is free to re-order the inserts for performance including running multiple inserts in parallel, in this mode more than one document may fail to be inserted (using the "fail silently" mode). See [Multi Document Failure Considerations](#multi-document-failure-considerations) for details. Defaults to `true`. |
+
 
 #### insertMany Multi Document Failure Modes
 
-Depends on the `ordered` option. When `true` the command uses Fail Fast
-to stop processing at the first fault, when `false` the command uses
-Fail Silently and attempts to insert all documents.
+Depends on the `ordered` option. When `true` the command uses Fail Fast to stop processing at the first fault, when `false` the command uses Fail Silently and attempts to insert all documents.
 
 See [insertMany Command Options](#insertMany-command-options) for `ordered`.
 
@@ -800,9 +792,10 @@ If an error occurs the command will not return `status`.
 the behavior of the command. All options are optional, with default
 behavior applied when not provided.
 
-  Option     Type      Description
-  ---------- --------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `upsert`   Boolean   When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
+
+| Option            | Type        | Description                                                                     |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| `upsert `         | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### updateMany Multi Document Failure Modes
 
@@ -815,14 +808,10 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 | Response Element |  Description                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `data`           | Not present.                                                                        |
-| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter`, 
-                     `modifiedCount` count of document updated (may be less than match count), 
-                     `upsertedId` if a document was upserted (when `matchCount` is zero) not present 
-                     otherwise, `moreData` with value `true` if there are more documents that match the 
-                     update `filter`, but were not updated since the limit of documents to update in 
-                     the single operation was hit.                                                       |
-| `errors`         | Present if errors occur.                                                            |
- 
+| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter`, `modifiedCount` count of document updated (may be less than match count), `upsertedId` if a document was upserted (when `matchCount` is zero) not present      otherwise, `moreData` with value `true` if there are more documents that match the update `filter`, but were not updated since the limit of documents to update in the single operation was hit. |
+| `errors`         | Present if errors occur. |
+
+
 If an error occurs the command will still return `status` as some documents may have been inserted.
 
 ### updateOne Command
@@ -834,11 +823,7 @@ If an error occurs the command will still return `status` as some documents may 
 
 | Response Element |  Type   |  Description                                                                       |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| `upsert          | Boolean | When `true` if no documents match the `filter` clause the command will create a 
-                     new *empty* document and apply the `update` clause to the empty document. If the `_id` field 
-                     is included in the `filter` the new document will use this `_id`, otherwise a random value 
-                     will be used. See [Upsert Considerations](#considerationsUpsert) for details. When false the 
-                     command will only update a document if one matches the filter. Defaults to `false`.          |
+| `upsert          | Boolean | When `true` if no documents match the `filter` clause the command will create a                      new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used. See [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 
 #### updateOne Multi Document Failure Modes
@@ -853,11 +838,8 @@ Considerations](#considerationsMultiDocumentFailure).
 | Response Element |  Description                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `data`           | Not present.                                                                        |
-| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter` 
-                     (no more than 1), `modifiedCount` count of document updated (may be less than match 
-                     count, no more than 1), `upsertedId` if a document was upserted (when `matchCount` 
-                     is zero) otherwise not present.                                                     |
-| `errors`         | Present if errors occur.                                                            |
+| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter` (no more than 1), `modifiedCount` count of document updated (may be less than match count, no more than 1), `upsertedId` if a document was upserted (when `matchCount` is zero) otherwise not present. |
+| `errors`         | Present if errors occur. |
 
 If an error occurs the command will still return `status` as some
 documents may have been inserted.
@@ -987,20 +969,20 @@ clause is used with.
 *Sample:*
 
 ```json
-# Identity filter that returns all documents
+// Identity filter that returns all documents
 {}
 
-# Equality match for a single field\
+// Equality match for a single field\
 {"name" : "aaron"}
 {"name" : {"eq" : "aaron"}}
 
-# Combination of literal and operator expressions
+// Combination of literal and operator expressions
 {"name" : "aaron", "age" : {"$gt" : 40}}
 ```
 
 *Syntax:*
 
-```json
+```bnf
 `<filter-clause>`  ::= `<filter-expression>` *
 
 `<filter-expression>`  ::= `<filter-comparison-expression>` | `<filter-logical-expression>`
@@ -1014,8 +996,7 @@ clause is used with.
 `<filter-operator-expression>`  ::= `<filter-operation>`  (,
 `<filter-operation>` )*
 
-`<filter-operation>`  ::= `<filter-comparison-operation>` 
-|
+`<filter-operation>`  ::= `<filter-comparison-operation>` | 
 `<filter-logical-unary-operation>`  |
 `<filter-element-operation>`  |
 `<filter-array-operation>` 
@@ -1064,8 +1045,8 @@ clause is used with.
 [`<filter-expression>`  (, `<filter-expression>` )]*
 ```
 
-1.   
-```json
+1.
+```
 BEGIN TODO =
     # 
     # filter-element-operation - type 
@@ -1074,8 +1055,8 @@ BEGIN TODO =
 ``` 
 
 ```
-1.   
-```json
+1.
+```
 BEGIN Excluded =
     $expr, $jsonSchema, $regex, $text, $where, all geo things 
     #  END Excluded ===
@@ -1098,13 +1079,13 @@ the `<filter-operator-expression>` to evaluate to `True`.
 *Sample:*
 
 ```json
-# Comparison expression using a literal value
+// Comparison expression using a literal value
 {"name" : "aaron"}
-# Comparison expression using a single operator expression, equivalent to the previous example
+// Comparison expression using a single operator expression, equivalent to the previous example
 {"name" : {"eq" : "aaron"}}
-# Comparison expression using a single and a multiple operator expression
+// Comparison expression using a single and a multiple operator expression
 {"name" : {"eq" : "aaron"}, "age" : {"$gt" : 40, "$lt" : 50}}
-# Comparison expression testing metadata about the context node
+// Comparison expression testing metadata about the context node
 {"name" : {"$exists" : false}}
 ```
 
@@ -1129,11 +1110,11 @@ does not specify a context node for operations to be evaluated.
 *Sample:*
 
 ```json
-# Logical expression using a literal value and single operator expressions
+// Logical expression using a literal value and single operator expressions
 { "$and" : [{"name" : "aaron"}, {"age" : {"$gt" : 40}}]}
-# Note, there is an implicit $and operator for all top level expressions, so this is equivalent
-{ {"name" : "aaron"}, {"age" : {"$gt" : 40}} }
-# Logical expression using multiple operator expressions
+// Note, there is an implicit $and operator for all top level expressions, so this is equivalent
+{ "name" : "aaron"}, {"age" : {"$gt" : 40}} }
+// Logical expression using multiple operator expressions
 { "$or" : [{"name" : {"eq" : "aaron"}}, {"age" : {"$gt" : 40}}]}
 ```
 
@@ -1268,7 +1249,7 @@ they apply logical operations to the results of 1 or more sub
 *Sample:*
 
 ```json
-# Applying $not to an $eq operation
+// Applying $not to an $eq operation
 {"name" : {"$not" : {"eq" : "aaron"}}}
 ```
 
@@ -1302,9 +1283,9 @@ value of the operation.
 *Sample:*
 
 ```json
-# Select documents that have a name
+// Select documents that have a name
 {"name" : {"$exists" : true}}
-# Select documents that do not have a name
+// Select documents that do not have a name
 {"name" : {"$exists" : false}}
 ```
 
@@ -1385,11 +1366,11 @@ The `<projection-clause>` is evaluated using the following order of operations:
 *Sample:*
 
 ```json
-# Identity projection, selects the entire document
+// Identity projection, selects the entire document
 {}
-# Select top level and lower level fields
+// Select top level and lower level fields
 { "name" : 1, "address.country" : true}
-# Select top level and lower level fields and exclude the _id
+// Select top level and lower level fields and exclude the _id
 { "name" : 1, "address.country" : true, "_id": 0}
 ```
 
@@ -1472,14 +1453,14 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
 *Sample:*
 
 ```json
-# With the input array ["foo", "bar", "baz"]
-# Select first 2 elements ["foo", "bar"]
+// With the input array ["foo", "bar", "baz"]
+// Select first 2 elements ["foo", "bar"]
 {"$slice" : 2}
-# Select last 2 elements ["bar", "baz"]
+// Select last 2 elements ["bar", "baz"]
 {"$slice" : -2}
-# Select one element starting at second ["bar"]
+// Select one element starting at second ["bar"]
 {"$slice" : [1,1]}
-# Select the last element, same as --1 ["baz"]
+// Select the last element, same as --1 ["baz"]
 {"$slice" : [-1,1]}
 ```
 
@@ -1519,9 +1500,9 @@ maximum of **TODO** number of `<sort-expression>`'s may be included in a
 *Sample:*
 
 ```
-# Sort by one field ascending
+// Sort by one field ascending
 ["name"]
-# Sort by one field descending, and a second ascending
+// Sort by one field descending, and a second ascending
 ["-age", "name"]
 ```
 
