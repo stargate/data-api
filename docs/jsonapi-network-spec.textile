@@ -1,6 +1,6 @@
 h1. JSON HTTP API Specification
 
-**IMPORTANT:** Starting with PR 276, once it's merged, we'll work on the Markdown version of this specification. Do not edit this jsonapi-network-spec.textile file. Instead, edit [jsonapi-network-spec.md](jsonapi-network-spec.md). When we're certain that all content from this *.textile file is properly set up in the *.md source, we will archive the textile version. Questions? Ask John Smart.
+*IMPORTANT:* Starting with PR 276, once it's merged, we'll work on the Markdown version of this specification. *Do not edit this jsonapi-network-spec.textile file.*  Instead, edit "jsonapi-network-spec.md":jsonapi-network-spec.md. When we're certain that all content from this *.textile file is properly set up in the *.md source, we will archive the textile version. Questions? Ask John Smart.
 
 <span id="tableOfContents">
 
