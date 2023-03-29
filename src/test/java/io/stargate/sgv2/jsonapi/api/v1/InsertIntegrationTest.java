@@ -146,6 +146,34 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
     }
 
     @Test
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "insertOne": {
+              "document": {
+                "_id": "doc3",
+                "username": "user3"
+              },
+              "options": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("doc3"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void insertDuplicateDocument() {
       String json =
           """
@@ -684,6 +712,40 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": [
+                {
+                  "_id": "doc4",
+                  "username": "user4"
+                },
+                {
+                  "_id": "doc5",
+                  "username": "user5"
+                }
+              ],
+              "options": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", contains("doc4", "doc5"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
 
     @Test
