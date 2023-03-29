@@ -244,7 +244,7 @@ state.
 
 ## Namespace
 
-**TODO:** define the namespace, its properties etc. Do we define how to create one?
+**TODO:** define the namespace, its properties, etc. Do we define how to create one?
 
 ### Namespace Limits
 
@@ -308,7 +308,7 @@ The `_id` field is a "reserved name" and is always interpreted as the
 document identity field. See **TODO DOC ID LINK** for restrictions on
 its use.
 
-**TODO** add support for allowing "." and "\$" in the field names, not
+**TODO** add support for allowing "." and "$" in the field names, not
 needed for the initial demo release.
 
 *Sample:*
@@ -335,7 +335,7 @@ the array is indexed using a single zero `0`.
 
 *Syntax:*
 
-```json
+```bnf
 <array-index> ::= ^0$|^[1-9][0-9]*$
 ```
 
@@ -791,7 +791,7 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `data`           | Not present.                                                                        |
 | `status`         | Present with field: `insertedId` with the single document `_id` that was inserted.  |
-| `errors`         | Present if errors occur.                                                           |
+| `errors`         | Present if errors occur.                                                            |
 
 If an error occurs the command will not return `status`.
 
@@ -814,27 +814,35 @@ Fail Silently, a storage failure does not stop the command from processing.
 See [Multi Document Failure Considerations](#multi-document-failure-considerations).
 
 #### updateMany Command Response
-
-  Response Element   Description
-  ------------------ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `data`             Not present.
-  `status`           Present with fields: `matchedCount` count of documents that matched the `filter`, `modifiedCount` count of document updated (may be less than match count), `upsertedId` if a document was upserted (when `matchCount` is zero) not present otherwise, `moreData` with value `true` if there are more documents that match the update `filter`, but were not updated since the limit of documents to update in the single operation was hit.
-  `errors`           Present if errors occur.
-
-If an error occurs the command will still return `status` as some
-documents may have been inserted.
+ 
+| Response Element |  Description                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `data`           | Not present.                                                                        |
+| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter`, 
+                     `modifiedCount` count of document updated (may be less than match count), 
+                     `upsertedId` if a document was upserted (when `matchCount` is zero) not present 
+                     otherwise, `moreData` with value `true` if there are more documents that match the 
+                     update `filter`, but were not updated since the limit of documents to update in 
+                     the single operation was hit.                                                       |
+| `errors`         | Present if errors occur.                                                            |
+ 
+If an error occurs the command will still return `status` as some documents may have been inserted.
 
 ### updateOne Command
 
 #### updateOne Command Options
 
-`<update-one-command-options>` is a map of key-value pairs that modify
-the behavior of the command. All options are optional, with default
-behavior applied when not provided.
+`<update-one-command-options>` is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior applied when not provided.
 
-  Option     Type      Description
-  ---------- --------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `upsert`   Boolean   When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#considerationsUpsert) for details. When false the command will only update a document if one matches the filter. Defaults to `false`.
+
+| Response Element |  Type   |  Description                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `upsert          | Boolean | When `true` if no documents match the `filter` clause the command will create a 
+                     new *empty* document and apply the `update` clause to the empty document. If the `_id` field 
+                     is included in the `filter` the new document will use this `_id`, otherwise a random value 
+                     will be used. See [Upsert Considerations](#considerationsUpsert) for details. When false the 
+                     command will only update a document if one matches the filter. Defaults to `false`.          |
+
 
 #### updateOne Multi Document Failure Modes
 
@@ -845,11 +853,14 @@ Considerations](#considerationsMultiDocumentFailure).
 
 #### updateOne Command Response
 
-  Response Element   Description
-  ------------------ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  `data`             Not present.
-  `status`           Present with fields: `matchedCount` count of documents that matched the `filter` (no more than 1), `modifiedCount` count of document updated (may be less than match count, no more than 1), `upsertedId` if a document was upserted (when `matchCount` is zero) otherwise not present.
-  `errors`           Present if errors occur.
+| Response Element |  Description                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `data`           | Not present.                                                                        |
+| `status`         | Present with fields: `matchedCount` count of documents that matched the `filter` 
+                     (no more than 1), `modifiedCount` count of document updated (may be less than match 
+                     count, no more than 1), `upsertedId` if a document was upserted (when `matchCount` 
+                     is zero) otherwise not present.                                                     |
+| `errors`         | Present if errors occur.                                                            |
 
 If an error occurs the command will still return `status` as some
 documents may have been inserted.
@@ -874,7 +885,7 @@ Overlapping commands may read the new document and update it.
 Fields included in the filter clause in addition to the `_id` are
 ignored.
 
-### Multi Document Failure Considerations
+### Multi-Document Failure Considerations
 
 Commands that modify multiple documents in a single operation, such as
 `updateMany` or `insertMany`, do not perform all of the modification in
@@ -911,10 +922,8 @@ failure to complete a command.
 
 The server should use the following retry policy:
 
--   **Availability Faults**: a single retry, for a total of two (2)
-    attempts.
--   **Concurrency Faults**: two retries, for a total of three (3)
-    attempts.
+-   **Availability Faults**: a single retry, for a total of two (2) attempts.
+-   **Concurrency Faults**: two retries, for a total of three (3) attempts.
 
 **Note** Neither of these faults will leave a document in an
 inconsistent state, that would cause "eventually consistent" reads.
@@ -925,7 +934,7 @@ operations.
 
 #### Fail Fast Multi Document Failure
 
-Under the "fail fast" mode each operation on the database is performed
+Under the "fail fast" mode, each operation on the database is performed
 sequentially, ensuring the previous operation has succeeded before
 starting the next. In this mode a single failure causes the command to
 stop processing and return information on the work that has completed
@@ -961,20 +970,9 @@ e.g. it should not return 10 errors that each say "DB service timeout",
 rather it should return a single error that covers the 10 documents this
 happened to.
 
-For example, consider an **unordered**
-[`insertMany`](#commandInsertMany) command that is inserting three
-documents. This command will use "fail silently", and may run all
-database operations at once in parallel. If inserting the second
-document fails, the first and third may success. In this case command
-will return the `_id` of the first and third documents and an error
-describing the failure inserting the second.
+For example, consider an **unordered** [`insertMany`](#commandInsertMany) command that is inserting three documents. This command will use "fail silently", and may run all database operations at once in parallel. If inserting the second document fails, the first and third may success. In this case command will return the `_id` of the first and third documents and an error describing the failure inserting the second.
 
-Similarly a [`deleteMany`](#commandDeleteMany) command always uses "fail
-silently", and will attempt to delete many candidate documents in
-parallel. If an Availability or Concurrency fault occurs the command
-will retry the operation some configured number of times before marking
-that document operation as failed. At completion the command will return
-a count of deleted documents and an error describing any failures.
+Similarly a [`deleteMany`](#commandDeleteMany) command always uses "fail silently", and will attempt to delete many candidate documents in parallel. If an Availability or Concurrency fault occurs the command will retry the operation some configured number of times before marking that document operation as failed. At completion the command will return a count of deleted documents and an error describing any failures.
 
 ## Clauses
 
@@ -992,83 +990,81 @@ clause is used with.
 *Sample:*
 
 ```json
-// Identity filter that returns all documents\
+// Identity filter that returns all documents
 {}
 
 // Equality match for a single field\
-{"name" : "aaron"}\
+{"name" : "aaron"}
 {"name" : {"eq" : "aaron"}}
 
-// Combination of literal and operator expressions\
-{"name" : "aaron", "age" : {"\$gt" : 40}}
+// Combination of literal and operator expressions
+{"name" : "aaron", "age" : {"$gt" : 40}}
 ```
 
 *Syntax:*
 
 ```json
-`<filter-clause>`  ::= `<filter-expression>` \*
+`<filter-clause>`  ::= `<filter-expression>` *
 
-`<filter-expression>`  ::= `<filter-comparison-expression>` 
-\| `<filter-logical-expression>` \
-(, `<filter-comparison-expression>`  \|
-`<filter-logical-expression>` )\*
+`<filter-expression>`  ::= `<filter-comparison-expression>` | `<filter-logical-expression>`
+(, `<filter-comparison-expression>`  |
+`<filter-logical-expression>` )*
 
 `<filter-comparison-expression>`  ::=
-`<filter-comparison-path>`  ( `<literal>`  \|
-`<filter-operator-expression>` )\
-`<filter-comparison-path>`  :== `<document-path>` \
+`<filter-comparison-path>`  ( `<literal>`  |
+`<filter-operator-expression>` )
+`<filter-comparison-path>`  :== `<document-path>` 
 `<filter-operator-expression>`  ::= `<filter-operation>`  (,
-`<filter-operation>` )\*
+`<filter-operation>` )*
 
 `<filter-operation>`  ::= `<filter-comparison-operation>` 
-\|\
-`<filter-logical-unary-operation>`  \|\
-`<filter-element-operation>`  \|\
+|
+`<filter-logical-unary-operation>`  |
+`<filter-element-operation>`  |
 `<filter-array-operation>` 
 
 `<filter-comparison-operation>`  ::=
-`<filter-comparison-value-operation>`  \|
-`<filter-comparison-array-operation>` \
+`<filter-comparison-value-operation>`  |
+`<filter-comparison-array-operation>` 
 `<filter-comparison-value-operation>`  ::=
 `<filter-comparison-value-operator>` ,
-`<filter-comparison-value-operand>` \
-`<filter-comparison-value-operator>`  ::= \$eq, \$gt, \$gte, \$lt,
-\$lte, \$ne\
-`<filter-comparison-value-operand>`  ::= `<literal>` \
+`<filter-comparison-value-operand>` 
+`<filter-comparison-value-operator>`  ::= $eq, $gt, $gte, $lt, $lte, $ne
+`<filter-comparison-value-operand>`  ::= `<literal>` 
 `<filter-comparison-array-operation>`  ::=
 `<filter-comparison-array-operator>` ,
-`<filter-comparison-array-operand>` \
-`<filter-comparison-array-operator>`  ::= \$in, \$nin\
+`<filter-comparison-array-operand>` 
+`<filter-comparison-array-operator>`  ::= $in, $nin\
 `<filter-comparison-array-operand>`  ::= `<literal-list>` 
 
 `<filter-logical-unary-operation>`  ::=
-`<filter-logical-unary-operator-not>` \
-`<filter-logical-unary-operator-not>`  ::= \$not
+`<filter-logical-unary-operator-not>` 
+`<filter-logical-unary-operator-not>`  ::= $not
 `<filter-operator-expression>` 
 
 `<filter-element-operation>`  ::=
-`<filter-element-operation-exists>` \
-`<filter-element-operation-exists>`  ::= \$exists
-`<filter-element-operation-exists-operand>` \
-`<filter-element-operation-exists-operand>`  ::= true \| false
+`<filter-element-operation-exists>` 
+`<filter-element-operation-exists>`  ::= $exists
+`<filter-element-operation-exists-operand>` 
+`<filter-element-operation-exists-operand>`  ::= true | false
 
 `<filter-array-operation>`  ::=
-`<filter-array-operation-all>`  \|\
-`<filter-array-operation-elemMatch>`  \|\
-`<filter-array-operation-size>` \
-`<filter-array-operation-all>`  ::= \$all `<literal-list>` \
-`<filter-array-operation-elemMatch>`  ::= \$elemMatch
+`<filter-array-operation-all>`  |
+`<filter-array-operation-elemMatch>`  |
+`<filter-array-operation-size>` 
+`<filter-array-operation-all>`  ::= $all `<literal-list>` 
+`<filter-array-operation-elemMatch>`  ::= $elemMatch
 `<filter-comparison-operation>`  (,
-`<filter-comparison-operation>` )\*\
-`<filter-array-operation-size>`  ::= \$size
+`<filter-comparison-operation>` )*
+`<filter-array-operation-size>`  ::= $size
 `<positive-integer>` 
 
 `<filter-logical-expression>`  ::=
 `<filter-logical-compound-operator>` 
-`<filter-logical-compound-operand>` \
-`<filter-logical-compound-operator>`  ::= \$and, \$or, \$nor\
+`<filter-logical-compound-operand>` 
+`<filter-logical-compound-operator>`  ::= $and, $or, $nor
 `<filter-logical-compound-operand>`  ::=
-\[`<filter-expression>`  (, `<filter-expression>` )\]\*
+[`<filter-expression>`  (, `<filter-expression>` )]*
 ```
 
 1.   
@@ -1076,7 +1072,7 @@ clause is used with.
 BEGIN TODO =
     # 
     # filter-element-operation - type 
-    # \<filter-evaluation-operators\> ::= \$mod
+    # \<filter-evaluation-operators\> ::= $mod
     #  END TODO ===
 ``` 
 
@@ -1084,7 +1080,7 @@ BEGIN TODO =
 1.   
 ```json
 BEGIN Excluded =
-    \$expr, \$jsonSchema, \$regex, \$text, \$where, all geo things 
+    $expr, $jsonSchema, $regex, $text, $where, all geo things 
     #  END Excluded ===
 ```
 
@@ -1105,16 +1101,14 @@ the `<filter-operator-expression>` to evaluate to `True`.
 *Sample:*
 
 ```json
-// Comparison expression using a literal value\
-{"name" : "aaron"}\
-// Comparison expression using a single operator expression, equivalent
-to the previous example\
-{"name" : {"eq" : "aaron"}}\
-// Comparison expression using a single and a multiple operator
-expression\
-{"name" : {"eq" : "aaron"}, "age" : {"\$gt" : 40, "\$lt" : 50}}\
-// Comparison expression testing metadata about the context node\
-{"name" : {"\$exists" : False}}
+// Comparison expression using a literal value
+{"name" : "aaron"}
+// Comparison expression using a single operator expression, equivalent to the previous example
+{"name" : {"eq" : "aaron"}}
+// Comparison expression using a single and a multiple operator expression
+{"name" : {"eq" : "aaron"}, "age" : {"$gt" : 40, "$lt" : 50}}
+// Comparison expression testing metadata about the context node
+{"name" : {"$exists" : False}}
 ```
 
 The `<document-path>` may fail to select a context node, either for all
@@ -1138,14 +1132,12 @@ does not specify a context node for operations to be evaluated.
 *Sample:*
 
 ```json
-// Logical expression using a literal value and single operator
-expressions\
-{ "\$and" : \[{"name" : "aaron"}, {"age" : {"\$gt" : 40}}\]}\
-// Note, there is an implicit \$and operator for all top level
-expressions, so this is equivalent\
-{{"name" : "aaron"}, {"age" : {"\$gt" : 40}}}\
-// Logical expression using multiple operator expressions\
-{ "\$or" : \[{"name" : {"eq" : "aaron"}}, {"age" : {"\$gt" : 40}}\]}
+// Logical expression using a literal value and single operator expressions
+{ "$and" : [{"name" : "aaron"}, {"age" : {"$gt" : 40}}]}
+// Note, there is an implicit $and operator for all top level expressions, so this is equivalent
+{{"name" : "aaron"}, {"age" : {"$gt" : 40}}}
+// Logical expression using multiple operator expressions
+{ "$or" : [{"name" : {"eq" : "aaron"}}, {"age" : {"$gt" : 40}}]}
 ```
 
 #### Filter Clause Order of Operations
@@ -1169,9 +1161,9 @@ operations:
 
 A literal comparison operation performs the `$eq` operation on the
 context node using the supplied literal value. See
-[\$eq](#comparisonOperationEq) for the definition.
+[$eq](#$eq-operation) for the definition.
 
-#### \$eq operation 
+#### $eq operation 
 
 `$eq` applies a type sensitive equals operation to the value context
 node and the `<literal>` operand.
@@ -1191,23 +1183,23 @@ between arrays or sub documents.
     comparisons use string binary comparison i.e. it is sensitive to
     case and other modifiers.
 
-#### \$gt operation
+#### $gt operation
 
 TODO: node must exist
 
-#### \$gte operation
+#### $gte operation
 
 TODO: node must exist
 
-#### \$lt operation
+#### $lt operation
 
 TODO: node must exist
 
-#### \$lte operation
+#### $lte operation
 
 TODO: node must exist
 
-#### \$ne operation
+#### $ne operation
 
 `$ne` applies a type sensitive not-equals operation to the value of the
 context node and the `<literal>` operand.
@@ -1226,7 +1218,7 @@ are `True`:
     String comparisons use string binary comparison i.e. it is sensitive
     to case and other modifiers.
 
-#### \$in operation
+#### $in operation
 
 `$in` applies to context node values that are either atomic or an array,
 in either case the RHS operand is a list of literals. The operation
@@ -1246,7 +1238,7 @@ When the value of the context node is an array, `$in` evaluates to
 2.  `$eq` evaluates to `True` for any pair of a value from the node
     array or value in the RHS operand.
 
-#### \$nin operation
+#### $nin operation
 
 `$nin` applies to context node values that are either atomic or an
 array, in either case the RHS operand is a list of literals. The
@@ -1264,10 +1256,9 @@ When the value of the context node is an array, `$nin` evaluates to
 `True` when **either** of the following conditions are `True`:
 
 1.  The context node does not exist
-2.  `$eq` evaluates to `False` for all pairs of a value from the node
-    array and a value in the RHS operand.
+2.  `$eq` evaluates to `False` for all pairs of a value from the node array and a value in the RHS operand.
 
-#### \$not operation
+#### $not operation
 
 `$not` applies a logical *Not* to a `<filter-operator-expression>`,
 which is evaluated against the context node identified by the
@@ -1280,8 +1271,8 @@ they apply logical operations to the results of 1 or more sub
 *Sample:*
 
 ```json
-// Applying \$not to an \$eq operation\
-{"name" : {"\$not" : {"eq" : "aaron"}}}
+// Applying $not to an $eq operation
+{"name" : {"$not" : {"eq" : "aaron"}}}
 ```
 
 Note that the behavior of `$not` when the context node does not exist
@@ -1306,7 +1297,7 @@ applying NOT to the output of the `<filter-operator-expression>` means
 that all operations must be tested (and evaluate to TRUE) for document
 to be excluded.
 
-#### \$exists operation
+#### $exists operation
 
 `$exists` applies to the metadata of the context node, to test if it
 exists. The RHS operand is a boolean value that controls the return
@@ -1315,10 +1306,10 @@ value of the operation.
 *Sample:*
 
 ```json
-// Select documents that have a name\
-{"name" : {"\$exists" : true}}\
-// Select documents that do not have a name\
-{"name" : {"\$exists" : false}}
+// Select documents that have a name
+{"name" : {"$exists" : true}}
+// Select documents that do not have a name
+{"name" : {"$exists" : false}}
 ```
 
 `$exists` evaluates to `True` when all of the following conditions are
@@ -1327,121 +1318,100 @@ value of the operation.
 1.  The context node exits.
 2.  The value of the RHS operand is `true`.
 
-#### \$all operation
+#### $all operation
 
 TODO:
 
-#### \$elemMatch operation
+#### $elemMatch operation
 
 TODO:
 
-#### \$size operation
+#### $size operation
 
 TODO:
 
 ### Projection Clause
 
-A Projection clause is applied to zero or more input documents to
-project all of part of each document into an output document. Each input
-document maps to a single output document, although each output document
-may have a different document layout. For example when an input document
-is missing a projected field it will not appear in the output document.
+A Projection clause is applied to zero or more input documents to project all of part of each document into an output document. Each input document maps to a single output document, although each output document may have a different document layout. For example when an input document is missing a projected field it will not appear in the output document.
 
 *Syntax:*
 
-bc(syntax)..\
-`<projection-clause>`  ::= `<projection-expression>` \*
+```bnf
+`<projection-clause>`  ::= `<projection-expression>` *
 
 `<projection-expression>`  ::=
-`<projection-field-expression>`  \|\
+`<projection-field-expression>`  |
 `<projection-array-expression>` 
 
 `<projection-field-expression>`  ::=
-`<projection-field-path>`  `<projection-field-inclusion>` \
+`<projection-field-path>`  `<projection-field-inclusion>`
 `<projection-field-path>`  ::= `<document-path>` \
-`<projection-field-inclusion>`  ::= 0 \| 1 \| true \| false
+`<projection-field-inclusion>`  ::= 0 | 1 | true | false
 
 `<projection-array-expression>`  ::=
-`<projection-field-path>`  `<projection-array-projection>` \
+`<projection-field-path>`  `<projection-array-projection>`
 `<projection-array-projection>`  ::=
-`<projection-array-elem-match-projection>`  \|\
-`<projection-array-slice-projection>`  \|\
+`<projection-array-elem-match-projection>`  |
+`<projection-array-slice-projection>`  |
 `<projection-array-limit-projection>` 
 
-`<projection-array-elem-match-projection>`  ::= \$elemMatch
+`<projection-array-elem-match-projection>`  ::= $elemMatch
 `<filter-comparison-operation>`  (,
-`<filter-comparison-operation>` )\*
+`<filter-comparison-operation>` )*
 
-`<projection-array-slice-projection>`  ::= \$slice
-`<slice-number>`  \| `<slice-to-skip>` 
+`<projection-array-slice-projection>`  ::= $slice
+`<slice-number>`  | `<slice-to-skip>` 
 `<slice-to-return>` \
-`<slice-number>`  ::= `<integer>` \
-`<slice-to-skip>`  ::= `<integer>` \
+`<slice-number>`  ::= `<integer>`
+`<slice-to-skip>`  ::= `<integer>`
 `<slice-to-return>`  ::= `<positive-integer>` 
 
-\@TODO: this is \$ in projection, not sure if mquery supports this\
-`<projection-array-limit-projection>`  ::= \$
+@TODO: this is $ in projection, not sure if mquery supports this
+`<projection-array-limit-projection>`  ::= $
+```
 
-Each `<projection-clause>` is contains zero or more
-`<projection-expression>`'s which are all applied to each input document
-in an order decided by the server. The output of all
-`<projection-expression>`'s evaluated for a single input document create
+Each `<projection-clause>` is contains zero or more `<projection-expression>`'s which are all applied to each input document
+in an order decided by the server. The output of all `<projection-expression>`'s evaluated for a single input document create
 a single output document.
 
 #### Projection Clause Order of Operations
 
-The `<projection-clause>` is evaluated using the following order of
-operations:
+The `<projection-clause>` is evaluated using the following order of operations:
 
-1.  If the projection clause is missing or empty the entire input
-    document is selected for the output document.
-2.  Each `<projection-expression>` is evaluated against the input
-    document in an undefined order. The output is mapped to a field with
-    the same path as the `<projection-field-path>` for the expression.
-3.  Unless excluded via a `<projection-field-expression>` the `<_id>`
-    field is included in the output document.
+1.  If the projection clause is missing or empty the entire input document is selected for the output document.
+2.  Each `<projection-expression>` is evaluated against the input document in an undefined order. The output is mapped to a field with the same path as the `<projection-field-path>` for the expression.
+3.  Unless excluded via a `<projection-field-expression>` the `<_id>` field is included in the output document.
 
 #### `<projection-field-expression>`
 
-`<projection-field-expression>` is the simplest form of expression. It
-identifies a field using a `<document-path>` and includes or
-specifically excludes it from the output. Note that for any
-`<projection-clause>` other than the identity clause any fields not
-listed are excluded from the output document. The
-`<projection-field-expression>` includes a field using `1` or `true` and
-excludes it using `0` or `false`. See [Projection Clause Order of
-Operations](#clauseProjectionOrderOfOperation) for special treatment of
-the `_id` field.
+`<projection-field-expression>` is the simplest form of expression. It identifies a field using a `<document-path>` and includes or specifically excludes it from the output. Note that for any `<projection-clause>` other than the identity clause any fields not listed are excluded from the output document. The `<projection-field-expression>` includes a field using `1` or `true` and excludes it using `0` or `false`. See [Projection Clause Order of Operations](#projection-clause-order-of-operations) for special treatment of the `_id` field.
 
 *Sample:*
 
 ```json
-// Identity projection, selects the entire document\
-{}\
-// Select top level and lower level fields\
-{ "name" : 1, "address.country" : true}\
-// Select top level and lower level fields and exclude the \_id\
+// Identity projection, selects the entire document
+{}
+// Select top level and lower level fields
+{ "name" : 1, "address.country" : true}
+// Select top level and lower level fields and exclude the \_id
 { "name" : 1, "address.country" : true, "\_id": 0}
 ```
 
 When the `<document-path>` does not exist in the input document:
 
-1.  The output document will not include a field with that key.
+The output document will not include a field with that key.
 
 When the `<document-path>` does exist in the input document:
 
-1.  If `<projection-field-inclusion>` is `1` or `true` the key and it's
-    entire value (including a sub-document if present) will be included
-    in the output document.
-2.  If `<projection-field-inclusion>` is `0` or `false` the output
-    document will not include a field with that key
+1.  If `<projection-field-inclusion>` is `1` or `true` the key and its entire value (including a sub-document if present) will be included in the output document.
+2.  If `<projection-field-inclusion>` is `0` or `false` the output document will not include a field with that key
 
-#### `<projection-array-elem-match-projection>` \$elemMatch
+#### `<projection-array-elem-match-projection>` $elemMatch
 
 **TODO:** confirm this is supported by mquery, not in the docs - should
 be supported, cannot see where
 
-#### \$slice
+#### $slice
 
 `<projection-array-slice-projection>` is used to select a 1 or more
 elements from a source document array for the output document based on
@@ -1506,21 +1476,21 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
 *Sample:*
 
 ```json
-// With the input array \["foo", "bar", "baz"\]\
-// Select first 2 elements \["foo", "bar"\]\
-{"\$slice" : 2}\
-// Select last 2 elements \["bar", "baz"\]\
-{"\$slice" : --2}\
-// Select one element starting at second \["bar"\]\
-{"\$slice" : \[1,1\]}\
-// Select the last element, same as --1 \["baz"\]\
-{"\$slice" : \[--1,1\]}
+// With the input array ["foo", "bar", "baz"]
+// Select first 2 elements ["foo", "bar"]
+{"$slice" : 2}
+// Select last 2 elements ["bar", "baz"]
+{"$slice" : --2}
+// Select one element starting at second ["bar"]
+{"$slice" : [1,1]}
+// Select the last element, same as --1 ["baz"]
+{"$slice" : [--1,1]}
 ```
 
-#### `<projection-array-limit-projection>` \$
+#### `<projection-array-limit-projection>` $
 
-**TODO:** not sure if supported by mquery, this is the \$ - should be
-supported, cannot see where
+**TODO:** not sure if supported by mquery, this is the $ - should be
+supported, cannot see where.
 
 ### Sort Clause
 
@@ -1529,12 +1499,12 @@ of this include ordering a large result set that will returned as pages,
 or sorting a candidate set of documents to determine which document will
 be returned when only a single document is required.
 
-**TODO** THis is wrong, it needs to be a map
+**TODO** THis is wrong, it needs to be a map.
 
 *Syntax:*
 
 ```json
-`<sort-clause>`  ::= \[`<sort-expression>` \*\]
+`<sort-clause>`  ::= [`<sort-expression>` *]
 
 `<sort-expression>`  ::= (-)?`<document-path>` 
 ```
@@ -1553,10 +1523,10 @@ maximum of **TODO** number of `<sort-expression>`'s may be included in a
 *Sample:*
 
 ```json
-// Sort by one field ascending\
-\["name"\]\
-// Sort by one field descending, and a second ascending\
-\["-age", "name"\]
+// Sort by one field ascending
+["name"]
+// Sort by one field descending, and a second ascending
+["-age", "name"]
 ```
 
 #### Sort Clause Order of Operations
