@@ -15,7 +15,7 @@ stargate:
     call-deadline: PT20S
 
     # retries use custom policy, see io.stargate.sgv2.jsonapi.grpc.retries.impl.JsonApiGrpcRetryPolicy
-    retires:
+    retries:
       enabled: true
       max-attempts: 1
       policy: custom
