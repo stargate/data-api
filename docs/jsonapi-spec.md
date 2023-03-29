@@ -273,7 +273,7 @@ Collection names must follow the regular expression pattern below:
 
 *Syntax:*
 
-```json
+```bnf
 <collection-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
 ```
 
@@ -296,7 +296,7 @@ the rules for user defined field names.
 
 *Syntax:*
 
-```json
+```bnf
 <field-name> ::= <id-field-name> |
                 <user-field-name> 
 
@@ -342,12 +342,12 @@ the array is indexed using a single zero `0`.
 *Sample:*
 
 ```json
-// Second element of the `tags` array is equal to "foo"
+# Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
     }
 } 
-// Filter on the first element of the tags array
+# Filter on the first element of the tags array
 {"find" : {
     "filter" : {"tags.0": "foo"}
     }
@@ -366,7 +366,7 @@ update.
 
 *Syntax:*
 
-```json
+```
 <document-path> ::= <dotted-notation-path> 
 ```
 
@@ -382,24 +382,24 @@ additional whitespace.
 
 *Syntax:*
 
-```json
+```
 <dotted-notation-path> ::= <field-name>(.<field-name> | <array-index>)*
 ```
 
 *Sample:*
 
 ```json
-// _id is equal to 1 
+# _id is equal to 1 
 {"find" : {
     "filter" : {"_id": 1}
     }
 } 
-// suburb field in the address sub document is equal to "banana"
+# suburb field in the address sub document is equal to "banana"
 {"find" : {
     "filter" : {"address.suburb": "banana"}
     }
 } 
-// Second element of the `tags` array is equal to "foo"
+# Second element of the `tags` array is equal to "foo"
 {"find" : {
     "filter" : {"tags.2": "foo"}
     }
@@ -476,10 +476,10 @@ the future.
 *Sample:*
 
 ```json
-// select all documents in a collection, return complete documents
+# Select all documents in a collection, return complete documents
 {"find" : {} }
 
-// select where name == "aaron" and return selected fields
+# Select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age" : 1}
@@ -524,14 +524,11 @@ See [Multi Document Failure Considerations](#multi-document-failure-consideratio
 
 #### deleteMany Command Response
 
-| Response Elements | Description                                                     |
-| ----------------- | --------------------------------------------------------------- |
-| `data`            | Not present                                                     |
-| `status`          | Preset with fields: `deletedCount: <zero-or-positive-integer>`, 
-                      `moreData` with value `true` if there are more documents that 
-                      match the delete `filter`, but were not deleted since the limit 
-                      of documents to delete in the single operation was hit.         |
-| `errors`          | Present if errors occur.                                        |
+| Response Elements | Description                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `data`            | Not present                                                                          |
+| `status`          | Preset with fields: `deletedCount: <zero-or-positive-integer>`, `moreData` with value `true` if there are more documents that match the delete `filter`, but were not deleted since the limit of documents to delete in the single operation was hit. |
+| `errors`          | Present if errors occur. |
 
 If an error occurs the command will still return `status` as some documents may have been deleted.
 
@@ -580,10 +577,10 @@ projection of each document.
 *Sample:*
 
 ```json
-// select all documents in a collection, return complete documents
+# Select all documents in a collection, return complete documents
 {"find" : {} }
 
-// select where name == "aaron" and return selected fields
+# Select where name == "aaron" and return selected fields
 {"find" : {
     "filter" : {"name": "aaron"},
     "projection" : {"name": 1, "age": 1}
@@ -673,13 +670,13 @@ after the update has been applied.
 *Sample:*
 
 ```json
-// Update the first document (by natural order) to increase the points field by 5
+# Update the first document (by natural order) to increase the points field by 5
 {"findOneAndUpdate" : 
     "filter": {} ,
     "update": { $inc: { "points" : 5 } } 
 }
 
-// Increase the age for the document with id 123, and return the name and age 
+# Increase the age for the document with id 123, and return the name and age 
 {"findOneAndUpdate" : {
     "filter" : {"_id": "123"},
     "update": { $inc: { "age" : 5 } }, 
@@ -990,14 +987,14 @@ clause is used with.
 *Sample:*
 
 ```json
-// Identity filter that returns all documents
+# Identity filter that returns all documents
 {}
 
-// Equality match for a single field\
+# Equality match for a single field\
 {"name" : "aaron"}
 {"name" : {"eq" : "aaron"}}
 
-// Combination of literal and operator expressions
+# Combination of literal and operator expressions
 {"name" : "aaron", "age" : {"$gt" : 40}}
 ```
 
@@ -1101,14 +1098,14 @@ the `<filter-operator-expression>` to evaluate to `True`.
 *Sample:*
 
 ```json
-// Comparison expression using a literal value
+# Comparison expression using a literal value
 {"name" : "aaron"}
-// Comparison expression using a single operator expression, equivalent to the previous example
+# Comparison expression using a single operator expression, equivalent to the previous example
 {"name" : {"eq" : "aaron"}}
-// Comparison expression using a single and a multiple operator expression
+# Comparison expression using a single and a multiple operator expression
 {"name" : {"eq" : "aaron"}, "age" : {"$gt" : 40, "$lt" : 50}}
-// Comparison expression testing metadata about the context node
-{"name" : {"$exists" : False}}
+# Comparison expression testing metadata about the context node
+{"name" : {"$exists" : false}}
 ```
 
 The `<document-path>` may fail to select a context node, either for all
@@ -1132,11 +1129,11 @@ does not specify a context node for operations to be evaluated.
 *Sample:*
 
 ```json
-// Logical expression using a literal value and single operator expressions
+# Logical expression using a literal value and single operator expressions
 { "$and" : [{"name" : "aaron"}, {"age" : {"$gt" : 40}}]}
-// Note, there is an implicit $and operator for all top level expressions, so this is equivalent
-{{"name" : "aaron"}, {"age" : {"$gt" : 40}}}
-// Logical expression using multiple operator expressions
+# Note, there is an implicit $and operator for all top level expressions, so this is equivalent
+{ {"name" : "aaron"}, {"age" : {"$gt" : 40}} }
+# Logical expression using multiple operator expressions
 { "$or" : [{"name" : {"eq" : "aaron"}}, {"age" : {"$gt" : 40}}]}
 ```
 
@@ -1271,7 +1268,7 @@ they apply logical operations to the results of 1 or more sub
 *Sample:*
 
 ```json
-// Applying $not to an $eq operation
+# Applying $not to an $eq operation
 {"name" : {"$not" : {"eq" : "aaron"}}}
 ```
 
@@ -1283,8 +1280,7 @@ always be considered a logical opposite.
 are `True`:
 
 1.  The context node does not exist.
-2.  The result of evaluating the RHS `<filter-operator-expression>` is
-    `False`.
+2.  The result of evaluating the RHS `<filter-operator-expression>` is `False`.
 
 The performance of applying `$not` to a multi-clause
 `<filter-operator-expression>` will often be slower than constructing a
@@ -1306,9 +1302,9 @@ value of the operation.
 *Sample:*
 
 ```json
-// Select documents that have a name
+# Select documents that have a name
 {"name" : {"$exists" : true}}
-// Select documents that do not have a name
+# Select documents that do not have a name
 {"name" : {"$exists" : false}}
 ```
 
@@ -1345,7 +1341,7 @@ A Projection clause is applied to zero or more input documents to project all of
 
 `<projection-field-expression>`  ::=
 `<projection-field-path>`  `<projection-field-inclusion>`
-`<projection-field-path>`  ::= `<document-path>` \
+`<projection-field-path>`  ::= `<document-path>` 
 `<projection-field-inclusion>`  ::= 0 | 1 | true | false
 
 `<projection-array-expression>`  ::=
@@ -1361,7 +1357,7 @@ A Projection clause is applied to zero or more input documents to project all of
 
 `<projection-array-slice-projection>`  ::= $slice
 `<slice-number>`  | `<slice-to-skip>` 
-`<slice-to-return>` \
+`<slice-to-return>` 
 `<slice-number>`  ::= `<integer>`
 `<slice-to-skip>`  ::= `<integer>`
 `<slice-to-return>`  ::= `<positive-integer>` 
@@ -1389,12 +1385,12 @@ The `<projection-clause>` is evaluated using the following order of operations:
 *Sample:*
 
 ```json
-// Identity projection, selects the entire document
+# Identity projection, selects the entire document
 {}
-// Select top level and lower level fields
+# Select top level and lower level fields
 { "name" : 1, "address.country" : true}
-// Select top level and lower level fields and exclude the \_id
-{ "name" : 1, "address.country" : true, "\_id": 0}
+# Select top level and lower level fields and exclude the _id
+{ "name" : 1, "address.country" : true, "_id": 0}
 ```
 
 When the `<document-path>` does not exist in the input document:
@@ -1476,15 +1472,15 @@ If both `<slice-to-skip>` and `<slice-to-return>` are supplied then:
 *Sample:*
 
 ```json
-// With the input array ["foo", "bar", "baz"]
-// Select first 2 elements ["foo", "bar"]
+# With the input array ["foo", "bar", "baz"]
+# Select first 2 elements ["foo", "bar"]
 {"$slice" : 2}
-// Select last 2 elements ["bar", "baz"]
-{"$slice" : --2}
-// Select one element starting at second ["bar"]
+# Select last 2 elements ["bar", "baz"]
+{"$slice" : -2}
+# Select one element starting at second ["bar"]
 {"$slice" : [1,1]}
-// Select the last element, same as --1 ["baz"]
-{"$slice" : [--1,1]}
+# Select the last element, same as --1 ["baz"]
+{"$slice" : [-1,1]}
 ```
 
 #### `<projection-array-limit-projection>` $
@@ -1503,7 +1499,7 @@ be returned when only a single document is required.
 
 *Syntax:*
 
-```json
+```
 `<sort-clause>`  ::= [`<sort-expression>` *]
 
 `<sort-expression>`  ::= (-)?`<document-path>` 
@@ -1522,10 +1518,10 @@ maximum of **TODO** number of `<sort-expression>`'s may be included in a
 
 *Sample:*
 
-```json
-// Sort by one field ascending
+```
+# Sort by one field ascending
 ["name"]
-// Sort by one field descending, and a second ascending
+# Sort by one field descending, and a second ascending
 ["-age", "name"]
 ```
 
