@@ -66,7 +66,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "findOne": {
-                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                            "projection": {"_id":0, "location":1, "race":1, "tags":1}
                         }
                       }
                       """),
@@ -89,6 +90,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "find": {
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                             "projection": {"tags":0},
                              "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
                         }
                       }
@@ -105,6 +107,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}
                             },
+                            "projection": {"count": 1,"location": 1,"race": 1},
                             "options" : {
                                "returnDocument" : "before",
                                "upsert" : true
@@ -332,8 +335,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                },
                                "tags": [ "eu" ]
                             }
-                          ],
-                          "count": 1
+                          ]
                         }
                       }
                       """),
@@ -355,7 +357,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "count": 3
                             }
                           ],
-                          "count": 1,
                           "status": {
                             "matchedCount": 1,
                             "modifiedCount": 1
@@ -377,7 +378,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "count": 3
                             }
                           ],
-                          "count": 1,
                           "status": {
                             "upsertedId": "1",
                             "matchedCount": 0,
