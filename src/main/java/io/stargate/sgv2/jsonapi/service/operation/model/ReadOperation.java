@@ -275,7 +275,7 @@ public interface ReadOperation extends Operation {
         return objectMapper.readTree(Values.string(docJsonValue));
       } catch (JsonProcessingException e) {
         // These are data stored in the DB so the error should never happen
-        return null;
+        throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
       }
     }
   }
