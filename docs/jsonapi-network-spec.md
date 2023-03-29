@@ -96,7 +96,7 @@ in this document:
     [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
     notation:
 
-```json
+```bnf
 <start> ::= TERMINAL <non-terminal1> <non-terminal1>
 ```
 
@@ -166,7 +166,7 @@ The Namespace Endpoint has the form:
 
 *Syntax:*
 
-```json
+```bnf
 <namespace-endpoint> ::= <server-address>/<namespace-name>
 ```
 
@@ -177,7 +177,7 @@ can only contain alpha-numeric characters and underscores.
 
 *Sample:*
 
-https://stargate.mycompany.com/my-namespace
+`https://stargate.mycompany.com/my-namespace`
 
 #### Namespace endpoint errors
 
@@ -189,7 +189,7 @@ Collection Endpoint has the form:
 
 *Syntax:*
 
-```json
+```bnf
 <collection-endpoint> ::= <server-address>/<namespace-name>/<collection-name>
 ```
 
