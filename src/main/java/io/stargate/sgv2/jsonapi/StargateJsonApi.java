@@ -335,7 +335,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                },
                                "tags": [ "eu" ]
                             }
-                          ]
+                          ],
+                          "count": 1
                         }
                       }
                       """),
@@ -357,6 +358,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "count": 3
                             }
                           ],
+                          "count": 1,
                           "status": {
                             "matchedCount": 1,
                             "modifiedCount": 1
@@ -378,6 +380,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "count": 3
                             }
                           ],
+                          "count": 1,
                           "status": {
                             "upsertedId": "1",
                             "matchedCount": 0,
