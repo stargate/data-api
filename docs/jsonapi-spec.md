@@ -72,9 +72,7 @@ as described in the [Preamble](#preamble).
 
 ## Request and Response Messages
 
-The format of Request and Response messages is included in this document
-so that the format invoking a command, and the structure of its
-response can be understood.
+The format of Request and Response messages is included in this document so that the format invoking a command, and the structure of its response, can be understood.
 
 ### Request Messages
 
@@ -413,25 +411,21 @@ it operates, and may include set of options to further modify behavior.
 
 The following commands are supported for collections:
 
--   [`countDocuments`](#commandCountDocuments)
--   [`deleteMany`](#commandDeleteMany)
--   [`deleteOne`](#commandDeleteOne)
--   [`estimatedDocumentCount`](#commandEstimatedDocumentCount)
--   [`find`](#commandFind)
--   [`findOne`](#commandFindOne)
--   [`findOneAndUpdate`](#commandFindOneAndUpdate)
--   [`insertMany`](#commandInsertMany)
--   [`insertOne`](#commandInsertOne)
--   [`updateMany`](#commandUpdateMany)
--   [`updateOne`](#commandUpdateOne)
+-   [`countDocuments`](#countDocuments-command)
+-   [`deleteMany`](#deleteMany-command)
+-   [`deleteOne`](#deleteOne-command)
+-   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
+-   [`find`](#find-command)
+-   [`findOne`](#findOne-command)
+-   [`findOneAndUpdate`](#findOneAndUpdate-command)
+-   [`insertMany`](#insertMany-command)
+-   [`insertOne`](#insertOne-command)
+-   [`updateMany`](#updateMany-command)
+-   [`updateOne`](#updateOne-command)
 
-Each command always results in a single [response](#commandResponses),
-unless there is an unexpected exception. For details, see the [JSON API HTTP Specification](jsonapi-network-spec.md).
+Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [JSON API HTTP Specification](jsonapi-network-spec.md).
 
-Commands are defined using the BNF-like syntax, with samples presented
-using a [JSON](https://www.json.org/) encoding of the language. The use
-of JSON in these samples does not preclude other encodings of the API in
-the future.
+Commands are defined using the BNF-like syntax, with samples presented using a [JSON](https://www.json.org/) encoding of the language. The use of JSON in these samples does not preclude other encodings of the API in the future.
 
 *Sample:*
 
@@ -458,7 +452,7 @@ The `countDocuments` command does not support any options.
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-See [Multi-Document Failure Considerations](#considerations-multi-docuemnt-failure).
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
 #### countDocuments Command Response
 
@@ -661,7 +655,7 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 
 | Response Elements | Description                                                                     |
 | ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs` only, see [findOneAndUpdate Command Options](#commandFindOneAndUpdateOptions) for controlling the projection. |
+| `data`            | Present with fields : `docs` only, see [findOneAndUpdate Command Options](#findOneAndUpdate-command-options) for controlling the projection. |
 | `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted. |
 | `errors`          | Present if errors occur. |
 
@@ -782,7 +776,7 @@ If an error occurs the command will still return `status` as some documents may 
 
 | Response Element |  Type   |  Description                                                                       |
 | ---------------- | ------- | ---------------------------------------------------------------------------------- |
-| `upsert          | Boolean | When `true`, if no documents match the `filter` clause, the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter`, the new document will use this `_id`, otherwise a random value will be used. See [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
+| `upsert`         | Boolean | When `true`, if no documents match the `filter` clause, the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter`, the new document will use this `_id`, otherwise a random value will be used. See [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 
 #### updateOne Multi Document Failure Modes
@@ -877,7 +871,7 @@ starting the next. In this mode a single failure causes the command to
 stop processing and return information on the work that has completed
 together with an error.
 
-For example, consider an ordered [`insertMany`](#commandInsertMany)
+For example, consider an ordered [`insertMany`](#insertMany-command)
 command that is inserting three documents. This command will use "fail
 fast", the second document will be inserted once the first is
 successful. If inserting the second document fails the command will
@@ -887,29 +881,15 @@ third document.
 
 #### Fail Silently Multi Document Failure
 
-Under the "fail silently" mode the command will attempt to perform all
-operations on the database, which may include successfully processing
-some operations after others have failed. In this mode a single failure
-does not cause the command to stop processing, instead it makes a best
-effort to complete and returns information on the work that was
-completed and potentially what was not.
+Under the "fail silently" mode the command will attempt to perform all operations on the database, which may include successfully processing some operations after others have failed. In this mode a single failure does not cause the command to stop processing, instead it makes a best effort to complete and returns information on the work that was completed and potentially what was not.
 
-Fail silently also allows the server to re-order the database operations
-to achieve best performance, which may include running multiple
-operations in parallel.
+Fail silently also allows the server to re-order the database operations to achieve best performance, which may include running multiple operations in parallel.
 
-Commands that use Fail Silently may return an error(s) and status
-information about what was successfully completed. See [Response
-Messages](#messagingResponse) for the structure of responses, and
-[Commands](#commands) for individual command responses. Multiple errors
-may be returned, the server should rationalize the errors by category.
-e.g. it should not return 10 errors that each say "DB service timeout",
-rather it should return a single error that covers the 10 documents this
-happened to.
+Commands that use Fail Silently may return an error(s) and status information about what was successfully completed. See [Response Messages](#response-messages) for the structure of responses, and [Commands](#commands) for individual command responses. Multiple errors may be returned; the server should rationalize the errors by category. For example, it should not return 10 errors that each say "DB service timeout". Instead, the server should return a single error that covers the 10 documents to which this error condition occurred.
 
-For example, consider an **unordered** [`insertMany`](#commandInsertMany) command that is inserting three documents. This command will use "fail silently", and may run all database operations at once in parallel. If inserting the second document fails, the first and third may success. In this case command will return the `_id` of the first and third documents and an error describing the failure inserting the second.
+For example, consider an **unordered** [`insertMany`](#insertMany-command) command that is inserting three documents. This command will use "fail silently", and may run all database operations at once in parallel. If inserting the second document fails, the first and third may success. In this case command will return the `_id` of the first and third documents and an error describing the failure inserting the second.
 
-Similarly a [`deleteMany`](#commandDeleteMany) command always uses "fail silently", and will attempt to delete many candidate documents in parallel. If an Availability or Concurrency fault occurs the command will retry the operation some configured number of times before marking that document operation as failed. At completion the command will return a count of deleted documents and an error describing any failures.
+Similarly a [`deleteMany`](#deleteMany-command) command always uses "fail silently", and will attempt to delete many candidate documents in parallel. If an Availability or Concurrency fault occurs the command will retry the operation some configured number of times before marking that document operation as failed. At completion the command will return a count of deleted documents and an error describing any failures.
 
 ## Clauses
 
@@ -1477,26 +1457,16 @@ maximum of **TODO** number of `<sort-expression>`'s may be included in a
 
 #### Sort Clause Order of Operations
 
-The `<sort-clause>` is evaluated using the following order of
-operations:
+The `<sort-clause>` is evaluated using the following order of operations:
 
-1.  If the sort clause is missing or contains zero `<sort-expression>`'s
-    the order of candidate documents is unchanged, and is assumed to be
-    the *natural order* applied by the underlying database.
-2.  If the `<sort-clause>` contains a single `<sort-expression>` the
-    candidate documents are ordered by that field using the [Sort
-    Order](#clauseSortOrder). If two or more documents have equivalent
-    value for a field, the order of the documents will be natural order.
-3.  If the `<sort-clause>` contains two or more `<sort-expression>`'s
-    the first expression is used to sort the documents, and the second
-    is used to sort all documents that have the same value for the first
-    expression. A third `<sort-expression>` is used to sort documents
-    with a duplicate value for the second expression and so on.
+1.  If the sort clause is missing or contains zero `<sort-expression>`'s the order of candidate documents is unchanged, and is assumed to be the *natural order* applied by the underlying database.
+2.  If the `<sort-clause>` contains a single `<sort-expression>` the candidate documents are ordered by that field using the [Sort Order](#sort-order). If two or more documents have equivalent value for a field, the order of the documents will be natural order.
+3.  If the `<sort-clause>` contains two or more `<sort-expression>`'s the first expression is used to sort the documents, and the second is used to sort all documents that have the same value for the first expression. A third `<sort-expression>` is used to sort documents with a duplicate value for the second expression, and so on.
 
 #### Sort Order
 
-**TODO:** type coercion, missing fields
+**TODO:** type coercion, missing fields.
 
 ### Update Clause
 
-**TODO** BNF for update commands, need to use `<document-path>` 
+**TODO** BNF for update commands, need to use `<document-path>`.
