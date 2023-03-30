@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -46,6 +47,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
   @JsonSubTypes.Type(value = DeleteManyCommand.class),
   @JsonSubTypes.Type(value = FindCommand.class),
   @JsonSubTypes.Type(value = FindOneCommand.class),
+  @JsonSubTypes.Type(value = FindOneAndReplaceCommand.class),
   @JsonSubTypes.Type(value = FindOneAndUpdateCommand.class),
   @JsonSubTypes.Type(value = InsertOneCommand.class),
   @JsonSubTypes.Type(value = InsertManyCommand.class),
