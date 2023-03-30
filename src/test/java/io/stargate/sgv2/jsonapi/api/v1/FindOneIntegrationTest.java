@@ -353,7 +353,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
         {
           "findOne": {
             "filter" : {"active_user" : {"$exists" : true}},
-            "sort" : ["username]
+            "sort" : ["username"]
 
           }
         }
@@ -381,7 +381,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
               {
                 "findOne": {
                   "filter" : {"active_user" : {"$exists" : true}},
-                  "sort" : ["-username]
+                  "sort" : ["-username"]
 
                 }
               }
