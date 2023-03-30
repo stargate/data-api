@@ -30,14 +30,21 @@ public class ObjectMapperConfiguration {
 
   private ObjectMapper createMapper() {
     return JsonMapper.builder()
+
         // important for retaining number accuracy!
         .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+
         // case insensitive enums, so "before" will match to "BEFORE" in an enum
         .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+
         // Verify uniqueness of JSON Object properties
         .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+
         // Prevent use of Engineering Notation with trailing zeroes:
         .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
+
+        // don't fail on unknown props, mainly for empty options object in commands
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .build();
   }
 }

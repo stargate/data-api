@@ -27,7 +27,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
   @Nested
   class DeleteOne {
     @Test
-    public void deleteOneById() {
+    public void byId() {
       String json =
           """
           {
@@ -95,7 +95,32 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void deleteOneByColumn() {
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "deleteOne": {
+              "filter" : {"_id" : "doc3"},
+              "options": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(0))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byColumn() {
       String json =
           """
           {
@@ -142,12 +167,12 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // ensure find does not find the document
       json =
           """
-              {
-                "findOne": {
-                  "filter" : {"_id" : "doc4"}
-                }
-              }
-              """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc4"}
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -163,7 +188,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void deleteOneNoFilter() {
+    public void noFilter() {
       String json =
           """
           {
@@ -190,8 +215,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           """
           {
             "deleteOne": {
-               "filter": {
-                        }
+               "filter": {}
             }
           }
           """;
@@ -211,12 +235,12 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // ensure find does not find the document
       json =
           """
-              {
-                "findOne": {
-                  "filter" : {"_id" : "doc3"}
-                }
-              }
-              """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc3"}
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -232,7 +256,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void deleteOneNoMatch() {
+    public void noMatch() {
       String json =
           """
           {
@@ -279,12 +303,12 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // ensure find does find the document
       json =
           """
-              {
-                "findOne": {
-                  "filter" : {"_id" : "doc5"}
-                }
-              }
-              """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc5"}
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -305,12 +329,11 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
 
     @RepeatedTest(10)
     public void concurrentDeletes() throws Exception {
-      String document =
-          """
+      String document = """
           {
-             "_id": "concurrent"
-           }
-           """;
+            "_id": "concurrent"
+          }
+          """;
       insertDoc(document);
 
       // we can hit with more threads, max 1 retry per thread
