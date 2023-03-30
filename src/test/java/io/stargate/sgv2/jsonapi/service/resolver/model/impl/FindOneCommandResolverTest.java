@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,6 @@ public class FindOneCommandResolverTest {
           """
           {
             "findOne": {
-              "sort": [
-                "user.name",
-                "-user.age"
-              ],
               "filter" : {"_id" : "id"}
             }
           }
@@ -62,6 +59,49 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(op.orderBy()).isNull();
+              });
+    }
+
+    @Test
+    public void filterConditionAndSort() throws Exception {
+      String json =
+          """
+          {
+            "findOne": {
+              "sort": [
+                "user.name",
+                "-user.age"
+              ],
+              "filter" : {"status" : "active"}
+            }
+          }
+          """;
+
+      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              op -> {
+                DBFilterBase.TextFilter filter =
+                    new DBFilterBase.TextFilter(
+                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                assertThat(op.objectMapper()).isEqualTo(objectMapper);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.limit()).isEqualTo(1);
+                assertThat(op.pageSize()).isEqualTo(100);
+                assertThat(op.pagingState()).isNull();
+                assertThat(op.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(op.orderBy()).hasSize(2);
+                assertThat(op.orderBy())
+                    .isEqualTo(
+                        List.of(
+                            new FindOperation.OrderBy("user.name", true),
+                            new FindOperation.OrderBy("user.age", false)));
               });
     }
 
@@ -71,10 +111,7 @@ public class FindOneCommandResolverTest {
           """
           {
             "findOne": {
-              "sort": [
-                "user.name",
-                "-user.age"
-              ]
+
             }
           }
           """;
@@ -102,10 +139,6 @@ public class FindOneCommandResolverTest {
           """
           {
             "findOne": {
-              "sort": [
-                "user.name",
-                "-user.age"
-              ],
               "filter" : {"col" : "val"}
             }
           }

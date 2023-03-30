@@ -424,6 +424,162 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
   }
 
+  @Test
+  public void findAnyWithSortReturnDocumentAfter() {
+    String document1 =
+        """
+        {
+          "_id": "sortDoc1",
+          "username": "sortUser1",
+          "active_user" : true,
+          "filter_me" : "happy"
+        }
+        """;
+    insertDoc(document1);
+
+    String document2 =
+        """
+        {
+          "_id": "sortDoc2",
+          "username": "sortUser2",
+          "active_user" : false,
+          "filter_me" : "happy"
+        }
+        """;
+    insertDoc(document2);
+
+    String json =
+        """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"filter_me" : "happy"},
+            "sort" :  ["active_user"],
+            "update" : {"$set" : {"add_me": false}},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+    String expected =
+        """
+        {
+          "_id": "sortDoc2",
+          "username": "sortUser2",
+          "active_user" : false,
+          "filter_me" : "happy",
+          "add_me" : false
+        }
+        """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected))
+        .body("status.matchedCount", is(1))
+        .body("status.modifiedCount", is(1))
+        .body("errors", is(nullValue()));
+
+    // assert state after update
+    json =
+        """
+            {
+              "find": {
+                "filter" : {"_id" : "sortDoc2"}
+              }
+            }
+            """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected));
+  }
+
+  @Test
+  public void findAnyWithSortDescendingReturnDocumentAfter() {
+    String document1 =
+        """
+            {
+              "_id": "sortDoc1",
+              "username": "sortUser1",
+              "active_user" : true,
+              "filter_me" : "happy"
+            }
+            """;
+    insertDoc(document1);
+
+    String document2 =
+        """
+            {
+              "_id": "sortDoc2",
+              "username": "sortUser2",
+              "active_user" : false,
+              "filter_me" : "happy"
+            }
+            """;
+    insertDoc(document2);
+
+    String json =
+        """
+            {
+              "findOneAndUpdate": {
+                "filter" : {"filter_me" : "happy"},
+                "sort" :  ["active_user"],
+                "update" : {"$set" : {"add_me": false}},
+                "options" : {"returnDocument" : "after"}
+              }
+            }
+            """;
+    String expected =
+        """
+            {
+              "_id": "sortDoc1",
+              "username": "sortUser1",
+              "active_user" : true,
+              "filter_me" : "happy",
+              "add_me" : false
+            }
+            """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected))
+        .body("status.matchedCount", is(1))
+        .body("status.modifiedCount", is(1))
+        .body("errors", is(nullValue()));
+
+    // assert state after update
+    json =
+        """
+            {
+              "find": {
+                "filter" : {"_id" : "sortDoc1"}
+              }
+            }
+            """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected));
+  }
+
   @Nested
   class FindOneAndUpdateFailures {
 
