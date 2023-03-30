@@ -531,7 +531,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
             {
               "findOneAndUpdate": {
                 "filter" : {"filter_me" : "happy"},
-                "sort" :  ["active_user"],
+                "sort" :  ["-active_user"],
                 "update" : {"$set" : {"add_me": false}},
                 "options" : {"returnDocument" : "after"}
               }
