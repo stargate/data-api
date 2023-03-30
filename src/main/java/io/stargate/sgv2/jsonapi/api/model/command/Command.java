@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
@@ -51,5 +52,10 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
   @JsonSubTypes.Type(value = InsertManyCommand.class),
   @JsonSubTypes.Type(value = UpdateManyCommand.class),
   @JsonSubTypes.Type(value = UpdateOneCommand.class),
+})
+@JsonIgnoreProperties({
+  // Conditional ignoral so command impls may or may not have "options" property but
+  // even if they don't, no error if caller passes such property.
+  "options"
 })
 public interface Command {}
