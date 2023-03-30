@@ -200,6 +200,31 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
+    public void findByIdWithProjection() {
+      String json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "doc1"},
+                    "projection": { "_id":0, "username":1 }
+                  }
+                }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals("{\"username\":\"user1\"}"));
+    }
+
+    @Test
+    @Order(2)
     public void findByColumn() {
       String json =
           """
