@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.List;
 
 /** Updates the document read from the database with the updates came as part of the request. */
@@ -87,14 +87,14 @@ public record DocumentUpdater(
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
     // The replace document cannot specify an _id value that differs from the replaced document.
     if (replaceDocumentId != null) {
-      if (JsonNodeComparator.ascending().compare(replaceDocumentId, idNode) != 0) {
+      if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
         throw new JsonApiException(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
       }
     }
     // In case there is no difference between document return modified as false, so db update
     // doesn't happen
-    if (JsonNodeComparator.ascending().compare(compareDoc, replaceDocument()) == 0) {
+    if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
       return false;
     }
     // remove all data and add _id as first field

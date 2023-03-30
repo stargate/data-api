@@ -309,7 +309,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
           .body(
               "errors[0].message",
-              is("The replace document and document resolved using filter has different _id"));
+              is("The replace document and document resolved using filter have different _id"));
     }
 
     @Test

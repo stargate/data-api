@@ -301,17 +301,17 @@ public class DocumentUpdaterTest {
   }
 
   @Nested
-  class ReplaceDocuemntHappy {
+  class ReplaceDocumentHappy {
     @Test
     public void replaceDocument() throws Exception {
       String expected =
           """
-                            {
-                                "_id": "1",
-                                "location": "New York",
-                                "new_data" : 40
-                            }
-                          """;
+            {
+                "_id": "1",
+                "location": "New York",
+                "new_data" : 40
+            }
+          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
       JsonNode expectedData = objectMapper.readTree(expected);
