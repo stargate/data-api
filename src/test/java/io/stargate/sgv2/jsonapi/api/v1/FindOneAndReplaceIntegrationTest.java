@@ -147,6 +147,134 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
     }
 
     @Test
+    public void byIdWithIdNoChange() {
+      String document =
+          """
+            {
+              "_id": "doc3",
+              "username": "user3",
+              "active_user" : true
+            }
+            """;
+      insertDoc(document);
+
+      String json =
+          """
+            {
+              "findOneAndReplace": {
+                "filter" : {"_id" : "doc3"},
+                "replacement" : {"_id" : "doc3", "username": "user3", "active_user" : true }
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", is(nullValue()))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "doc3"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(document));
+    }
+
+    @Test
+    public void withSort() {
+      String document =
+          """
+          {
+            "_id": "doc3",
+            "username": "user3",
+            "active_user" : true
+          }
+          """;
+      insertDoc(document);
+
+      String document1 =
+          """
+          {
+            "_id": "doc2",
+            "username": "user2",
+            "active_user" : true
+          }
+          """;
+      insertDoc(document1);
+      String expected =
+          """
+              {
+                "_id": "doc2",
+                "username": "username2",
+                "status" : true
+              }
+              """;
+
+      String json =
+          """
+              {
+                "findOneAndReplace": {
+                  "filter" : {"active_user" : true},
+                  "sort" : ["username"],
+                  "replacement" : {"username": "username2", "status" : true },
+                  "options" : {"returnDocument" : "after"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", jsonEquals(expected))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "doc2"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void byIdWithDifferentId() {
       String document =
           """

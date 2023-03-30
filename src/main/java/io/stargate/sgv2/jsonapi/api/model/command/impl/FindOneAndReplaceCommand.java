@@ -29,7 +29,7 @@ public record FindOneAndReplaceCommand(
 
   @Schema(
       name = "FindOneAndReplaceCommand.Options",
-      description = "Options for `findOneAndUpdate` command.")
+      description = "Options for `findOneAndReplace` command.")
   public record Options(
       @Nullable
           @Pattern(
