@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
+import java.util.Map;
 
 /**
  * POJO object (data no behavior) that represents a syntactically and grammatically valid command as
@@ -53,9 +54,13 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
   @JsonSubTypes.Type(value = UpdateManyCommand.class),
   @JsonSubTypes.Type(value = UpdateOneCommand.class),
 })
-@JsonIgnoreProperties({
-  // Conditional ignoral so command impls may or may not have "options" property but
-  // even if they don't, no error if caller passes such property.
-  "options"
-})
-public interface Command {}
+public interface Command {
+  /**
+   * Default method if (and only if) there is no "options" property. Used for allowing all Commands
+   * to take in empty Options without having to add Record field if none accepted.
+   */
+  @JsonProperty("options")
+  default void options(Map<String, Object> optionsIgnored) {
+    // Should we fail for non-empty options?
+  }
+}
