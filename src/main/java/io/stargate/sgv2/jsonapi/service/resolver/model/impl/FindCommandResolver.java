@@ -12,8 +12,8 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -45,20 +45,15 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
         options != null && options.limit() != null ? options.limit() : documentConfig.maxLimit();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     final SortClause sortClause = command.sortClause();
-    // If sort request
-    if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
-      List<FindOperation.OrderBy> orderBy =
-          command.sortClause().sortExpressions().stream()
-              .map(
-                  sortExpression ->
-                      new FindOperation.OrderBy(sortExpression.path(), sortExpression.ascending()))
-              .collect(Collectors.toList());
+    List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+    // If orderBy present
+    if (orderBy != null) {
       int skip =
           options != null && options.skip() != null && options.skip().intValue() > 0
               ? options.skip()
               : 0;
 
-      return FindOperation.from(
+      return FindOperation.sorted(
           commandContext,
           filters,
           command.buildProjector(),
@@ -74,7 +69,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           skip,
           documentConfig.maxSortReadLimit());
     } else {
-      return FindOperation.from(
+      return FindOperation.unsorted(
           commandContext,
           filters,
           command.buildProjector(),
