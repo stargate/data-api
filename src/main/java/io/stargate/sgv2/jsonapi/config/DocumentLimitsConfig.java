@@ -50,6 +50,7 @@ public interface DocumentLimitsConfig {
   /**
    * @return Maximum amount of documents that can be inserted using <code>insertMany</code> command.
    */
+  // keep in sync with MaxInsertManyDocumentsValidation
   @Positive
   @WithDefault("10")
   int maxInsertManyDocuments();
