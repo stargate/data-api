@@ -506,13 +506,13 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   public void findAnyWithSortDescendingReturnDocumentAfter() {
     String document1 =
         """
-            {
-              "_id": "sortDoc1",
-              "username": "sortUser1",
-              "active_user" : true,
-              "filter_me" : "happy"
-            }
-            """;
+        {
+          "_id": "sortDoc1",
+          "username": "sortUser1",
+          "active_user" : true,
+          "filter_me" : "happy"
+        }
+        """;
     insertDoc(document1);
 
     String document2 =
