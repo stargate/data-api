@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -74,6 +75,7 @@ public class CollectionResource {
                         DeleteManyCommand.class,
                         FindOneCommand.class,
                         FindCommand.class,
+                        FindOneAndReplaceCommand.class,
                         FindOneAndUpdateCommand.class,
                         InsertOneCommand.class,
                         InsertManyCommand.class,
@@ -86,6 +88,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "deleteMany"),
                 @ExampleObject(ref = "find"),
                 @ExampleObject(ref = "findOne"),
+                @ExampleObject(ref = "findOneAndReplace"),
                 @ExampleObject(ref = "findOneAndUpdate"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "insertMany"),
@@ -107,6 +110,7 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultDeleteMany"),
                     @ExampleObject(ref = "resultFind"),
                     @ExampleObject(ref = "resultFindOne"),
+                    @ExampleObject(ref = "resultFindOneAndReplace"),
                     @ExampleObject(ref = "resultFindOneAndUpdate"),
                     @ExampleObject(ref = "resultFindOneAndUpdateUpsert"),
                     @ExampleObject(ref = "resultInsert"),
