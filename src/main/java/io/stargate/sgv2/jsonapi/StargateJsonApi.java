@@ -113,6 +113,25 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "findOneAndReplace",
+                  summary = "`findOneAndReplace` command",
+                  value =
+                      """
+                      {
+                        "findOneAndReplace": {
+                            "filter": {"location": "London"},
+                            "sort" : ["race.start_date"]
+                            "replacement": {
+                                "location": "New York",
+                                "count": 3
+                            },
+                            "options" : {
+                               "returnDocument" : "before"
+                            }
+                        }
+                      }
+                      """),
+              @ExampleObject(
                   name = "updateOne",
                   summary = "`updateOne` command",
                   value =
@@ -135,40 +154,40 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`updateMany` command",
                   value =
                       """
-                                {
-                                "updateMany": {
-                                    "filter": {"location": "London"},
-                                    "update": {
-                                        "$set": {"location": "New York"},
-                                        "$push": {"tags": "marathon"}
-                                    },
-                                    "options" : {
-                                        "upsert" : true
-                                    }
-                                }
-                              }
-                              """),
+                        {
+                        "updateMany": {
+                            "filter": {"location": "London"},
+                            "update": {
+                                "$set": {"location": "New York"},
+                                "$push": {"tags": "marathon"}
+                            },
+                            "options" : {
+                                "upsert" : true
+                            }
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "deleteOne",
                   summary = "`deleteOne` command",
                   value =
                       """
-                            {
-                              "deleteOne": {
-                                  "filter": {"_id": "1"}
-                              }
-                            }
-                            """),
+                    {
+                      "deleteOne": {
+                          "filter": {"_id": "1"}
+                      }
+                    }
+                    """),
               @ExampleObject(
                   name = "deleteMany",
                   summary = "`deleteMany` command",
                   value =
                       """
-                            {
-                              "deleteMany": {
-                                  "filter": {"location": "London"}
-                              }
-                            }
+                        {
+                          "deleteMany": {
+                              "filter": {"location": "London"}
+                          }
+                        }
                       """),
               @ExampleObject(
                   name = "insertOne",
@@ -194,95 +213,95 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`insertMany` command",
                   value =
                       """
-                                    {
-                                      "insertMany": {
-                                        "documents": [
-                                            {
-                                              "_id": "1",
-                                              "location": "London",
-                                              "race": {
-                                                "competitors": 100,
-                                                "start_date": "2022-08-15"
-                                              },
-                                              "tags" : [ "eu" ]
-                                            },
-                                            {
-                                              "_id": "2",
-                                              "location": "New York",
-                                              "race": {
-                                                "competitors": 150,
-                                                "start_date": "2022-09-15"
-                                              },
-                                              "tags": [ "us" ]
-                                            }
-                                        ],
-                                        "options": {
-                                            "ordered": true
-                                        }
-                                      }
-                                    }
-                                    """),
+                        {
+                          "insertMany": {
+                            "documents": [
+                                {
+                                  "_id": "1",
+                                  "location": "London",
+                                  "race": {
+                                    "competitors": 100,
+                                    "start_date": "2022-08-15"
+                                  },
+                                  "tags" : [ "eu" ]
+                                },
+                                {
+                                  "_id": "2",
+                                  "location": "New York",
+                                  "race": {
+                                    "competitors": 150,
+                                    "start_date": "2022-09-15"
+                                  },
+                                  "tags": [ "us" ]
+                                }
+                            ],
+                            "options": {
+                                "ordered": true
+                            }
+                          }
+                        }
+                      """),
               @ExampleObject(
                   name = "createNamespace",
                   summary = "`CreateNamespace` command",
                   value =
                       """
-                            {
-                                "createNamespace": {
-                                  "name": "cycling"
-                                }
+                        {
+                            "createNamespace": {
+                              "name": "cycling"
                             }
-                            """),
+                        }
+                      """),
               @ExampleObject(
                   name = "createNamespaceWithReplication",
                   summary = "`CreateNamespace` command with replication",
                   value =
                       """
-                            {
-                                "createNamespace": {
-                                  "name": "cycling",
-                                  "options": {
-                                    "replication": {
-                                       "class": "SimpleStrategy",
-                                       "replication_factor": 3
-                                    }
-                                  }
+                        {
+                            "createNamespace": {
+                              "name": "cycling",
+                              "options": {
+                                "replication": {
+                                   "class": "SimpleStrategy",
+                                   "replication_factor": 3
                                 }
+                              }
                             }
-                            """),
+                        }
+                      """),
               @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
                       """
-                            {
-                                "createCollection": {
-                                  "name": "events"
-                                }
+                        {
+                            "createCollection": {
+                              "name": "events"
                             }
-                            """),
+                        }
+                      """),
               @ExampleObject(
                   name = "deleteCollection",
                   summary = "`DeleteCollection` command",
                   value =
                       """
-                            {
-                                "deleteCollection": {
-                                  "name": "events"
-                                }
+                        {
+                            "deleteCollection": {
+                              "name": "events"
                             }
-                            """),
+                        }
+                      """),
               @ExampleObject(
                   name = "resultCount",
                   summary = "`countDocuments` command result",
                   value =
                       """
-                                    {
-                                      "status": {
-                                        "count": 2
-                                      }
-                                    }
-                                    """),
+                        {
+                          "status": {
+                            "count": 2
+                          }
+                        }
+                      """),
               @ExampleObject(
                   name = "resultFind",
                   summary = "`find` command result",
@@ -363,6 +382,28 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       }
                   """),
+              @ExampleObject(
+                  name = "resultFindOneAndReplace",
+                  summary = "`findOneAndReplace` command result",
+                  value =
+                      """
+                     {
+                       "data": {
+                         "docs": [
+                           {
+                             "_id": "1",
+                             "location": "New York",
+                             "count": 3
+                           }
+                         ],
+                         "count": 1,
+                         "status": {
+                           "matchedCount": 1,
+                           "modifiedCount": 1
+                         }
+                       }
+                     }
+                     """),
               @ExampleObject(
                   name = "resultFindOneAndUpdateUpsert",
                   summary = "`findOneAndUpdate` command with upsert result",
