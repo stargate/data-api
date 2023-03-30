@@ -52,6 +52,5 @@ public interface DocumentLimitsConfig {
    */
   // keep in sync with MaxInsertManyDocumentsValidation
   @Positive
-  @WithDefault("10")
   int maxInsertManyDocuments();
 }

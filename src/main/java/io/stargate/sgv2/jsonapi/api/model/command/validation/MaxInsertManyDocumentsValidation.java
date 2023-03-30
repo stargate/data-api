@@ -17,10 +17,7 @@ public class MaxInsertManyDocumentsValidation
   // due to https://github.com/quarkusio/quarkus/issues/32265
   // I can only inject prop, not the whole config class
   public MaxInsertManyDocumentsValidation(
-      @ConfigProperty(
-              name = "stargate.jsonapi.doc-limits.max-insert-many-documents",
-              defaultValue = "10")
-          int limit) {
+      @ConfigProperty(name = "stargate.jsonapi.doc-limits.max-insert-many-documents") int limit) {
     this.limit = limit;
   }
 
