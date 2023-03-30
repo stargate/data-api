@@ -37,12 +37,20 @@ public interface DocumentLimitsConfig {
   @WithDefault("64")
   int maxObjectProperties();
 
-  /** @return Defines the maximum length of , defaults to {@code 8 levels} */
+  /** @return Defines the maximum length of a single String value. */
   @Positive
   @WithDefault("16000")
   int maxStringLength();
 
+  /** @return Maximum length of an array. */
   @Positive
   @WithDefault("100")
   int maxArrayLength();
+
+  /**
+   * @return Maximum amount of documents that can be inserted using <code>insertMany</code> command.
+   */
+  // keep in sync with MaxInsertManyDocumentsValidation
+  @Positive
+  int maxInsertManyDocuments();
 }

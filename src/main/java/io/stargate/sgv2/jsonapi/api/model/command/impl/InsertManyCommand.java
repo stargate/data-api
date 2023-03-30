@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.validation.MaxInsertManyDocuments;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotEmpty;
@@ -22,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record InsertManyCommand(
     @NotNull
         @NotEmpty
+        @MaxInsertManyDocuments
         @Schema(
             description = "JSON document to insert.",
             implementation = Object.class,

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
@@ -14,8 +15,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+@TestProfile(InsertManyCommandTest.Profile.class)
 class InsertManyCommandTest {
+
+  public static class Profile implements NoGlobalResourcesTestProfile {
+
+    @Override
+    public Map<String, String> getConfigOverrides() {
+      return Map.of("stargate.jsonapi.doc-limits.max-insert-many-documents", "2");
+    }
+  }
 
   @Inject ObjectMapper objectMapper;
 
@@ -61,6 +70,50 @@ class InsertManyCommandTest {
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
           .contains("must not be empty");
+    }
+
+    @Test
+    public void tooManyDocuments() throws Exception {
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": [
+                {},
+                {},
+                {}
+              ]
+            }
+          }
+          """;
+
+      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("amount of documents to insert is over the max limit");
+    }
+
+    @Test
+    public void acceptableDocuments() throws Exception {
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": [
+                {},
+                {}
+              ]
+            }
+          }
+          """;
+
+      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+
+      assertThat(result).isEmpty();
     }
   }
 }

@@ -64,13 +64,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOne` command",
                   value =
                       """
-                      {
-                        "findOne": {
-                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
-                            "projection": {"_id":0, "location":1, "race":1, "tags":1}
-                        }
-                      }
-                      """),
+                              {
+                                "findOne": {
+                                    "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                                    "projection": {"_id":0, "location":1, "race":1, "tags":1},
+                                    "sort" : ["race.start_date"]
+                                }
+                              }
+                              """),
               @ExampleObject(
                   name = "countDocuments",
                   summary = "`countDocuments` command",
@@ -91,6 +92,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "find": {
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                              "projection": {"tags":0},
+                             "sort" : ["location"],
                              "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
                         }
                       }
@@ -103,6 +105,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
+                            "sort" : ["location"],
                             "update": {
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}

@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public interface ReadOperation extends Operation {
   String[] documentColumns = {"key", "tx_id", "doc_json"};
   String[] documentKeyColumns = {"key", "tx_id"};
-  String[] sortedDataColumns = {"key", "doc_json"};
+  String[] sortedDataColumns = {"key", "tx_id", "doc_json"};
   int SORTED_DATA_COLUMNS = sortedDataColumns.length;
   List<String> sortIndexColumns =
       List.of(
@@ -116,7 +116,8 @@ public interface ReadOperation extends Operation {
       int numberOfOrderByColumn,
       int skip,
       int limit,
-      int errorLimit) {
+      int errorLimit,
+      DocumentProjector projection) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createBy()
@@ -178,8 +179,9 @@ public interface ReadOperation extends Operation {
                 document =
                     ReadDocument.from(
                         getDocumentId(row.getValues(0)), // key
+                        Values.uuid(row.getValues(1)),
                         new DocJsonValue(
-                            objectMapper, row.getValues(1)), // Deserialized value of doc_json
+                            objectMapper, row.getValues(2)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
               }
@@ -216,9 +218,11 @@ public interface ReadOperation extends Operation {
               List<ReadDocument> responseDocuments =
                   subList.stream()
                       .map(
-                          readDoc ->
-                              ReadDocument.from(
-                                  readDoc.id(), readDoc.txnId(), readDoc.docJsonValue().get()))
+                          readDoc -> {
+                            JsonNode data = readDoc.docJsonValue().get();
+                            projection.applyProjection(data);
+                            return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                          })
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);
             });
