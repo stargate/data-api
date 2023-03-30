@@ -158,6 +158,58 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
+    public void noFilterSortAscending() {
+      String json =
+          """
+          {
+            "findOne": {
+              "sort" : ["username"]
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(DOC4_JSON)); // missing value is the lowest precedence
+    }
+
+    @Test
+    public void noFilterSortDescending() {
+      String json =
+          """
+          {
+            "findOne": {
+              "sort" : ["-username"]
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(DOC5_JSON)); // missing value is the lowest precedence
+    }
+
+    @Test
     public void byId() {
       String json =
           """
@@ -280,6 +332,61 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data.count", is(0))
           .body("data.docs", is(empty()))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void withExistsOperatorSortAsc() {
+      String json =
+          """
+          {
+            "findOne": {
+              "filter" : {"username" : {"$exists" : true}},
+              "sort" : ["username"]
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void withExistsOperatorSortDesc() {
+      String json =
+          """
+          {
+            "findOne": {
+              "filter" : {"username" : {"$exists" : true}},
+              "sort" : ["-username"]
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          // post sorting by sort id , it uses document id by default.
+          .body("data.docs[0]", jsonEquals(DOC5_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }

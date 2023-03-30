@@ -27,7 +27,7 @@ public record ReadDocument(
   }
 
   public static ReadDocument from(
-      DocumentId id, Supplier<JsonNode> docJsonValue, List<JsonNode> sortColumns) {
-    return new ReadDocument(id, null, null, sortColumns, docJsonValue);
+      DocumentId id, UUID txnId, Supplier<JsonNode> docJsonValue, List<JsonNode> sortColumns) {
+    return new ReadDocument(id, txnId, null, sortColumns, docJsonValue);
   }
 }

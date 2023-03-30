@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,10 +34,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(false))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true)))))
           .isLessThan(0);
@@ -46,10 +49,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(false)))))
           .isGreaterThan(0);
@@ -58,10 +63,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true)))))
           .isLessThan(0);
@@ -71,10 +78,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true)))))
           .isGreaterThan(0);
@@ -89,10 +98,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc"))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("xyz")))))
           .isLessThan(0);
@@ -102,10 +113,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("xyz"))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc")))))
           .isGreaterThan(0);
@@ -114,10 +127,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc"))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc")))))
           .isLessThan(0);
@@ -127,10 +142,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc"))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc")))))
           .isGreaterThan(0);
@@ -145,10 +162,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1)))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(2))))))
           .isLessThan(0);
@@ -158,10 +177,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(2)))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1))))))
           .isGreaterThan(0);
@@ -170,10 +191,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1)))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1))))))
           .isLessThan(0);
@@ -183,10 +206,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1)))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1))))))
           .isGreaterThan(0);
@@ -201,10 +226,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().booleanNode(true))),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().textNode("abc")))))
           .isGreaterThan(0);
@@ -214,10 +241,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().nullNode())),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1))))))
           .isLessThan(0);
@@ -227,10 +256,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().numberNode(new BigDecimal(1)))),
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().missingNode()))))
           .isGreaterThan(0);
@@ -240,10 +271,12 @@ public class ChainedComparatorTest {
               comparator.compare(
                   ReadDocument.from(
                       DocumentId.fromString("key2"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().nullNode())),
                   ReadDocument.from(
                       DocumentId.fromString("key1"),
+                      UUID.randomUUID(),
                       null,
                       List.of(objectMapper.getNodeFactory().missingNode()))))
           .isGreaterThan(0);
