@@ -28,24 +28,24 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdAndSet() {
       String document =
           """
-          {
-            "_id": "doc3",
-            "username": "user3",
-            "active_user" : true
-          }
-          """;
+              {
+                "_id": "doc3",
+                "username": "user3",
+                "active_user" : true
+              }
+              """;
       insertDoc(document);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "doc3"},
-              "update" : {"$set" : {"active_user": false}},
-              "options": {"upsert": true}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "doc3"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options": {"upsert": true}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -62,20 +62,20 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       String expected =
           """
-          {
-            "_id": "doc3",
-            "username": "user3",
-            "active_user": false
-          }
-          """;
+              {
+                "_id": "doc3",
+                "username": "user3",
+                "active_user": false
+              }
+              """;
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc3"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "doc3"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -91,13 +91,13 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdAndSetNotFound() {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "doc3"},
-              "update" : {"$set" : {"active_user": false}}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "doc3"},
+                  "update" : {"$set" : {"active_user": false}}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -116,14 +116,14 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void emptyOptionsAllowed() {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "doc3"},
-              "update" : {"$set" : {"active_user": false}},
-              "options": {}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "doc3"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options": {}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -142,32 +142,32 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdReturnDocumentAfter() {
       String document =
           """
-          {
-            "_id": "afterDoc3",
-            "username": "afterUser3",
-            "active_user" : true
-          }
-          """;
+              {
+                "_id": "afterDoc3",
+                "username": "afterUser3",
+                "active_user" : true
+              }
+              """;
       insertDoc(document);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "afterDoc3"},
-              "update" : {"$set" : {"active_user": false}},
-              "options" : {"returnDocument" : "after"}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "afterDoc3"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options" : {"returnDocument" : "after"}
+                }
+              }
+              """;
       String expected =
           """
-          {
-            "_id":"afterDoc3",
-            "username":"afterUser3",
-            "active_user":false
-          }
-          """;
+              {
+                "_id":"afterDoc3",
+                "username":"afterUser3",
+                "active_user":false
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -184,12 +184,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "afterDoc3"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "afterDoc3"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -205,14 +205,14 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byColumnUpsert() {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"location" : "my_city"},
-              "update" : {"$set" : {"active_user": false}},
-              "options" : {"returnDocument" : "after", "upsert" : true}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"location" : "my_city"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options" : {"returnDocument" : "after", "upsert" : true}
+                }
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -231,12 +231,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       json =
           """
-          {
-            "find": {
-              "filter" : {"location" : "my_city"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"location" : "my_city"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -252,21 +252,21 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdUpsert() {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "afterDoc4"},
-              "update" : {"$set" : {"active_user": false}},
-              "options" : {"returnDocument" : "after", "upsert" : true}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "afterDoc4"},
+                  "update" : {"$set" : {"active_user": false}},
+                  "options" : {"returnDocument" : "after", "upsert" : true}
+                }
+              }
+              """;
       String expected =
           """
-          {
-            "_id":"afterDoc4",
-             "active_user":false
-          }
-          """;
+              {
+                "_id":"afterDoc4",
+                 "active_user":false
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -285,12 +285,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "afterDoc4"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "afterDoc4"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -306,22 +306,22 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byColumnAndSet() {
       String document =
           """
-          {
-            "_id": "doc4",
-            "username": "user4"
-          }
-          """;
+              {
+                "_id": "doc4",
+                "username": "user4"
+              }
+              """;
       insertDoc(document);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"username" : "user4"},
-              "update" : {"$set" : {"new_col": "new_val"}}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"username" : "user4"},
+                  "update" : {"$set" : {"new_col": "new_val"}}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -338,20 +338,20 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       String expected =
           """
-          {
-            "_id":"doc4",
-            "username":"user4",
-            "new_col": "new_val"
-          }
-          """;
+              {
+                "_id":"doc4",
+                "username":"user4",
+                "new_col": "new_val"
+              }
+              """;
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc4"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "doc4"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -367,23 +367,23 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdAndUnset() {
       String document =
           """
-          {
-            "_id": "doc5",
-            "username": "user5",
-            "unset_col": "val"
-          }
-          """;
+              {
+                "_id": "doc5",
+                "username": "user5",
+                "unset_col": "val"
+              }
+              """;
       insertDoc(document);
 
       String json =
           """
-          {
-             "findOneAndUpdate": {
-               "filter" : {"_id" : "doc5"},
-               "update" : {"$unset" : {"unset_col": ""}}
-             }
-          }
-          """;
+              {
+                 "findOneAndUpdate": {
+                   "filter" : {"_id" : "doc5"},
+                   "update" : {"$unset" : {"unset_col": ""}}
+                 }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -399,19 +399,19 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
       String expected =
           """
-          {
-            "_id":"doc5",
-            "username":"user5"
-          }
-          """;
+              {
+                "_id":"doc5",
+                "username":"user5"
+              }
+              """;
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc5"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "doc5"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -428,91 +428,13 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   public void findAnyWithSortReturnDocumentAfter() {
     String document1 =
         """
-        {
-          "_id": "sortDoc1",
-          "username": "sortUser1",
-          "active_user" : true,
-          "filter_me" : "happy"
-        }
-        """;
-    insertDoc(document1);
-
-    String document2 =
-        """
-        {
-          "_id": "sortDoc2",
-          "username": "sortUser2",
-          "active_user" : false,
-          "filter_me" : "happy"
-        }
-        """;
-    insertDoc(document2);
-
-    String json =
-        """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"filter_me" : "happy"},
-            "sort" :  ["active_user"],
-            "update" : {"$set" : {"add_me": false}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
-    String expected =
-        """
-        {
-          "_id": "sortDoc2",
-          "username": "sortUser2",
-          "active_user" : false,
-          "filter_me" : "happy",
-          "add_me" : false
-        }
-        """;
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200)
-        .body("data.docs[0]", jsonEquals(expected))
-        .body("status.matchedCount", is(1))
-        .body("status.modifiedCount", is(1))
-        .body("errors", is(nullValue()));
-
-    // assert state after update
-    json =
-        """
             {
-              "find": {
-                "filter" : {"_id" : "sortDoc2"}
-              }
+              "_id": "sortDoc1",
+              "username": "sortUser1",
+              "active_user" : true,
+              "filter_me" : "happy"
             }
             """;
-    given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-        .then()
-        .statusCode(200)
-        .body("data.docs[0]", jsonEquals(expected));
-  }
-
-  @Test
-  public void findAnyWithSortDescendingReturnDocumentAfter() {
-    String document1 =
-        """
-        {
-          "_id": "sortDoc1",
-          "username": "sortUser1",
-          "active_user" : true,
-          "filter_me" : "happy"
-        }
-        """;
     insertDoc(document1);
 
     String document2 =
@@ -540,9 +462,9 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     String expected =
         """
             {
-              "_id": "sortDoc1",
-              "username": "sortUser1",
-              "active_user" : true,
+              "_id": "sortDoc2",
+              "username": "sortUser2",
+              "active_user" : false,
               "filter_me" : "happy",
               "add_me" : false
             }
@@ -563,12 +485,90 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     // assert state after update
     json =
         """
+                {
+                  "find": {
+                    "filter" : {"_id" : "sortDoc2"}
+                  }
+                }
+                """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected));
+  }
+
+  @Test
+  public void findAnyWithSortDescendingReturnDocumentAfter() {
+    String document1 =
+        """
             {
-              "find": {
-                "filter" : {"_id" : "sortDoc1"}
-              }
+              "_id": "sortDoc1",
+              "username": "sortUser1",
+              "active_user" : true,
+              "filter_me" : "happy"
             }
             """;
+    insertDoc(document1);
+
+    String document2 =
+        """
+                {
+                  "_id": "sortDoc2",
+                  "username": "sortUser2",
+                  "active_user" : false,
+                  "filter_me" : "happy"
+                }
+                """;
+    insertDoc(document2);
+
+    String json =
+        """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"filter_me" : "happy"},
+                    "sort" :  ["active_user"],
+                    "update" : {"$set" : {"add_me": false}},
+                    "options" : {"returnDocument" : "after"}
+                  }
+                }
+                """;
+    String expected =
+        """
+                {
+                  "_id": "sortDoc1",
+                  "username": "sortUser1",
+                  "active_user" : true,
+                  "filter_me" : "happy",
+                  "add_me" : false
+                }
+                """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .then()
+        .statusCode(200)
+        .body("data.docs[0]", jsonEquals(expected))
+        .body("status.matchedCount", is(1))
+        .body("status.modifiedCount", is(1))
+        .body("errors", is(nullValue()));
+
+    // assert state after update
+    json =
+        """
+                {
+                  "find": {
+                    "filter" : {"_id" : "sortDoc1"}
+                  }
+                }
+                """;
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
@@ -587,22 +587,22 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdTryUnsetId() {
       final String inputDoc =
           """
-          {
-            "_id": "update_doc_unset_id",
-            "username": "update_user"
-          }
-          """;
+              {
+                "_id": "update_doc_unset_id",
+                "username": "update_user"
+              }
+              """;
       insertDoc(inputDoc);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_unset_id"},
-              "update" : {"$unset" : {"_id": 1}}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_unset_id"},
+                  "update" : {"$unset" : {"_id": 1}}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -619,12 +619,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And finally verify also that nothing was changed:
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_unset_id"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_unset_id"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -640,22 +640,22 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdTrySetId() {
       final String inputDoc =
           """
-          {
-            "_id": "update_doc_set_id",
-            "username": "update_user"
-          }
-          """;
+              {
+                "_id": "update_doc_set_id",
+                "username": "update_user"
+              }
+              """;
       insertDoc(inputDoc);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_set_id"},
-              "update" : {"$set" : {"_id": "new-id"}}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_set_id"},
+                  "update" : {"$set" : {"_id": "new-id"}}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -672,12 +672,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And finally verify also that nothing was changed:
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_set_id"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_set_id"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -693,23 +693,23 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdTrySetPropertyOnArray() {
       final String inputDoc =
           """
-          {
-            "_id": "update_doc_set_prop_on_array",
-            "subdoc": {
-              "array": [ 1, 2, true ]
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_set_prop_on_array",
+                "subdoc": {
+                  "array": [ 1, 2, true ]
+                }
+              }
+              """;
       insertDoc(inputDoc);
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_set_prop_on_array"},
-              "update" : {"$set" : {"subdoc.array.name": "Bob"}}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_set_prop_on_array"},
+                  "update" : {"$set" : {"subdoc.array.name": "Bob"}}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -729,12 +729,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And finally verify also that nothing was changed:
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_set_prop_on_array"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_set_prop_on_array"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -750,24 +750,24 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdTryPopNonArray() {
       final String inputDoc =
           """
-          {
-            "_id": "update_doc_pop_non_array",
-            "subdoc": {
-               "value": 15
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_pop_non_array",
+                "subdoc": {
+                   "value": 15
+                }
+              }
+              """;
       insertDoc(inputDoc);
 
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_pop_non_array"},
-              "update" : {"$pop" : {"subdoc.value": 1 }}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_pop_non_array"},
+                  "update" : {"$pop" : {"subdoc.value": 1 }}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -787,12 +787,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And finally verify also that nothing was changed:
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_pop_non_array"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_pop_non_array"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -808,23 +808,23 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdTryIncNonNumber() {
       final String inputDoc =
           """
-          {
-            "_id": "update_doc_inc_non_number",
-            "subdoc": {
-               "value": "text"
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_inc_non_number",
+                "subdoc": {
+                   "value": "text"
+                }
+              }
+              """;
       insertDoc(inputDoc);
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_inc_non_number"},
-              "update" : {"$inc" : {"subdoc.value": -99 }}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_inc_non_number"},
+                  "update" : {"$inc" : {"subdoc.value": -99 }}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -844,12 +844,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And finally verify also that nothing was changed:
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_inc_non_number"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_inc_non_number"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -869,18 +869,18 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdAndUnsetNested() {
       String document =
           """
-          {
-            "_id": "update_doc_unset_nested",
-            "array": [
-                137,
-                { "x" : 1, "y" : 2 }
-            ],
-            "subdoc" : {
-                "x" : 5,
-                "y" : -19
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_unset_nested",
+                "array": [
+                    137,
+                    { "x" : 1, "y" : 2 }
+                ],
+                "subdoc" : {
+                    "x" : 5,
+                    "y" : -19
+                }
+              }
+              """;
       insertDoc(document);
 
       // NOTE: we mix actual working removals and ones that won't; it is not an error
@@ -894,21 +894,21 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // * subdoc.y  -> remove subdoc property 'y'
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "update_doc_unset_nested"},
-              "update" : {
-                "$unset" : {
-                  "array.0": 1,
-                  "array.1.x" : 1,
-                  "subdoc.x.property" : 1,
-                  "subdoc.y" : 1,
-                  "nosuchfield.to.remove" : 1
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_unset_nested"},
+                  "update" : {
+                    "$unset" : {
+                      "array.0": 1,
+                      "array.1.x" : 1,
+                      "subdoc.x.property" : 1,
+                      "subdoc.y" : 1,
+                      "nosuchfield.to.remove" : 1
+                    }
+                  }
                 }
               }
-            }
-          }
-          """;
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -924,25 +924,25 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       String expected =
           """
-          {
-            "_id": "update_doc_unset_nested",
-            "array": [
-               null,
-               {"y" : 2}
-            ],
-            "subdoc": {
-               "x" : 5
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_unset_nested",
+                "array": [
+                   null,
+                   {"y" : 2}
+                ],
+                "subdoc": {
+                   "x" : 5
+                }
+              }
+              """;
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_unset_nested"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_unset_nested"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -958,37 +958,37 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdAndSetNested() {
       String document =
           """
-          {
-            "_id": "update_doc_set_nested",
-            "array": [
-               137,
-               {
-                 "y": 2,
-                 "subarray": []
-               }
-            ],
-            "subdoc" : {
-               "x": 5
-            }
-          }
-          """;
+              {
+                "_id": "update_doc_set_nested",
+                "array": [
+                   137,
+                   {
+                     "y": 2,
+                     "subarray": []
+                   }
+                ],
+                "subdoc" : {
+                   "x": 5
+                }
+              }
+              """;
       insertDoc(document);
 
       String json =
           """
-          {
-             "findOneAndUpdate": {
-               "filter" : {"_id" : "update_doc_set_nested"},
-               "update" : {"$set" : {
-                   "array.0": true,
-                   "array.1.subarray.1" : -25,
-                   "subdoc.x" : false,
-                   "subdoc.y" : 1
+              {
+                 "findOneAndUpdate": {
+                   "filter" : {"_id" : "update_doc_set_nested"},
+                   "update" : {"$set" : {
+                       "array.0": true,
+                       "array.1.subarray.1" : -25,
+                       "subdoc.x" : false,
+                       "subdoc.y" : 1
+                     }
+                   }
                  }
                }
-             }
-           }
-          """;
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1004,29 +1004,29 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       String expected =
           """
-          {
-            "_id": "update_doc_set_nested",
-            "array": [
-              true,
               {
-                "y": 2,
-                "subarray": [ null, -25 ]
+                "_id": "update_doc_set_nested",
+                "array": [
+                  true,
+                  {
+                    "y": 2,
+                    "subarray": [ null, -25 ]
+                  }
+                ],
+                "subdoc" : {
+                   "x": false,
+                   "y": 1
+                }
               }
-            ],
-            "subdoc" : {
-               "x": false,
-               "y": 1
-            }
-          }
-          """;
+              """;
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "update_doc_set_nested"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_set_nested"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1046,27 +1046,27 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     public void byIdUpsertAndAddOnInsert() {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "setOnInsertDoc1"},
-              "update" : {
-                  "$set" : {"active_user": true},
-                  "$setOnInsert" : {"new_user": true}
-              },
-              "options" : {"returnDocument" : "after", "upsert" : true}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "setOnInsertDoc1"},
+                  "update" : {
+                      "$set" : {"active_user": true},
+                      "$setOnInsert" : {"new_user": true}
+                  },
+                  "options" : {"returnDocument" : "after", "upsert" : true}
+                }
+              }
+              """;
 
       // On Insert (for Upsert) should apply both $set and $setOnInsert
       String expected =
           """
-          {
-            "_id":"setOnInsertDoc1",
-            "new_user":true,
-            "active_user":true
-          }
-          """;
+              {
+                "_id":"setOnInsertDoc1",
+                "new_user":true,
+                "active_user":true
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1087,12 +1087,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(
               """
-              {
-                "find": {
-                  "filter" : {"_id" : "setOnInsertDoc1"}
-                }
-              }
-              """)
+                      {
+                        "find": {
+                          "filter" : {"_id" : "setOnInsertDoc1"}
+                        }
+                      }
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
@@ -1102,25 +1102,25 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // However: with update for upsert, $setOnInsert not to be applied
       json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "setOnInsertDoc1"},
-              "update" : {
-                  "$set" : {"new_user": false},
-                  "$setOnInsert" : {"x": 5}
-              },
-              "options" : {"returnDocument" : "after", "upsert" : true}
-            }
-          }
-          """;
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "setOnInsertDoc1"},
+                  "update" : {
+                      "$set" : {"new_user": false},
+                      "$setOnInsert" : {"x": 5}
+                  },
+                  "options" : {"returnDocument" : "after", "upsert" : true}
+                }
+              }
+              """;
       expected =
           """
-          {
-            "_id":"setOnInsertDoc1",
-            "new_user":false,
-            "active_user":true
-          }
-          """;
+              {
+                "_id":"setOnInsertDoc1",
+                "new_user":false,
+                "active_user":true
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1138,12 +1138,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // And validate to make sure nothing was actually modified
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "setOnInsertDoc1"}
-            }
-          }
-          """;
+              {
+                "find": {
+                  "filter" : {"_id" : "setOnInsertDoc1"}
+                }
+              }
+              """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

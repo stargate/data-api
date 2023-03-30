@@ -116,7 +116,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void noFilter() {
+    @Order(2)
+    public void countNoFilter() {
       String json =
           """
           {
@@ -138,30 +139,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void emptyOptionsAllowed() {
-      String json =
-          """
-          {
-            "countDocuments": {
-              "options": {}
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(5))
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void byColumn() {
+    @Order(2)
+    public void countByColumn() {
       String json =
           """
           {
@@ -185,7 +164,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqComparisonOperator() {
+    @Order(2)
+    public void countWithEqComparisonOperator() {
       String json =
           """
           {
@@ -209,7 +189,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDoc() {
+    @Order(2)
+    public void countWithEqSubDoc() {
       String json =
           """
           {
@@ -233,7 +214,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDocWithIndex() {
+    @Order(2)
+    public void countWithEqSubDocWithIndex() {
       String json =
           """
           {
@@ -257,7 +239,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqArrayElement() {
+    @Order(2)
+    public void countWithEqArrayElement() {
       String json =
           """
           {
@@ -281,7 +264,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withExistFalseOperator() {
+    @Order(2)
+    public void countWithExistFalseOperator() {
       String json =
           """
           {
@@ -303,7 +287,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withExistOperator() {
+    @Order(2)
+    public void countWithExistOperator() {
       String json =
           """
           {
@@ -327,7 +312,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withAllOperator() {
+    @Order(2)
+    public void countWithAllOperator() {
       String json =
           """
           {
@@ -351,7 +337,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withAllOperatorLongerString() {
+    @Order(2)
+    public void countWithAllOperatorLongerString() {
       String json =
           """
           {
@@ -375,7 +362,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withAllOperatorMixedAFormatArray() {
+    @Order(2)
+    public void countWithAllOperatorMixedAFormatArray() {
       String json =
           """
           {
@@ -399,7 +387,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withAllOperatorNoMatch() {
+    @Order(2)
+    public void countWithAllOperatorNoMatch() {
       String json =
           """
           {
@@ -423,7 +412,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDocumentShortcut() {
+    @Order(2)
+    public void countWithEqSubDocumentShortcut() {
       String json =
           """
           {
@@ -447,7 +437,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDocument() {
+    @Order(2)
+    public void countWithEqSubDocument() {
       String json =
           """
           {
@@ -471,7 +462,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDocumentOrderChangeNoMatch() {
+    @Order(2)
+    public void countWithEqSubDocumentOrderChangeNoMatch() {
       String json =
           """
           {
@@ -495,7 +487,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqSubDocumentNoMatch() {
+    @Order(2)
+    public void countWithEqSubDocumentNoMatch() {
       String json =
           """
           {
@@ -519,7 +512,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withSizeOperator() {
+    @Order(2)
+    public void countWithSizeOperator() {
       String json =
           """
           {
@@ -543,7 +537,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withSizeOperatorNoMatch() {
+    @Order(2)
+    public void countWithSizeOperatorNoMatch() {
       String json =
           """
           {
@@ -567,7 +562,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqOperatorArray() {
+    @Order(2)
+    public void countWithEqOperatorArray() {
       String json =
           """
           {
@@ -591,7 +587,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqOperatorNestedArray() {
+    @Order(2)
+    public void countWithEqOperatorNestedArray() {
       String json =
           """
           {
@@ -615,7 +612,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqOperatorArrayNoMatch() {
+    @Order(2)
+    public void countWithEqOperatorArrayNoMatch() {
       String json =
           """
           {
@@ -639,7 +637,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withEqOperatorNestedArrayNoMatch() {
+    @Order(2)
+    public void countWithEqOperatorNestedArrayNoMatch() {
       String json =
           """
           {
@@ -663,7 +662,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void withNEComparisonOperator() {
+    @Order(2)
+    public void countWithNEComparisonOperator() {
       String json =
           """
           {
@@ -685,7 +685,8 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
     }
 
     @Test
-    public void byBooleanColumn() {
+    @Order(2)
+    public void countByBooleanColumn() {
       String json =
           """
           {

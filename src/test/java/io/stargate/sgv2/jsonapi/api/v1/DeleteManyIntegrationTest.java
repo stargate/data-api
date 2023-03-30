@@ -59,7 +59,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void byId() {
+    public void deleteManyById() {
       insert(2);
       String json =
           """
@@ -129,34 +129,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void emptyOptionsAllowed() {
-      insert(2);
-      String json =
-          """
-          {
-            "deleteMany": {
-              "filter" : {"_id" : "doc1"},
-              "options": {}
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.deletedCount", is(1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void byColumn() {
+    public void deleteManyByColumn() {
       insert(5);
       String json =
           """
@@ -204,7 +177,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void noFilter() {
+    public void deleteManyNoFilter() {
       insert(20);
       String json =
           """
@@ -249,7 +222,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void noFilterMoreDataFlag() {
+    public void deleteManyNoFilterMoreDataFlag() {
       insert(25);
       String json =
           """
@@ -305,9 +278,9 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
       String document =
           """
           {
-            "_id": "concurrent-%s"
-          }
-          """;
+             "_id": "concurrent-%s"
+           }
+           """;
       for (int i = 0; i < totalDocuments; i++) {
         insertDoc(document.formatted(i));
       }

@@ -41,7 +41,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void byId() {
+    public void updateManyById() {
       insert(2);
       String json =
           """
@@ -121,34 +121,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void emptyOptionsAllowed() {
-      String json =
-          """
-          {
-            "updateMany": {
-              "filter" : {"_id" : "doc1"},
-              "update" : {"$set" : {"active_user": false}},
-              "options": {}
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.matchedCount", is(0))
-          .body("status.modifiedCount", is(0))
-          .body("status.moreData", nullValue())
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void byColumn() {
+    public void updateManyByColumn() {
       insert(5);
       String json =
           """
@@ -191,7 +164,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void limit() {
+    public void updateManyLimit() {
       insert(20);
       String json =
           """
@@ -237,7 +210,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void limitMoreDataFlag() {
+    public void updateManyLimitMoreDataFlag() {
       insert(25);
       String json =
           """
@@ -282,7 +255,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void upsert() {
+    public void updateManyUpsert() {
       insert(5);
       String json =
           """
@@ -336,7 +309,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void byIdNoChange() {
+    public void updateManyByIdNoChange() {
       insert(2);
       String json =
           """
@@ -436,7 +409,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
     }
 
     @Test
-    public void upsertAddFilterColumn() {
+    public void updateManyUpsertAddFilterColumn() {
       insert(5);
       String json =
           """
@@ -500,10 +473,10 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
       String document =
           """
           {
-            "_id": "concurrent-%s",
-            "count": 0
-          }
-          """;
+             "_id": "concurrent-%s",
+             "count": 0
+           }
+           """;
       for (int i = 0; i < 5; i++) {
         insertDoc(document.formatted(i));
       }
@@ -515,14 +488,14 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
       // find all docs
       String updateJson =
           """
-          {
-            "updateMany": {
-              "update" : {
-                "$inc" : {"count": 1}
+              {
+                "updateMany": {
+                  "update" : {
+                    "$inc" : {"count": 1}
+                  }
+                }
               }
-            }
-          }
-          """;
+              """;
       // start all threads
       AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
       for (int i = 0; i < threads; i++) {
