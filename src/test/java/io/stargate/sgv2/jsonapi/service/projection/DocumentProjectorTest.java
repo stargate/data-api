@@ -393,5 +393,40 @@ public class DocumentProjectorTest {
                                   }
                                   """));
     }
+
+    @Test
+    public void testExcludeSubDoc() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : {
+                          "a": 5,
+                          "b": {
+                            "c": "v1",
+                            "d": false
+                          }
+                        }
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"sub_doc.b\": 0 }"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                              {
+                                "_id": "doc5",
+                                "username": "user5",
+                                "sub_doc" : {
+                                  "a": 5
+                                }
+                              }
+                              """));
+    }
   }
 }
