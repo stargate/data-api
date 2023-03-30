@@ -20,6 +20,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
+
+  // TODO refactor in https://github.com/stargate/jsonapi/issues/174
+  //  - test names
+  //  - order annotations
+  //  - format json
+  //  - errors field check
+  //  - empty options test
+
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class Find {
