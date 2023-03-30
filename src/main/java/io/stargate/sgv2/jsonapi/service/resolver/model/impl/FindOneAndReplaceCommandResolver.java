@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
@@ -16,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -46,8 +46,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   public Operation resolveCommand(CommandContext commandContext, FindOneAndReplaceCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
 
-    DocumentUpdater documentUpdater =
-        DocumentUpdater.construct((ObjectNode) command.replacementDocument());
+    DocumentUpdater documentUpdater = DocumentUpdater.construct(command.replacementDocument());
 
     // resolve options
     FindOneAndReplaceCommand.Options options = command.options();
@@ -71,25 +70,39 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   private FindOperation getFindOperation(
       CommandContext commandContext, FindOneAndReplaceCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
-    SortClause sortClause = command.sortClause();
-    if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
-      // sort clause
+    final SortClause sortClause = command.sortClause();
+    List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+    // If orderBy present
+    if (orderBy != null) {
+      return FindOperation.sorted(
+          commandContext,
+          filters,
+          // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
+          // read path, hence pass identity projector.
+          DocumentProjector.identityProjector(),
+          null,
+          1,
+          // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
+          documentConfig.defaultSortPageSize(),
+          ReadType.SORTED_DOCUMENT,
+          objectMapper,
+          orderBy,
+          0,
+          // For in memory sorting if no limit provided in the request will use
+          // documentConfig.defaultPageSize() as limit
+          documentConfig.maxSortReadLimit());
     } else {
-
+      return FindOperation.unsorted(
+          commandContext,
+          filters,
+          // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
+          // read path, hence pass identity projector.
+          DocumentProjector.identityProjector(),
+          null,
+          1,
+          1,
+          ReadType.DOCUMENT,
+          objectMapper);
     }
-    return new FindOperation(
-        commandContext,
-        filters,
-        // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
-        // read path, hence pass identity projector.
-        DocumentProjector.identityProjector(),
-        null,
-        1,
-        1,
-        ReadType.DOCUMENT,
-        objectMapper,
-        null,
-        0,
-        0);
   }
 }

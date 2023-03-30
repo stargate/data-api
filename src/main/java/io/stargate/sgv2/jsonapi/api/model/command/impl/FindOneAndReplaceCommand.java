@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
@@ -22,7 +23,7 @@ public record FindOneAndReplaceCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @NotNull @Valid @JsonProperty("replacement") JsonNode replacementDocument,
+    @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable {
 

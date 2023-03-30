@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -301,68 +300,6 @@ class ObjectMapperConfigurationTest {
                 assertThat(options.returnDocument()).isNotNull();
                 assertThat(options.returnDocument()).isEqualTo("after");
                 assertThat(options.upsert()).isTrue();
-              });
-    }
-  }
-
-  @Nested
-  class FindOneAndReplace {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-            {
-              "findOneAndReplace": {
-                  "filter" : {"username" : "update_user5"},
-                  "replacement" : { "new_col": {"sub_doc_col" : "new_val2"}},
-                  "options" : {}
-                }
-            }
-          """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindOneAndReplaceCommand.class,
-              findOneAndReplaceCommand -> {
-                FilterClause filterClause = findOneAndReplaceCommand.filterClause();
-                assertThat(filterClause).isNotNull();
-                final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
-                assertThat(replacementDocument).isNotNull();
-                final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
-                assertThat(options).isNotNull();
-              });
-    }
-
-    @Test
-    public void findOneAndUpdateWithOptions() throws Exception {
-      String json =
-          """
-            {
-              "findOneAndReplace": {
-                  "filter" : {"username" : "update_user5"},
-                  "sort" : ["location"],
-                  "replacement" : { "new_col": {"sub_doc_col" : "new_val2"}},
-                  "options" : {"returnDocument" : "after"}
-                }
-            }
-            """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindOneAndReplaceCommand.class,
-              findOneAndReplaceCommand -> {
-                FilterClause filterClause = findOneAndReplaceCommand.filterClause();
-                assertThat(filterClause).isNotNull();
-                final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
-                assertThat(replacementDocument).isNotNull();
-                final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
-                assertThat(options).isNotNull();
-                assertThat(options.returnDocument()).isNotNull();
-                assertThat(options.returnDocument()).isEqualTo("after");
               });
     }
   }
