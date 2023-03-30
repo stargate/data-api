@@ -73,6 +73,15 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
         }
         """;
 
+    private static final String DOC6_JSON =
+        """
+            {
+              "_id": "doc6",
+              "username": "user6",
+              "active_user" : true
+            }
+            """;
+
     @Test
     @Order(1)
     public void setUp() {
@@ -80,6 +89,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);
       insertDoc(DOC4_JSON);
+      insertDoc(DOC5_JSON);
       insertDoc(DOC5_JSON);
     }
 
@@ -130,6 +140,58 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .body("data.docs", hasSize(1))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void findOneNoFilterSortAscending() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "sort" : ["username"]
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(DOC4_JSON)); // missing value is the lowest precedence
+    }
+
+    @Test
+    public void findOneNoFilterSortDescending() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "sort" : ["-username"]
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(DOC5_JSON)); // missing value is the lowest precedence
     }
 
     @Test
@@ -280,7 +342,62 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data.count", is(1))
           .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void findOneWithExistsOperatorSort() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"active_user" : {"$exists" : true}},
+            "sort" : ["username]
+
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
           .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void findOneWithExistsOperatorSortDescending() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "filter" : {"active_user" : {"$exists" : true}},
+                  "sort" : ["-username]
+
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("data.docs[0]", jsonEquals(DOC6_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }

@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
@@ -21,6 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindOneAndUpdateCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @JsonProperty("projection") JsonNode projectionDefinition,
+    @Valid @JsonProperty("sort") SortClause sortClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable {

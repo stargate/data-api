@@ -116,7 +116,8 @@ public interface ReadOperation extends Operation {
       int numberOfOrderByColumn,
       int skip,
       int limit,
-      int errorLimit) {
+      int errorLimit,
+      DocumentProjector projection) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createBy()
@@ -216,9 +217,11 @@ public interface ReadOperation extends Operation {
               List<ReadDocument> responseDocuments =
                   subList.stream()
                       .map(
-                          readDoc ->
-                              ReadDocument.from(
-                                  readDoc.id(), readDoc.txnId(), readDoc.docJsonValue().get()))
+                          readDoc -> {
+                            JsonNode data = readDoc.docJsonValue().get();
+                            projection.applyProjection(data);
+                            return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                          })
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);
             });

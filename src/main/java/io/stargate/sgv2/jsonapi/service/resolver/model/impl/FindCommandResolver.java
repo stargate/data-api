@@ -43,43 +43,46 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     final FindCommand.Options options = command.options();
     int limit =
         options != null && options.limit() != null ? options.limit() : documentConfig.maxLimit();
-    int pageSize = documentConfig.defaultPageSize();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     final SortClause sortClause = command.sortClause();
-    List<FindOperation.OrderBy> orderBy = null;
-    int skip = 0, maxSortReadLimit = 0;
-    ReadType readType = ReadType.DOCUMENT;
     // If sort request
     if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
-      orderBy =
+      List<FindOperation.OrderBy> orderBy =
           command.sortClause().sortExpressions().stream()
               .map(
                   sortExpression ->
                       new FindOperation.OrderBy(sortExpression.path(), sortExpression.ascending()))
               .collect(Collectors.toList());
-      skip =
+      int skip =
           options != null && options.skip() != null && options.skip().intValue() > 0
               ? options.skip()
               : 0;
-      maxSortReadLimit = documentConfig.maxSortReadLimit();
-      // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
-      pageSize = documentConfig.defaultSortPageSize();
-      // For in memory sorting if no limit provided in the request will use
-      // documentConfig.defaultPageSize() as limit
-      limit = Math.min(limit, documentConfig.defaultPageSize());
-      readType = ReadType.SORTED_DOCUMENT;
+
+      return FindOperation.from(
+          commandContext,
+          filters,
+          command.buildProjector(),
+          pagingState,
+          // For in memory sorting if no limit provided in the request will use
+          // documentConfig.defaultPageSize() as limit
+          Math.min(limit, documentConfig.defaultPageSize()),
+          // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
+          documentConfig.defaultSortPageSize(),
+          ReadType.SORTED_DOCUMENT,
+          objectMapper,
+          orderBy,
+          skip,
+          documentConfig.maxSortReadLimit());
+    } else {
+      return FindOperation.from(
+          commandContext,
+          filters,
+          command.buildProjector(),
+          pagingState,
+          limit,
+          documentConfig.defaultPageSize(),
+          ReadType.DOCUMENT,
+          objectMapper);
     }
-    return new FindOperation(
-        commandContext,
-        filters,
-        command.buildProjector(),
-        pagingState,
-        limit,
-        pageSize,
-        readType,
-        objectMapper,
-        orderBy,
-        skip,
-        maxSortReadLimit);
   }
 }

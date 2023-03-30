@@ -44,6 +44,55 @@ public record FindOperation(
     int maxSortReadLimit)
     implements ReadOperation {
 
+  public static FindOperation from(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      String pagingState,
+      int limit,
+      int pageSize,
+      ReadType readType,
+      ObjectMapper objectMapper) {
+    return new FindOperation(
+        commandContext,
+        filters,
+        projection,
+        pagingState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0);
+  }
+
+  public static FindOperation from(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      String pagingState,
+      int limit,
+      int pageSize,
+      ReadType readType,
+      ObjectMapper objectMapper,
+      List<OrderBy> orderBy,
+      int skip,
+      int maxSortReadLimit) {
+    return new FindOperation(
+        commandContext,
+        filters,
+        projection,
+        pagingState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        orderBy,
+        skip,
+        maxSortReadLimit);
+  }
+
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     // get FindResponse
@@ -80,7 +129,8 @@ public record FindOperation(
             orderBy().size(),
             skip(),
             limit(),
-            maxSortReadLimit());
+            maxSortReadLimit(),
+            projection());
       }
       case DOCUMENT, KEY -> {
         QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
