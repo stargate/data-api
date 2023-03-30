@@ -19,20 +19,56 @@ jobs:
       COLLECTION_ID: 25879866-266032b1-1fe9-4abd-aee9-e6e4b335f921
       ENVIRONMENT_ID: 12949543-2e78cf27-bd8c-43f2-909f-70a2b87d65fe
     steps:
+      # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      # login to ECR to we can pull coord image from there
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
       - name: Install Postman CLI
         run: |
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
       - name: Login to Postman CLI
         run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-      - name: Start Backend
+
         # Run Stargate coordinator in developer mode to save time / resources
+        # Pull JSON API image from ECR corresponding to latest commit on main branch
+        # Pull Stargate coordinator image from ECR corresponding to version dependency in project pom
+        # Retag images to remove repository name since start script does not expect it
+      - name: Start Backend
         run: |
+          JSONTAG=$(git show -s --format="%H")
+          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG
+          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG stargateio/jsonapi:$JSONTAG
+          SGTAG="$(./mvnw -f . help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG
+          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG stargateio/coordinator-dse-68:$SGTAG
           cd docker-compose
-          ./start_dse_68_dev_mode.sh
+          ./start_dse_68_dev_mode.sh -j $JSONTAG -t $SGTAG
+
       - name: Run API test
         run: |
           postman collection run $COLLECTION_ID -e $ENVIRONMENT_ID --verbose
+
       - name: Stop Backend
         if: always()
         run: |
