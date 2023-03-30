@@ -15,7 +15,7 @@ public enum ErrorCode {
   DOCUMENT_UNPARSEABLE("Unable to parse the document"),
 
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
-      "The replace document and document resolved using filter has different _id"),
+      "The replace document and document resolved using filter have different _id"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
