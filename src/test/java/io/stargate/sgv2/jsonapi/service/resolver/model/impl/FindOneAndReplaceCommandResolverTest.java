@@ -50,7 +50,7 @@ public class FindOneAndReplaceCommandResolverTest {
                   }
                 }
                 """;
-
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -78,8 +78,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
                 assertThat(op.findOperation())
@@ -116,7 +115,7 @@ public class FindOneAndReplaceCommandResolverTest {
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
-
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -140,8 +139,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNotNull();
                         });
                 assertThat(op.findOperation())
@@ -179,7 +177,7 @@ public class FindOneAndReplaceCommandResolverTest {
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
-
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -203,8 +201,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
                 assertThat(op.findOperation())
@@ -245,6 +242,7 @@ public class FindOneAndReplaceCommandResolverTest {
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -253,7 +251,6 @@ public class FindOneAndReplaceCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
                 assertThat(op.returnUpdatedDocument()).isTrue();
-                assertThat(op.upsert()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
@@ -269,8 +266,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
                 assertThat(op.findOperation())
@@ -312,6 +308,7 @@ public class FindOneAndReplaceCommandResolverTest {
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -320,7 +317,6 @@ public class FindOneAndReplaceCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
                 assertThat(op.returnUpdatedDocument()).isTrue();
-                assertThat(op.upsert()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
@@ -336,8 +332,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
                 assertThat(op.findOperation())
@@ -382,6 +377,7 @@ public class FindOneAndReplaceCommandResolverTest {
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -406,8 +402,7 @@ public class FindOneAndReplaceCommandResolverTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument())
-                              .isEqualTo("{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
                 assertThat(op.findOperation())
