@@ -25,7 +25,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   class FindOneAndUpdate {
 
     @Test
-    public void findByIdAndSet() {
+    public void byIdAndSet() {
       String document =
           """
           {
@@ -88,7 +88,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdAndSetNotFound() {
+    public void byIdAndSetNotFound() {
       String json =
           """
           {
@@ -113,7 +113,33 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdReturnDocumentAfter() {
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "findOneAndUpdate": {
+              "filter" : {"_id" : "doc3"},
+              "update" : {"$set" : {"active_user": false}},
+              "options": {}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", is(empty()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byIdReturnDocumentAfter() {
       String document =
           """
           {
@@ -176,7 +202,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByColumnUpsert() {
+    public void byColumnUpsert() {
       String json =
           """
           {
@@ -223,24 +249,24 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdUpsert() {
+    public void byIdUpsert() {
       String json =
           """
-              {
-                "findOneAndUpdate": {
-                  "filter" : {"_id" : "afterDoc4"},
-                  "update" : {"$set" : {"active_user": false}},
-                  "options" : {"returnDocument" : "after", "upsert" : true}
-                }
-              }
-              """;
+          {
+            "findOneAndUpdate": {
+              "filter" : {"_id" : "afterDoc4"},
+              "update" : {"$set" : {"active_user": false}},
+              "options" : {"returnDocument" : "after", "upsert" : true}
+            }
+          }
+          """;
       String expected =
           """
-              {
-                "_id":"afterDoc4",
-                 "active_user":false
-              }
-              """;
+          {
+            "_id":"afterDoc4",
+             "active_user":false
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -259,12 +285,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       json =
           """
-              {
-                "find": {
-                  "filter" : {"_id" : "afterDoc4"}
-                }
-              }
-              """;
+          {
+            "find": {
+              "filter" : {"_id" : "afterDoc4"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -277,7 +303,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByColumnAndSet() {
+    public void byColumnAndSet() {
       String document =
           """
           {
@@ -312,12 +338,12 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       // assert state after update
       String expected =
           """
-              {
-                "_id":"doc4",
-                "username":"user4",
-                "new_col": "new_val"
-              }
-              """;
+          {
+            "_id":"doc4",
+            "username":"user4",
+            "new_col": "new_val"
+          }
+          """;
       json =
           """
           {
@@ -338,7 +364,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdAndUnset() {
+    public void byIdAndUnset() {
       String document =
           """
           {
@@ -402,7 +428,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   class FindOneAndUpdateFailures {
 
     @Test
-    public void findByIdTryUnsetId() {
+    public void byIdTryUnsetId() {
       final String inputDoc =
           """
           {
@@ -455,14 +481,14 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdTrySetId() {
+    public void byIdTrySetId() {
       final String inputDoc =
           """
           {
             "_id": "update_doc_set_id",
             "username": "update_user"
           }
-        """;
+          """;
       insertDoc(inputDoc);
 
       String json =
@@ -508,7 +534,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdTrySetPropertyOnArray() {
+    public void byIdTrySetPropertyOnArray() {
       final String inputDoc =
           """
           {
@@ -565,7 +591,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdTryPopNonArray() {
+    public void byIdTryPopNonArray() {
       final String inputDoc =
           """
           {
@@ -623,7 +649,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdTryIncNonNumber() {
+    public void byIdTryIncNonNumber() {
       final String inputDoc =
           """
           {
@@ -684,7 +710,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   class FindOneAndUpdateNested {
 
     @Test
-    public void findByIdAndUnsetNested() {
+    public void byIdAndUnsetNested() {
       String document =
           """
           {
@@ -773,7 +799,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
     }
 
     @Test
-    public void findByIdAndSetNested() {
+    public void byIdAndSetNested() {
       String document =
           """
           {
@@ -861,7 +887,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
   class FindOneAndUpdateWithSetOnInsert {
 
     @Test
-    public void findByIdUpsertAndAddOnInsert() {
+    public void byIdUpsertAndAddOnInsert() {
       String json =
           """
           {

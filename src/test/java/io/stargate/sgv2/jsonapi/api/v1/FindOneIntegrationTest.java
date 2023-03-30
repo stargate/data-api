@@ -85,7 +85,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
 
     @Test
     @Order(-1) // executed before insert
-    public void findOneNoFilterNoDocuments() {
+    public void noFilterNoDocuments() {
       String json =
           """
           {
@@ -109,7 +109,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneNoFilter() {
+    public void noFilter() {
       String json =
           """
           {
@@ -133,7 +133,32 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneById() {
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "findOne": {
+              "options": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byId() {
       String json =
           """
           {
@@ -159,7 +184,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneByIdNotFound() {
+    public void byIdNotFound() {
       String json =
           """
           {
@@ -184,7 +209,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneByColumn() {
+    public void byColumn() {
       String json =
           """
           {
@@ -210,7 +235,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneByColumnMissing() {
+    public void byColumnMissing() {
       String json =
           """
           {
@@ -235,7 +260,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneByColumnNotMatching() {
+    public void byColumnNotMatching() {
       String json =
           """
           {
@@ -260,7 +285,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithExistsOperator() {
+    public void withExistsOperator() {
       String json =
           """
           {
@@ -286,7 +311,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithExistsOperatorFalse() {
+    public void withExistsOperatorFalse() {
       String json =
           """
           {
@@ -311,7 +336,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithExistsNotMatching() {
+    public void withExistsNotMatching() {
       String json =
           """
           {
@@ -336,7 +361,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithAllOperatorMissing() {
+    public void withAllOperatorMissing() {
       String json =
           """
           {
@@ -361,7 +386,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithAllOperatorNotMatching() {
+    public void withAllOperatorNotMatching() {
       String json =
           """
           {
@@ -386,7 +411,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithAllOperatorNotArray() {
+    public void withAllOperatorNotArray() {
       String json =
           """
           {
@@ -413,7 +438,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithSizeOperator() {
+    public void withSizeOperator() {
       String json =
           """
           {
@@ -439,7 +464,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithSizeOperatorNotMatching() {
+    public void withSizeOperatorNotMatching() {
       String json =
           """
           {
@@ -464,7 +489,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
-    public void findOneWithSizeOperatorNotNumber() {
+    public void withSizeOperatorNotNumber() {
       String json =
           """
           {
