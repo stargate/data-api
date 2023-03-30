@@ -376,18 +376,19 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
               """;
 
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
-              .then()
-              .statusCode(200)
-              .body("data.count", is(1))
-              .body("data.docs", hasSize(1))
-              .body("data.docs[0]", jsonEquals(DOC1_JSON))
-              .body("status", is(nullValue()))
-              .body("errors", is(nullValue()));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          // post sorting by sort id , it uses document id by default.
+          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
 
     @Test
