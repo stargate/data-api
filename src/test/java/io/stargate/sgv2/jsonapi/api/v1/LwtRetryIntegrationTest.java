@@ -25,10 +25,10 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
     String document =
         """
         {
-           "_id": "doc1",
-           "count": 0
-         }
-         """;
+          "_id": "doc1",
+          "count": 0
+        }
+        """;
     insertDoc(document);
 
     String delete =

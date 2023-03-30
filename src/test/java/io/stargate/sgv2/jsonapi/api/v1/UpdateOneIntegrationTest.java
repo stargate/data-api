@@ -26,7 +26,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   @Nested
   class UpdateOneWithSet {
     @Test
-    public void findByIdAndSet() {
+    public void byIdAndSet() {
       String json =
           """
           {
@@ -99,7 +99,33 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByIdUpsert() {
+    public void emptyOptionsAllowed() {
+      String json =
+          """
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc1"},
+              "update" : {"$set" : {"active_user": false}},
+              "options": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byIdUpsert() {
       String json =
           """
           {
@@ -152,7 +178,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnUpsert() {
+    public void byColumnUpsert() {
       String json =
           """
           {
@@ -199,7 +225,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByIdAndColumnUpsert() {
+    public void byIdAndColumnUpsert() {
       String json =
           """
           {
@@ -254,7 +280,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndSet() {
+    public void byColumnAndSet() {
       String json =
           """
           {
@@ -346,7 +372,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndSetArray() {
+    public void byColumnAndSetArray() {
       String json =
           """
           {
@@ -416,7 +442,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndSetSubDoc() {
+    public void byColumnAndSetSubDoc() {
       String json =
           """
           {
@@ -491,7 +517,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   @Nested
   class UpdateOneWithUnset {
     @Test
-    public void findByIdAndUnset() {
+    public void byIdAndUnset() {
       String document =
           """
               {
@@ -555,7 +581,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithPop {
 
     @Test
-    public void findByColumnAndPop() {
+    public void byColumnAndPop() {
       String document =
           """
           {
@@ -639,7 +665,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithPush {
 
     @Test
-    public void findByColumnAndPush() {
+    public void byColumnAndPush() {
       String document =
           """
           {
@@ -699,7 +725,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndPushWithEach() {
+    public void byColumnAndPushWithEach() {
       String document =
           """
           {
@@ -764,7 +790,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndPushWithEachAndPosition() {
+    public void byColumnAndPushWithEachAndPosition() {
       String document =
           """
           {
@@ -834,7 +860,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithInc {
 
     @Test
-    public void findByColumnAndInc() {
+    public void byColumnAndInc() {
       String document =
           """
           {
@@ -878,7 +904,8 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // assert state after update
       String expectedDoc =
           """
-          { "_id":"update_doc_inc",
+          {
+            "_id":"update_doc_inc",
             "number": 119,
             "newProp": 0.25,
             "numbers": {
@@ -909,32 +936,35 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   @Nested
   class UpdateOneWithMul {
     @Test
-    public void findByColumnAndMultiply() {
-      insertDoc(
+    public void byColumnAndMultiply() {
+      String document =
           """
-                             {
-                                "_id": "update_doc_mul",
-                                "number": 12,
-                                "numbers": {
-                                   "values": [ 2 ]
-                                 }
-                              }
-                              """);
+          {
+            "_id": "update_doc_mul",
+            "number": 12,
+            "numbers": {
+              "values": [ 2 ]
+            }
+          }
+          """;
+      insertDoc(document);
+
       String updateJson =
           """
-                              {
-                                "updateOne": {
-                                  "filter" : {"_id" : "update_doc_mul"},
-                                  "update" : {"$mul" : {
-                                                  "number": -4,
-                                                  "newProp" : 0.25,
-                                                  "numbers.values.0" : 0.25,
-                                                  "numbers.values.1" : 5
-                                              }
-                                   }
-                                }
-                              }
-                              """;
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_mul"},
+              "update" : {
+                "$mul" : {
+                  "number": -4,
+                  "newProp" : 0.25,
+                  "numbers.values.0" : 0.25,
+                  "numbers.values.1" : 5
+                }
+               }
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -948,22 +978,23 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
 
       String expectedDoc =
           """
-                    { "_id":"update_doc_mul",
-                      "number": -48,
-                      "newProp": 0,
-                      "numbers": {
-                        "values" : [ 0.5, 0 ]
-                      }
-                    }
-                    """;
+          {
+            "_id":"update_doc_mul",
+            "number": -48,
+            "newProp": 0,
+            "numbers": {
+              "values" : [ 0.5, 0 ]
+            }
+          }
+          """;
       String findJson =
           """
-                  {
-                    "find": {
-                      "filter" : {"_id" : "update_doc_mul"}
-                    }
-                  }
-                  """;
+          {
+            "find": {
+              "filter" : {"_id" : "update_doc_mul"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -980,7 +1011,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithAddToSet {
 
     @Test
-    public void findByColumnAndAddToSet() {
+    public void byColumnAndAddToSet() {
       String document =
           """
           {
@@ -1041,7 +1072,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
 
     // Test for case where nothing is actually added
     @Test
-    public void findByColumnAndAddToSetNoChange() {
+    public void byColumnAndAddToSetNoChange() {
       final String originalDoc =
           """
           {
@@ -1090,7 +1121,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnAndAddToSetWithEach() {
+    public void byColumnAndAddToSetWithEach() {
       String document =
           """
           {
@@ -1159,18 +1190,18 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithMin {
 
     @Test
-    public void findByColumnAndMin() {
+    public void byColumnAndMin() {
       String document =
           """
           {
-             "_id": "update_doc_min",
-             "min": 1,
-             "max": 99,
-             "numbers": {
-                "values": [ 1 ]
-              }
-           }
-           """;
+            "_id": "update_doc_min",
+            "min": 1,
+            "max": 99,
+            "numbers": {
+              "values": [ 1 ]
+            }
+          }
+          """;
       insertDoc(document);
 
       String updateJson =
@@ -1232,29 +1263,29 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnMinNonNumeric() {
+    public void byColumnMinNonNumeric() {
       insertDoc(
           """
               {
-                 "_id": "update_doc_min_text",
-                 "start": "abc",
-                 "end": "xyz"
-               }
-               """);
+                "_id": "update_doc_min_text",
+                "start": "abc",
+                "end": "xyz"
+              }
+              """);
       String updateJson =
           """
-              {
-                "updateOne": {
-                  "filter" : {"_id" : "update_doc_min_text"},
-                  "update" : {
-                    "$min" : {
-                      "start": "fff",
-                      "end" : "fff"
-                    }
-                  }
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_min_text"},
+              "update" : {
+                "$min" : {
+                  "start": "fff",
+                  "end" : "fff"
                 }
               }
-              """;
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1270,20 +1301,20 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // assert state after update: only "end" changed
       String expectedDoc =
           """
-              {
-                 "_id": "update_doc_min_text",
-                 "start": "abc",
-                 "end": "fff"
-               }
-               """;
+          {
+            "_id": "update_doc_min_text",
+            "start": "abc",
+            "end": "fff"
+          }
+          """;
       String findJson =
           """
-              {
-                "find": {
-                  "filter" : {"_id" : "update_doc_min_text"}
-                }
-              }
-              """;
+          {
+            "find": {
+              "filter" : {"_id" : "update_doc_min_text"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1296,29 +1327,29 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnMinMixedTypes() {
+    public void byColumnMinMixedTypes() {
       insertDoc(
           """
               {
-                 "_id": "update_doc_min_mixed",
-                 "start": "abc",
-                 "end": "xyz"
-               }
-               """);
+                "_id": "update_doc_min_mixed",
+                "start": "abc",
+                "end": "xyz"
+              }
+              """);
       String updateJson =
           """
-              {
-                "updateOne": {
-                  "filter" : {"_id" : "update_doc_min_mixed"},
-                  "update" : {
-                    "$min" : {
-                      "start": 123,
-                      "end" : true
-                    }
-                  }
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_min_mixed"},
+              "update" : {
+                "$min" : {
+                  "start": 123,
+                  "end" : true
                 }
               }
-              """;
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1335,20 +1366,20 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // "end" (boolean after strings)
       String expectedDoc =
           """
-              {
-                 "_id": "update_doc_min_mixed",
-                 "start": 123,
-                 "end": "xyz"
-               }
-               """;
+          {
+            "_id": "update_doc_min_mixed",
+            "start": 123,
+            "end": "xyz"
+          }
+          """;
       String findJson =
           """
-              {
-                "find": {
-                  "filter" : {"_id" : "update_doc_min_mixed"}
-                }
-              }
-              """;
+          {
+            "find": {
+              "filter" : {"_id" : "update_doc_min_mixed"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1365,18 +1396,18 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithMax {
 
     @Test
-    public void findByColumnAndMax() {
+    public void byColumnAndMax() {
       String document =
           """
           {
-             "_id": "update_doc_max",
-             "min": 1,
-             "max": 99,
-             "numbers": {
-                "values": { "x":1, "y":2 }
-              }
-           }
-           """;
+            "_id": "update_doc_max",
+            "min": 1,
+            "max": 99,
+            "numbers": {
+              "values": { "x":1, "y":2 }
+            }
+          }
+          """;
       insertDoc(document);
 
       String updateJson =
@@ -1438,7 +1469,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnMaxNonNumeric() {
+    public void byColumnMaxNonNumeric() {
       insertDoc(
           """
               {
@@ -1449,18 +1480,18 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                """);
       String updateJson =
           """
-                  {
-                    "updateOne": {
-                      "filter" : {"_id" : "update_doc_max_text"},
-                      "update" : {
-                        "$max" : {
-                          "start": "fff",
-                          "end" : "fff"
-                        }
-                      }
-                    }
-                  }
-                  """;
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_max_text"},
+              "update" : {
+                "$max" : {
+                  "start": "fff",
+                  "end" : "fff"
+                }
+              }
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1476,20 +1507,20 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // assert state after update: only "start" changed
       String expectedDoc =
           """
-                  {
-                     "_id": "update_doc_max_text",
-                     "start": "fff",
-                     "end": "xyz"
-                   }
-                   """;
+          {
+            "_id": "update_doc_max_text",
+            "start": "fff",
+            "end": "xyz"
+          }
+          """;
       String findJson =
           """
-                  {
-                    "find": {
-                      "filter" : {"_id" : "update_doc_max_text"}
-                    }
-                  }
-                  """;
+          {
+            "find": {
+              "filter" : {"_id" : "update_doc_max_text"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1502,29 +1533,29 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
     }
 
     @Test
-    public void findByColumnMaxMixedTypes() {
+    public void byColumnMaxMixedTypes() {
       insertDoc(
           """
               {
-                 "_id": "update_doc_max_mixed",
-                 "start": "abc",
-                 "end": "xyz"
+                "_id": "update_doc_max_mixed",
+                "start": "abc",
+                "end": "xyz"
                }
                """);
       String updateJson =
           """
-                  {
-                    "updateOne": {
-                      "filter" : {"_id" : "update_doc_max_mixed"},
-                      "update" : {
-                        "$max" : {
-                          "start": 123,
-                          "end" : true
-                        }
-                      }
-                    }
-                  }
-                  """;
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_max_mixed"},
+              "update" : {
+                "$max" : {
+                  "start": 123,
+                  "end" : true
+                }
+              }
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1541,20 +1572,20 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // "start" (numbers before Strings)
       String expectedDoc =
           """
-                  {
-                     "_id": "update_doc_max_mixed",
-                     "start": "abc",
-                     "end": true
-                   }
-                   """;
+          {
+            "_id": "update_doc_max_mixed",
+            "start": "abc",
+            "end": true
+          }
+          """;
       String findJson =
           """
-                  {
-                    "find": {
-                      "filter" : {"_id" : "update_doc_max_mixed"}
-                    }
-                  }
-                  """;
+          {
+            "find": {
+              "filter" : {"_id" : "update_doc_max_mixed"}
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1571,36 +1602,36 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   class UpdateOneWithRename {
 
     @Test
-    public void findByColumnAndRename() {
+    public void byColumnAndRename() {
       String document =
           """
-                      {
-                         "_id": "update_doc_rename",
-                         "total": 1,
-                         "nested": {
-                            "x": true
-                          }
-                       }
-                       """;
+          {
+             "_id": "update_doc_rename",
+             "total": 1,
+             "nested": {
+                "x": true
+              }
+           }
+           """;
       insertDoc(document);
 
       // 4 things to try to rename (2 root, 2 nested) of which only 2 exist
       String updateJson =
           """
-                      {
-                        "updateOne": {
-                          "filter" : {"_id" : "update_doc_rename"},
-                          "update" : {
-                            "$rename" : {
-                              "total": "sum",
-                              "x" : "y",
-                              "nested.x" : "nested.x0",
-                              "nested.z" : "nested.z2"
-                            }
-                          }
-                        }
-                      }
-                      """;
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_rename"},
+              "update" : {
+                "$rename" : {
+                  "total": "sum",
+                  "x" : "y",
+                  "nested.x" : "nested.x0",
+                  "nested.z" : "nested.z2"
+                }
+              }
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1616,25 +1647,25 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // assert state after update
       String expectedDoc =
           """
-                      {
-                         "_id": "update_doc_rename",
-                         "sum": 1,
-                         "nested": {
-                            "x0": true
-                          }
-                       }
-                       """;
+          {
+            "_id": "update_doc_rename",
+            "sum": 1,
+            "nested": {
+              "x0": true
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(
               """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "update_doc_rename"}
-                        }
-                      }
-                      """)
+              {
+                "find": {
+                  "filter" : {"_id" : "update_doc_rename"}
+                }
+              }
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
@@ -1647,7 +1678,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
   @Nested
   class UpdateOneMultipleOperationTypes {
     @Test
-    public void findByColumnUseSetAndUnset() {
+    public void byColumnUseSetAndUnset() {
       insertDoc(
           """
                   {
@@ -1659,20 +1690,20 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                    """);
       String updateJson =
           """
-                      {
-                        "updateOne": {
-                          "filter" : {"_id" : "update_doc_mixed_set_unset"},
-                          "update" : {
-                            "$set" : {
-                              "nested.new": "b"
-                            },
-                            "$unset" : {
-                              "nested.old": 1
-                            }
-                          }
-                        }
-                      }
-                      """;
+          {
+            "updateOne": {
+              "filter" : {"_id" : "update_doc_mixed_set_unset"},
+              "update" : {
+                "$set" : {
+                  "nested.new": "b"
+                },
+                "$unset" : {
+                  "nested.old": 1
+                }
+              }
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1689,13 +1720,13 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       // "start" (numbers before Strings)
       String expectedDoc =
           """
-         {
-           "_id": "update_doc_mixed_set_unset",
-           "nested": {
+          {
+            "_id": "update_doc_mixed_set_unset",
+            "nested": {
               "new": "b"
-           }
-         }
-         """;
+            }
+          }
+          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1706,7 +1737,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                   "filter" : {"_id": "update_doc_mixed_set_unset"}
                 }
               }
-          """)
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
@@ -1723,10 +1754,10 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
       String document =
           """
           {
-             "_id": "concurrent",
-             "count": 0
-           }
-           """;
+            "_id": "concurrent",
+            "count": 0
+          }
+          """;
       insertDoc(document);
 
       // three threads ensures no retries exhausted
