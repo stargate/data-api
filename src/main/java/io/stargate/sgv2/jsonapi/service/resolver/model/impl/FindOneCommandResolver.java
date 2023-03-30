@@ -12,8 +12,8 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -40,15 +40,10 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
-    if (sortClause != null && !sortClause.sortExpressions().isEmpty()) {
-      List<FindOperation.OrderBy> orderBy =
-          command.sortClause().sortExpressions().stream()
-              .map(
-                  sortExpression ->
-                      new FindOperation.OrderBy(sortExpression.path(), sortExpression.ascending()))
-              .collect(Collectors.toList());
-
-      return FindOperation.from(
+    List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+    // If orderBy present
+    if (orderBy != null) {
+      return FindOperation.sorted(
           commandContext,
           filters,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
@@ -66,7 +61,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           // documentConfig.defaultPageSize() as limit
           documentConfig.maxSortReadLimit());
     } else {
-      return FindOperation.from(
+      return FindOperation.unsorted(
           commandContext,
           filters,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on

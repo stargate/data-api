@@ -44,7 +44,7 @@ public record FindOperation(
     int maxSortReadLimit)
     implements ReadOperation {
 
-  public static FindOperation from(
+  public static FindOperation unsorted(
       CommandContext commandContext,
       List<DBFilterBase> filters,
       DocumentProjector projection,
@@ -67,7 +67,7 @@ public record FindOperation(
         0);
   }
 
-  public static FindOperation from(
+  public static FindOperation sorted(
       CommandContext commandContext,
       List<DBFilterBase> filters,
       DocumentProjector projection,
