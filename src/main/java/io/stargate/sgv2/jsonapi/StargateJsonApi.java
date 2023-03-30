@@ -67,7 +67,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               {
                                 "findOne": {
                                     "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
-                                    "projection": {"_id":0, "location":1, "race":1, "tags":1},
+                                    "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
                                     "sort" : ["race.start_date"]
                                 }
                               }
@@ -330,10 +330,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "data": {
                           "docs": [
                             {
-                               "_id": "1",
                                "location": "London",
                                "race": {
-                                 "competitors": 100,
                                  "start_date": "2022-08-15"
                                },
                                "tags": [ "eu" ]
