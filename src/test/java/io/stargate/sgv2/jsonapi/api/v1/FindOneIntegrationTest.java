@@ -397,7 +397,8 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data.count", is(1))
           .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC6_JSON))
+          // post sorting by sort id , it uses document id by default.
+          .body("data.docs[0]", jsonEquals(DOC1_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
