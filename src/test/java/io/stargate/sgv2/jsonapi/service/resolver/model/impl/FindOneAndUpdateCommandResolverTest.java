@@ -21,6 +21,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import java.math.BigDecimal;
+import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,13 +44,13 @@ public class FindOneAndUpdateCommandResolverTest {
     public void idFilterCondition() throws Exception {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "id"},
-              "update" : {"$set" : {"location" : "New York"}}
-            }
-          }
-          """;
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "id"},
+                    "update" : {"$set" : {"location" : "New York"}}
+                  }
+                }
+                """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -96,17 +98,78 @@ public class FindOneAndUpdateCommandResolverTest {
     }
 
     @Test
+    public void filterConditionSort() throws Exception {
+      String json =
+          """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"status" : "active"},
+                    "sort" : ["user"],
+                    "update" : {"$set" : {"location" : "New York"}}
+                  }
+                }
+                """;
+
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              ReadAndUpdateOperation.class,
+              op -> {
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.returnDocumentInResponse()).isTrue();
+                assertThat(op.returnUpdatedDocument()).isFalse();
+                assertThat(op.upsert()).isFalse();
+                assertThat(op.shredder()).isEqualTo(shredder);
+                assertThat(op.updateLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        updater -> {
+                          UpdateClause updateClause =
+                              DocumentUpdaterUtils.updateClause(
+                                  UpdateOperator.SET,
+                                  objectMapper.createObjectNode().put("location", "New York"));
+
+                          assertThat(updater.updateOperations())
+                              .isEqualTo(updateClause.buildOperations());
+                        });
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(100);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.orderBy()).hasSize(1);
+                          assertThat(find.orderBy())
+                              .isEqualTo(List.of(new FindOperation.OrderBy("user", true)));
+                        });
+              });
+    }
+
+    @Test
     public void idFilterConditionWithOptions() throws Exception {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "id"},
-              "update" : {"$set" : {"location" : "New York"}},
-              "options" : {"returnDocument" : "after", "upsert": true }
-            }
-          }
-          """;
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "id"},
+                    "update" : {"$set" : {"location" : "New York"}},
+                    "options" : {"returnDocument" : "after", "upsert": true }
+                  }
+                }
+                """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -154,16 +217,86 @@ public class FindOneAndUpdateCommandResolverTest {
     }
 
     @Test
+    public void filterConditionWithOptionsSort() throws Exception {
+      String json =
+          """
+                        {
+                          "findOneAndUpdate": {
+                            "filter" : {"age" : 35},
+                            "sort": [
+                              "user.name",
+                              "-user.age"
+                            ],
+                            "update" : {"$set" : {"location" : "New York"}},
+                            "options" : {"returnDocument" : "after", "upsert": true }
+                          }
+                        }
+                        """;
+
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              ReadAndUpdateOperation.class,
+              op -> {
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.returnDocumentInResponse()).isTrue();
+                assertThat(op.returnUpdatedDocument()).isTrue();
+                assertThat(op.upsert()).isTrue();
+                assertThat(op.shredder()).isEqualTo(shredder);
+                assertThat(op.updateLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        updater -> {
+                          UpdateClause updateClause =
+                              DocumentUpdaterUtils.updateClause(
+                                  UpdateOperator.SET,
+                                  objectMapper.createObjectNode().put("location", "New York"));
+
+                          assertThat(updater.updateOperations())
+                              .isEqualTo(updateClause.buildOperations());
+                        });
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.NumberFilter filter =
+                              new DBFilterBase.NumberFilter(
+                                  "age",
+                                  DBFilterBase.MapFilterBase.Operator.EQ,
+                                  new BigDecimal(35));
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pageSize()).isEqualTo(100);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.orderBy()).hasSize(2);
+                          assertThat(find.orderBy())
+                              .isEqualTo(
+                                  List.of(
+                                      new FindOperation.OrderBy("user.name", true),
+                                      new FindOperation.OrderBy("user.age", false)));
+                        });
+              });
+    }
+
+    @Test
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"col" : "val"},
-              "update" : {"$set" : {"location" : "New York"}}
-            }
-          }
-          """;
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"col" : "val"},
+                    "update" : {"$set" : {"location" : "New York"}}
+                  }
+                }
+                """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);

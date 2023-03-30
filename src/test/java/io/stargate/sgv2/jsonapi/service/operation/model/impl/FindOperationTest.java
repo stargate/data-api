@@ -53,18 +53,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       String doc2 =
           """
-          {
-            "_id": "doc2",
-            "username": "user2"
-          }
-          """;
+              {
+                "_id": "doc2",
+                "username": "user2"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -138,11 +138,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -278,11 +278,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -353,12 +353,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -430,12 +430,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("registration_active"))
               .withPageSize(1)
@@ -503,13 +503,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true,
-            "tags": ["tag1", "tag2"]
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true,
+                "tags": ["tag1", "tag2"]
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags Stag1"), Values.of("tags Stag2"))
               .withPageSize(1)
@@ -580,13 +580,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true,
-            "tags" : ["tag1","tag2"]
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true,
+                "tags" : ["tag1","tag2"]
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(2))
               .withPageSize(1)
@@ -654,13 +654,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true,
-            "tags" : ["tag1","tag2"]
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true,
+                "tags" : ["tag1","tag2"]
+              }
+              """;
       final String hash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
@@ -730,13 +730,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1",
-            "registration_active" : true,
-            "sub_doc" : {"col":"val"}
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1",
+                "registration_active" : true,
+                "sub_doc" : {"col":"val"}
+              }
+              """;
       final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("sub_doc"), Values.of(hash))
@@ -867,51 +867,51 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findAllSort() throws Exception {
       String collectionReadCql =
-          "SELECT key, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
 
       String doc1 =
           """
-        {
-          "_id": "doc1",
-          "username": "user1"
-        }
-        """;
+            {
+              "_id": "doc1",
+              "username": "user1"
+            }
+            """;
       String doc2 =
           """
-        {
-          "_id": "doc2",
-          "username": "user2"
-        }
-        """;
+            {
+              "_id": "doc2",
+              "username": "user2"
+            }
+            """;
       String doc3 =
           """
-        {
-          "_id": "doc3",
-          "username": "user3"
-        }
-        """;
+            {
+              "_id": "doc3",
+              "username": "user3"
+            }
+            """;
       String doc4 =
           """
-        {
-          "_id": "doc4",
-          "username": "user4"
-        }
-        """;
+            {
+              "_id": "doc4",
+              "username": "user4"
+            }
+            """;
       String doc5 =
           """
-        {
-          "_id": "doc5",
-          "username": "user5"
-        }
-        """;
+            {
+              "_id": "doc5",
+              "username": "user5"
+            }
+            """;
       String doc6 =
           """
-        {
-          "_id": "doc6",
-          "username": "user6"
-        }
-        """;
+            {
+              "_id": "doc6",
+              "username": "user6"
+            }
+            """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -928,6 +928,22 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("doc_json")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_text_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_dbl_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_bool_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -935,6 +951,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc6"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc6),
                           Values.of("user6"),
                           Values.NULL,
@@ -944,6 +961,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc4"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc4),
                           Values.of("user4"),
                           Values.NULL,
@@ -953,6 +971,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc2),
                           Values.of("user2"),
                           Values.NULL,
@@ -962,6 +981,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc1),
                           Values.of("user1"),
                           Values.NULL,
@@ -971,6 +991,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc3"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc3),
                           Values.of("user3"),
                           Values.NULL,
@@ -980,6 +1001,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc5"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc5),
                           Values.of("user5"),
                           Values.NULL,
@@ -1029,51 +1051,51 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findAllSortWithSkip() throws Exception {
       String collectionReadCql =
-          "SELECT key, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
 
       String doc1 =
           """
-        {
-          "_id": "doc1",
-          "username": "user1"
-        }
-        """;
+            {
+              "_id": "doc1",
+              "username": "user1"
+            }
+            """;
       String doc2 =
           """
-        {
-          "_id": "doc2",
-          "username": "user2"
-        }
-        """;
+            {
+              "_id": "doc2",
+              "username": "user2"
+            }
+            """;
       String doc3 =
           """
-        {
-          "_id": "doc3",
-          "username": "user3"
-        }
-        """;
+            {
+              "_id": "doc3",
+              "username": "user3"
+            }
+            """;
       String doc4 =
           """
-        {
-          "_id": "doc4",
-          "username": "user4"
-        }
-        """;
+            {
+              "_id": "doc4",
+              "username": "user4"
+            }
+            """;
       String doc5 =
           """
-        {
-          "_id": "doc5",
-          "username": "user5"
-        }
-        """;
+            {
+              "_id": "doc5",
+              "username": "user5"
+            }
+            """;
       String doc6 =
           """
-        {
-          "_id": "doc6",
-          "username": "user6"
-        }
-        """;
+            {
+              "_id": "doc6",
+              "username": "user6"
+            }
+            """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -1090,6 +1112,22 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("doc_json")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_text_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_dbl_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_bool_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -1097,6 +1135,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc6"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc6),
                           Values.of("user6"),
                           Values.NULL,
@@ -1106,6 +1145,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc4"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc4),
                           Values.of("user4"),
                           Values.NULL,
@@ -1115,6 +1155,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc2),
                           Values.of("user2"),
                           Values.NULL,
@@ -1124,6 +1165,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc1),
                           Values.of("user1"),
                           Values.NULL,
@@ -1133,6 +1175,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc3"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc3),
                           Values.of("user3"),
                           Values.NULL,
@@ -1142,6 +1185,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc5"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc5),
                           Values.of("user5"),
                           Values.NULL,
@@ -1183,51 +1227,51 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findAllSortDescending() throws Exception {
       String collectionReadCql =
-          "SELECT key, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
 
       String doc1 =
           """
-        {
-          "_id": "doc1",
-          "username": "user1"
-        }
-        """;
+            {
+              "_id": "doc1",
+              "username": "user1"
+            }
+            """;
       String doc2 =
           """
-        {
-          "_id": "doc2",
-          "username": "user2"
-        }
-        """;
+            {
+              "_id": "doc2",
+              "username": "user2"
+            }
+            """;
       String doc3 =
           """
-        {
-          "_id": "doc3",
-          "username": "user3"
-        }
-        """;
+            {
+              "_id": "doc3",
+              "username": "user3"
+            }
+            """;
       String doc4 =
           """
-        {
-          "_id": "doc4",
-          "username": "user4"
-        }
-        """;
+            {
+              "_id": "doc4",
+              "username": "user4"
+            }
+            """;
       String doc5 =
           """
-        {
-          "_id": "doc5",
-          "username": "user5"
-        }
-        """;
+            {
+              "_id": "doc5",
+              "username": "user5"
+            }
+            """;
       String doc6 =
           """
-        {
-          "_id": "doc6",
-          "username": "user6"
-        }
-        """;
+            {
+              "_id": "doc6",
+              "username": "user6"
+            }
+            """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -1244,6 +1288,26 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("doc_json")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_text_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_dbl_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_bool_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -1251,6 +1315,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc6"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc6),
                           Values.of("user6"),
                           Values.NULL,
@@ -1260,6 +1325,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc4"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc4),
                           Values.of("user4"),
                           Values.NULL,
@@ -1269,6 +1335,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc2),
                           Values.of("user2"),
                           Values.NULL,
@@ -1278,6 +1345,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc1),
                           Values.of("user1"),
                           Values.NULL,
@@ -1287,6 +1355,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc3"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc3),
                           Values.of("user3"),
                           Values.NULL,
@@ -1296,6 +1365,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(
                               CustomValueSerializers.getDocumentIdValue(
                                   DocumentId.fromString("doc5"))),
+                          Values.of(UUID.randomUUID()),
                           Values.of(doc5),
                           Values.of("user5"),
                           Values.NULL,
@@ -1354,11 +1424,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -1429,11 +1499,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -1504,11 +1574,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -1577,11 +1647,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
