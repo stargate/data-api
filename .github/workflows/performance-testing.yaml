@@ -108,6 +108,13 @@ jobs:
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
           ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }} connections=${{ inputs.connections }}
 
+      # Simple approach measuring size of data directory
+      - name: Collect Data Size Stats
+        run: |
+          cd docker-compose
+          DATA_DIR=$(docker-compose exec -it coordinator find /tmp -name "data")
+          docker-compose exec -it coordinator du -sh "$DATA_DIR"
+          
       - name: Save Results
         uses: actions/upload-artifact@v3
         if: ${{ always() }}
