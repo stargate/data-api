@@ -140,27 +140,15 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
     @Test
     public void byIdReturnDocumentAfter() {
-      String document =
+      insertDoc(
           """
           {
             "_id": "afterDoc3",
             "username": "afterUser3",
             "active_user" : true
           }
-          """;
-      insertDoc(document);
-
-      String json =
-          """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "afterDoc3"},
-              "update" : {"$set" : {"active_user": false}},
-              "options" : {"returnDocument" : "after"}
-            }
-          }
-          """;
-      String expected =
+          """);
+      final String expected =
           """
           {
             "_id":"afterDoc3",
@@ -171,7 +159,16 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "afterDoc3"},
+                    "update" : {"$set" : {"active_user": false}},
+                    "options" : {"returnDocument" : "after"}
+                  }
+                }
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
@@ -182,23 +179,88 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .body("errors", is(nullValue()));
 
       // assert state after update
-      json =
-          """
-          {
-            "find": {
-              "filter" : {"_id" : "afterDoc3"}
-            }
-          }
-          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "afterDoc3"}
+                  }
+                }
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void byIdReturnDocumentBefore() {
+      final String docBefore =
+          """
+          {
+            "_id": "beforeDoc3",
+            "username": "beforeUser3",
+            "active_user": true
+          }
+          """;
+      insertDoc(docBefore);
+      final String docAfter =
+          """
+              {
+                "_id":"beforeDoc3",
+                "username":"beforeUser3",
+                "active_user":false,
+                "hits": 1
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "beforeDoc3"},
+                    "update" : {
+                      "$set" : {"active_user": false},
+                      "$inc" : {"hits": 1}
+                    },
+                    "options" : {"returnDocument" : "before"}
+                  }
+                }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(docBefore))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "beforeDoc3"}
+                  }
+                }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(docAfter));
     }
 
     @Test
@@ -1148,6 +1210,161 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class FindOneAndUpdateWithProjection {
+    @Test
+    public void projectionAfterUpdate() {
+      String document =
+          """
+              {
+                "_id": "update_doc_projection_after",
+                "x": 1,
+                "y": 2,
+                "z": 3,
+                "subdoc": {
+                    "a": 4,
+                    "b": 5,
+                    "c": 6
+                }
+              }
+              """;
+      insertDoc(document);
+
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_projection_after"},
+                  "options" : {"returnDocument" : "after"},
+                  "projection" : { "x":0, "subdoc.c":0 },
+                  "update" : {
+                    "$unset" : {
+                      "subdoc.a": 1,
+                      "z": 1
+                    }
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update, with given projection (which further drops values)
+      String expected =
+          """
+              {
+                "_id": "update_doc_projection_after",
+                "y": 2,
+                "subdoc": {
+                  "b": 5
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_projection_after"}
+                    }
+                  }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void projectionBeforeUpdate() {
+      String document =
+          """
+                  {
+                    "_id": "update_doc_projection_before",
+                    "a": 1,
+                    "b": 2,
+                    "c": 3,
+                    "subdoc": {
+                        "x": 4,
+                        "y": 5,
+                        "z": 6
+                    }
+                  }
+                  """;
+      insertDoc(document);
+
+      String json =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "update_doc_projection_before"},
+                      "options" : {"returnDocument" : "before"},
+                      "projection" : { "a":0, "subdoc.z":0 },
+                      "update" : {
+                        "$unset" : {
+                          "subdoc.x": 1,
+                          "c": 1
+                        }
+                      }
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state before update, with given projection (so unsets not visible)
+      String expected =
+          """
+                  {
+                    "_id": "update_doc_projection_before",
+                    "b": 2,
+                    "c": 3,
+                    "subdoc": {
+                      "x": 4,
+                      "y": 5
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "update_doc_projection_before"}
+                            }
+                          }
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
