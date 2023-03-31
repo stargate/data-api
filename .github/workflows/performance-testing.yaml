@@ -119,7 +119,8 @@ jobs:
         run: |
           cd docker-compose
           DATA_DIR=$(docker-compose exec -it coordinator find /tmp -name "data")
-          docker-compose exec -it coordinator du -sh "$DATA_DIR/${{ matrix.keyspace }}"
+          DATA_SIZE=$(docker-compose exec -it coordinator du -sh "$DATA_DIR/${{ matrix.keyspace }}")
+          echo $DATA_SIZE
 
       - name: Save Results
         uses: actions/upload-artifact@v3
