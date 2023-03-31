@@ -49,6 +49,12 @@ jobs:
             docker-flags: '-n'
             docker-image: 'jsonapi-native'
 
+          - test: http-jsonapi-crud-basic
+            keyspace: 'jsonapi_crud_basic'
+
+          - test: http-jsonapi-keyvalue
+            keyspace: 'jsonapi-keyvalue'
+
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
@@ -113,8 +119,8 @@ jobs:
         run: |
           cd docker-compose
           DATA_DIR=$(docker-compose exec -it coordinator find /tmp -name "data")
-          docker-compose exec -it coordinator du -sh "$DATA_DIR"
-          
+          docker-compose exec -it coordinator du -sh "$DATA_DIR/${{ matrix.keyspace }}"
+
       - name: Save Results
         uses: actions/upload-artifact@v3
         if: ${{ always() }}
