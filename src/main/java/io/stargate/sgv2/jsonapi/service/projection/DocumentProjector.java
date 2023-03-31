@@ -50,9 +50,14 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document) {
-    if (rootLayer != null) { // null -> identity projection (no-op)
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_PROJECTION_PARAM, "Non-identity Projections not yet supported");
+    if (rootLayer == null) { // null -> identity projection (no-op)
+      return;
+    }
+
+    if (inclusion) {
+      rootLayer.applyInclusions(document);
+    } else {
+      rootLayer.applyExclusions(document);
     }
   }
 
@@ -91,7 +96,7 @@ public class DocumentProjector {
 
     public DocumentProjector buildProjector() {
       if (isIdentityProjection()) {
-        return DocumentProjector.identityProjector();
+        return identityProjector();
       }
 
       // One more thing: do we need to add document id?

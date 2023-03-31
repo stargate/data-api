@@ -67,6 +67,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               {
                                 "findOne": {
                                     "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                                    "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
                                     "sort" : ["race.start_date"]
                                 }
                               }
@@ -90,6 +91,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "find": {
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                             "projection": {"tags":0},
                              "sort" : ["location"],
                              "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
                         }
@@ -108,6 +110,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}
                             },
+                            "projection": {"count": 1,"location": 1,"race": 1},
                             "options" : {
                                "returnDocument" : "before",
                                "upsert" : true
@@ -346,10 +349,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "data": {
                           "docs": [
                             {
-                               "_id": "1",
                                "location": "London",
                                "race": {
-                                 "competitors": 100,
                                  "start_date": "2022-08-15"
                                },
                                "tags": [ "eu" ]
