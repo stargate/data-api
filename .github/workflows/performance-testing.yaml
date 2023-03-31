@@ -16,6 +16,9 @@ on:
         required: true
         type: string
         default: '20'
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 4 * * *'
 
 # global env vars, available in all jobs and steps
 env:
