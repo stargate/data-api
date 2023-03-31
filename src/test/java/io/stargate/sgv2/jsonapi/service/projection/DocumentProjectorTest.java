@@ -265,7 +265,7 @@ public class DocumentProjectorTest {
   @Nested
   class ProjectorApplyExclusions {
     @Test
-    public void testExcludeWithIdIncluded() throws Exception {
+    public void excludeWithIdIncluded() throws Exception {
       final JsonNode doc =
           objectMapper.readTree(
               """
@@ -315,7 +315,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testExcludeWithIdExcluded() throws Exception {
+    public void excludeWithIdExcluded() throws Exception {
       final JsonNode doc =
           objectMapper.readTree(
               """
@@ -361,7 +361,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testSimpleExcludeInArray() throws Exception {
+    public void excludeInArray() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -395,7 +395,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testExcludeSubDoc() throws Exception {
+    public void excludeInSubDoc() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -427,6 +427,26 @@ public class DocumentProjectorTest {
                                 }
                               }
                               """));
+    }
+
+    // "Empty" Projection is not really inclusion or exclusion, but technically
+    // let's consider it exclusion for sake of consistency (empty list to exclude
+    // is same as no Projection applied; empty inclusion would produce no output)
+    @Test
+    public void emptyProjectionAsExclude() throws Exception {
+      final String docJson =
+          """
+                      {
+                        "_id": "doc5",
+                        "value": 4
+                      }
+                      """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{}"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
     }
   }
 }
