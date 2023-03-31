@@ -1238,7 +1238,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
               """;
       insertDoc(document);
 
-      String json =
+      String updateQuery =
           """
               {
                 "findOneAndUpdate": {
@@ -1254,29 +1254,44 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
                 }
               }
               """;
+      // assert that returned document shows doc AFTER update WITH given projection
+      String expectedFiltered =
+          """
+                  {
+                    "_id": "update_doc_projection_after",
+                    "y": 2,
+                    "subdoc": {
+                      "b": 5
+                    }
+                  }
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(updateQuery)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expectedFiltered));
 
-      // assert state after update, with given projection (which further drops values)
-      String expected =
+      // But also that update itself worked ($unset "z" and "subdoc.a")
+      String expectedUpdated =
           """
               {
                 "_id": "update_doc_projection_after",
+                "x": 1,
                 "y": 2,
                 "subdoc": {
-                  "b": 5
+                    "b": 5,
+                    "c": 6
                 }
               }
-              """;
+                  """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1292,7 +1307,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expectedUpdated));
     }
 
     @Test
@@ -1313,7 +1328,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
                   """;
       insertDoc(document);
 
-      String json =
+      String updateQuery =
           """
                   {
                     "findOneAndUpdate": {
@@ -1329,31 +1344,45 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
                     }
                   }
                   """;
+      // assert state before update, with given projection (so unsets not visible)
+      String expectedFiltered =
+          """
+                      {
+                        "_id": "update_doc_projection_before",
+                        "b": 2,
+                        "c": 3,
+                        "subdoc": {
+                          "x": 4,
+                          "y": 5
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(updateQuery)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expectedFiltered));
 
-      // assert state before update, with given projection (so unsets not visible)
-      String expected =
+      // And with updates $unset of c and subdoc.x, but no Projection
+      String expectedUpdated =
           """
-                  {
-                    "_id": "update_doc_projection_before",
-                    "b": 2,
-                    "c": 3,
-                    "subdoc": {
-                      "x": 4,
-                      "y": 5
-                    }
-                  }
-                  """;
+                      {
+                        "_id": "update_doc_projection_before",
+                        "a": 1,
+                        "b": 2,
+                        "subdoc": {
+                            "y": 5,
+                            "z": 6
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1369,7 +1398,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expectedUpdated));
     }
   }
 
