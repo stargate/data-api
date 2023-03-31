@@ -8,7 +8,7 @@ library such as [Mongoose](https://github.com/Automattic/mongoose).
 - [Conventions](#conventions)
 - [Request and Response Messages](#request-and-response-messages)
 - [Namespace](#namespace)
-- [Collection](#collection)
+- [Collections](#collections)
 - [Documents](#documents)
 - [Commands](#commands)
 - [Command Considerations](#command-considerations)
