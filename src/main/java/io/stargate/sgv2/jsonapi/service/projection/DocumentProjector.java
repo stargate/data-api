@@ -14,8 +14,11 @@ import java.util.Objects;
  * various {@code find} commands.
  */
 public class DocumentProjector {
-  /** Pseudo-projector that makes no modifications to documents */
-  private static final DocumentProjector IDENTITY_PROJECTOR = new DocumentProjector(null, true);
+  /**
+   * No-op projector that does not modify documents. Considered "exclusion" projector since "no
+   * exclusions" is conceptually what happens ("no inclusions" would drop all content)
+   */
+  private static final DocumentProjector IDENTITY_PROJECTOR = new DocumentProjector(null, false);
 
   private final ProjectionLayer rootLayer;
 
