@@ -169,8 +169,9 @@ public record DeleteOperation(
    * @param queryExecutor
    * @param query
    * @param doc
-   * @return Uni<Boolean> `true` if deleted successfully, else `false` if data changed and no longer
-   *     match the conditions and throws JsonApiException if LWT failure.
+   * @return Uni<Tuple2<Boolean, ReadDocument>> where boolean `true` if deleted successfully, else
+   *     `false` if data changed and no longer match the conditions and throws JsonApiException if
+   *     LWT failure. ReadDocument is the document that was deleted.
    */
   private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc)
