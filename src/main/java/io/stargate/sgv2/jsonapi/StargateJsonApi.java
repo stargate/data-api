@@ -126,7 +126,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         {
                           "findOneAndDelete": {
                               "filter": {"location": "London"},
-                              "sort" : ["race.start_date"]
+                              "sort" : ["race.start_date"],
+                              "projection" : {"location": 1}
                           }
                         }
                         """),
@@ -145,7 +146,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             },
                             "options" : {
                                "returnDocument" : "before"
-                            }
+                            },
+                            "projection" : {"location": 1}
                         }
                       }
                       """),
