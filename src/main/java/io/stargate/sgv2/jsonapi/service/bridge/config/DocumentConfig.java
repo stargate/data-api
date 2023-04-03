@@ -19,6 +19,8 @@ package io.stargate.sgv2.jsonapi.service.bridge.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.config.LwtConfig;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Positive;
 
@@ -77,14 +79,5 @@ public interface DocumentConfig {
   @WithDefault("20")
   int maxDocumentUpdateCount();
 
-  /** {@inheritDoc} */
-  LwtConfig lwt();
 
-  interface LwtConfig {
-    /** @return Defines the maximum retry for lwt failure <code>3</code>. */
-    @Max(5)
-    @Positive
-    @WithDefault("3")
-    int retries();
-  }
 }

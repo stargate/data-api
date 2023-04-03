@@ -24,6 +24,13 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 | `stargate.jsonapi.document.limits.max-string-length`     | `int` | `16000`     | The maximum length of a single string value in a document.                                                  |
 | `stargate.jsonapi.document.limits.max-array-length`      | `int` | `100`       | The maximum length of a single array in a document.                                                         |
 
+## Light-weight transactions configuration
+*Configuration for the light-weight transactions, defined by [LwtConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/LwtConfig.java).*
+
+| Property                       | Type  | Default | Description                                                 |
+|--------------------------------|-------|---------|-------------------------------------------------------------|
+| `stargate.jsonapi.lwt.retries` | `int` | `3`     | The amount of client side retries in case of a LWT failure. |
+
 ## Document configuration
 *Configuration for documents and their storage properties, defined by [DocumentConfig.java](src/main/java/io/stargate/sgv2/jsonapi/service/bridge/config/DocumentConfig.java).*
 
