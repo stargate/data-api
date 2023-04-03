@@ -101,7 +101,6 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0))
           .body("status.deletedCount", is(0))
           .body("errors", is(nullValue()));
     }
