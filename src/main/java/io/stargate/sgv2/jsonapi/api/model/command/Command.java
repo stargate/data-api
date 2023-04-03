@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.quarkus.runtime.annotations.RegisterForReflection;
@@ -18,7 +17,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import java.util.Map;
 
 /**
  * POJO object (data no behavior) that represents a syntactically and grammatically valid command as
@@ -56,13 +54,4 @@ import java.util.Map;
   @JsonSubTypes.Type(value = UpdateManyCommand.class),
   @JsonSubTypes.Type(value = UpdateOneCommand.class),
 })
-public interface Command {
-  /**
-   * Default method if (and only if) there is no "options" property. Used for allowing all Commands
-   * to take in empty Options without having to add Record field if none accepted.
-   */
-  @JsonProperty("options")
-  default void options(Map<String, Object> optionsIgnored) {
-    // Should we fail for non-empty options?
-  }
-}
+public interface Command {}
