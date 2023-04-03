@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -22,14 +22,14 @@ import javax.inject.Inject;
 public class FindCommandResolver extends FilterableResolver<FindCommand>
     implements CommandResolver<FindCommand> {
 
-  private final DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
 
   @Inject
-  public FindCommandResolver(DocumentConfig documentConfig, ObjectMapper objectMapper) {
+  public FindCommandResolver(OperationsConfig operationsConfig, ObjectMapper objectMapper) {
     super();
     this.objectMapper = objectMapper;
-    this.documentConfig = documentConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Override
@@ -42,7 +42,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     List<DBFilterBase> filters = resolve(commandContext, command);
     final FindCommand.Options options = command.options();
     int limit =
-        options != null && options.limit() != null ? options.limit() : documentConfig.maxLimit();
+        options != null && options.limit() != null ? options.limit() : operationsConfig.maxLimit();
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     final SortClause sortClause = command.sortClause();
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -59,14 +59,14 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           pagingState,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          Math.min(limit, documentConfig.defaultPageSize()),
+          Math.min(limit, operationsConfig.defaultPageSize()),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
-          documentConfig.defaultSortPageSize(),
+          operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           skip,
-          documentConfig.maxSortReadLimit());
+          operationsConfig.maxSortReadLimit());
     } else {
       return FindOperation.unsorted(
           commandContext,
@@ -74,7 +74,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           command.buildProjector(),
           pagingState,
           limit,
-          documentConfig.defaultPageSize(),
+          operationsConfig.defaultPageSize(),
           ReadType.DOCUMENT,
           objectMapper);
     }

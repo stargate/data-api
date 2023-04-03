@@ -47,11 +47,4 @@ public interface DocumentLimitsConfig {
   @WithDefault("100")
   int maxArrayLength();
 
-  /**
-   * @return Maximum amount of documents that can be inserted using <code>insertMany</code> command.
-   */
-  // keep in sync with MaxInsertManyDocumentsValidation
-  @Positive
-  @WithDefault("20")
-  int maxInsertManyDocuments();
 }

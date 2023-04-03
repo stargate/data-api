@@ -22,7 +22,7 @@ class InsertManyCommandTest {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-      return Map.of("stargate.jsonapi.doc-limits.max-insert-many-documents", "2");
+      return Map.of("stargate.jsonapi.operations.max-document-insert-count", "2");
     }
   }
 

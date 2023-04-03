@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -21,13 +21,13 @@ import javax.inject.Inject;
 public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     implements CommandResolver<FindOneCommand> {
   private final ObjectMapper objectMapper;
-  private final DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
 
   @Inject
-  public FindOneCommandResolver(ObjectMapper objectMapper, DocumentConfig documentConfig) {
+  public FindOneCommandResolver(ObjectMapper objectMapper, OperationsConfig operationsConfig) {
     super();
     this.objectMapper = objectMapper;
-    this.documentConfig = documentConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Override
@@ -49,14 +49,14 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           null,
           1,
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
-          documentConfig.defaultSortPageSize(),
+          operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          documentConfig.maxSortReadLimit());
+          operationsConfig.maxSortReadLimit());
     } else {
       return FindOperation.unsorted(
           commandContext,

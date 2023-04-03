@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -25,16 +25,16 @@ import javax.inject.Inject;
 public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneAndUpdateCommand>
     implements CommandResolver<FindOneAndUpdateCommand> {
   private final Shredder shredder;
-  private final DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
 
   @Inject
   public FindOneAndUpdateCommandResolver(
-      ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
+      ObjectMapper objectMapper, OperationsConfig operationsConfig, Shredder shredder) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
-    this.documentConfig = documentConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Override
@@ -65,7 +65,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
         shredder,
         command.buildProjector(),
         1,
-        documentConfig.lwt().retries());
+        operationsConfig.lwt().retries());
   }
 
   private FindOperation getFindOperation(
@@ -84,14 +84,14 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           null,
           1,
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
-          documentConfig.defaultSortPageSize(),
+          operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          documentConfig.maxSortReadLimit());
+          operationsConfig.maxSortReadLimit());
     } else {
       return FindOperation.unsorted(
           commandContext,

@@ -15,18 +15,20 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.service.bridge.config;
+package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.config.LwtConfig;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 
-/** Configuration for the documents. */
-@ConfigMapping(prefix = "stargate.document")
-public interface DocumentConfig {
+/** Configuration for the operation execution. */
+@ConfigMapping(prefix = "stargate.jsonapi.operations")
+public interface OperationsConfig {
 
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
@@ -79,5 +81,27 @@ public interface DocumentConfig {
   @WithDefault("20")
   int maxDocumentUpdateCount();
 
+  /**
+   * @return Maximum amount of documents that can be inserted using <code>insertMany</code> command.
+   */
+  @Max(100)
+  @Positive
+  @WithDefault("20")
+  int maxDocumentInsertCount();
 
+  @NotNull
+  @Valid
+  LwtConfig lwt();
+
+  /**
+   * Configuration setup for the Light-weight transactions.
+   */
+  interface LwtConfig {
+
+      /** @return Defines the maximum retry for lwt failure <code>3</code>. */
+      @Max(5)
+      @PositiveOrZero
+      @WithDefault("3")
+      int retries();
+  }
 }
