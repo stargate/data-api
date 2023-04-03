@@ -125,8 +125,11 @@ public interface ReadOperation extends Operation {
         .uni(
             () -> new AtomicReference<String>(null),
             stateRef -> {
-              return queryExecutor.executeRead(
-                  query, Optional.ofNullable(stateRef.get()), pageSize);
+              final Uni<QueryOuterClass.ResultSet> resultSet =
+                  queryExecutor.executeRead(query, Optional.ofNullable(stateRef.get()), pageSize);
+              return resultSet
+                  .onItem()
+                  .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
             })
         // Read document while pagingState exists, limit for read is set at updateLimit +1
         .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null)

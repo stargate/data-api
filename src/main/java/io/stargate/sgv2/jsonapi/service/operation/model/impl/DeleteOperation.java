@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,8 +33,26 @@ public record DeleteOperation(
      * documents limit changed to deleteLimit + 1
      */
     int deleteLimit,
-    int retryLimit)
+    int retryLimit,
+    /** return deleted document in response if `true`. */
+    boolean returnDocumentInResponse,
+    DocumentProjector resultProjection)
     implements ModifyOperation {
+
+  public static DeleteOperation deleteOneAndReturn(
+      CommandContext commandContext,
+      FindOperation findOperation,
+      int retryLimit,
+      DocumentProjector resultProjection) {
+    return new DeleteOperation(
+        commandContext, findOperation, 1, retryLimit, true, resultProjection);
+  }
+
+  public static DeleteOperation delete(
+      CommandContext commandContext, FindOperation findOperation, int deleteLimit, int retryLimit) {
+    return new DeleteOperation(commandContext, findOperation, deleteLimit, retryLimit, false, null);
+  }
+
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
@@ -102,13 +122,27 @@ public record DeleteOperation(
                             .atMost(retryLimit - 1);
                       })
                   .onItemOrFailure()
-                  .transform((deleted, error) -> Tuple3.of(deleted, error, document.id()));
+                  .transform(
+                      (deleted, error) ->
+                          Tuple3.of(
+                              deleted != null ? deleted.getItem1() : false,
+                              error,
+                              error != null && returnDocumentInResponse
+                                  ? applyProjection(deleted.getItem2())
+                                  : document));
             })
         .collect()
         .asList()
         .onItem()
         .transform(
-            deletedInformation -> new DeleteOperationPage(deletedInformation, moreData.get()));
+            deletedInformation ->
+                new DeleteOperationPage(
+                    deletedInformation, moreData.get(), returnDocumentInResponse));
+  }
+
+  private ReadDocument applyProjection(ReadDocument document) {
+    resultProjection().applyProjection(document.document());
+    return document;
   }
 
   private QueryOuterClass.Query buildDeleteQuery() {
@@ -138,7 +172,7 @@ public record DeleteOperation(
    * @return Uni<Boolean> `true` if deleted successfully, else `false` if data changed and no longer
    *     match the conditions and throws JsonApiException if LWT failure.
    */
-  private Uni<Boolean> deleteDocument(
+  private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
       QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc)
       throws JsonApiException {
     return Uni.createFrom()
@@ -148,7 +182,7 @@ public record DeleteOperation(
         .transformToUni(
             document -> {
               if (document == null) {
-                return Uni.createFrom().item(false);
+                return Uni.createFrom().item(Tuple2.of(false, document));
               } else {
                 QueryOuterClass.Query boundQuery = bindDeleteQuery(query, document);
                 return queryExecutor
@@ -159,7 +193,7 @@ public record DeleteOperation(
                           // LWT returns `true` for successful transaction, false on failure.
                           if (result.getRows(0).getValues(0).getBoolean()) {
                             // In case of successful document delete
-                            return true;
+                            return Tuple2.of(true, document);
                           } else {
                             // In case of successful document delete
 

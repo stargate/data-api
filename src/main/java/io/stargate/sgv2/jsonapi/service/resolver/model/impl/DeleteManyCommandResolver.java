@@ -37,7 +37,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
     final FindOperation findOperation = getFindOperation(commandContext, command);
-    return new DeleteOperation(
+    return DeleteOperation.delete(
         commandContext,
         findOperation,
         documentConfig.maxDocumentDeleteCount(),
