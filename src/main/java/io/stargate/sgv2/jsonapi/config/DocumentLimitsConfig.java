@@ -5,20 +5,20 @@ import io.smallrye.config.WithDefault;
 import javax.validation.constraints.Positive;
 
 /** Configuration Object that defines limits on Documents managed by JSON API. */
-@ConfigMapping(prefix = "stargate.jsonapi.doc-limits")
+@ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
   /**
    * @return Defines the maximum document page size, defaults to {@code 1 meg} (1 million
    *     characters).
    */
   @Positive
-  @WithDefault("1000000")
-  int maxDocSize();
+  @WithDefault("1_000_000")
+  int maxSize();
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
   @Positive
   @WithDefault("8")
-  int maxDocDepth();
+  int maxDepth();
 
   /**
    * @return Defines the maximum length of property names in JSON documents, defaults to {@code 48

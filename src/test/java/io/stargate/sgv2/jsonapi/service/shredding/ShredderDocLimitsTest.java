@@ -48,7 +48,7 @@ public class ShredderDocLimitsTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith("exceeds maximum allowed (" + docLimits.maxDocSize() + ")");
+          .hasMessageEndingWith("exceeds maximum allowed (" + docLimits.maxSize() + ")");
     }
 
     private ObjectNode createBigDoc(int mainProps, int subProps) {
@@ -96,7 +96,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "document depth exceeds maximum allowed (" + docLimits.maxDocDepth() + ")");
+              "document depth exceeds maximum allowed (" + docLimits.maxDepth() + ")");
     }
   }
 
