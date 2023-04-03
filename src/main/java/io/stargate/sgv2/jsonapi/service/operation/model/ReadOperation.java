@@ -125,9 +125,8 @@ public interface ReadOperation extends Operation {
         .uni(
             () -> new AtomicReference<String>(null),
             stateRef -> {
-              final Uni<QueryOuterClass.ResultSet> resultSet =
-                  queryExecutor.executeRead(query, Optional.ofNullable(stateRef.get()), pageSize);
-              return resultSet
+              return queryExecutor
+                  .executeRead(query, Optional.ofNullable(stateRef.get()), pageSize)
                   .onItem()
                   .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
             })
