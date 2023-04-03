@@ -46,5 +46,4 @@ public interface DocumentLimitsConfig {
   @Positive
   @WithDefault("100")
   int maxArrayLength();
-
 }

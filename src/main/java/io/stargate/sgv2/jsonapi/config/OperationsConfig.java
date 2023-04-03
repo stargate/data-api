@@ -19,7 +19,6 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
@@ -93,15 +92,13 @@ public interface OperationsConfig {
   @Valid
   LwtConfig lwt();
 
-  /**
-   * Configuration setup for the Light-weight transactions.
-   */
+  /** Configuration setup for the Light-weight transactions. */
   interface LwtConfig {
 
-      /** @return Defines the maximum retry for lwt failure <code>3</code>. */
-      @Max(5)
-      @PositiveOrZero
-      @WithDefault("3")
-      int retries();
+    /** @return Defines the maximum retry for lwt failure <code>3</code>. */
+    @Max(5)
+    @PositiveOrZero
+    @WithDefault("3")
+    int retries();
   }
 }
