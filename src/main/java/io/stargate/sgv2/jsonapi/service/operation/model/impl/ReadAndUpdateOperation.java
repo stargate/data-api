@@ -161,7 +161,7 @@ public record ReadAndUpdateOperation(
               // apply document updates
               // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                  documentUpdater().applyUpdates(readDocument.document().deepCopy(), upsert);
+                  documentUpdater().apply(readDocument.document().deepCopy(), upsert);
               if (!documentUpdaterResponse.modified()) {
                 return Uni.createFrom().nullItem();
               }

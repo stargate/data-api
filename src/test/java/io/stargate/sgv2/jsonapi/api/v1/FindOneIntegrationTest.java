@@ -261,6 +261,42 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
+    public void byIdWithProjection() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "doc5"},
+                  "projection": { "sub_doc.b": 0 }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5 }
+                      }
+                      """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void byColumn() {
       String json =
           """

@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -143,6 +144,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(5));
     }
 
@@ -167,6 +169,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1));
     }
 
@@ -190,8 +193,34 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void findByIdWithProjection() {
+      String json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : "doc1"},
+                    "projection": { "_id":0, "username":1 }
+                  }
+                }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals("{\"username\":\"user1\"}"));
     }
 
     @Test
@@ -214,6 +243,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -238,6 +268,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -263,6 +294,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -294,6 +326,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -326,6 +359,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -372,6 +406,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -399,6 +434,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -426,6 +462,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -453,6 +490,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -476,6 +514,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
@@ -506,6 +545,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -537,10 +577,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
+    @Test
     @Order(2)
     public void findWithEqSubdocumentOrderChangeNoMatch() {
       String json =
@@ -560,6 +602,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
@@ -583,6 +626,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
@@ -609,6 +653,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -636,6 +681,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
@@ -662,10 +708,12 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
+    @Test
     @Order(2)
     public void findWithEqOperatorNestedArray() {
       String json =
@@ -688,6 +736,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
@@ -711,9 +760,11 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
+    @Test
     @Order(2)
     public void findWithEqOperatorNestedArrayNoMatch() {
       String json =
@@ -732,6 +783,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.count", is(0));
     }
 
@@ -777,6 +829,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.docs[0]", jsonEquals(expected));
     }
   }
