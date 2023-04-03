@@ -37,7 +37,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
-    return new DeleteOperation(commandContext, findOperation, 1, documentConfig.lwt().retries());
+    return DeleteOperation.delete(commandContext, findOperation, 1, documentConfig.lwt().retries());
   }
 
   @Override

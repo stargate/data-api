@@ -64,25 +64,25 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOne` command",
                   value =
                       """
-                              {
-                                "findOne": {
-                                    "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
-                                    "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
-                                    "sort" : ["race.start_date"]
-                                }
-                              }
-                              """),
+                      {
+                        "findOne": {
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                            "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
+                            "sort" : ["race.start_date"]
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "countDocuments",
                   summary = "`countDocuments` command",
                   value =
                       """
-                            {
-                              "countDocuments": {
-                                  "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
-                              }
-                            }
-                            """),
+                      {
+                        "countDocuments": {
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
+                        }
+                      }
+                    """),
               @ExampleObject(
                   name = "find",
                   summary = "`find` command",
@@ -119,6 +119,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "findOneAndDelete",
+                  summary = "`findOneAndDelete` command",
+                  value =
+                      """
+                        {
+                          "findOneAndDelete": {
+                              "filter": {"location": "London"},
+                              "sort" : ["race.start_date"],
+                              "projection" : {"location": 1}
+                          }
+                        }
+                        """),
+              @ExampleObject(
                   name = "findOneAndReplace",
                   summary = "`findOneAndReplace` command",
                   value =
@@ -126,14 +139,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndReplace": {
                             "filter": {"location": "London"},
-                            "sort" : ["race.start_date"]
+                            "sort" : ["race.start_date"],
                             "replacement": {
                                 "location": "New York",
                                 "count": 3
                             },
                             "options" : {
                                "returnDocument" : "before"
-                            }
+                            },
+                            "projection" : {"location": 1}
                         }
                       }
                       """),
@@ -385,7 +399,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                           }
                         }
                       }
-                  """),
+                      """),
               @ExampleObject(
                   name = "resultFindOneAndReplace",
                   summary = "`findOneAndReplace` command result",
@@ -408,6 +422,27 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                        }
                      }
                      """),
+              @ExampleObject(
+                  name = "resultFindOneAndDelete",
+                  summary = "`findOneAndDetele` command result",
+                  value =
+                      """
+                       {
+                         "data": {
+                           "docs": [
+                             {
+                               "_id": "1",
+                               "location": "New York",
+                               "count": 3
+                             }
+                           ],
+                           "count": 1,
+                           "status": {
+                             "deletedCount": 1
+                           }
+                         }
+                       }
+                       """),
               @ExampleObject(
                   name = "resultFindOneAndUpdateUpsert",
                   summary = "`findOneAndUpdate` command with upsert result",

@@ -267,11 +267,11 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
@@ -630,11 +630,11 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
@@ -824,11 +824,11 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
