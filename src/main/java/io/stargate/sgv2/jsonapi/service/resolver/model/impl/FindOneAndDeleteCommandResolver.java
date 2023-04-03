@@ -3,33 +3,32 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
-import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-/** Resolves the {@link FindOneAndReplaceCommand } */
+/** Resolves the {@link FindOneAndDeleteCommand } */
 @ApplicationScoped
-public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOneAndReplaceCommand>
-    implements CommandResolver<FindOneAndReplaceCommand> {
+public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneAndDeleteCommand>
+    implements CommandResolver<FindOneAndDeleteCommand> {
   private final Shredder shredder;
   private final DocumentConfig documentConfig;
   private final ObjectMapper objectMapper;
 
   @Inject
-  public FindOneAndReplaceCommandResolver(
+  public FindOneAndDeleteCommandResolver(
       ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
     super();
     this.objectMapper = objectMapper;
@@ -38,37 +37,20 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   }
 
   @Override
-  public Class<FindOneAndReplaceCommand> getCommandClass() {
-    return FindOneAndReplaceCommand.class;
+  public Class<FindOneAndDeleteCommand> getCommandClass() {
+    return FindOneAndDeleteCommand.class;
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindOneAndReplaceCommand command) {
+  public Operation resolveCommand(CommandContext commandContext, FindOneAndDeleteCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
-
-    DocumentUpdater documentUpdater = DocumentUpdater.construct(command.replacementDocument());
-
-    // resolve options
-    FindOneAndReplaceCommand.Options options = command.options();
-    boolean returnUpdatedDocument =
-        options != null && "after".equals(command.options().returnDocument());
-
     // return
-    return new ReadAndUpdateOperation(
-        commandContext,
-        findOperation,
-        documentUpdater,
-        true,
-        returnUpdatedDocument,
-        false,
-        shredder,
-        command.buildProjector(),
-        1,
-        documentConfig.lwt().retries());
+    return DeleteOperation.deleteOneAndReturn(
+        commandContext, findOperation, documentConfig.lwt().retries(), command.buildProjector());
   }
 
   private FindOperation getFindOperation(
-      CommandContext commandContext, FindOneAndReplaceCommand command) {
+      CommandContext commandContext, FindOneAndDeleteCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);

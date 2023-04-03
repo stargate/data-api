@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -23,7 +24,9 @@ import java.util.stream.Collectors;
  * @param moreData - if `true` means more documents available in DB for the provided condition
  */
 public record DeleteOperationPage(
-    List<Tuple3<Boolean, Throwable, DocumentId>> deletedInformation, boolean moreData)
+    List<Tuple3<Boolean, Throwable, ReadDocument>> deletedInformation,
+    boolean moreData,
+    boolean returnDocument)
     implements Supplier<CommandResult> {
   private static final String ERROR = "Failed to delete documents with _id %s: %s";
 
@@ -34,12 +37,16 @@ public record DeleteOperationPage(
             deletedInformation.stream()
                 .filter(deletedDocument -> Boolean.TRUE.equals(deletedDocument.getItem1()))
                 .count();
+    List<JsonNode> deletedDoc = new ArrayList<>();
 
     // aggregate the errors by error code or error class
-    Multimap<String, Tuple3<Boolean, Throwable, DocumentId>> groupedErrorDeletes =
+    Multimap<String, Tuple3<Boolean, Throwable, ReadDocument>> groupedErrorDeletes =
         ArrayListMultimap.create();
     deletedInformation.forEach(
         deletedData -> {
+          if (deletedData.getItem1() && returnDocument()) {
+            deletedDoc.add(deletedData.getItem3().document());
+          }
           if (deletedData.getItem2() != null) {
             String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());
             groupedErrorDeletes.put(key, deletedData);
@@ -52,25 +59,26 @@ public record DeleteOperationPage(
         .keySet()
         .forEach(
             key -> {
-              final Collection<Tuple3<Boolean, Throwable, DocumentId>> deletedDocuments =
+              final Collection<Tuple3<Boolean, Throwable, ReadDocument>> deletedDocuments =
                   groupedErrorDeletes.get(key);
               final List<DocumentId> documentIds =
                   deletedDocuments.stream()
-                      .map(deletes -> deletes.getItem3())
+                      .map(deletes -> deletes.getItem3().id())
                       .collect(Collectors.toList());
               errors.add(
                   ExceptionUtil.getError(
                       ERROR, documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
             });
+    // Return the result
 
     if (moreData)
       return new CommandResult(
-          null,
+          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount, CommandStatus.MORE_DATA, true),
           errors.isEmpty() ? null : errors);
     else
       return new CommandResult(
-          null,
+          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount),
           errors.isEmpty() ? null : errors);
   }
