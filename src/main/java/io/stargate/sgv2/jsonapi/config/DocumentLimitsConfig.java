@@ -12,7 +12,7 @@ public interface DocumentLimitsConfig {
    *     characters).
    */
   @Positive
-  @WithDefault("1_000_000")
+  @WithDefault("1000000")
   int maxSize();
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
