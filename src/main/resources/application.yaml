@@ -26,11 +26,6 @@ stargate:
     global-tags:
       module: sgv2-jsonapi
 
-  # explicitly set limits
-  jsonapi:
-    doc-limits:
-      max-insert-many-documents: 20
-
 quarkus:
 
   # general app properties
