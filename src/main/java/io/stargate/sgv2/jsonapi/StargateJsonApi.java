@@ -290,6 +290,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "dropNamespace",
+                  summary = "`DropNamespace` command",
+                  value =
+                      """
+                        {
+                            "dropNamespace": {
+                              "name": "cycling"
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
