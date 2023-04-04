@@ -132,7 +132,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
         {
           "findOneAndDelete": {
             "filter" : {"active_user" : true},
-            "sort" : ["-username"]
+            "sort" : {"username" : -1}
           }
         }
         """;
