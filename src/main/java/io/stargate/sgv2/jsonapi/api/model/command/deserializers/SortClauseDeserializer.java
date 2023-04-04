@@ -52,7 +52,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
 
       if (!inner.getValue().isInt()
-          || !(inner.getValue().asInt() == 1 || inner.getValue().asInt() == -1)) {
+          || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
         throw new JsonMappingException(
             parser, "Sort ordering value can only be `1` for ascending or `-1` for descending.");
       }
@@ -60,10 +60,10 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       String path = inner.getKey().trim();
       if (path.isBlank()) {
         throw new JsonMappingException(
-            parser, "Sort clause expression must be represented as not-blank strings.");
+            parser, "Sort clause path must be represented as not-blank strings.");
       }
 
-      boolean ascending = inner.getValue().asInt() == 1;
+      boolean ascending = inner.getValue().intValue() == 1;
 
       SortExpression exp = new SortExpression(path, ascending);
       sortExpressions.add(exp);
