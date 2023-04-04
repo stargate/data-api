@@ -234,7 +234,7 @@ public class FindOneAndReplaceCommandResolverTest {
           "findOneAndReplace": {
             "filter" : {"_id" : "id"},
             "replacement" : {"col1" : "val1", "col2" : "val2"},
-            "options" : {"returnDocument" : "after", "upsert": true }
+            "options" : {"returnDocument" : "after" }
           }
         }
         """;
