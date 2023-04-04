@@ -229,14 +229,14 @@ public class Shredder {
     while (it.hasNext()) {
       var entry = it.next();
       final String key = entry.getKey();
-      if (key.length() > documentLimits.maxNameLength()) {
+      if (key.length() > documentLimits.maxPropertyNameLength()) {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
             String.format(
                 "%s: Property name length (%d) exceeds maximum allowed (%s)",
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
                 key.length(),
-                limits.maxNameLength()));
+                limits.maxPropertyNameLength()));
       }
       validateDocValue(limits, entry.getValue(), depth);
     }

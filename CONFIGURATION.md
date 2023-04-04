@@ -15,14 +15,14 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 ## Document limits configuration
 *Configuration for document limits, defined by [DocumentLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DocumentLimitsConfig.java).*
 
-| Property                                                 | Type  | Default     | Description                                                                                                 |
-|----------------------------------------------------------|-------|-------------|-------------------------------------------------------------------------------------------------------------|
-| `stargate.jsonapi.document.limits.max-size`              | `int` | `1_000_000` | The maximum size of a single document in characters. Defaults to 1 million characters or approximately 1MB. |
-| `stargate.jsonapi.document.limits.max-depth`             | `int` | `8`         | The maximum document depth (nesting).                                                                       |
-| `stargate.jsonapi.document.limits.max-name-length`       | `int` | `48`        | The maximum length of property names in a document for an individual segment.                               |
-| `stargate.jsonapi.document.limits.max-object-properties` | `int` | `64`        | The maximum number of properties any single object in a document can contain.                               |
-| `stargate.jsonapi.document.limits.max-string-length`     | `int` | `16000`     | The maximum length of a single string value in a document.                                                  |
-| `stargate.jsonapi.document.limits.max-array-length`      | `int` | `100`       | The maximum length of a single array in a document.                                                         |
+| Property                                                    | Type  | Default     | Description                                                                                                 |
+|-------------------------------------------------------------|-------|-------------|-------------------------------------------------------------------------------------------------------------|
+| `stargate.jsonapi.document.limits.max-size`                 | `int` | `1_000_000` | The maximum size of a single document in characters. Defaults to 1 million characters or approximately 1MB. |
+| `stargate.jsonapi.document.limits.max-depth`                | `int` | `8`         | The maximum document depth (nesting).                                                                       |
+| `stargate.jsonapi.document.limits.max-property-name-length` | `int` | `48`        | The maximum length of property names in a document for an individual segment.                               |
+| `stargate.jsonapi.document.limits.max-object-properties`    | `int` | `64`        | The maximum number of properties any single object in a document can contain.                               |
+| `stargate.jsonapi.document.limits.max-string-length`        | `int` | `16000`     | The maximum length of a single string value in a document.                                                  |
+| `stargate.jsonapi.document.limits.max-array-length`         | `int` | `100`       | The maximum length of a single array in a document.                                                         |
 
 ## Operations configuration
 *Configuration for the operation execution, defined by [OperationsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/OperationsConfig.java).*

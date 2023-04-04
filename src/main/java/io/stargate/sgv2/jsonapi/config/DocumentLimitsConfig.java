@@ -26,7 +26,7 @@ public interface DocumentLimitsConfig {
    */
   @Positive
   @WithDefault("48")
-  int maxNameLength();
+  int maxPropertyNameLength();
 
   /**
    * @return Defines the maximum number of properties any single Object in JSON document can

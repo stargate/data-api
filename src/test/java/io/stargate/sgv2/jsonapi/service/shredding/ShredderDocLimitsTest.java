@@ -201,7 +201,7 @@ public class ShredderDocLimitsTest {
               " Property name length ("
                   + propName.length()
                   + ") exceeds maximum allowed ("
-                  + docLimits.maxNameLength()
+                  + docLimits.maxPropertyNameLength()
                   + ")");
     }
 
