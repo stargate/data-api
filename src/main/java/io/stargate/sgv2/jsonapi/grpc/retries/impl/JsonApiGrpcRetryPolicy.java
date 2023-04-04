@@ -43,7 +43,7 @@ public class JsonApiGrpcRetryPolicy implements GrpcRetryPredicate {
   private boolean isValidServerSideTimeout(Metadata trailers) {
     // if we have trailers
     if (null != trailers) {
-      // TODO double check the CAS write timeout retries are fine
+      // read, write and CAS write timeouts will include one of two trailers
       return trailers.containsKey(READ_TIMEOUT_KEY) || trailers.containsKey(WRITE_TIMEOUT_KEY);
     }
 
