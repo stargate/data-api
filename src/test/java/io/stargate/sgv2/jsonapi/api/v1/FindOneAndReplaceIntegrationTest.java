@@ -236,7 +236,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
               {
                 "findOneAndReplace": {
                   "filter" : {"active_user" : true},
-                  "sort" : ["username"],
+                  "sort" : {"username" : 1},
                   "replacement" : {"username": "username2", "status" : true },
                   "options" : {"returnDocument" : "after"}
                 }

@@ -53,7 +53,7 @@ public class FindOneAndDeleteCommandTest {
           {
             "findOneAndDelete": {
                 "filter" : {"username" : "update_user5"},
-                "sort" : ["location"]
+                "sort" : {"location" : 1}
               }
           }
           """;
@@ -84,7 +84,7 @@ public class FindOneAndDeleteCommandTest {
           {
             "findOneAndDelete": {
                 "filter" : {"username" : "update_user5"},
-                "sort" : ["location"],
+                "sort" : {"location" : 1},
                 "projection" : {"username" : 1}
             }
           }

@@ -168,7 +168,7 @@ public class FindOneAndReplaceCommandResolverTest {
         {
           "findOneAndReplace": {
             "filter" : {"status" : "active"},
-            "sort" : ["user"],
+            "sort" : {"user" : 1},
             "replacement" : {"col1" : "val1", "col2" : "val2"}
           }
         }
@@ -295,10 +295,7 @@ public class FindOneAndReplaceCommandResolverTest {
         {
           "findOneAndReplace": {
             "filter" : {"age" : 35},
-            "sort": [
-              "user.name",
-              "-user.age"
-            ],
+            "sort": { "user.name" : 1, "user.age" :  -1 },
             "replacement" : {"col1" : "val1", "col2" : "val2"},
             "options" : {"returnDocument" : "after"}
           }

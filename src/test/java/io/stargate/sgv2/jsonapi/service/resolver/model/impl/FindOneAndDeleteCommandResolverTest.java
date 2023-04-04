@@ -83,7 +83,7 @@ public class FindOneAndDeleteCommandResolverTest {
         {
           "findOneAndDelete": {
             "filter" : {"status" : "active"},
-            "sort" : ["user"]
+            "sort" : {"user" : 1}
           }
         }
         """;

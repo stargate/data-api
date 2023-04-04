@@ -132,7 +132,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
         {
           "findOneAndDelete": {
             "filter" : {"active_user" : true},
-            "sort" : ["-username"]
+            "sort" : {"username" : -1}
           }
         }
         """;
@@ -195,7 +195,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
         {
           "findOneAndDelete": {
             "filter" : {"active_user" : true},
-            "sort" : ["username"]
+            "sort" : {"username" : 1}
           }
         }
         """;
@@ -265,7 +265,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
         {
           "findOneAndDelete": {
             "filter" : {"active_user" : true},
-            "sort" : ["username"],
+            "sort" : {"username" : 1},
             "projection" : { "_id":0, "username":1 }
           }
         }
