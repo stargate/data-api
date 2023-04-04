@@ -68,7 +68,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "findOne": {
                             "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                             "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
-                            "sort" : ["race.start_date"]
+                            "sort" : {"race.start_date" : 1}
                         }
                       }
                       """),
@@ -92,7 +92,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "find": {
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                              "projection": {"tags":0},
-                             "sort" : ["location"],
+                             "sort" : {"location" : 1},
                              "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
                         }
                       }
@@ -105,7 +105,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
-                            "sort" : ["location"],
+                            "sort" : {"location" : 1},
                             "update": {
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}
@@ -126,7 +126,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         {
                           "findOneAndDelete": {
                               "filter": {"location": "London"},
-                              "sort" : ["race.start_date"],
+                              "sort" : {"race.start_date" : 1},
                               "projection" : {"location": 1}
                           }
                         }
@@ -139,7 +139,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndReplace": {
                             "filter": {"location": "London"},
-                            "sort" : ["race.start_date"],
+                            "sort" : {"race.start_date" : 1},
                             "replacement": {
                                 "location": "New York",
                                 "count": 3

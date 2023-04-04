@@ -51,7 +51,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
           {
             "find": {
-              "sort" : ["username"]
+              "sort" : {"username" : 1}
             }
           }
         """;
@@ -87,7 +87,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
           {
             "find": {
-              "sort" : ["username"],
+              "sort" : {"username" : 1},
               "options" : {"skip": 10, "limit" : 10}
             }
           }
@@ -129,7 +129,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
           {
             "find": {
-              "sort" : ["-username"]
+              "sort" : {"username" : -1}
             }
           }
           """;
@@ -167,7 +167,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
               {
                 "find": {
-                  "sort" : ["activeUser"]
+                  "sort" : {"activeUser" : 1}
                 }
               }
               """;
@@ -205,7 +205,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
               {
                 "find": {
-                  "sort" : ["-activeUser"]
+                  "sort" : {"activeUser" : -1}
                 }
               }
               """;
@@ -243,7 +243,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
               {
                 "find": {
-                  "sort" : ["userId"]
+                  "sort" : {"userId" : 1}
                 }
               }
               """;
@@ -281,7 +281,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
               {
                 "find": {
-                  "sort" : ["-userId"]
+                  "sort" : {"userId" : -1}
                 }
               }
               """;
@@ -324,7 +324,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               {
                 "find": {
                   "filter" : {"activeUser" : true},
-                  "sort" : ["userId"]
+                  "sort" : {"userId" : 1}
                 }
               }
               """;
@@ -360,7 +360,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
           """
               {
                 "find": {
-                  "sort" : ["username", "userId"]
+                  "sort" : {"username" : 1, "userId" : 1}
                 }
               }
               """;
@@ -403,7 +403,7 @@ public class FindOperationWithSortIntegrationTest extends CollectionResourceBase
               {
                 "find": {
                   "filter" : {"activeUser" : true},
-                  "sort" : ["username", "-userId"]
+                  "sort" : {"username" : 1, "userId" : -1}
                 }
               }
               """;

@@ -109,7 +109,7 @@ public class FindCommandResolverTest {
           """
           {
             "find": {
-              "sort" : ["username"]
+              "sort" : {"username" : 1}
             }
           }
           """;
@@ -145,7 +145,7 @@ public class FindCommandResolverTest {
           """
         {
           "find": {
-            "sort" : ["-username"]
+            "sort" : {"username" : -1}
           }
         }
         """;
@@ -181,7 +181,7 @@ public class FindCommandResolverTest {
           """
         {
           "find": {
-            "sort" : ["username"],
+            "sort" : {"username" : 1},
             "options" : {"skip" : 5, "limit" : 10}
           }
         }

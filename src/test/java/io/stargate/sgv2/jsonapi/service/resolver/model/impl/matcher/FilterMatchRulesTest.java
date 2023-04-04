@@ -33,10 +33,7 @@ public class FilterMatchRulesTest {
           """
                         {
                           "findOne": {
-                            "sort": [
-                              "user.name",
-                              "-user.age"
-                            ],
+                            "sort" : {"user.name" : 1, "user.age" : -1},
                             "filter" : {"col" : "val"}
                           }
                         }
@@ -64,10 +61,7 @@ public class FilterMatchRulesTest {
           """
           {
             "findOne": {
-              "sort": [
-                "user.name",
-                "-user.age"
-              ]
+              "sort" : {"user.name" : 1, "user.age" : -1}
             }
           }
           """;
@@ -84,10 +78,7 @@ public class FilterMatchRulesTest {
           """
               {
                 "findOne": {
-                  "sort": [
-                    "user.name",
-                    "-user.age"
-                  ],
+                  "sort" : {"user.name" : 1, "user.age" : -1},
                   "filter" : {"col" : "val"}
                 }
               }

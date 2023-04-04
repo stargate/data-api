@@ -163,7 +163,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           """
           {
             "findOne": {
-              "sort" : ["username"]
+              "sort" : {"username" : 1}
             }
           }
           """;
@@ -189,7 +189,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           """
           {
             "findOne": {
-              "sort" : ["-username"]
+              "sort" : {"username" : -1 }
             }
           }
           """;
@@ -379,7 +379,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           {
             "findOne": {
               "filter" : {"username" : {"$exists" : true}},
-              "sort" : ["username"]
+              "sort" : {"username" : 1 }
             }
           }
           """;
@@ -406,7 +406,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           {
             "findOne": {
               "filter" : {"username" : {"$exists" : true}},
-              "sort" : ["-username"]
+              "sort" : {"username" : -1}
             }
           }
           """;

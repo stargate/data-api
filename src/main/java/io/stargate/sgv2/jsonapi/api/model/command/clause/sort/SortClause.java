@@ -14,9 +14,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @JsonDeserialize(using = SortClauseDeserializer.class)
 @Schema(
-    type = SchemaType.ARRAY,
-    implementation = String[].class,
+    type = SchemaType.OBJECT,
+    implementation = Object.class,
     example = """
-              ["-user.age", "user.name"]
+              {"user.age" : -1, "user.name" : 1}
               """)
 public record SortClause(@Valid List<SortExpression> sortExpressions) {}

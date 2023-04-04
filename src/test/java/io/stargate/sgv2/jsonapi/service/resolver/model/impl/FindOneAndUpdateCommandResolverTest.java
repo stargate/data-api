@@ -104,7 +104,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 {
                   "findOneAndUpdate": {
                     "filter" : {"status" : "active"},
-                    "sort" : ["user"],
+                    "sort" : {"user" : 1},
                     "update" : {"$set" : {"location" : "New York"}}
                   }
                 }
@@ -220,18 +220,15 @@ public class FindOneAndUpdateCommandResolverTest {
     public void filterConditionWithOptionsSort() throws Exception {
       String json =
           """
-                        {
-                          "findOneAndUpdate": {
-                            "filter" : {"age" : 35},
-                            "sort": [
-                              "user.name",
-                              "-user.age"
-                            ],
-                            "update" : {"$set" : {"location" : "New York"}},
-                            "options" : {"returnDocument" : "after", "upsert": true }
-                          }
-                        }
-                        """;
+            {
+              "findOneAndUpdate": {
+                "filter" : {"age" : 35},
+                "sort" : {"user.name" : 1, "user.age" : -1},
+                "update" : {"$set" : {"location" : "New York"}},
+                "options" : {"returnDocument" : "after", "upsert": true }
+              }
+            }
+          """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);

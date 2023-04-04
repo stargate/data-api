@@ -69,10 +69,7 @@ public class FindOneCommandResolverTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"status" : "active"}
               }
             }
