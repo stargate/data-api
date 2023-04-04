@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
@@ -46,6 +47,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
   @JsonSubTypes.Type(value = DeleteCollectionCommand.class),
   @JsonSubTypes.Type(value = DeleteOneCommand.class),
   @JsonSubTypes.Type(value = DeleteManyCommand.class),
+  @JsonSubTypes.Type(value = DropNamespaceCommand.class),
   @JsonSubTypes.Type(value = FindCommand.class),
   @JsonSubTypes.Type(value = FindOneCommand.class),
   @JsonSubTypes.Type(value = FindOneAndDeleteCommand.class),

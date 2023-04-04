@@ -2,11 +2,12 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
@@ -20,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
+class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {
@@ -28,43 +29,48 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   }
 
   @Nested
-  class ClientErrors {
+  class DropNamespace {
 
     @Test
-    public void tokenMissing() {
-      given()
-          .contentType(ContentType.JSON)
-          .body("{}")
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
-          .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
-    }
-
-    @Test
-    public void malformedBody() {
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body("{wrong}")
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
-    }
-
-    @Test
-    public void unknownCommand() {
+    public final void happyPath() {
       String json =
           """
           {
-            "unknownCommand": {
+            "dropNamespace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(keyspaceId.asInternal());
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // ensure it's dropped
+      // TODO go away from session usage once we have findNamespaces
+      ResultSet keyspaces = session.execute("SELECT keyspace_name FROM system_schema.keyspaces;");
+      assertThat(keyspaces.all())
+          .allSatisfy(
+              row -> {
+                assertThat(row.get("keyspace_name", String.class))
+                    .isNotEqualTo(keyspaceId.asInternal());
+              });
+    }
+
+    @Test
+    public final void notExisting() {
+      String json =
+          """
+          {
+            "dropNamespace": {
+              "name": "whatever_not_there"
             }
           }
           """;
@@ -77,15 +83,24 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body("status.ok", is(1));
     }
 
     @Test
-    public void emptyBody() {
+    public void systemKeyspaceNotAllowed() {
+      String json =
+          """
+          {
+            "dropNamespace": {
+              "name": "system"
+            }
+          }
+          """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
+          .body(json)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
