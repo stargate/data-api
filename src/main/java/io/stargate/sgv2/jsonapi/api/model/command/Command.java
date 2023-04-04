@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
@@ -36,7 +35,6 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
  *
  * <p>Each command should validate itself using the <i>javax.validation</i> framework.
  */
-@RegisterForReflection
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.WRAPPER_OBJECT,
