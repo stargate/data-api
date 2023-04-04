@@ -70,7 +70,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          operationsConfig.maxSortReadLimit());
+          operationsConfig.maxDocumentSortCount());
     } else {
       return FindOperation.unsorted(
           commandContext,

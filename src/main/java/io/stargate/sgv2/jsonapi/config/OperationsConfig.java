@@ -60,7 +60,7 @@ public interface OperationsConfig {
   @Max(10000)
   @Positive
   @WithDefault("10000")
-  int maxSortReadLimit();
+  int maxDocumentSortCount();
 
   /**
    * @return Defines the maximum limit of document that can be deleted for a request, defaults to

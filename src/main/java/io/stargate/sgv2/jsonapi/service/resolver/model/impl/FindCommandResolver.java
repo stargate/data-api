@@ -66,7 +66,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           objectMapper,
           orderBy,
           skip,
-          operationsConfig.maxSortReadLimit());
+          operationsConfig.maxDocumentSortCount());
     } else {
       return FindOperation.unsorted(
           commandContext,
