@@ -5,14 +5,13 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.ProtoUtils;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.grpc.retries.GrpcRetryPredicate;
 import java.util.Objects;
-import java.util.function.Predicate;
 import javax.enterprise.context.ApplicationScoped;
 
 /** Default gRPC retry policy used in the project. */
 @ApplicationScoped
-// TODO correct type here
-public class JsonApiGrpcRetryPolicy implements Predicate<StatusRuntimeException> {
+public class JsonApiGrpcRetryPolicy implements GrpcRetryPredicate {
 
   private static final Metadata.Key<QueryOuterClass.WriteTimeout> WRITE_TIMEOUT_KEY =
       ProtoUtils.keyForProto(QueryOuterClass.WriteTimeout.getDefaultInstance());
