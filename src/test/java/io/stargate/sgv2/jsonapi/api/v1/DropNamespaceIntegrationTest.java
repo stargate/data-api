@@ -3,9 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -158,29 +156,6 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-    }
-
-    @Test
-    public void systemKeyspaceNotAllowed() {
-      String json =
-          """
-          {
-            "dropNamespace": {
-              "name": "system"
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
   }
 }

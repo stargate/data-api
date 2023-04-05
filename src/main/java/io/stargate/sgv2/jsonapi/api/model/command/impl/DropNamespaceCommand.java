@@ -12,7 +12,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record DropNamespaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Pattern(regexp = "^(?!system$).*")
         @Size(min = 1, max = 48)
         @Schema(description = "Name of the namespace")
         String name)

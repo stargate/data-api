@@ -86,49 +86,12 @@ class DropNamespaceCommandTest {
     }
 
     @Test
-    public void systemKeyspaceNotAllowed() throws Exception {
-      String json =
-          """
-          {
-            "dropNamespace": {
-              "name": "system"
-            }
-          }
-          """;
-
-      DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
-      Set<ConstraintViolation<DropNamespaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"^(?!system$).*\"");
-    }
-
-    @Test
     public void nameCorrectPattern() throws Exception {
       String json =
           """
           {
             "dropNamespace": {
-              "name": "my_system"
-            }
-          }
-          """;
-
-      DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
-      Set<ConstraintViolation<DropNamespaceCommand>> result = validator.validate(command);
-
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    public void nameCorrectPatternSystemPrefix() throws Exception {
-      String json =
-          """
-          {
-            "dropNamespace": {
-              "name": "system_keyspace"
+              "name": "my_space"
             }
           }
           """;
