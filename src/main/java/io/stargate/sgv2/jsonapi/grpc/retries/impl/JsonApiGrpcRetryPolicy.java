@@ -9,7 +9,19 @@ import io.stargate.sgv2.api.common.grpc.retries.GrpcRetryPredicate;
 import java.util.Objects;
 import javax.enterprise.context.ApplicationScoped;
 
-/** Default gRPC retry policy used in the project. */
+/**
+ * Default gRPC retry policy used in the project. The policy defines retries when:
+ *
+ * <ol>
+ *   <li>The received GRPC status code is <code>UNAVAILABLE</code>
+ *   <li>The received GRPC status code is <code>DEADLINE_EXCEEDED</code>, but the metadata received
+ *       contains the trailers set by the Bridge in case of a server-side read, write and CAS write
+ *       timeouts.
+ * </ol>
+ *
+ * Note that this class only defines the policy. Amount of retries and other retry properties are
+ * defined by <code>stargate.grpc.retries</code> property group.
+ */
 @ApplicationScoped
 public class JsonApiGrpcRetryPolicy implements GrpcRetryPredicate {
 
