@@ -19,6 +19,8 @@ public enum ErrorCode {
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
+  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
+
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
