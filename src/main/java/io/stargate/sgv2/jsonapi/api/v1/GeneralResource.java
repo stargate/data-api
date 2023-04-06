@@ -51,6 +51,7 @@ public class GeneralResource {
               examples = {
                 @ExampleObject(ref = "createNamespace"),
                 @ExampleObject(ref = "createNamespaceWithReplication"),
+                @ExampleObject(ref = "findNamespaces"),
                 @ExampleObject(ref = "dropNamespace"),
               }))
   @APIResponses(

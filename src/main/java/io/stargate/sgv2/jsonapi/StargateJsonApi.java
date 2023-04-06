@@ -290,6 +290,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "findNamespaces",
+                  summary = "`FindNamespaces` command",
+                  value =
+                      """
+                        {
+                            "findNamespaces": {
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "dropNamespace",
                   summary = "`DropNamespace` command",
                   value =
