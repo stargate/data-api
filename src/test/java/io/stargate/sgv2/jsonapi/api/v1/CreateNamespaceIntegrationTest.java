@@ -5,7 +5,6 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -14,60 +13,41 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
+class CreateNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
+
+  static String DB_NAME = "stargate";
 
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
   }
 
+  @AfterEach
+  public void deleteKeyspace() {
+    this.session.execute("DROP KEYSPACE IF EXISTS %s".formatted(DB_NAME));
+  }
+
   @Nested
-  class ClientErrors {
+  class CreateNamespace {
 
     @Test
-    public void tokenMissing() {
-      given()
-          .contentType(ContentType.JSON)
-          .body("{}")
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
-          .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
-    }
-
-    @Test
-    public void malformedBody() {
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body("{wrong}")
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
-    }
-
-    @Test
-    public void unknownCommand() {
+    public final void happyPath() {
       String json =
           """
           {
-            "unknownCommand": {
+            "createNamespace": {
+              "name": "%s"
             }
           }
-          """;
+          """
+              .formatted(DB_NAME);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -77,15 +57,75 @@ class GeneralResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body("status.ok", is(1));
     }
 
     @Test
-    public void emptyBody() {
+    public final void alreadyExists() {
+      String json =
+          """
+          {
+            "createNamespace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(keyspaceId.asInternal());
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public final void withReplicationFactor() {
+      String json =
+          """
+          {
+            "createNamespace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "SimpleStrategy",
+                  "replication_factor": 2
+                }
+              }
+            }
+          }
+          """
+              .formatted(DB_NAME);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void invalidCommand() {
+      String json =
+          """
+          {
+            "createNamespace": {
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
