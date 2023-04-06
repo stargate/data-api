@@ -65,6 +65,7 @@ public class GeneralResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCreate"),
+                    @ExampleObject(ref = "resultFindNamespaces"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

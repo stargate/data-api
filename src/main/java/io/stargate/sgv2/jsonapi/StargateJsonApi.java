@@ -573,6 +573,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                                 """),
               @ExampleObject(
+                  name = "resultFindNamespaces",
+                  summary = "`findNamespaces` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                    "existingNamespaces": [
+                                      "cycling"
+                                    ]
+                                  }
+                                }
+                                """),
+              @ExampleObject(
                   name = "resultError",
                   summary = "Error result",
                   value =
