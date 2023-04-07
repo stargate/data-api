@@ -594,7 +594,7 @@ If an error occurs the command will not return `data`.
 
 ### findOneAndReplace Command
 
-`findOneAndReplace` replaces a single document based on the specified filter clause. 
+`findOneAndReplace` replaces the first document in the collection that matches the filter. Optionally use a `sort-clause` to determine which document is modified.
 
 *Syntax:*
 
@@ -602,10 +602,10 @@ If an error occurs the command will not return `data`.
 <find-one-and-replace-command> ::= findOneAndReplace <find-one-and-replace-command-payload> 
 <find-one-and-replace-command-payload> ::= <filter-clause>? 
                              <sort-clause>? 
-                             <replacement-clause>?
+                             <replacement>?
                              <find-one-and-replace-command-options>?
 
-<find-one-and-replace-command-options> ::= (<find-option-name>)*
+<find-one-and-replace-command-option> ::= (<returnDocument>)*
 ```
 
 *Sample:*
@@ -617,8 +617,7 @@ If an error occurs the command will not return `data`.
       "sort" : {<sort-clause>}, 
       "replacement" : {<document-to-replace>}, 
       "options" : 
-          {"upsert" : true/false, 
-           "returnDocument" : "before/after"} 
+          {"returnDocument" : "before/after"} 
      }
 }
 ```
@@ -628,23 +627,20 @@ If an error occurs the command will not return `data`.
 `findOneAndReplace` commands are processed using the following order of operation:
 
 1.  `<filter-clause>` is applied to the collection to select a single candidate document. Example:  `"filter": {"location": "London"}`.
-2.  `<sort-clause>` is applied to the candidate document to determine its order. Example: `"sort" : ["race.start_date"]`. If no `<sort-clause>` is supplied, the document maintains its current order.
+2.  `<sort-clause>` can be applied to the candidate document to determine its order. Example: `"sort" : ["race.start_date"]`. If no `<sort-clause>` is supplied, the document maintains its current order.
 3.  `<document-to-replace>` specifies the replacement action. Example: `"replacement": { "location": "New York", "count": 3 }`.
 
 The <replacement> document cannot specify an `_id` value that differs from the replaced document.
 
 #### findOneAndReplace Command Options
 
-`<find-one-and-replace-command-options>` is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior applied when not provided.
-
-If `upsert` is true, insert the replacement document as a new record.
+`<find-one-and-replace-command-option>` is a map of key-value pairs that modify the behavior of the command. 
 
 If `returnDocument` is `before`, return the existing document. if `returnDocument` is `after`, return the replaced document. 
 
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
 | `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after the update. Defaults to `"before"`. |
-| `upsert`          | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### findOneAndReplace Document Failure Modes
 
@@ -662,9 +658,6 @@ NOTE: you can omit `_id` in the replacement document. If `_id` is in the replace
 | `data`            | Present with fields : `docs` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
 | `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted. |
 | `errors`          | Present if errors occur. |
-
-
-If `upsert` option was set to `true`, and no documents matched a filter, a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned.
 
 If an error occurs the command will not return `data` or `status`.
 
