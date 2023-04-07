@@ -603,7 +603,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                                 {
                                   "status": {
-                                      "existingCollections": [ "events" ]
+                                      "collections": [ "events" ]
                                   }
                                 }
                                 """),

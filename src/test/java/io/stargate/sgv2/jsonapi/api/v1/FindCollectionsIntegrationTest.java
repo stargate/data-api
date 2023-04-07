@@ -71,8 +71,8 @@ class FindCollectionsIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
-          .body("status.existingCollections", hasSize(1))
-          .body("status.existingCollections", hasItem(collection));
+          .body("status.collections", hasSize(1))
+          .body("status.collections", hasItem(collection));
     }
 
     @Test
@@ -116,7 +116,7 @@ class FindCollectionsIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(NamespaceResource.BASE_PATH, namespace)
           .then()
           .statusCode(200)
-          .body("status.existingCollections", hasSize(0));
+          .body("status.collections", hasSize(0));
 
       // cleanup
       json =
@@ -159,7 +159,7 @@ class FindCollectionsIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(NamespaceResource.BASE_PATH, "system")
           .then()
           .statusCode(200)
-          .body("status.existingCollections", hasSize(0));
+          .body("status.collections", hasSize(0));
     }
 
     @Test
