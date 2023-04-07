@@ -412,6 +412,7 @@ it operates, and may include set of options to further modify behavior.
 The following commands are supported for collections:
 
 -   [`countDocuments`](#countDocuments-command)
+-   [`createCollection`](#createCollection-command)
 -   [`deleteMany`](#deleteMany-command)
 -   [`deleteOne`](#deleteOne-command)
 -   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
@@ -465,6 +466,42 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 | `errors`          | Present if errors occur.                                |
  
 If an error occurs the command will not return `status`.
+
+
+### createCollection Command
+
+Creates a new collection in the current namespace.
+
+*Sample*
+
+```json
+{
+  "createCollection": {
+    "name": "purchase"
+  }
+}
+```
+
+#### createCollection Command Options
+
+The `createCollection` command does not support any options.
+
+#### createCollection Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing.
+
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### createCollection Command Response
+
+| Response Elements | Description                                             |
+| ----------------- | ------------------------------------------------------- |
+| `data`            | Not present                                             |
+| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
+| `errors`          | Present if errors occur.                                |
+ 
+If an error occurs the command will not return `status`.
+
 
 ### deleteMany Command
 
