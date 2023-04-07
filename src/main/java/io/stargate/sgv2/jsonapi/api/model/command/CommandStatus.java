@@ -11,7 +11,7 @@ public enum CommandStatus {
   @JsonProperty("deletedCount")
   DELETED_COUNT,
   /** Status for reporting existing namespaces. */
-  @JsonProperty("existingNamespaces")
+  @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")

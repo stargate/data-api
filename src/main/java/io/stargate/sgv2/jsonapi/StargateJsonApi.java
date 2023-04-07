@@ -579,7 +579,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                                 {
                                   "status": {
-                                    "existingNamespaces": [
+                                    "namespaces": [
                                       "cycling"
                                     ]
                                   }

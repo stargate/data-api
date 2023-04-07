@@ -69,7 +69,7 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.existingNamespaces", not(hasItem(keyspaceId.asInternal())));
+          .body("status.namespaces", not(hasItem(keyspaceId.asInternal())));
     }
 
     @Test
@@ -152,7 +152,7 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.existingNamespaces", not(hasItem(keyspace)));
+          .body("status.namespaces", not(hasItem(keyspace)));
     }
 
     @Test

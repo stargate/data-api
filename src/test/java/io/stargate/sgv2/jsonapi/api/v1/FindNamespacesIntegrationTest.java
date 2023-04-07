@@ -47,8 +47,8 @@ class FindNamespacesIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.existingNamespaces", hasSize(greaterThan(1)))
-          .body("status.existingNamespaces", hasItem(keyspaceId.asInternal()));
+          .body("status.namespaces", hasSize(greaterThan(1)))
+          .body("status.namespaces", hasItem(keyspaceId.asInternal()));
     }
   }
 }
