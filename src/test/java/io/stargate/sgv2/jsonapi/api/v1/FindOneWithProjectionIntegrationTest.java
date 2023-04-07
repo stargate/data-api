@@ -51,10 +51,9 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class ByIdBasic {
-
+  class BasicProject {
     @Test
-    public void byIdWithProjection() {
+    public void byIdNested() {
       insertDoc(DOC1_JSON);
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);
@@ -100,7 +99,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class ByIdSlice {
+  class ProjectionWithSlice {
     @AfterEach
     public void cleanUpData() {
       deleteAllDocuments();
