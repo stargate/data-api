@@ -2,10 +2,10 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
@@ -53,14 +53,23 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .body("status.ok", is(1));
 
       // ensure it's dropped
-      // TODO go away from session usage once we have findNamespaces
-      ResultSet keyspaces = session.execute("SELECT keyspace_name FROM system_schema.keyspaces;");
-      assertThat(keyspaces.all())
-          .allSatisfy(
-              row -> {
-                assertThat(row.get("keyspace_name", String.class))
-                    .isNotEqualTo(keyspaceId.asInternal());
-              });
+      json =
+          """
+              {
+                "findNamespaces": {
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.namespaces", not(hasItem(keyspaceId.asInternal())));
     }
 
     @Test
@@ -127,13 +136,23 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .body("status.ok", is(1));
 
       // ensure it's dropped
-      // TODO go away from session usage once we have findNamespaces
-      ResultSet keyspaces = session.execute("SELECT keyspace_name FROM system_schema.keyspaces;");
-      assertThat(keyspaces.all())
-          .allSatisfy(
-              row -> {
-                assertThat(row.get("keyspace_name", String.class)).isNotEqualTo(keyspace);
-              });
+      json =
+          """
+              {
+                "findNamespaces": {
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.namespaces", not(hasItem(keyspace)));
     }
 
     @Test

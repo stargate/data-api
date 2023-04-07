@@ -290,6 +290,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "findNamespaces",
+                  summary = "`FindNamespaces` command",
+                  value =
+                      """
+                        {
+                            "findNamespaces": {
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "dropNamespace",
                   summary = "`DropNamespace` command",
                   value =
@@ -559,6 +569,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                   "status": {
                                       "deletedCount": 2,
                                       "moreData" : true
+                                  }
+                                }
+                                """),
+              @ExampleObject(
+                  name = "resultFindNamespaces",
+                  summary = "`findNamespaces` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                    "namespaces": [
+                                      "cycling"
+                                    ]
                                   }
                                 }
                                 """),
