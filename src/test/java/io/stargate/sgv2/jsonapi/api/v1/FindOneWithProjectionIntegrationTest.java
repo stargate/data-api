@@ -13,10 +13,8 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -35,8 +33,8 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
                 {
                   "_id": "doc2",
                   "username": "user2",
-                  "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                  "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
+                  "tags" : ["tag1", "tag2", "tag42", "tag1972", "zzzz"],
+                  "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
                 }
                 """;
 
@@ -50,7 +48,6 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
                 """;
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class BasicProject {
     @Test
     public void byIdNested() {
@@ -59,13 +56,13 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
       insertDoc(DOC3_JSON);
       String json =
           """
-                        {
-                          "findOne": {
-                            "filter" : {"_id" : "doc3"},
-                            "projection": { "sub_doc.b": 0 }
-                          }
-                        }
-                        """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc3"},
+              "projection": { "sub_doc.b": 0 }
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -98,8 +95,87 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
   }
 
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class ProjectionWithSlice {
+    @Test
+    public void byIdRootSliceHead() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+                  {
+                    "findOne": {
+                      "filter" : {"_id" : "doc2"},
+                      "projection": { "tags": { "$slice" : 2 }  }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                              {
+                                "_id": "doc2",
+                                "username": "user2",
+                                "tags" : ["tag1", "tag2"],
+                                "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                              }
+                              """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byIdRootSliceTail() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "doc2"},
+                          "projection": { "tags": { "$slice" : -2 }  }
+                        }
+                      }
+                      """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                                          {
+                                            "_id": "doc2",
+                                            "username": "user2",
+                                            "tags" : ["tag1972", "zzzz"],
+                                            "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                                          }
+                                          """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
     @AfterEach
     public void cleanUpData() {
       deleteAllDocuments();

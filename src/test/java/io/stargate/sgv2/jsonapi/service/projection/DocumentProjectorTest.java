@@ -531,32 +531,32 @@ public class DocumentProjectorTest {
       JsonNode doc =
           objectMapper.readTree(
               """
-                              { "values" : [ 1, 2, 3, 4, 5 ],
-                                "x": 1,
-                                "y": 2
-                              }
-                              """);
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 1,
+                        "y": 2
+                      }
+                      """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
               objectMapper.readTree(
                   """
-                    {
-                      "x": 0,
-                      "values": {
-                        "$slice": 3
-                       }
-                     }
-      """));
+                          {
+                            "x": 0,
+                            "values": {
+                              "$slice": 3
+                             }
+                           }
+                        """));
       assertThat(projection.isInclusion()).isFalse();
       projection.applyProjection(doc);
       assertThat(doc)
           .isEqualTo(
               objectMapper.readTree(
                   """
-                              { "values" : [ 1, 2, 3 ],
-                                "y": 2
-                              }
-                                      """));
+                          { "values" : [ 1, 2, 3 ],
+                            "y": 2
+                          }
+                          """));
     }
 
     @Test
@@ -564,11 +564,11 @@ public class DocumentProjectorTest {
       JsonNode doc =
           objectMapper.readTree(
               """
-                              { "values" : [ 1, 2, 3, 4, 5 ],
-                                "x": 1,
-                                "y": 2
-                              }
-                              """);
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 1,
+                        "y": 2
+                      }
+                      """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
               objectMapper.readTree(
@@ -586,10 +586,10 @@ public class DocumentProjectorTest {
           .isEqualTo(
               objectMapper.readTree(
                   """
-                                    { "values" : [ 4, 5 ],
-                                      "x": 1
-                                    }
-                                      """));
+                          { "values" : [ 4, 5 ],
+                            "x": 1
+                          }
+                            """));
     }
 
     @Test
@@ -597,11 +597,11 @@ public class DocumentProjectorTest {
       JsonNode doc =
           objectMapper.readTree(
               """
-                              { "values" : [ 1, 2, 3, 4, 5 ],
-                                "x": 9,
-                                "y": -7
-                              }
-                              """);
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 9,
+                        "y": -7
+                      }
+                      """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
               objectMapper.readTree(
@@ -630,11 +630,11 @@ public class DocumentProjectorTest {
       JsonNode doc =
           objectMapper.readTree(
               """
-                              { "values" : [ 1, 2, 3, 4, 5 ],
-                                "x": 9,
-                                "y": -7
-                              }
-                              """);
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 9,
+                        "y": -7
+                      }
+                      """);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(
               objectMapper.readTree(
@@ -652,10 +652,10 @@ public class DocumentProjectorTest {
           .isEqualTo(
               objectMapper.readTree(
                   """
-                                      { "values" : [ 2, 3, 4, 5 ],
-                                        "y": -7
-                                      }
-                                      """));
+                          { "values" : [ 2, 3, 4, 5 ],
+                            "y": -7
+                          }
+                          """));
     }
   }
 }

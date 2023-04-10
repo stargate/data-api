@@ -197,11 +197,6 @@ public class DocumentProjector {
 
     private void addSlice(String path, JsonNode sliceDef) {
       if (sliceDef.isArray()) {
-        if (sliceDef.size() == 1 && sliceDef.get(0).isIntegralNumber()) {
-          int count = sliceDef.get(0).intValue();
-          slices.add(new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(count)));
-          return;
-        }
         if (sliceDef.size() == 2
             && sliceDef.get(0).isIntegralNumber()
             && sliceDef.get(1).isIntegralNumber()) {
@@ -223,7 +218,7 @@ public class DocumentProjector {
               + path
               + "') has unsupported parameter for '$slice' ("
               + sliceDef.getNodeType()
-              + "): only NUMBER or ARRAY with 1 or 2 NUMBERs accepted");
+              + "): only NUMBER or ARRAY with 2 NUMBERs accepted");
     }
 
     private void addExclusion(String path) {
