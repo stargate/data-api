@@ -48,9 +48,9 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
                 """;
 
   @Nested
-  class BasicProject {
+  class BasicProjection {
     @Test
-    public void byIdNested() {
+    public void byIdNestedExclusion() {
       insertDoc(DOC1_JSON);
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);

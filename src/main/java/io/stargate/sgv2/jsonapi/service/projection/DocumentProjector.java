@@ -202,6 +202,16 @@ public class DocumentProjector {
             && sliceDef.get(1).isIntegralNumber()) {
           int skip = sliceDef.get(0).intValue();
           int count = sliceDef.get(1).intValue();
+          if (count < 0) { // negative values not allowed
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                    + ": path ('"
+                    + path
+                    + "') has unsupported parameter for '$slice' ("
+                    + sliceDef.getNodeType()
+                    + "): second NUMBER (entries to return) MUST be positive");
+          }
           slices.add(
               new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(skip, count)));
           return;

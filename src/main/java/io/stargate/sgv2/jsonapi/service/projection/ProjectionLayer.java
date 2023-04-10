@@ -260,6 +260,10 @@ class ProjectionLayer {
     void slice(JsonNode arrayNode);
   }
 
+  /**
+   * Simple slicer gets just one numeric argument: number of entries to retain; if positive, first
+   * N, if negative, last -N. Implemented by removing elements that are not to be retained.
+   */
   record SimpleSlicer(int count) implements Slicer {
     @Override
     public void slice(JsonNode n) {
@@ -281,12 +285,36 @@ class ProjectionLayer {
     }
   }
 
-  record FullSlicer(int skip, int count) implements Slicer {
+  /**
+   * "Full" slicer gets just two numeric arguments: number of entries to skip first, then number of
+   * entries to return. Skip value can be positive or negative; positive skips first N, negative
+   * last -N. "toReturn" value must be positive integer.
+   *
+   * <p>Implemented by removing elements that are not to be retained.
+   */
+  record FullSlicer(int skip, int toReturn) implements Slicer {
     @Override
     public void slice(JsonNode n) {
-      if (n.isArray()) {
-        // !!! TO IMPLEMENT PROPERLY
-        ((ArrayNode) n).removeAll();
+      if (!n.isArray()) {
+        return;
+      }
+      ArrayNode array = (ArrayNode) n;
+      int firstToRemove;
+
+      if (skip >= 0) { // Skip (remove) first N
+        firstToRemove = Math.min(skip, array.size());
+      } else { // Retain last N, i.e. remove first len-N
+        firstToRemove = Math.max(0, array.size() + skip);
+      }
+
+      // So: first remove N head elements
+      while (--firstToRemove >= 0) {
+        array.remove(0);
+      }
+
+      // And then last N tail elements
+      while (array.size() > toReturn) {
+        array.remove(toReturn);
       }
     }
   }
