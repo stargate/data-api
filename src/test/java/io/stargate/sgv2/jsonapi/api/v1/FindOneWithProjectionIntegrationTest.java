@@ -95,7 +95,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
   }
 
   @Nested
-  class ProjectionWithSlice {
+  class ProjectionWithSimpleSlice {
     @Test
     public void byIdRootSliceHead() {
       insertDoc(DOC1_JSON);
@@ -103,13 +103,13 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
       insertDoc(DOC3_JSON);
       String json =
           """
-                  {
-                    "findOne": {
-                      "filter" : {"_id" : "doc2"},
-                      "projection": { "tags": { "$slice" : 2 }  }
-                    }
-                  }
-                  """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "doc2"},
+                          "projection": { "tags": { "$slice" : 2 }  }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -125,13 +125,13 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
               "data.docs[0]",
               jsonEquals(
                   """
-                              {
-                                "_id": "doc2",
-                                "username": "user2",
-                                "tags" : ["tag1", "tag2"],
-                                "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
-                              }
-                              """))
+                                      {
+                                        "_id": "doc2",
+                                        "username": "user2",
+                                        "tags" : ["tag1", "tag2"],
+                                        "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                                      }
+                                      """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -165,13 +165,102 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
               "data.docs[0]",
               jsonEquals(
                   """
-                                          {
-                                            "_id": "doc2",
-                                            "username": "user2",
-                                            "tags" : ["tag1972", "zzzz"],
-                                            "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
-                                          }
-                                          """))
+                                      {
+                                        "_id": "doc2",
+                                        "username": "user2",
+                                        "tags" : ["tag1972", "zzzz"],
+                                        "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                                      }
+                                      """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  class ProjectionWithFullSlice {
+    @Test
+    public void byIdRootSliceHeadOverrun() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+                        {
+                          "findOne": {
+                            "filter" : {"_id" : "doc2"},
+                            "projection": {
+                              "tags": { "$slice" : [3, 99] },
+                              "username" : 1
+                            }
+                          }
+                        }
+                        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                          {
+                            "_id": "doc2",
+                            "username": "user2",
+                            "tags" : ["tag42", "tag1972", "zzzz"]
+                          }
+                          """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byIdRootSliceTail() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc2"},
+              "projection": {
+                "tags": {
+                  "$slice" : [-3, 2]
+                },
+                "username": 0
+              }
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                          {
+                            "_id": "doc2",
+                            "tags" : ["tag42", "tag1972"],
+                            "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                          }
+                          """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
