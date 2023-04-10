@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -22,6 +23,9 @@ class ProjectionLayer {
   /** Whether this layer is terminal (matching) or branch (non-matching) */
   private final boolean isTerminal;
 
+  /** In case of {@code $slice} operation, helper object that implements slicing logic. */
+  private final Slicer slicer;
+
   /**
    * Full path either to this layer (terminal), or to the first path through it (non-terminal) --
    * needed for conflict reporting.
@@ -31,20 +35,34 @@ class ProjectionLayer {
   /** For non-terminal layers, segment-indexed next layers */
   private final Map<String, ProjectionLayer> nextLayers;
 
-  ProjectionLayer(boolean terminal, String fullPath) {
-    isTerminal = terminal;
+  ProjectionLayer(String fullPath, boolean terminal) {
     this.fullPath = fullPath;
+    isTerminal = terminal;
+    slicer = null;
     nextLayers = isTerminal ? null : new HashMap<>();
+  }
+
+  ProjectionLayer(String fullPath, Slicer slicer) {
+    this.fullPath = fullPath;
+    this.slicer = slicer;
+    isTerminal = true;
+    nextLayers = null;
   }
 
   public static ProjectionLayer buildLayers(
       Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
     // Root is always branch (not terminal):
-    ProjectionLayer root = new ProjectionLayer(false, "");
+    ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
       String[] segments = DOT.split(fullPath);
       buildPath(fullPath, root, segments);
     }
+    // Slices similar to path but processed differently (and while "exclusions"
+    // in a way do not count as ones wrt compatibility)
+    for (SliceDef slice : slices) {
+      buildSlicer(slice, root);
+    }
+
     // May need to add doc-id inclusion/exclusion as well
     if (addDocId) {
       buildPath(
@@ -64,6 +82,16 @@ class ProjectionLayer {
     layer.addTerminal(fullPath, segments[last]);
   }
 
+  static void buildSlicer(SliceDef slice, ProjectionLayer layer) {
+    final String fullPath = slice.path;
+    String[] segments = DOT.split(fullPath);
+    final int last = segments.length - 1;
+    for (int i = 0; i < last; ++i) {
+      layer = layer.findOrCreateBranch(fullPath, segments[i]);
+    }
+    layer.addSlicer(fullPath, segments[last], slice.slicer());
+  }
+
   ProjectionLayer findOrCreateBranch(String fullPath, String segment) {
     // Cannot proceed past terminal layer (shorter path):
     if (isTerminal) {
@@ -71,7 +99,7 @@ class ProjectionLayer {
     }
     ProjectionLayer next = nextLayers.get(segment);
     if (next == null) {
-      next = new ProjectionLayer(false, fullPath);
+      next = new ProjectionLayer(fullPath, false);
       nextLayers.put(segment, next);
     }
     return next;
@@ -87,7 +115,19 @@ class ProjectionLayer {
     if (next != null) {
       reportPathConflict(fullPath, next.fullPath);
     }
-    nextLayers.put(segment, new ProjectionLayer(true, fullPath));
+    nextLayers.put(segment, new ProjectionLayer(fullPath, true));
+  }
+
+  void addSlicer(String fullPath, String segment, Slicer slicer) {
+    // Similar checks to "regular" paths
+    if (isTerminal) {
+      reportPathConflict(this.fullPath, fullPath);
+    }
+    ProjectionLayer next = nextLayers.get(segment);
+    if (next != null) {
+      reportPathConflict(fullPath, next.fullPath);
+    }
+    nextLayers.put(segment, new ProjectionLayer(fullPath, slicer));
   }
 
   /**
@@ -118,8 +158,8 @@ class ProjectionLayer {
 
       if (nextLayer == null) { // case 3: no match, remove
         it.remove();
-      } else if (nextLayer.isTerminal) { // case 1: leave as-is
-        ;
+      } else if (nextLayer.isTerminal) { // case 1: leave as-is (but "$slice" if need be)
+        nextLayer.applySlice(entry.getValue());
       } else { // case 2: recurse
         nextLayer.applyInclusions(entry.getValue());
       }
@@ -154,12 +194,30 @@ class ProjectionLayer {
 
       if (propValue == null) { // case 3: no match, leave
         ;
-      } else if (nextLayer.isTerminal) { // case 1: remove
-        ((ObjectNode) subtree).remove(propName);
+      } else if (nextLayer.isTerminal) { // case 1: remove either partially ("$slice") or completely
+        if (!nextLayer.applySlice(propValue)) {
+          ((ObjectNode) subtree).remove(propName);
+        }
       } else { // case 2: recurse
         nextLayer.applyExclusions(propValue);
       }
     }
+  }
+
+  /**
+   * Method called on sub-tree on which {@code $slice} operation is to be performed: presumably
+   * Array, but not necessarily (if not, will be left as-is).
+   *
+   * @param subtree JSON value to "slice"
+   * @return True if there is "$slice" operation to perform (regardless of whether any change
+   *     occurred)
+   */
+  public boolean applySlice(JsonNode subtree) {
+    if (slicer == null) {
+      return false;
+    }
+    slicer.slice(subtree);
+    return true;
   }
 
   void reportPathConflict(String fullPath1, String fullPath2) {
@@ -188,5 +246,48 @@ class ProjectionLayer {
     return Objects.hash(isTerminal, fullPath, nextLayers);
   }
 
-  public record SliceDef(String path, Integer first, Integer second) {}
+  public record SliceDef(String path, Slicer slicer) {}
+
+  static Slicer constructSlicer(int count) {
+    return new SimpleSlicer(count);
+  }
+
+  static Slicer constructSlicer(int skip, int count) {
+    return new FullSlicer(skip, count);
+  }
+
+  interface Slicer {
+    void slice(JsonNode arrayNode);
+  }
+
+  record SimpleSlicer(int count) implements Slicer {
+    @Override
+    public void slice(JsonNode n) {
+      if (!n.isArray()) {
+        return;
+      }
+      ArrayNode array = (ArrayNode) n;
+      int removeAt, toRetain;
+
+      if (count >= 0) { // Retain first N, i.e. remove beyond
+        removeAt = toRetain = count;
+      } else { // Retain last N, i.e. remove first len-N
+        removeAt = 0;
+        toRetain = -count;
+      }
+      while (array.size() > toRetain) {
+        array.remove(removeAt);
+      }
+    }
+  }
+
+  record FullSlicer(int skip, int count) implements Slicer {
+    @Override
+    public void slice(JsonNode n) {
+      if (n.isArray()) {
+        // !!! TO IMPLEMENT PROPERLY
+        ((ArrayNode) n).removeAll();
+      }
+    }
+  }
 }

@@ -198,19 +198,22 @@ public class DocumentProjector {
     private void addSlice(String path, JsonNode sliceDef) {
       if (sliceDef.isArray()) {
         if (sliceDef.size() == 1 && sliceDef.get(0).isIntegralNumber()) {
-          slices.add(new ProjectionLayer.SliceDef(path, sliceDef.get(0).intValue(), null));
+          int count = sliceDef.get(0).intValue();
+          slices.add(new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(count)));
           return;
         }
         if (sliceDef.size() == 2
             && sliceDef.get(0).isIntegralNumber()
             && sliceDef.get(1).isIntegralNumber()) {
+          int skip = sliceDef.get(0).intValue();
+          int count = sliceDef.get(1).intValue();
           slices.add(
-              new ProjectionLayer.SliceDef(
-                  path, sliceDef.get(0).intValue(), sliceDef.get(1).intValue()));
+              new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(skip, count)));
           return;
         }
       } else if (sliceDef.isIntegralNumber()) {
-        slices.add(new ProjectionLayer.SliceDef(path, sliceDef.intValue(), null));
+        int count = sliceDef.intValue();
+        slices.add(new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(count)));
         return;
       }
       throw new JsonApiException(

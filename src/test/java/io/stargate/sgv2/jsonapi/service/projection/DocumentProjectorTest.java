@@ -523,4 +523,139 @@ public class DocumentProjectorTest {
       assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
     }
   }
+
+  @Nested
+  class ProjectorApplySlice {
+    @Test
+    public void simpleSliceWithExclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 1,
+                                "y": 2
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "x": 0,
+                      "values": {
+                        "$slice": 3
+                       }
+                     }
+      """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                              { "values" : [ 1, 2, 3 ],
+                                "y": 2
+                              }
+                                      """));
+    }
+
+    @Test
+    public void simpleSliceWithExclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 1,
+                                "y": 2
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "y": 0,
+                      "values": {
+                        "$slice": -2
+                       }
+                     }
+      """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                    { "values" : [ 4, 5 ],
+                                      "x": 1
+                                    }
+                                      """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 9,
+                                "y": -7
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "x": 1,
+                      "values": {
+                        "$slice": 2
+                       }
+                     }
+      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      { "values" : [ 1, 2 ],
+                                        "x": 9
+                                      }
+                                      """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 9,
+                                "y": -7
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "values": {
+                        "$slice": -4
+                       },
+                       "y": 1
+                     }
+      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      { "values" : [ 2, 3, 4, 5 ],
+                                        "y": -7
+                                      }
+                                      """));
+    }
+  }
 }
