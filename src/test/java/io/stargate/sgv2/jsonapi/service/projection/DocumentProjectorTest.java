@@ -33,6 +33,42 @@ public class DocumentProjectorTest {
     }
 
     @Test
+    public void verifyProjectionNoEmptyPath() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+              { "root" :
+                { "branch" :
+                  { "": 1 }
+                }
+              }
+              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: empty paths (and path segments) not allowed");
+    }
+
+    @Test
+    public void verifyProjectionNoUnknownOperators() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+              { "include" : 1,
+                "$set" : 1
+              }
+              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
+    }
+
+    @Test
     public void verifyNoIncludeAfterExclude() throws Exception {
       JsonNode def =
           objectMapper.readTree(

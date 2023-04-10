@@ -129,6 +129,26 @@ public class DocumentProjector {
       while (it.hasNext()) {
         var entry = it.next();
         String path = entry.getKey();
+
+        if (path.isEmpty()) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": empty paths (and path segments) not allowed");
+        }
+        if (path.charAt(0) == '$') {
+          if ("$slice".equals(path)) {
+            ; // To Be Implemented!
+          } else {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                    + ": unrecognized/unsupported projection operator '"
+                    + path
+                    + "' (only '$slice' supported)");
+          }
+        }
+
         if (parentPath != null) {
           path = parentPath + "." + path;
         }
