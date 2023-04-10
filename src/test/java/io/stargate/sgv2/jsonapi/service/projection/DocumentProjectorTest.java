@@ -33,7 +33,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void verifyProjectionNoEmptyPath() throws Exception {
+    public void verifyNoEmptyPath() throws Exception {
       JsonNode def =
           objectMapper.readTree(
               """
@@ -49,23 +49,6 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: empty paths (and path segments) not allowed");
-    }
-
-    @Test
-    public void verifyProjectionNoUnknownOperators() throws Exception {
-      JsonNode def =
-          objectMapper.readTree(
-              """
-              { "include" : 1,
-                "$set" : 1
-              }
-              """);
-      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
-      assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
-          .hasMessage(
-              "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
     }
 
     @Test
@@ -166,6 +149,61 @@ public class DocumentProjectorTest {
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr2)));
       assertThat(proj2)
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1)));
+    }
+  }
+
+  @Nested
+  class ProjectorSliceValidation {
+    @Test
+    public void verifyNoUnknownOperators() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      { "include" : {
+                           "$set" : 1
+                         }
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
+    }
+
+    @Test
+    public void verifyNoRootOperators() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                              { "$slice" : 1 }
+                              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: path cannot start with '$' (no root-level operators)");
+    }
+
+    @Test
+    public void verifySliceDefValid() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      {
+                        "include" : {
+                           "$slice" : "text-not-accepted"
+                        }
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessageStartingWith(
+              "Unsupported projection parameter: path ('include') has unsupported parameter for '$slice' (STRING)");
     }
   }
 

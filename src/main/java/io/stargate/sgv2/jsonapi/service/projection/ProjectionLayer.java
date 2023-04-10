@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -36,7 +37,8 @@ class ProjectionLayer {
     nextLayers = isTerminal ? null : new HashMap<>();
   }
 
-  public static ProjectionLayer buildLayers(Collection<String> dotPaths, boolean addDocId) {
+  public static ProjectionLayer buildLayers(
+      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer(false, "");
     for (String fullPath : dotPaths) {
@@ -185,4 +187,6 @@ class ProjectionLayer {
   public int hashCode() {
     return Objects.hash(isTerminal, fullPath, nextLayers);
   }
+
+  public record SliceDef(String path, Integer first, Integer second) {}
 }
