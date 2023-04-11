@@ -214,7 +214,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
                           {
                             "_id": "doc2",
                             "username": "user2",
-                            "tags" : ["tag42", "tag1972", "zzzz"]
+                            "tags" : ["tag1972", "zzzz"]
                           }
                           """))
           .body("status", is(nullValue()))
