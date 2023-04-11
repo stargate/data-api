@@ -43,13 +43,13 @@ public class FindOneAndReplaceCommandResolverTest {
     public void idFilterCondition() throws Exception {
       String json =
           """
-                {
-                  "findOneAndReplace": {
-                    "filter" : {"_id" : "id"},
-                    "replacement" : {"col1" : "val1", "col2" : "val2"}
-                  }
-                }
-                """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"_id" : "id"},
+            "replacement" : {"col1" : "val1", "col2" : "val2"}
+          }
+        }
+        """;
       String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
@@ -104,13 +104,13 @@ public class FindOneAndReplaceCommandResolverTest {
     public void idFilterConditionWithId() throws Exception {
       String json =
           """
-                {
-                  "findOneAndReplace": {
-                    "filter" : {"_id" : "id"},
-                    "replacement" : {"_id": "id", "col1" : "val1", "col2" : "val2"}
-                  }
-                }
-                """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"_id" : "id"},
+            "replacement" : {"_id": "id", "col1" : "val1", "col2" : "val2"}
+          }
+        }
+        """;
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
@@ -165,14 +165,14 @@ public class FindOneAndReplaceCommandResolverTest {
     public void filterConditionSort() throws Exception {
       String json =
           """
-            {
-              "findOneAndReplace": {
-                "filter" : {"status" : "active"},
-                "sort" : ["user"],
-                "replacement" : {"col1" : "val1", "col2" : "val2"}
-              }
-            }
-            """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"status" : "active"},
+            "sort" : {"user" : 1},
+            "replacement" : {"col1" : "val1", "col2" : "val2"}
+          }
+        }
+        """;
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
@@ -230,14 +230,14 @@ public class FindOneAndReplaceCommandResolverTest {
     public void idFilterConditionWithOptions() throws Exception {
       String json =
           """
-            {
-              "findOneAndReplace": {
-                "filter" : {"_id" : "id"},
-                "replacement" : {"col1" : "val1", "col2" : "val2"},
-                "options" : {"returnDocument" : "after", "upsert": true }
-              }
-            }
-            """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"_id" : "id"},
+            "replacement" : {"col1" : "val1", "col2" : "val2"},
+            "options" : {"returnDocument" : "after" }
+          }
+        }
+        """;
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
@@ -292,18 +292,15 @@ public class FindOneAndReplaceCommandResolverTest {
     public void filterConditionWithOptionsSort() throws Exception {
       String json =
           """
-            {
-              "findOneAndReplace": {
-                "filter" : {"age" : 35},
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
-                "replacement" : {"col1" : "val1", "col2" : "val2"},
-                "options" : {"returnDocument" : "after"}
-              }
-            }
-            """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"age" : 35},
+            "sort": { "user.name" : 1, "user.age" :  -1 },
+            "replacement" : {"col1" : "val1", "col2" : "val2"},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
@@ -366,13 +363,13 @@ public class FindOneAndReplaceCommandResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-            {
-              "findOneAndReplace": {
-                "filter" : {"col" : "val"},
-                "replacement" : {"col1" : "val1", "col2" : "val2"}
-              }
-            }
-            """;
+        {
+          "findOneAndReplace": {
+            "filter" : {"col" : "val"},
+            "replacement" : {"col1" : "val1", "col2" : "val2"}
+          }
+        }
+        """;
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);

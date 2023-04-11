@@ -27,10 +27,10 @@ class SortClauseDeserializerTest {
     public void happyPath() throws Exception {
       String json =
           """
-          [
-           "some.path",
-           "-another.path"
-          ]
+          {
+           "some.path" : 1,
+           "another.path" : -1
+          }
           """;
 
       SortClause sortClause = objectMapper.readValue(json, SortClause.class);
@@ -45,7 +45,7 @@ class SortClauseDeserializerTest {
     @Test
     public void mustTrimPath() throws Exception {
       String json = """
-          ["some.path "]
+              {"some.path " : 1}
           """;
 
       SortClause sortClause = objectMapper.readValue(json, SortClause.class);
@@ -66,9 +66,9 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void mustBeArray() {
+    public void mustBeObject() {
       String json = """
-                    "primitive"
+                    ["primitive"]
                     """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
@@ -79,17 +79,8 @@ class SortClauseDeserializerTest {
     @Test
     public void mustBeCorrectContainerNode() {
       String json = """
-                    {"path": "some"}
+                    {"path": "value"}
                     """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
-
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
-    }
-
-    @Test
-    public void mustContainString() {
-      String json = "[2]";
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
@@ -99,7 +90,7 @@ class SortClauseDeserializerTest {
     @Test
     public void mustNotContainBlankString() {
       String json = """
-          [" "]
+              {" " : 1}
           """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
@@ -108,9 +99,9 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void mustNotContainPathAfterMinus() {
+    public void mustNotContainEmptyString() {
       String json = """
-          ["-"]
+              {"": 1}
           """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
-import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import javax.annotation.Nullable;
@@ -25,7 +25,7 @@ public record FindOneAndReplaceCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable {
+    implements ModifyCommand, Filterable, Projectable {
 
   @Schema(
       name = "FindOneAndReplaceCommand.Options",

@@ -77,8 +77,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       return FindOperation.sorted(
           commandContext,
           filters,
-          // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
-          // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),
           null,
           1,
@@ -95,8 +93,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       return FindOperation.unsorted(
           commandContext,
           filters,
-          // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
-          // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),
           null,
           1,

@@ -33,10 +33,7 @@ public class CaptureGroupsTest {
           """
                     {
                       "findOne": {
-                        "sort": [
-                          "user.name",
-                          "-user.age"
-                        ],
+                        "sort" : {"user.name" : 1, "user.age" : -1},
                         "filter": {"username": "aaron"}
                       }
                     }

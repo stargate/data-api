@@ -236,7 +236,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
               {
                 "findOneAndReplace": {
                   "filter" : {"active_user" : true},
-                  "sort" : ["username"],
+                  "sort" : {"username" : 1},
                   "replacement" : {"username": "username2", "status" : true },
                   "options" : {"returnDocument" : "after"}
                 }
@@ -371,6 +371,145 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class FindOneAndReplaceWithProjection {
+    @Test
+    public void byIdProjectionAfter() {
+      insertDoc(
+          """
+                {
+                  "_id": "docProjAfter",
+                  "username": "userP",
+                  "active_user" : true
+                }
+                """);
+
+      String expectedAfterProjection =
+          """
+                {
+                  "_id": "docProjAfter",
+                  "status" : false
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {"_id" : "docProjAfter"},
+                    "options" : {"returnDocument" : "after"},
+                    "projection" : { "active_user":1, "status":1 },
+                    "replacement" : { "username": "userP", "status" : false }
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedAfterProjection))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expectedAfterReplace =
+          """
+                {
+                  "_id": "docProjAfter",
+                  "username": "userP",
+                  "status" : false
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "docProjAfter"}
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedAfterReplace));
+    }
+
+    @Test
+    public void byIdProjectionBefore() {
+      insertDoc(
+          """
+                {
+                  "_id": "docProjBefore",
+                  "username": "userP",
+                  "active_user" : true
+                }
+                """);
+
+      String expectedWithProjectionBefore =
+          """
+                {
+                  "_id": "docProjBefore",
+                  "active_user" : true
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {"_id" : "docProjBefore"},
+                    "options" : {"returnDocument" : "before"},
+                    "projection" : { "active_user":1, "status":1 },
+                    "replacement" : { "username": "userP", "status" : false }
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedWithProjectionBefore))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expectedAfterReplace =
+          """
+                {
+                  "_id": "docProjBefore",
+                  "username": "userP",
+                  "status" : false
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "docProjBefore"}
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedAfterReplace));
     }
   }
 
