@@ -403,11 +403,9 @@ The maximum length of an array is 100 elements.
 
 ## Commands
 
-Commands are included in a request and are executed against a single
-collection.
+Commands are included in a request and are executed against a single collection.
 
-Each command specifies one or more [Clauses](#clauses) that control how
-it operates, and may include set of options to further modify behavior.
+Each command specifies one or more [Clauses](#clauses) that control how it operates, and may include set of options to further modify behavior.
 
 The following commands are supported for collections:
 
