@@ -417,7 +417,7 @@ The following commands are supported for collections:
 -   [`deleteOne`](#deleteOne-command)
 -   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
 -   [`find`](#find-command)
--   [`findCollection`](#findCollection-command)
+-   [`findCollections`](#findCollections-command)
 -   [`findOne`](#findOne-command)
 -   [`findOneAndReplace`](#findOneAndReplace-command)
 -   [`findOneAndUpdate`](#findOneAndUpdate-command)
@@ -631,84 +631,22 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 If an error occurs the command will not return `data`.
 
 
-### findCollection Command
+### findCollections Command
 
-`findCollection` returns all valid collection tables from a given namespace.
+`findCollections` returns all valid collection tables from a given namespace.
 
-*Syntax:*
+There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{namespace}`.
 
-```bnf
-<findCollection-command> ::= findCollection <findCollection-command-payload> 
-<findCollection-command-response> ::= <paginated-document-response> 
+#### findCollections Command Options
 
-<findCollection-command-payload> ::= <namespace>?
-                                     <projection-clause>? 
-                                     <sort-clause>? 
-                                     <findCollection-command-options>?
+None. 
 
-<findCollection-command-options> ::= (<findCollection-option-name> <findCollection-option-value>,)*
-```
+#### findCollections Command Response
 
-*Sample:*
-
-```json5
-// Find a collection, return complete documents
-{"findCollection" : {} }
-
-// Select where name == "John" and return selected fields
-{"findCollection" : {
-    "namespace" : {"myNamespace"},
-    "projection" : {"???": 1, "???": 1}
-    } 
-} 
-```
-
-#### findCollection Command Order of Operations
-
-TODO: add how cursor state fits into the processing
-
-`findCollection` commands are processed using the following order of operation:
-
-1.  `<namespace>` specifies the namespace to query for all of its valid collection tables. 
-    If no namespace is given, return error (???). If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`.
-2.  `<sort-clause>` is applied to the candidate documents to order them,
-    if no `<sort-clause>` is supplied the documents sort order is
-    undefined.
-3.  The `limit` option from `<findCollection-command-options>` is applied to
-    reduce the number of candidate documents to no more than `limit`, if
-    no `limit` is supplied all candidate documents are included.
-4.  `<projection-clause>` is applied to each candidate document to
-    create the **result set** documents to be included in the
-    `<findCollection-command-response>`, if no `<projection-clause>` is specified
-    the complete candidate documents are included in the response.
-
-#### findCollection Command Options
-
-`<findCollection-command-options>` is a map of key-value pairs that modify the behavior of the command. All options are optional, with default behavior
-applied when not provided.
-
-| Option       | Type               | Description                                                     |
-| ------------ | ------------------ | --------------------------------------------------------------- |
-| `limit`      | Positive Integer   | Limits the number of documents to be returned by the command. If unspecified, or 0, there is no limit on number of documents returned. Note that results may still be broken into pages. |
-| `pageState`  | ASCII String       | The page state of the previous page, when supplied the `find` command will return the next page from the result set. If unspecified, null, or an empty string the first page is returned. |
-| `skip`       | Positive Integer   | Skips the specified number of documents, in sort order, before returning any documents. |
-
-#### findCollection Multi Document Failure Modes
-
-Fail Fast, a storage failure causes the command to stop processing.
-
-See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
-
-#### findCollection Command Response
-
-| Response Elements | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs`, `count` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
-| `status`          | Not preset. |
-| `errors`          | Present if errors occur. |
-
-
-If an error occurs the `findCollection` command will not return `data`.
+| Response Elements | Description                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `status`          | Status has `collections` field with array of the available collection names.       |
+| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`. |
 
 
 ### findOneAndReplace Command
