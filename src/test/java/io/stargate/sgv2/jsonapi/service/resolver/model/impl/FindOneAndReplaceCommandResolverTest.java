@@ -289,6 +289,69 @@ public class FindOneAndReplaceCommandResolverTest {
     }
 
     @Test
+    public void idFilterConditionWithOptionsUpsert() throws Exception {
+      String json =
+          """
+            {
+              "findOneAndReplace": {
+                "filter" : {"_id" : "id"},
+                "replacement" : {"col1" : "val1", "col2" : "val2"},
+                "options" : {"returnDocument" : "after", "upsert" : true }
+              }
+            }
+            """;
+
+      FindOneAndReplaceCommand command =
+          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              ReadAndUpdateOperation.class,
+              op -> {
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.upsert()).isTrue();
+                assertThat(op.returnDocumentInResponse()).isTrue();
+                assertThat(op.returnUpdatedDocument()).isTrue();
+                assertThat(op.shredder()).isEqualTo(shredder);
+                assertThat(op.updateLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        replacer -> {
+                          try {
+                            ObjectNode replacement =
+                                (ObjectNode)
+                                    objectMapper.readTree(
+                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                          }
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                          assertThat(replacer.replaceDocumentId()).isNull();
+                        });
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.IDFilter filter =
+                              new DBFilterBase.IDFilter(
+                                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                        });
+              });
+    }
+
+    @Test
     public void filterConditionWithOptionsSort() throws Exception {
       String json =
           """

@@ -78,10 +78,6 @@ public record DocumentUpdater(
    * @return
    */
   private boolean replace(ObjectNode docToUpdate, boolean docInserted) {
-    // replace will be false if upsert, should never happen
-    if (docInserted) {
-      return false;
-    }
     // Do deep clone so we can remove _id field and check
     ObjectNode compareDoc = docToUpdate.deepCopy();
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
