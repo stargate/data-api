@@ -216,7 +216,7 @@ public record ReadAndUpdateOperation(
 
   private QueryOuterClass.Query buildUpdateQuery() {
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
