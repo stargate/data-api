@@ -31,7 +31,35 @@ public class DeleteCollectionOperationTest extends AbstractValidatingStargateBri
       String collection = RandomStringUtils.randomAlphanumeric(16);
       CommandContext commandContext = new CommandContext(namespace, null);
 
-      String cql = "DROP TABLE IF EXISTS %s.%s;".formatted(namespace, collection);
+      String cql = "DROP TABLE IF EXISTS \"%s\".\"%s\";".formatted(namespace, collection);
+      withQuery(cql).returningNothing();
+
+      DeleteCollectionOperation operation =
+          new DeleteCollectionOperation(commandContext, collection);
+
+      Supplier<CommandResult> result =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .assertCompleted()
+              .getItem();
+
+      assertThat(result.get())
+          .satisfies(
+              commandResult -> {
+                assertThat(commandResult.status().get(CommandStatus.OK)).isEqualTo(1);
+              });
+    }
+
+    @Test
+    public void happyPathCaseSensitive() throws Exception {
+      String namespace = RandomStringUtils.randomAlphanumeric(16).toUpperCase();
+      String collection = RandomStringUtils.randomAlphanumeric(16).toUpperCase();
+      CommandContext commandContext = new CommandContext(namespace, null);
+
+      String cql = "DROP TABLE IF EXISTS \"%s\".\"%s\";".formatted(namespace, collection);
       withQuery(cql).returningNothing();
 
       DeleteCollectionOperation operation =

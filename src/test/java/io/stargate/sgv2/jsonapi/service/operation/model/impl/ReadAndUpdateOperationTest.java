@@ -104,7 +104,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(doc1))));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -301,7 +301,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.NULL)));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -460,7 +460,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(doc1))));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -664,7 +664,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.NULL)));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -858,7 +858,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.NULL)));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -996,7 +996,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .returning(List.of());
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -1264,7 +1264,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(doc2))));
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
@@ -1434,7 +1434,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .returning(List.of());
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
