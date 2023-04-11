@@ -638,8 +638,8 @@ There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{
 *Syntax:*
 
 ```bnf
-<findCollections-command> ::= findCollections
-<find-command-response>   ::= status.collections: ["col1", "col2"]
+<findCollections-command>            ::= findCollections
+<findCollections-command-response>   ::= status.collections: ["col1", "col2"]
 ```
 
 #### findCollections Command Options
@@ -651,8 +651,7 @@ None.
 | Response Elements | Description                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------- |
 | `status`          | Status has `collections` field with array of the available collection names.       |
-| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`. |
-
+| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`.       |
 
 
 ### findOneAndReplace Command
