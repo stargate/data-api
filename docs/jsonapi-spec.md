@@ -492,12 +492,22 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 
 #### createCollection Command Response
 
-| Response Elements | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `data`            | Not present                                             |
-| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
-| `errors`          | Present if errors occur.                                |
+| Response Elements | Description                        |
+| ----------------- | -----------------------------------|
+| `data`            | Not present.                       |
+| `status`          | Not preset.                        |
+| `errors`          | Present if errors occur.           |
  
+Status example:
+
+```json
+{
+  "status": {
+    "ok": 1
+  }
+}
+```
+
 If an error occurs the command will not return `status`.
 
 
@@ -688,7 +698,7 @@ None.
 
 `findOneAndReplace` commands are processed using the following order of operation:
 
-1.  `<filter-clause>` is applied to the collection to select a single candidate document. Example:  `"filter": {"location": "London"}`.
+1.  `<filter-clause>` is applied to the collection to select one or more candidate document(s). Example:  `"filter": {"location": "London"}`.
 2.  `<sort-clause>` can be applied to the candidate document to determine its order. Example: `"sort" : ["race.start_date"]`. If no `<sort-clause>` is supplied, the document maintains its current order.
 3.  `<document-to-replace>` specifies the replacement action. Example: `"replacement": { "location": "New York", "count": 3 }`.
 
@@ -702,7 +712,7 @@ If `returnDocument` is `before`, return the existing document. if `returnDocumen
 
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
-| `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after the update. Defaults to `"before"`. |
+| `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after replacement. Defaults to `"before"`. |
 
 #### findOneAndReplace Document Failure Modes
 
@@ -718,7 +728,7 @@ NOTE: you can omit `_id` in the replacement document. If `_id` is in the replace
 | Response Elements | Description                                                                     |
 | ----------------- | ------------------------------------------------------------------------------- |
 | `data`            | Present with fields : `docs` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
-| `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted. |
+| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted. |
 | `errors`          | Present if errors occur. |
 
 If an error occurs the command will not return `data` or `status`.
