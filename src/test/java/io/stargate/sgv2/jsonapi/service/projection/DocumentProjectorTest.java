@@ -173,6 +173,26 @@ public class DocumentProjectorTest {
     }
 
     @Test
+    public void verifyNoOverlapWithPath() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                              {
+                                "branch.x" : {
+                                   "$slice" : 3
+                                },
+                                "branch.x.leaf" : 1
+                              }
+                              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: projection path conflict between 'branch.x' and 'branch.x.leaf'");
+    }
+
+    @Test
     public void verifyNoRootOperators() throws Exception {
       JsonNode def =
           objectMapper.readTree(
