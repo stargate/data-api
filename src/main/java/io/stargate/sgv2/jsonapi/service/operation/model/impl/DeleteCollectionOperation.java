@@ -16,7 +16,7 @@ import java.util.function.Supplier;
  */
 public record DeleteCollectionOperation(CommandContext context, String name) implements Operation {
 
-  private static final String DROP_TABLE_CQL = "DROP TABLE IF EXISTS %s.%s;";
+  private static final String DROP_TABLE_CQL = "DROP TABLE IF EXISTS \"%s\".\"%s\";";
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
