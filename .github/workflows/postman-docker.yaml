@@ -63,6 +63,7 @@ jobs:
           docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG
           docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-68:$SGTAG stargateio/coordinator-dse-68:$SGTAG
           cd docker-compose
+          docker-compose version
           ./start_dse_68_dev_mode.sh -j $JSONTAG -t $SGTAG
 
       - name: Run API test
