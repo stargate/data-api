@@ -52,7 +52,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     FindOneAndReplaceCommand.Options options = command.options();
     boolean returnUpdatedDocument =
         options != null && "after".equals(command.options().returnDocument());
-
+    boolean upsert = options != null && options.upsert();
     // return
     return new ReadAndUpdateOperation(
         commandContext,
@@ -60,7 +60,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
         documentUpdater,
         true,
         returnUpdatedDocument,
-        false,
+        upsert,
         shredder,
         command.buildProjector(),
         1,

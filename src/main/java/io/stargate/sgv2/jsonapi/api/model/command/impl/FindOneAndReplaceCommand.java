@@ -39,5 +39,10 @@ public record FindOneAndReplaceCommand(
               description =
                   "Specifies which document to perform the projection on. If `before` the projection is performed on the document before the replacement is applied, if `after` the document projection is from the document after the replacement.",
               defaultValue = "before")
-          String returnDocument) {}
+          String returnDocument,
+      @Schema(
+              description =
+                  "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply all _id filter and replacement document to the empty document.",
+              defaultValue = "false")
+          boolean upsert) {}
 }

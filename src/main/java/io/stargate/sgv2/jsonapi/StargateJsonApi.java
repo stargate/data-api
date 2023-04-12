@@ -145,7 +145,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 "count": 3
                             },
                             "options" : {
-                               "returnDocument" : "before"
+                               "returnDocument" : "before",
+                               "upsert" : true
                             },
                             "projection" : {"location": 1}
                         }

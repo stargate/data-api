@@ -276,6 +276,61 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
     }
 
     @Test
+    public void withUpsert() {
+      String expected =
+          """
+        {
+          "_id": "doc2",
+          "username": "username2",
+          "status" : true
+        }
+        """;
+
+      String json =
+          """
+        {
+          "findOneAndReplace": {
+            "filter" : {"_id" : "doc2"},
+            "replacement" : {"username": "username2", "status" : true },
+            "options" : {"returnDocument" : "after", "upsert" : true}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("status.upsertedId", is("doc2"))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : "doc2"}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void byIdWithDifferentId() {
       String document =
           """
