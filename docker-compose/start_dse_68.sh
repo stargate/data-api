@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# require Docker Compose v2
+if [[ ! $(docker compose version --short) =~ "^2." ]]; then
+  echo "Docker compose v2 required. Please upgrade Docker Desktop to the latest version."
+  exit 1
+fi
+
 # Default to INFO as root log level
 LOGLEVEL=INFO
 
@@ -47,11 +53,4 @@ export JSONIMAGE
 
 echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
 
-COMPOSE_ARGS=("-d")
-
-# only use --wait flag if Docker Compose is v2
-if [[ $(docker compose version) =~ "v2" ]]; then
-   COMPOSE_ARGS+=("--wait")
-fi
-
-docker compose up "${COMPOSE_ARGS[@]}"
+docker compose up -d --wait
