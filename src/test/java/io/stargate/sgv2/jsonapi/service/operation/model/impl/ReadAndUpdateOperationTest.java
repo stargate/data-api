@@ -603,7 +603,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .returning(List.of());
 
       String update =
-          "UPDATE %s.%s "
+          "UPDATE \"%s\".\"%s\" "
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
