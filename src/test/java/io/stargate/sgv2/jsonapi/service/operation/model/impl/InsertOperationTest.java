@@ -44,7 +44,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
   class Execute {
 
     static final String INSERT_CQL =
-        "INSERT INTO %s.%s"
+        "INSERT INTO \"%s\".\"%s\""
             + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
             + " VALUES"
             + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";

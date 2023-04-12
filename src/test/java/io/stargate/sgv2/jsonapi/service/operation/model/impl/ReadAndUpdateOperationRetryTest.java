@@ -136,7 +136,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
@@ -351,7 +351,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
@@ -575,7 +575,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
@@ -826,7 +826,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
@@ -1138,7 +1138,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc2))));
 
     String update =
-        "UPDATE %s.%s "
+        "UPDATE \"%s\".\"%s\" "
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"

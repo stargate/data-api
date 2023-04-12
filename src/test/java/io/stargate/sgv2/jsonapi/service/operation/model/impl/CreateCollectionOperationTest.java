@@ -47,12 +47,32 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
                 assertThat(result.status().get(CommandStatus.OK)).isNotNull();
               });
     }
+
+    @Test
+    public void createCollectionCaseSensitive() throws Exception {
+      List<String> queries =
+          getAllQueryString(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
+      queries.stream().forEach(query -> withQuery(query).returningNothing());
+      CommandContext commandContextUpper =
+          new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
+      CreateCollectionOperation createCollectionOperation =
+          new CreateCollectionOperation(commandContextUpper, COLLECTION_NAME.toUpperCase());
+
+      final Supplier<CommandResult> execute =
+          createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.OK)).isNotNull();
+              });
+    }
   }
 
   private List<String> getAllQueryString(String namespace, String collection) {
     List<String> queries = new ArrayList<>();
     String create =
-        "CREATE TABLE IF NOT EXISTS %s.%s ("
+        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
             + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
@@ -68,31 +88,31 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    PRIMARY KEY (key))";
     queries.add(create.formatted(namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (exist_keys) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON %s.%s (entries(sub_doc_equals)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON \"%s\".\"%s\" (entries(sub_doc_equals)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_equals ON %s.%s (entries(array_equals)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_equals ON \"%s\".\"%s\" (entries(array_equals)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON %s.%s (array_contains) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON %s.%s (entries(query_text_values)) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON %s.%s (query_null_values) USING 'StorageAttachedIndex'"
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     return queries;
   }
