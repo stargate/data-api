@@ -44,11 +44,13 @@ public interface ReadOperation extends Operation {
    * Default implementation to query and parse the result set
    *
    * @param queryExecutor
-   * @param queries - Multiple queries only in case of in condition on _id filter
+   * @param queries - Multiple queries only in case of `in` condition on `_id` field
    * @param pagingState
    * @param readDocument This flag is set to false if the read is done to just identify the document
    *     id and tx_id to perform another DML operation
    * @param objectMapper
+   * @param projection
+   * @param limit - How many documents to return
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -129,7 +131,7 @@ public interface ReadOperation extends Operation {
    * This method reads upto system fixed limit
    *
    * @param queryExecutor
-   * @param queries
+   * @param queries Multiple queries only in case of `in` condition on `_id` field
    * @param pageSize
    * @param objectMapper
    * @param comparator -

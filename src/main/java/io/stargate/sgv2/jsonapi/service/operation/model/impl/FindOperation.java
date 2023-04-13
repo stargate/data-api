@@ -181,6 +181,14 @@ public record FindOperation(
   }
 
   // builds select query
+
+  /**
+   * Builds select query based on filters and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter
+   * @return Returns a list of queries, where a query is built using element returned by the
+   *     buildConditions method.
+   */
   private List<QueryOuterClass.Query> buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
     List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
@@ -197,35 +205,13 @@ public record FindOperation(
     return queries;
   }
 
-  private List<List<BuiltCondition>> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
-    // if we have id filter overwrite ignore existing IDFilter
-    boolean idFilterOverwrite = additionalIdFilter != null;
-    for (DBFilterBase filter : filters) {
-      if (!(filter instanceof DBFilterBase.IDFilter idFilter)) {
-        conditions.add(filter.get());
-      } else {
-        if (!idFilterOverwrite) {
-          idFilterToUse = idFilter;
-        }
-      }
-    }
-    // then add id overwrite if there
-    if (idFilterToUse != null) {
-      return idFilterToUse.getAll().stream()
-          .map(
-              idCondition -> {
-                List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
-                conditionsWithId.add(idCondition);
-                return conditionsWithId;
-              })
-          .collect(Collectors.toList());
-    } else {
-      return List.of(conditions);
-    }
-  }
-
+  /**
+   * Builds select query based on filters, sort fields and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter
+   * @return Returns a list of queries, where a query is built using element returned by the
+   *     buildConditions method.
+   */
   private List<QueryOuterClass.Query> buildSortedSelectQuery(
       DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
@@ -250,6 +236,44 @@ public record FindOperation(
                     .limit(maxSortReadLimit())
                     .build()));
     return queries;
+  }
+
+  /**
+   * Builds select query based on filters and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   *     contions
+   * @return Returns a list of list, where outer list represents conditions to be sent as multiple
+   *     queries. Only in condition on _id is returns multiple queries.
+   */
+  private List<List<BuiltCondition>> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
+    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
+    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
+    // if we have id filter overwrite ignore existing IDFilter
+    boolean idFilterOverwrite = additionalIdFilter != null;
+    for (DBFilterBase filter : filters) {
+      if (!(filter instanceof DBFilterBase.IDFilter idFilter)) {
+        conditions.add(filter.get());
+      } else {
+        if (!idFilterOverwrite) {
+          idFilterToUse = idFilter;
+        }
+      }
+    }
+    // then add id filter if available, in case of multiple `in` conditions we need to send multiple
+    // condtions
+    if (idFilterToUse != null) {
+      return idFilterToUse.getAll().stream()
+          .map(
+              idCondition -> {
+                List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
+                conditionsWithId.add(idCondition);
+                return conditionsWithId;
+              })
+          .collect(Collectors.toList());
+    } else {
+      return List.of(conditions);
+    }
   }
 
   /**
