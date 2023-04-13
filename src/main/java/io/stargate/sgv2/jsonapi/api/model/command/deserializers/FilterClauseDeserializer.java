@@ -6,15 +6,21 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -53,7 +59,82 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
       }
     }
+
+    validate(expressionList);
     return new FilterClause(expressionList);
+  }
+
+  private void validate(List<ComparisonExpression> expressionList) {
+    for (ComparisonExpression expression : expressionList) {
+      expression.filterOperations().forEach(operation -> validate(expression.path(), operation));
+    }
+  }
+
+  private void validate(String path, FilterOperation<?> filterOperation) {
+    if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
+      switch (valueComparisonOperator) {
+        case IN -> {
+          if (!path.equals(DocumentConstants.Fields.DOC_ID)) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "Can use $in operator only on _id field");
+          }
+
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.isEmpty()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have array");
+          }
+        }
+      }
+    }
+
+    if (filterOperation.operator() instanceof ElementComparisonOperator elementComparisonOperator) {
+      switch (elementComparisonOperator) {
+        case EXISTS:
+          if (filterOperation.operand().value() instanceof Boolean b) {
+            if (!b)
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator supports only true");
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have boolean");
+          }
+          break;
+      }
+    }
+
+    if (filterOperation.operator() instanceof ArrayComparisonOperator arrayComparisonOperator) {
+      switch (arrayComparisonOperator) {
+        case ALL:
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.isEmpty()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$all operator must have at least one value");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$all operator must have array value");
+          }
+          break;
+        case SIZE:
+          if (filterOperation.operand().value() instanceof BigDecimal i) {
+            if (i.intValue() < 0) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$size operator must have interger value >= 0");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have integer");
+          }
+          break;
+      }
+    }
   }
 
   /**
@@ -81,7 +162,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         if (updateField.getKey().startsWith("$")) {
           throw exception;
         } else {
-          return ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue()));
+          return ComparisonExpression.eq(
+              entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
       }
       JsonNode value = updateField.getValue();
@@ -93,7 +175,16 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
 
   private static Object jsonNodeValue(String path, JsonNode node) {
     if (path.equals(DocumentConstants.Fields.DOC_ID)) {
-      return DocumentId.fromJson(node);
+      if (node.getNodeType() == JsonNodeType.ARRAY) {
+        ArrayNode arrayNode = (ArrayNode) node;
+        List<Object> arrayVals = new ArrayList<>(arrayNode.size());
+        for (JsonNode element : arrayNode) {
+          arrayVals.add(jsonNodeValue(path, element));
+        }
+        return arrayVals;
+      } else {
+        return DocumentId.fromJson(node);
+      }
     }
     return jsonNodeValue(node);
   }

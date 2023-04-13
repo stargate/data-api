@@ -44,7 +44,7 @@ public interface ReadOperation extends Operation {
    * Default implementation to query and parse the result set
    *
    * @param queryExecutor
-   * @param query
+   * @param queries - Multiple queries only in case of in condition on _id filter
    * @param pagingState
    * @param readDocument This flag is set to false if the read is done to just identify the document
    *     id and tx_id to perform another DML operation
@@ -53,14 +53,19 @@ public interface ReadOperation extends Operation {
    */
   default Uni<FindResponse> findDocument(
       QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
+      List<QueryOuterClass.Query> queries,
       String pagingState,
       int pageSize,
       boolean readDocument,
       ObjectMapper objectMapper,
-      DocumentProjector projection) {
-    return queryExecutor
-        .executeRead(query, Optional.ofNullable(pagingState), pageSize)
+      DocumentProjector projection,
+      int limit) {
+
+    return Multi.createFrom()
+        .items(queries.stream())
+        .onItem()
+        .transformToUniAndMerge(
+            query -> queryExecutor.executeRead(query, Optional.ofNullable(pagingState), pageSize))
         .onItem()
         .transform(
             rSet -> {
@@ -88,6 +93,35 @@ public interface ReadOperation extends Operation {
                 documents.add(document);
               }
               return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
+            })
+        .collect()
+        .asList()
+        .onItem()
+        .transform(
+            list -> {
+              // Merge all find responses
+              List<ReadDocument> documents = new ArrayList<>();
+              String tempPagingState = null;
+              if (limit == 1) {
+                // In case of findOne limit will be 1 return one document. Need to do it to support
+                // `in` operator
+                for (FindResponse response : list) {
+                  if (!response.docs().isEmpty()) {
+                    documents.add(response.docs().get(0));
+                    break;
+                  }
+                }
+              } else {
+                // paging can be handling if run as single query, but for now we will just return
+                // the
+                // first page
+                for (FindResponse response : list) {
+                  documents.addAll(response.docs());
+                  // picking the last paging state
+                  tempPagingState = response.pagingState();
+                }
+              }
+              return new FindResponse(documents, tempPagingState);
             });
   }
 
@@ -95,7 +129,7 @@ public interface ReadOperation extends Operation {
    * This method reads upto system fixed limit
    *
    * @param queryExecutor
-   * @param query
+   * @param queries
    * @param pageSize
    * @param objectMapper
    * @param comparator -
@@ -109,7 +143,7 @@ public interface ReadOperation extends Operation {
    */
   default Uni<FindResponse> findOrderDocument(
       QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
+      List<QueryOuterClass.Query> queries,
       int pageSize,
       ObjectMapper objectMapper,
       Comparator<ReadDocument> comparator,
@@ -120,18 +154,24 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
-    return Multi.createBy()
-        .repeating()
-        .uni(
-            () -> new AtomicReference<String>(null),
-            stateRef -> {
-              return queryExecutor
-                  .executeRead(query, Optional.ofNullable(stateRef.get()), pageSize)
-                  .onItem()
-                  .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
-            })
-        // Read document while pagingState exists, limit for read is set at updateLimit +1
-        .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null)
+    return Multi.createFrom()
+        .items(queries.stream())
+        .onItem()
+        .transformToMultiAndMerge(
+            q ->
+                Multi.createBy()
+                    .repeating()
+                    .uni(
+                        () -> new AtomicReference<String>(null),
+                        stateRef -> {
+                          return queryExecutor
+                              .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                              .onItem()
+                              .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
+                        })
+                    // Read document while pagingState exists, limit for read is set at updateLimit
+                    // +1
+                    .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null))
         .onItem()
         .transformToUniAndMerge(
             resultSet -> {

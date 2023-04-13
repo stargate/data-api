@@ -132,7 +132,241 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     }
 
     @Test
-    public void findWithId() throws Exception {
+    public void byIdWithInOperator() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+          {
+            "_id": "doc1",
+            "username": "user1"
+          }
+          """;
+      String doc2 =
+          """
+          {
+            "_id": "doc2",
+            "username": "user1"
+          }
+          """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.IN,
+              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
+      FindOperation operation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().docs())
+          .hasSize(2)
+          .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void byIdWithInAndOtherOperator() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
+      String doc2 =
+          """
+              {
+                "_id": "doc2",
+                "username": "user1"
+              }
+              """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.IN,
+              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
+      DBFilterBase.TextFilter textFilter =
+          new DBFilterBase.TextFilter("username", DBFilterBase.TextFilter.Operator.EQ, "user1");
+      FindOperation operation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter, textFilter),
+              DocumentProjector.identityProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().docs())
+          .hasSize(2)
+          .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findOneByIdWithInOperator() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
@@ -143,6 +377,121 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                 "username": "user1"
               }
               """;
+      String doc2 =
+          """
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+
+      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.IN,
+              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
+      FindOperation operation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      candidatesAssert2.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().docs())
+          .hasSize(1)
+          .containsAnyOf(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithId() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+        {
+          "_id": "doc1",
+          "username": "user1"
+        }
+        """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,

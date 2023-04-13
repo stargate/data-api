@@ -3,9 +3,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -259,6 +261,102 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
     }
 
     @Test
+    public void inCondition() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : {"$in": ["doc5", "doc4"]}}
+          }
+        }
+        """;
+      // findOne resolves any one of the resolved documents. So the order of the documents in the
+      // $in clause is not guaranteed.
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", anyOf(jsonEquals(DOC5_JSON), jsonEquals(DOC4_JSON)));
+    }
+
+    @Test
+    public void inConditionEmptyArray() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : {"$in": []}}
+          }
+        }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].message", is("$in operator must have at least one value"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+    }
+
+    @Test
+    public void inConditionNonArrayArray() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : {"$in": true}}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].message", is("$in operator must have array"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+    }
+
+    @Test
+    public void inConditionNonIdField() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"non_id" : {"$in": ["a", "b", "c"]}}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].message", is("Can use $in operator only on _id field"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+    }
+
+    @Test
     public void byColumn() {
       String json =
           """
@@ -436,8 +534,8 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[0].message", is("$exists is supported only with true option"))
-          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_DATA_TYPE"));
+          .body("errors[1].message", is("$exists operator supports only true"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -536,10 +634,8 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body(
-              "errors[0].message",
-              is("Filter type not supported, unable to resolve to a filtering strategy"))
-          .body("errors[0].errorCode", is("FILTER_UNRESOLVABLE"));
+          .body("errors[1].message", is("$all operator must have array value"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -617,7 +713,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .body(
               "errors[0].message",
               is("Filter type not supported, unable to resolve to a filtering strategy"))
-          .body("errors[0].errorCode", is("FILTER_UNRESOLVABLE"));
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
   }
 }
