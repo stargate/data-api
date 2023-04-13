@@ -176,7 +176,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$all operator must have array ");
+                assertThat(t.getMessage()).isEqualTo("$all operator must have array value");
               });
     }
 
