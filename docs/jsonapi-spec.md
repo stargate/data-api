@@ -403,20 +403,21 @@ The maximum length of an array is 100 elements.
 
 ## Commands
 
-Commands are included in a request and are executed against a single
-collection.
+Commands are included in a request and are executed against a single collection.
 
-Each command specifies one or more [Clauses](#clauses) that control how
-it operates, and may include set of options to further modify behavior.
+Each command specifies one or more [Clauses](#clauses) that control how it operates, and may include set of options to further modify behavior.
 
 The following commands are supported for collections:
 
 -   [`countDocuments`](#countDocuments-command)
+-   [`createCollection`](#createCollection-command)
 -   [`deleteMany`](#deleteMany-command)
 -   [`deleteOne`](#deleteOne-command)
 -   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
 -   [`find`](#find-command)
+-   [`findCollections`](#findCollections-command)
 -   [`findOne`](#findOne-command)
+-   [`findOneAndReplace`](#findOneAndReplace-command)
 -   [`findOneAndUpdate`](#findOneAndUpdate-command)
 -   [`insertMany`](#insertMany-command)
 -   [`insertOne`](#insertOne-command)
@@ -463,6 +464,52 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 | `errors`          | Present if errors occur.                                |
  
 If an error occurs the command will not return `status`.
+
+
+### createCollection Command
+
+Creates a new collection in the current namespace.
+
+*Sample*
+
+```json
+{
+  "createCollection": {
+    "name": "purchase"
+  }
+}
+```
+
+#### createCollection Command Options
+
+The `createCollection` command does not support any options.
+
+#### createCollection Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing.
+
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### createCollection Command Response
+
+| Response Elements | Description                        |
+| ----------------- | -----------------------------------|
+| `data`            | Not present.                       |
+| `status`          | Not preset.                        |
+| `errors`          | Present if errors occur.           |
+ 
+Status example:
+
+```json
+{
+  "status": {
+    "ok": 1
+  }
+}
+```
+
+If an error occurs the command will not return `status`.
+
 
 ### deleteMany Command
 
@@ -591,6 +638,102 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 
 If an error occurs the command will not return `data`.
 
+
+### findCollections Command
+
+`findCollections` returns all collections from a given namespace.
+
+There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{namespace}`.
+
+*Syntax:*
+
+```bnf
+<findCollections-command>            ::= findCollections
+<findCollections-command-response>   ::= status.collections: ["col1", "col2"]
+```
+
+#### findCollections Command Options
+
+None. 
+
+#### findCollections Command Response
+
+| Response Elements | Description                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `status`          | Status has `collections` field with array of the available collection names.       |
+| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`.       |
+
+
+### findOneAndReplace Command
+
+`findOneAndReplace` replaces the first document in the collection that matches the filter. Optionally use a `sort-clause` to determine which document is modified.
+
+*Syntax:*
+
+```bnf
+<find-one-and-replace-command> ::= findOneAndReplace <find-one-and-replace-command-payload> 
+<find-one-and-replace-command-payload> ::= <filter-clause>? 
+                             <sort-clause>? 
+                             <replacement>?
+                             <find-one-and-replace-command-options>?
+
+<find-one-and-replace-command-option> ::= (<returnDocument>)*
+```
+
+*Sample:*
+
+```json5
+// Replaces a single document based on the specified filter and sort. Returns a document in response.
+{ "findOneAndReplace" : 
+    { "filter" : {<filter-clause>}, 
+      "sort" : {<sort-clause>}, 
+      "replacement" : {<document-to-replace>}, 
+      "options" : 
+          {"returnDocument" : "before/after"} 
+     }
+}
+```
+
+#### findOneAndReplace Command Order of Operations
+
+`findOneAndReplace` commands are processed using the following order of operation:
+
+1.  `<filter-clause>` is applied to the collection to select one or more candidate document(s). Example:  `"filter": {"location": "London"}`.
+2.  `<sort-clause>` can be applied to the candidate document to determine its order. Example: `"sort" : ["race.start_date"]`. If no `<sort-clause>` is supplied, the document maintains its current order.
+3.  `<document-to-replace>` specifies the replacement action. Example: `"replacement": { "location": "New York", "count": 3 }`.
+
+The <replacement> document cannot specify an `_id` value that differs from the replaced document.
+
+#### findOneAndReplace Command Options
+
+`<find-one-and-replace-command-option>` is a map of key-value pairs that modify the behavior of the command. 
+
+If `returnDocument` is `before`, return the existing document. if `returnDocument` is `after`, return the replaced document. 
+
+| Option            | Type        | Description                                                                     |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after replacement. Defaults to `"before"`. |
+
+#### findOneAndReplace Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing.
+
+If the replacement document `_id` field is different from the document read from the database, the JSON API throws an error.
+
+NOTE: you can omit `_id` in the replacement document. If `_id` is in the replacement, it should be exactly equal to the `_id` in the database. But if `_id` was omitted, 
+`findOneAndReplace` will use the existing document's `_id`.
+
+#### findOneAndReplace Command Response
+
+| Response Elements | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `data`            | Present with fields : `docs` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
+| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted. |
+| `errors`          | Present if errors occur. |
+
+If an error occurs the command will not return `data` or `status`.
+
+
 ### findOneAndUpdate Command
 
 `findOneAndUpdate` selects one document from a collection using a match
@@ -660,7 +803,7 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 | `errors`          | Present if errors occur. |
 
 
-If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned .
+If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned.
 
 If an error occurs the command will not return `data` or `status`.
 
