@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /** Base for the DB filters / conditions that we want to use with queries */
 public abstract class DBFilterBase implements Supplier<BuiltCondition> {
@@ -190,16 +191,21 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** Filters db documents based on a document id field value */
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
-      EQ;
+      EQ,
+      IN;
     }
 
     protected final IDFilter.Operator operator;
-    protected final DocumentId value;
+    protected final List<DocumentId> values;
 
     public IDFilter(IDFilter.Operator operator, DocumentId value) {
+      this(operator, List.of(value));
+    }
+
+    public IDFilter(IDFilter.Operator operator, List<DocumentId> values) {
       super(DocumentConstants.Fields.DOC_ID);
       this.operator = operator;
-      this.value = value;
+      this.values = values;
     }
 
     @Override
@@ -207,20 +213,37 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       IDFilter idFilter = (IDFilter) o;
-      return operator == idFilter.operator && value.equals(idFilter.value);
+      return operator == idFilter.operator && Objects.equals(values, idFilter.values);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(operator, value);
+      return Objects.hash(operator, values);
     }
 
     @Override
     public BuiltCondition get() {
+      // For Id filter we always use getALL() method
+      return null;
+    }
+
+    public List<BuiltCondition> getAll() {
       switch (operator) {
         case EQ:
-          return BuiltCondition.of(
-              BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(value));
+          return List.of(
+              BuiltCondition.of(
+                  BuiltCondition.LHS.column("key"),
+                  Predicate.EQ,
+                  getDocumentIdValue(values.get(0))));
+
+        case IN:
+          return values.stream()
+              .map(
+                  v ->
+                      BuiltCondition.of(
+                          BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(v)))
+              .collect(Collectors.toList());
+
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -230,12 +253,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
-      return DBFilterBase.getJsonNode(nodeFactory, value);
+      return DBFilterBase.getJsonNode(nodeFactory, values.get(0));
     }
 
     @Override
     boolean canAddField() {
-      return true;
+      if (operator.equals(Operator.EQ)) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
   /**

@@ -69,6 +69,84 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void idFilterWithInOperatorCondition() throws Exception {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : { "$in" : ["id1", "id2"]}}
+                }
+              }
+              """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.IN,
+                      List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")))),
+              DocumentProjector.identityProjector(),
+              null,
+              documentConfig.maxLimit(),
+              documentConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void byIdInAndOtherConditionTogether() throws Exception {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : { "$in" : ["id1", "id2"]}, "field1" : "value1" }
+          }
+        }
+        """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.IDFilter(
+                      DBFilterBase.IDFilter.Operator.IN,
+                      List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2"))),
+                  new DBFilterBase.TextFilter(
+                      "field1", DBFilterBase.TextFilter.Operator.EQ, "value1")),
+              DocumentProjector.identityProjector(),
+              null,
+              documentConfig.maxLimit(),
+              documentConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
     public void noFilterCondition() throws Exception {
       String json = """
           {
@@ -350,12 +428,12 @@ public class FindCommandResolverTest {
                """);
       String json =
           """
-                  {
-                    "find": {
-                      "projection" : %s
-                    }
-                  }
-                  """
+            {
+              "find": {
+                "projection" : %s
+              }
+            }
+            """
               .formatted(projectionDef);
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);

@@ -119,10 +119,10 @@ public record FindOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        QueryOuterClass.Query query = buildSortedSelectQuery(additionalIdFilter);
+        List<QueryOuterClass.Query> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
             queryExecutor,
-            query,
+            queries,
             pageSize,
             objectMapper(),
             new ChainedComparator(orderBy(), objectMapper()),
@@ -133,15 +133,16 @@ public record FindOperation(
             projection());
       }
       case DOCUMENT, KEY -> {
-        QueryOuterClass.Query query = buildSelectQuery(additionalIdFilter);
+        List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
             queryExecutor,
-            query,
+            queries,
             pagingState,
             pageSize,
             ReadType.DOCUMENT == readType,
             objectMapper,
-            projection);
+            projection,
+            limit());
       }
       default -> {
         JsonApiException failure =
@@ -163,8 +164,8 @@ public record FindOperation(
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
     for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.IDFilter idFilter) {
-        documentId = idFilter.value;
+      if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
+        documentId = idFilter.values.get(0);
         rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
       } else {
         if (filter.canAddField()) {
@@ -176,61 +177,103 @@ public record FindOperation(
         }
       }
     }
-
     return ReadDocument.from(documentId, null, rootNode);
   }
 
   // builds select query
-  private QueryOuterClass.Query buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = buildConditions(additionalIdFilter);
 
-    // create query
-    return new QueryBuilder()
-        .select()
-        .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-        .from(commandContext.namespace(), commandContext.collection())
-        .where(conditions)
-        .limit(limit)
-        .build();
+  /**
+   * Builds select query based on filters and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter
+   * @return Returns a list of queries, where a query is built using element returned by the
+   *     buildConditions method.
+   */
+  private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+    List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
+    List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
+    conditions.forEach(
+        condition ->
+            queries.add(
+                new QueryBuilder()
+                    .select()
+                    .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                    .from(commandContext.namespace(), commandContext.collection())
+                    .where(condition)
+                    .limit(limit)
+                    .build()));
+    return queries;
   }
 
-  private List<BuiltCondition> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-
-    // if we have id filter overwrite ignore existing IDFilter
-    boolean idFilterOverwrite = additionalIdFilter != null;
-    for (DBFilterBase filter : filters) {
-      if (!(idFilterOverwrite && filter instanceof DBFilterBase.IDFilter)) {
-        conditions.add(filter.get());
-      }
-    }
-
-    // then add id overwrite if there
-    if (idFilterOverwrite) {
-      conditions.add(additionalIdFilter.get());
-    }
-
-    return conditions;
-  }
-
-  private QueryOuterClass.Query buildSortedSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = buildConditions(additionalIdFilter);
+  /**
+   * Builds select query based on filters, sort fields and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter
+   * @return Returns a list of queries, where a query is built using element returned by the
+   *     buildConditions method.
+   */
+  private List<QueryOuterClass.Query> buildSortedSelectQueries(
+      DBFilterBase.IDFilter additionalIdFilter) {
+    List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
 
     String[] columns = sortedDataColumns;
-
     if (orderBy() != null) {
       List<String> sortColumns = Lists.newArrayList(columns);
       orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
       columns = new String[sortColumns.size()];
       sortColumns.toArray(columns);
     }
-    return new QueryBuilder()
-        .select()
-        .column(columns)
-        .from(commandContext.namespace(), commandContext.collection())
-        .where(conditions)
-        .limit(maxSortReadLimit())
-        .build();
+    final String[] columnsToAdd = columns;
+    List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
+    conditions.forEach(
+        condition ->
+            queries.add(
+                new QueryBuilder()
+                    .select()
+                    .column(columnsToAdd)
+                    .from(commandContext.namespace(), commandContext.collection())
+                    .where(condition)
+                    .limit(maxSortReadLimit())
+                    .build()));
+    return queries;
+  }
+
+  /**
+   * Builds select query based on filters and additionalIdFilter overrides.
+   *
+   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   *     contions
+   * @return Returns a list of list, where outer list represents conditions to be sent as multiple
+   *     queries. Only in condition on _id is returns multiple queries.
+   */
+  private List<List<BuiltCondition>> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
+    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
+    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
+    // if we have id filter overwrite ignore existing IDFilter
+    boolean idFilterOverwrite = additionalIdFilter != null;
+    for (DBFilterBase filter : filters) {
+      if (!(filter instanceof DBFilterBase.IDFilter idFilter)) {
+        conditions.add(filter.get());
+      } else {
+        if (!idFilterOverwrite) {
+          idFilterToUse = idFilter;
+        }
+      }
+    }
+    // then add id filter if available, in case of multiple `in` conditions we need to send multiple
+    // condtions
+    if (idFilterToUse != null) {
+      return idFilterToUse.getAll().stream()
+          .map(
+              idCondition -> {
+                List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
+                conditionsWithId.add(idCondition);
+                return conditionsWithId;
+              })
+          .collect(Collectors.toList());
+    } else {
+      return List.of(conditions);
+    }
   }
 
   /**

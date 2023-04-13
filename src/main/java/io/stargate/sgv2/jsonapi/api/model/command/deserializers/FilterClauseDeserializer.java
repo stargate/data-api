@@ -6,26 +6,38 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.smallrye.config.SmallRyeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /** {@link StdDeserializer} for the {@link FilterClause}. */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
+  private DocumentConfig documentConfig;
 
   public FilterClauseDeserializer() {
     super(FilterClause.class);
+    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    documentConfig = config.getConfigMapping(DocumentConfig.class);
   }
 
   /**
@@ -53,7 +65,87 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
       }
     }
+
+    validate(expressionList);
     return new FilterClause(expressionList);
+  }
+
+  private void validate(List<ComparisonExpression> expressionList) {
+    for (ComparisonExpression expression : expressionList) {
+      expression.filterOperations().forEach(operation -> validate(expression.path(), operation));
+    }
+  }
+
+  private void validate(String path, FilterOperation<?> filterOperation) {
+    if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
+      switch (valueComparisonOperator) {
+        case IN -> {
+          if (!path.equals(DocumentConstants.Fields.DOC_ID)) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "Can use $in operator only on _id field");
+          }
+
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.isEmpty()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
+            }
+            if (list.size() > documentConfig.defaultPageSize()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$in operator must have at most " + documentConfig.defaultPageSize() + " values");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have `ARRAY`");
+          }
+        }
+      }
+    }
+
+    if (filterOperation.operator() instanceof ElementComparisonOperator elementComparisonOperator) {
+      switch (elementComparisonOperator) {
+        case EXISTS:
+          if (filterOperation.operand().value() instanceof Boolean b) {
+            if (!b)
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator supports only true");
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have `BOOLEAN`");
+          }
+          break;
+      }
+    }
+
+    if (filterOperation.operator() instanceof ArrayComparisonOperator arrayComparisonOperator) {
+      switch (arrayComparisonOperator) {
+        case ALL:
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.isEmpty()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$all operator must have at least one value");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$all operator must have `ARRAY` value");
+          }
+          break;
+        case SIZE:
+          if (filterOperation.operand().value() instanceof BigDecimal i) {
+            if (i.intValue() < 0) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$size operator must have interger value >= 0");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have integer");
+          }
+          break;
+      }
+    }
   }
 
   /**
@@ -81,7 +173,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         if (updateField.getKey().startsWith("$")) {
           throw exception;
         } else {
-          return ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getValue()));
+          return ComparisonExpression.eq(
+              entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
       }
       JsonNode value = updateField.getValue();
@@ -91,13 +184,38 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     return expression;
   }
 
+  /**
+   * Method to parse each filter clause and return node value.
+   *
+   * @param path - If the path is _id, then the value is resolved as DocumentId
+   * @param node - JsonNode which has the operand value of a filter clause
+   * @return
+   */
   private static Object jsonNodeValue(String path, JsonNode node) {
+    // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
+    // operator in filter
     if (path.equals(DocumentConstants.Fields.DOC_ID)) {
-      return DocumentId.fromJson(node);
+      if (node.getNodeType() == JsonNodeType.ARRAY) {
+        ArrayNode arrayNode = (ArrayNode) node;
+        List<Object> arrayVals = new ArrayList<>(arrayNode.size());
+        for (JsonNode element : arrayNode) {
+          arrayVals.add(jsonNodeValue(path, element));
+        }
+        return arrayVals;
+      } else {
+        return DocumentId.fromJson(node);
+      }
     }
     return jsonNodeValue(node);
   }
 
+  /**
+   * Method to parse each filter clause and return node value. Called recursively in case of array
+   * and object json types.
+   *
+   * @param node
+   * @return
+   */
   private static Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:
