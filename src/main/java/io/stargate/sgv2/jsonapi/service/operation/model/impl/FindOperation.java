@@ -119,7 +119,7 @@ public record FindOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        List<QueryOuterClass.Query> queries = buildSortedSelectQuery(additionalIdFilter);
+        List<QueryOuterClass.Query> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
             queryExecutor,
             queries,
@@ -133,7 +133,7 @@ public record FindOperation(
             projection());
       }
       case DOCUMENT, KEY -> {
-        List<QueryOuterClass.Query> queries = buildSelectQuery(additionalIdFilter);
+        List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
             queryExecutor,
             queries,
@@ -164,7 +164,7 @@ public record FindOperation(
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
     for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.IDFilter idFilter) {
+      if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
         documentId = idFilter.values.get(0);
         rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
       } else {
@@ -189,7 +189,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSelectQuery(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
     List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
     conditions.forEach(
@@ -212,7 +212,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSortedSelectQuery(
+  private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
 

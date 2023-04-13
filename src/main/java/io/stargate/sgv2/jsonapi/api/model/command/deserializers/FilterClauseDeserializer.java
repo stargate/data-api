@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -29,6 +30,8 @@ import java.util.Map;
 
 /** {@link StdDeserializer} for the {@link FilterClause}. */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
+
+  private DocumentConfig documentConfig;
 
   public FilterClauseDeserializer() {
     super(FilterClause.class);
@@ -84,9 +87,13 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
             }
+            if (list.size() > 100) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at most 100 values");
+            }
           } else {
             throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have array");
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have `ARRAY`");
           }
         }
       }
@@ -101,7 +108,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                   ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator supports only true");
           } else {
             throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have boolean");
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have `BOOLEAN`");
           }
           break;
       }
@@ -118,7 +125,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             }
           } else {
             throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION, "$all operator must have array value");
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$all operator must have `ARRAY` value");
           }
           break;
         case SIZE:
@@ -173,7 +180,16 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     return expression;
   }
 
+  /**
+   * Method to parse each filter clause and return node value.
+   *
+   * @param path - If the path is _id, then the value is resolved as DocumentId
+   * @param node - JsonNode which has the operand value of a filter clause
+   * @return
+   */
   private static Object jsonNodeValue(String path, JsonNode node) {
+    // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
+    // operator in filter
     if (path.equals(DocumentConstants.Fields.DOC_ID)) {
       if (node.getNodeType() == JsonNodeType.ARRAY) {
         ArrayNode arrayNode = (ArrayNode) node;
@@ -189,6 +205,13 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     return jsonNodeValue(node);
   }
 
+  /**
+   * Method to parse each filter clause and return node value. Called recursively in case of array
+   * and object json types.
+   *
+   * @param node
+   * @return
+   */
   private static Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:

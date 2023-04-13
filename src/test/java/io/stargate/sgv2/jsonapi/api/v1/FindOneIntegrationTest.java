@@ -329,7 +329,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("$in operator must have array"))
+          .body("errors[1].message", is("$in operator must have `ARRAY`"))
           .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
@@ -634,7 +634,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[1].message", is("$all operator must have array value"))
+          .body("errors[1].message", is("$all operator must have `ARRAY` value"))
           .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 

@@ -213,7 +213,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       IDFilter idFilter = (IDFilter) o;
-      return operator == idFilter.operator && values.equals(idFilter.values);
+      return operator == idFilter.operator && Objects.equals(values, idFilter.values);
     }
 
     @Override
@@ -223,16 +223,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     public BuiltCondition get() {
-      switch (operator) {
-        case EQ:
-          return BuiltCondition.of(
-              BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(values.get(0)));
-
-        default:
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-              String.format("Unsupported id column operation %s", operator));
-      }
+      // For Id filter we always use getALL() method
+      return null;
     }
 
     public List<BuiltCondition> getAll() {
@@ -266,7 +258,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     @Override
     boolean canAddField() {
-      return true;
+      if (operator.equals(Operator.EQ)) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
   /**
@@ -502,11 +498,5 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
   private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {
     return Values.of(CustomValueSerializers.getDocumentIdValue(value));
-  }
-
-  private static QueryOuterClass.Value getDocumentIdValues(List<DocumentId> values) {
-    final List<QueryOuterClass.Value> inValues =
-        values.stream().map(value -> getDocumentIdValue(value)).collect(Collectors.toList());
-    return Values.of(inValues);
   }
 }
