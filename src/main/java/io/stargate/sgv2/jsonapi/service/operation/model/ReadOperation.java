@@ -114,9 +114,8 @@ public interface ReadOperation extends Operation {
                   }
                 }
               } else {
-                // paging can be handling if run as single query, but for now we will just return
-                // the
-                // first page
+                // pagination is handled only when single query is run(non `in` filter), so here
+                // paging state of the last query is returned
                 for (FindResponse response : list) {
                   documents.addAll(response.docs());
                   // picking the last paging state
