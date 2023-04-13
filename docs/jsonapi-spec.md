@@ -409,20 +409,20 @@ Each command specifies one or more [Clauses](#clauses) that control how it opera
 
 The following commands are supported for collections:
 
--   [`countDocuments`](#countDocuments-command)
--   [`createCollection`](#createCollection-command)
--   [`deleteMany`](#deleteMany-command)
--   [`deleteOne`](#deleteOne-command)
--   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
+-   [`countDocuments`](#countdocuments-command)
+-   [`createCollection`](#createcollection-command)
+-   [`deleteMany`](#deletemany-command)
+-   [`deleteOne`](#deleteone-command)
+-   [`estimatedDocumentCount`](#estimateddocumentcount-command)
 -   [`find`](#find-command)
--   [`findCollections`](#findCollections-command)
--   [`findOne`](#findOne-command)
--   [`findOneAndReplace`](#findOneAndReplace-command)
--   [`findOneAndUpdate`](#findOneAndUpdate-command)
--   [`insertMany`](#insertMany-command)
--   [`insertOne`](#insertOne-command)
--   [`updateMany`](#updateMany-command)
--   [`updateOne`](#updateOne-command)
+-   [`findCollections`](#findcollections-command)
+-   [`findOne`](#findone-command)
+-   [`findOneAndReplace`](#findoneandreplace-command)
+-   [`findOneAndUpdate`](#findoneandupdate-command)
+-   [`insertMany`](#insertmany-command)
+-   [`insertOne`](#insertone-command)
+-   [`updateMany`](#updatemany-command)
+-   [`updateOne`](#updateone-command)
 
 Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [JSON API HTTP Specification](jsonapi-network-spec.md).
 
@@ -677,7 +677,7 @@ None.
                              <replacement>?
                              <find-one-and-replace-command-options>?
 
-<find-one-and-replace-command-option> ::= (<returnDocument>)*
+<find-one-and-replace-command-option> ::= (<find-one-and-replace-option-name> <find-one-and-replace-option-value>,)*
 ```
 
 *Sample:*
@@ -689,7 +689,8 @@ None.
       "sort" : {<sort-clause>}, 
       "replacement" : {<document-to-replace>}, 
       "options" : 
-          {"returnDocument" : "before/after"} 
+          {"returnDocument" : "before/after"},
+          {"upsert" : "true/false"}
      }
 }
 ```
@@ -713,6 +714,7 @@ If `returnDocument` is `before`, return the existing document. if `returnDocumen
 | Option            | Type        | Description                                                                     |
 | ----------------- | ----------- | ------------------------------------------------------------------------------- |
 | `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after replacement. Defaults to `"before"`. |
+| `upsert `         | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
 
 #### findOneAndReplace Document Failure Modes
 
