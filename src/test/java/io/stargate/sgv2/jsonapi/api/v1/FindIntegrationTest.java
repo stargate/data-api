@@ -228,7 +228,33 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .body("data.docs", hasSize(2))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", containsInAnyOrder(expected1, expected2));
+          .body("data.docs", containsInAnyOrder(expected1, expected2));
+    }
+
+    @Test
+    public void inConditionWithOtherCondition() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : {"$in": ["doc1", "doc4"]}, "username" : "user1" }
+          }
+        }
+        """;
+      String expected1 = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected1));
     }
 
     @Test
@@ -251,7 +277,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[1].message", is("$in operator must have at least one value"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -274,7 +300,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[1].message", is("$in operator must have array"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -297,7 +323,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[1].message", is("Can use $in operator only on _id field"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -486,7 +512,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .then()
           .statusCode(200)
           .body("errors[1].message", is("$exists operator supports only true"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
     @Test
