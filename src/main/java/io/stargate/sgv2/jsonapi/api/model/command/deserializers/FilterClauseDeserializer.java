@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
@@ -27,14 +28,16 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /** {@link StdDeserializer} for the {@link FilterClause}. */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
-
   private DocumentConfig documentConfig;
 
   public FilterClauseDeserializer() {
     super(FilterClause.class);
+    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    documentConfig = config.getConfigMapping(DocumentConfig.class);
   }
 
   /**
@@ -87,9 +90,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
             }
-            if (list.size() > 100) {
+            if (list.size() > documentConfig.defaultPageSize()) {
               throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at most 100 values");
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$in operator must have at most " + documentConfig.defaultPageSize() + " values");
             }
           } else {
             throw new JsonApiException(

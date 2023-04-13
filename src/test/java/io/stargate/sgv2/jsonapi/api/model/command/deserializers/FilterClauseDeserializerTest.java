@@ -330,7 +330,11 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$in operator must have at most 100 values");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "$in operator must have at most "
+                            + documentConfig.defaultPageSize()
+                            + " values");
               });
     }
   }
