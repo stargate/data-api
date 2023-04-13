@@ -299,7 +299,7 @@ public class CountIntegrationTest extends CollectionResourceBaseIntegrationTest 
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is("$exists operator supports only true"));
+          .body("errors[1].message", is("$exists operator supports only true"));
     }
 
     @Test

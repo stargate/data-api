@@ -710,7 +710,7 @@ public class FindOneIntegrationTest extends CollectionResourceBaseIntegrationTes
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[0].message", is("$size operator must have integer"))
+          .body("errors[1].message", is("$size operator must have integer"))
           .body("errors[1].exceptionClass", is("JsonApiException"));
     }
   }

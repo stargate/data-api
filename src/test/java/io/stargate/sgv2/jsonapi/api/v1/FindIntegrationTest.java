@@ -228,7 +228,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .body("data.docs", hasSize(2))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs", containsInAnyOrder(expected1, expected2));
+          .body("data.docs", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
     }
 
     @Test
