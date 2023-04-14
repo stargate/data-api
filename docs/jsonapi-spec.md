@@ -1435,8 +1435,6 @@ That expression returns, e.g.: `{ field: [ red, green ] }` and `{ field: [ apple
 
 If the given field is not an array, there's no match. `$size` should ignore non-arrays.
 
-Queries cannot use indexes for the $size portion of a query, although the other portions of a query can use indexes if applicable.
-
 
 ### Projection Clause
 
