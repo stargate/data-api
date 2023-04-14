@@ -1419,26 +1419,22 @@ The `$all` operation allows users to check for documents that have an array fiel
 
 If provided to a `find()`, return all the documents where the locations field contains the two values – “New York” and “Texas”. It does not matter how many more values the locations field contains. The operation will match if the specified values are present. Similarly, if even one the value is missing, the document will not be matched. So the `$all` operation is useful while retrieving data.  
 
-The `$all` is equivalent to an `$and` operation of the specified values. For example, this first statement:
-
-```json5
-{ tags: { $all: [ "ssl" , "security" ] } }
-```
-
-... is equivalent to:
-
-```json5
-{ $and: [ { tags: "ssl" }, { tags: "security" } ] }
-
-```
-
 #### $elemMatch operation
 
 TODO:
 
 #### $size operation
 
-TODO:
+The `$size` operation allows users to match any array with the number of elements specified by the argument. Example:
+
+```json5
+db.collection.find( { field: { $size: 2 } } );
+```
+
+That expression returns, e.g.: `{ field: [ red, green ] }` and `{ field: [ apple, lime ] }`, but not `{ field: fruit }` or `{ field: [ orange, lemon, grapefruit ] }`.
+
+If the given field is not an array, there's no match. `$size` should ignore non-arrays.
+
 
 ### Projection Clause
 
