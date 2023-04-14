@@ -74,4 +74,4 @@ quarkus:
 
   # adapt path of the open api definitions
   smallrye-openapi:
-    path: /api/docs/openapi
+    path: /api/json/openapi
