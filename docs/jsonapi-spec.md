@@ -1438,7 +1438,20 @@ TODO:
 
 #### $size operation
 
-TODO:
+The `$size` operation allows users to match any array with the number of elements specified by the argument. Example:
+
+```json5
+db.collection.find( { city: { $size: 2 } } );
+```
+
+That expression returns, e.g.: `{ field: [ red, green ] }` and `{ field: [ apple, lime ] }`, but not `{ field: fruit }` or `{ field: [ orange, lemon, grapefruit ] }`.
+
+If the given field is not an array, there's no match. `$size` should ignore non-arrays.
+
+`$size` does not accept ranges of values. To select documents based on fields with different numbers of elements, a user could create a counter field to increment when adding elements to a field.
+
+Queries cannot use indexes for the $size portion of a query, although the other portions of a query can use indexes if applicable.
+
 
 ### Projection Clause
 
