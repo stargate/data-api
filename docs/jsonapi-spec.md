@@ -1441,7 +1441,7 @@ TODO:
 The `$size` operation allows users to match any array with the number of elements specified by the argument. Example:
 
 ```json5
-db.collection.find( { city: { $size: 2 } } );
+db.collection.find( { field: { $size: 2 } } );
 ```
 
 That expression returns, e.g.: `{ field: [ red, green ] }` and `{ field: [ apple, lime ] }`, but not `{ field: fruit }` or `{ field: [ orange, lemon, grapefruit ] }`.
