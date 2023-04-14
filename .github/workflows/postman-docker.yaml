@@ -43,13 +43,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Install Postman CLI
-        run: |
-          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
-
-      - name: Login to Postman CLI
-        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-
         # Run Stargate coordinator in developer mode to save time / resources
         # Pull JSON API image from ECR corresponding to latest commit on main branch
         # Pull Stargate coordinator image from ECR corresponding to version dependency in project pom
@@ -65,6 +58,13 @@ jobs:
           cd docker-compose
           ./start_dse_68_dev_mode.sh -j $JSONTAG -t $SGTAG
 
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Login to Postman CLI
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+        
       - name: Run API test
         run: |
           postman collection run $COLLECTION_ID -e $ENVIRONMENT_ID --verbose
