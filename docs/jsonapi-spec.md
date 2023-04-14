@@ -403,19 +403,27 @@ The maximum length of an array is 100 elements.
 
 ### Equality handling with arrays and subdocs
 
-Given the query `{'foo' : "bar"}`, this matches: 
+Given the query `{"foo" : "bar"}`, this matches: 
 
 * `foo` as a string with value `bar` 
 
 * `foo` is an array that contains at least one item that is the string `"bar"`. The length of the array is not important.
 
-Given the query `{'foo' : ["bar"]}`, this:
+Given the query `{"foo" : ["bar"]}`, this:
 
 * Matches `foo` as an array that is exactly `["bar"]`
 
 * Does not support sub-arrays. Thus, it does not match `foo == [ ["bar"], "baz"]`
 
 *NOTE:* this query is not a reflexive operation. I.e., if the Right Hand Side (RHS) operand is a string (or other value), we will match against a field of that type or field with an array item of that type. However, if the RHS operand is an array, we only match against fields that are arrays.
+
+For subdocs, the query has to be an exact match. Given the following:
+
+```json5
+{"foo" : {"col1" : "bar1", "col2" :  "bar2"}}
+```
+
+It must match a field `foo` which has document value `{"col1" : "bar1", "col2" :  "bar2"}`.
 
 
 ## Commands
