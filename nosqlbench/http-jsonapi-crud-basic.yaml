@@ -1,8 +1,8 @@
-min_version: "4.17.15"
+min_version: "5.17.1"
 
 # nb5 -v run driver=http yaml=http-jsonapi-crud-basic jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
-description: |
+description: >2
   This workload emulates CRUD operations for the Stargate JSON API.
   It generates a simple JSON document to be used for writes and updates.
   Note that jsonapi_port should reflect the port where the JSON API is exposed (defaults to 8080).
@@ -21,13 +21,14 @@ bindings:
   #   single host: jsonapi_host=host1
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  weighted_hosts: WeightedStrings('<<jsonapi_host:stargate>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
 
   # http request id
   request_id: ToHashedUUID(); ToString();
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
   seq_key: Mod(<<docscount:10000000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
@@ -54,7 +55,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_crud_basic>>"
@@ -69,7 +70,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -84,7 +85,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
@@ -103,7 +104,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: |
+        body: >2
           {
             "insertOne" : {
               "document" : {
@@ -144,7 +145,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "findOne" : {
               "filter" : {
@@ -169,7 +170,7 @@ blocks:
         # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
         # every update during this phase should update exactly 1 document.
         ok-body: ".*\"modifiedCount\":1.*"
-        body: |
+        body: >2
           {
             "updateOne" : {
               "filter": {
@@ -214,7 +215,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"deletedCount\":[0,1].*"
-        body: |
+        body: >2
           {
             "deleteOne" : {
               "filter" : {

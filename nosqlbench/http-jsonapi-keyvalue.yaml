@@ -1,6 +1,6 @@
-min_version: "4.17.15"
+min_version: "5.17.1"
 
-description: |
+description: >2
   This workload emulates a key-value data model and access patterns.
   This should be identical to the cql variant except for:
   - Schema creation with the Docs API, we don't use cql because the Docs API is opinionated about schema.
@@ -44,7 +44,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_keyvalue>>"
@@ -59,7 +59,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -74,7 +74,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
@@ -92,7 +92,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: |
+        body: >2
           {
             "insertOne" : {
               "document" : {
@@ -115,7 +115,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "findOne" : {
               "filter" : {
@@ -134,7 +134,7 @@ blocks:
         Content-Type: "application/json"
         # because this is not an upsert, modified count could be 0 or 1
         ok-body: ".*\"modifiedCount\":[0,1].*"
-        body: |          
+        body: >2          
           {
             "updateOne" : {
               "filter": {

@@ -1,6 +1,6 @@
-min_version: "4.17.31"
+min_version: "5.17.1"
 
-description: |
+description: >2
   This workload emulates basic search operations for the Stargate Documents API.
   During the rampup phase, it generates documents, writes them to a table, and then warms up the search paths.
   During the main phase it performs various basic search filters and times their execution.
@@ -61,7 +61,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_search_basic>>"
@@ -76,7 +76,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -91,7 +91,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
@@ -109,7 +109,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: |
+        body: >2
           {
             "insertOne": {
               "document": {
@@ -152,7 +152,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -174,7 +174,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -196,7 +196,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -219,7 +219,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -244,7 +244,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -271,7 +271,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -293,7 +293,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -315,7 +315,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -338,7 +338,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -363,7 +363,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {

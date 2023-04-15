@@ -1,6 +1,6 @@
-min_version: "4.17.15"
+min_version: "5.17.1"
 
-description: |
+description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
   It requires a data set file, where each line is a single JSON document to be used for writes and updates.
   Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8080).
@@ -41,7 +41,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_crud_basic>>"
@@ -56,7 +56,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -71,7 +71,7 @@ blocks:
         X-Cassandra-Token: "<<auth_token:my_auth_token>>"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
