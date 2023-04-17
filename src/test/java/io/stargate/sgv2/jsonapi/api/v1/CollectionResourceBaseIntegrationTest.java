@@ -20,7 +20,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class CollectionResourceBaseIntegrationTest extends CqlEnabledIntegrationTestBase {
-  protected String collectionName = "col" + RandomStringUtils.randomNumeric(16);
+
+  // collection name automatically created in this test
+  protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {
