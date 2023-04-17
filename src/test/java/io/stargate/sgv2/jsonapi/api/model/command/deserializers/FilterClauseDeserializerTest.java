@@ -14,8 +14,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class FilterClauseDeserializerTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
+  @Inject OperationsConfig operationsConfig;
 
   @Nested
   class Deserialize {
@@ -333,7 +333,7 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "$in operator must have at most "
-                            + documentConfig.defaultPageSize()
+                            + operationsConfig.defaultPageSize()
                             + " values");
               });
     }

@@ -379,7 +379,7 @@ public class FindOneAndReplaceCommandResolverTest {
                 assertThat(op.returnUpdatedDocument()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,

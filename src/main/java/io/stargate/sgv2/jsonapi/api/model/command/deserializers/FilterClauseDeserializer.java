@@ -16,10 +16,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -32,12 +32,12 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 /** {@link StdDeserializer} for the {@link FilterClause}. */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
-  private DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
 
   public FilterClauseDeserializer() {
     super(FilterClause.class);
     SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-    documentConfig = config.getConfigMapping(DocumentConfig.class);
+    operationsConfig = config.getConfigMapping(OperationsConfig.class);
   }
 
   /**
@@ -90,10 +90,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
             }
-            if (list.size() > documentConfig.defaultPageSize()) {
+            if (list.size() > operationsConfig.defaultPageSize()) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
-                  "$in operator must have at most " + documentConfig.defaultPageSize() + " values");
+                  "$in operator must have at most "
+                      + operationsConfig.defaultPageSize()
+                      + " values");
             }
           } else {
             throw new JsonApiException(
