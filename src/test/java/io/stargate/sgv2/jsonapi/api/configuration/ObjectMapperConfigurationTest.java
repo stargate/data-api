@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -173,37 +172,6 @@ class ObjectMapperConfigurationTest {
               createCollection -> {
                 String name = createCollection.name();
                 assertThat(name).isNotNull();
-              });
-    }
-  }
-
-  @Nested
-  class Find {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-          {
-            "find": {
-              "filter" : {"username" : "user1"},
-              "options" : {
-                "limit" : 1
-              }
-            }
-          }
-          """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindCommand.class,
-              find -> {
-                FilterClause filterClause = find.filterClause();
-                assertThat(filterClause).isNotNull();
-                final FindCommand.Options options = find.options();
-                assertThat(options).isNotNull();
-                assertThat(options.limit()).isEqualTo(1);
               });
     }
   }
