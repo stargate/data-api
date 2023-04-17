@@ -56,6 +56,7 @@ public class NamespaceResource {
               schema = @Schema(anyOf = {CreateCollectionCommand.class}),
               examples = {
                 @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),
               }))
   @APIResponses(
@@ -69,6 +70,7 @@ public class NamespaceResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCreate"),
+                    @ExampleObject(ref = "resultFindCollections"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

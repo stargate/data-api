@@ -13,6 +13,9 @@ public enum CommandStatus {
   /** Status for reporting existing namespaces. */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
+  /** Status for reporting existing collections. */
+  @JsonProperty("collections")
+  EXISTING_COLLECTIONS,
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")
   INSERTED_IDS,

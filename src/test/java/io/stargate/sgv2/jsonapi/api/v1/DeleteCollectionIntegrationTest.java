@@ -5,7 +5,6 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -14,13 +13,14 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
+class DeleteCollectionIntegrationTest extends CqlEnabledIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {
@@ -28,46 +28,43 @@ class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
   }
 
   @Nested
-  class ClientErrors {
+  class DeleteCollection {
 
     @Test
-    public void tokenMissing() {
-      given()
-          .contentType(ContentType.JSON)
-          .body("{}")
-          .when()
-          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
-          .then()
-          .statusCode(200)
-          .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the X-Cassandra-Token header."));
-    }
+    public void happyPath() {
+      String collection = RandomStringUtils.randomAlphabetic(16);
 
-    @Test
-    public void malformedBody() {
+      // first create
+      String createJson =
+          """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(collection);
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body("{wrong}")
+          .body(createJson)
           .when()
           .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
-    }
+          .body("status.ok", is(1));
 
-    @Test
-    public void unknownCommand() {
+      // then delete
       String json =
           """
           {
-            "unknownCommand": {
+            "deleteCollection": {
+              "name": "%s"
             }
           }
-          """;
+          """
+              .formatted(collection);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -77,15 +74,49 @@ class NamespaceResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body("status.ok", is(1));
     }
 
     @Test
-    public void emptyBody() {
+    public void notExisting() {
+      String collection = RandomStringUtils.randomAlphabetic(16);
+
+      // delete not existing
+      String json =
+          """
+          {
+            "deleteCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(collection);
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void invalidCommand() {
+      String json =
+          """
+          {
+            "deleteCollection": {
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
           .when()
           .post(NamespaceResource.BASE_PATH, keyspaceId.asInternal())
           .then()

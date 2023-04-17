@@ -323,6 +323,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "findCollections",
+                  summary = "`FindCollections` command",
+                  value =
+                      """
+                        {
+                            "findCollections": {
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "deleteCollection",
                   summary = "`DeleteCollection` command",
                   value =
@@ -583,6 +593,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     "namespaces": [
                                       "cycling"
                                     ]
+                                  }
+                                }
+                                """),
+              @ExampleObject(
+                  name = "resultFindCollections",
+                  summary = "`findCollections` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                      "collections": [ "events" ]
                                   }
                                 }
                                 """),
