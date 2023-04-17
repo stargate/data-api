@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
+import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindCollectionsOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import io.stargate.sgv2.jsonapi.service.schema.CollectionManager;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -13,11 +13,11 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class FindCollectionsCommandResolver implements CommandResolver<FindCollectionsCommand> {
 
-  private final CollectionManager collectionManager;
+  private final SchemaManager schemaManager;
 
   @Inject
-  public FindCollectionsCommandResolver(CollectionManager collectionManager) {
-    this.collectionManager = collectionManager;
+  public FindCollectionsCommandResolver(SchemaManager schemaManager) {
+    this.schemaManager = schemaManager;
   }
 
   /** {@inheritDoc} */
@@ -29,6 +29,6 @@ public class FindCollectionsCommandResolver implements CommandResolver<FindColle
   /** {@inheritDoc} */
   @Override
   public Operation resolveCommand(CommandContext ctx, FindCollectionsCommand command) {
-    return new FindCollectionsOperation(collectionManager, ctx);
+    return new FindCollectionsOperation(schemaManager, ctx);
   }
 }

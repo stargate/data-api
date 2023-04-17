@@ -33,7 +33,7 @@ class FindCollectionsIntegrationTest extends CqlEnabledIntegrationTestBase {
     @Test
     public void happyPath() {
       // create first
-      String collection = "col" + RandomStringUtils.randomNumeric(16);
+      String collection = "col" + RandomStringUtils.randomAlphanumeric(16);
       String json =
           """
           {
