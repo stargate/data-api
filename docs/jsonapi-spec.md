@@ -370,6 +370,9 @@ JSON documents must adhere to the following limits. Attempting to insert
 or modify a document beyond these limits will result in the command
 failing.
 
+> Note that all limits are configurable using run-time properties. 
+> See the [Document limits configuration](./../CONFIGURATION.md#document-limits-configuration) for further info.
+
 #### Document Size Limit
 
 The maximum size of a single document is 1 megabyte. The size is
@@ -390,10 +393,10 @@ The maximum number of fields allowed in a single JSON object is 64.
 
 The maximum size of field values are:
 
-| JSON Type   | Maximum Value                                           |
-| ----------- | ------------------------------------------------------- |
-| `string`    | Maximum length of 16384 unicode characters              |
-| `number`    | TODO: define max num that is well handled by BigDecimal |
+| JSON Type | Maximum Value                                           |
+|-----------|---------------------------------------------------------|
+| `string`  | Maximum length of 16,000 unicode characters             |
+| `number`  | TODO: define max num that is well handled by BigDecimal |
 
 
 #### Document Array Limits
@@ -548,6 +551,10 @@ Fail Silently, a storage failure does not stop the command from processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
+#### deleteMany Command Limits
+
+The maximum amount of documents that can be deleted in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### deleteMany Command Response
 
 | Response Elements | Description                                                                          |
@@ -652,6 +659,10 @@ Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
+#### find Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### find Command Response
 
 | Response Elements | Description                                                                     |
@@ -750,6 +761,10 @@ If the replacement document `_id` field is different from the document read from
 NOTE: you can omit `_id` in the replacement document. If `_id` is in the replacement, it should be exactly equal to the `_id` in the database. But if `_id` was omitted, 
 `findOneAndReplace` will use the existing document's `_id`.
 
+#### findOneAndReplace Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### findOneAndReplace Command Response
 
 | Response Elements | Description                                                                     |
@@ -821,6 +836,10 @@ Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
+#### findOneAndUpdate Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### findOneAndUpdate Command Response
 
 | Response Elements | Description                                                                     |
@@ -845,6 +864,10 @@ The `findOne` command does not support any options.
 Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### findOne Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### findOne Command Response
 
@@ -874,6 +897,10 @@ Depends on the `ordered` option. When `true` the command uses Fail Fast to stop 
 See [insertMany Command Options](#insertMany-command-options) for `ordered`.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### insertMany Command Limits
+
+The maximum amount of documents that can be inserted in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### insertMany Command Response
 
@@ -925,6 +952,10 @@ behavior applied when not provided.
 Fail Silently, a storage failure does not stop the command from processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### updateMany Command Limits
+
+The maximum amount of documents that can be updated in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### updateMany Command Response
  
