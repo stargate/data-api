@@ -310,7 +310,6 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .body("errors", is(nullValue()));
     }
 
-
     @AfterEach
     public void cleanUpData() {
       deleteAllDocuments();
