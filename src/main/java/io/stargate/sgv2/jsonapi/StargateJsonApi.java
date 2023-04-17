@@ -45,14 +45,22 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   in = ParameterIn.PATH,
                   name = "namespace",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The namespace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,
                   name = "collection",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The name of the collection.",
                   example = "events")
             },

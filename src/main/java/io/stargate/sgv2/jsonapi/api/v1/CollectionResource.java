@@ -21,6 +21,8 @@ import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -127,8 +129,16 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("namespace") String namespace,
-      @PathParam("collection") String collection) {
+      @PathParam("namespace")
+          @NotNull
+          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+          @Size(min = 1, max = 48)
+          String namespace,
+      @PathParam("collection")
+          @NotNull
+          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+          @Size(min = 1, max = 48)
+          String collection) {
 
     // create context
     CommandContext commandContext = new CommandContext(namespace, collection);

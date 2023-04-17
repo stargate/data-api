@@ -65,11 +65,11 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
     public void unknownCommand() {
       String json =
           """
-                  {
-                    "unknownCommand": {
-                    }
-                  }
-                  """;
+          {
+            "unknownCommand": {
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -81,6 +81,56 @@ class CollectionResourceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .statusCode(200)
           .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
           .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+    }
+
+    @Test
+    public void invalidNamespaceName() {
+      String json =
+          """
+          {
+            "insertOne": {
+                "document": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid, the field postCommand.namespace not valid"))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+    }
+
+    @Test
+    public void invalidCollectionName() {
+      String json =
+          """
+          {
+            "insertOne": {
+                "document": {}
+            }
+          }
+          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), "7_no_leading_number")
+          .then()
+          .statusCode(200)
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid, the field postCommand.collection not valid"))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
 
     @Test
