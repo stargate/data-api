@@ -265,6 +265,52 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .body("errors", is(nullValue()));
     }
 
+    @Test
+    public void byIdNestedArraySliceHead() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+
+      String json =
+          """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "doc2"},
+                  "projection": {
+                    "nestedArray": {
+                      "$slice" : [1, 1]
+                    },
+                    "username": 0
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(1))
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                                      {
+                                        "_id": "doc2",
+                                        "tags" : ["tag1", "tag2", "tag42", "tag1972", "zzzz"],
+                                        "nestedArray" : [["tag3", null]]
+                                      }
+                                      """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+
     @AfterEach
     public void cleanUpData() {
       deleteAllDocuments();
