@@ -10,6 +10,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -45,6 +46,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
 
   // TODO: as part of https://github.com/stargate/jsonapi/issues/214
   //  - non-lwt failure partial, full
@@ -181,6 +183,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -208,6 +211,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
     DBFilterBase.TextFilter filter =
@@ -396,6 +400,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -423,6 +428,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =
@@ -620,6 +626,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -647,6 +654,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =
@@ -871,6 +879,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -898,6 +907,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -928,6 +938,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
     DBFilterBase.TextFilter filter =
@@ -1183,6 +1194,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -1210,6 +1222,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -1240,6 +1253,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     ValidatingStargateBridge.QueryAssert updateRetryQueryDoc2Assert =
@@ -1266,6 +1280,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =

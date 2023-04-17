@@ -11,6 +11,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -47,6 +48,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
 
   @Nested
   class UpdateOne {
@@ -151,6 +153,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -348,6 +351,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -507,6 +511,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -650,6 +655,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -855,6 +861,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -1049,6 +1056,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -1187,6 +1195,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -1455,6 +1464,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       jsonNode = objectMapper.readTree(doc2Updated);
@@ -1486,6 +1496,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -1625,6 +1636,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
