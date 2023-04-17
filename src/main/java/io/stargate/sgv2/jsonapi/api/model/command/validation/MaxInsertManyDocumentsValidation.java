@@ -22,6 +22,17 @@ public class MaxInsertManyDocumentsValidation
   /** {@inheritDoc} */
   @Override
   public boolean isValid(List<JsonNode> value, ConstraintValidatorContext context) {
-    return null != value && value.size() <= config.get().maxDocumentInsertCount();
+    final int max = config.get().maxDocumentInsertCount();
+    if (null != value && value.size() > max) {
+      context
+          .buildConstraintViolationWithTemplate(
+              String.format(
+                  "%s (%d vs %d)",
+                  context.getDefaultConstraintMessageTemplate(), value.size(), max))
+          .addConstraintViolation()
+          .disableDefaultConstraintViolation();
+      return false;
+    }
+    return true;
   }
 }
