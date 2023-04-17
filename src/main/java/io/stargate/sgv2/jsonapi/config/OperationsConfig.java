@@ -44,15 +44,6 @@ public interface OperationsConfig {
   int defaultSortPageSize();
 
   /**
-   * @return Defines the maximum limit of document that can be returned for a request, defaults to
-   *     <code>1000</code>.
-   */
-  @Max(Integer.MAX_VALUE)
-  @Positive
-  @WithDefault("1000")
-  int maxLimit();
-
-  /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
    *     </code>.
    */

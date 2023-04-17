@@ -41,8 +41,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final FindCommand.Options options = command.options();
-    int limit =
-        options != null && options.limit() != null ? options.limit() : operationsConfig.maxLimit();
+    int limit = options != null && options.limit() != null ? options.limit() : Integer.MAX_VALUE;
     String pagingState = command.options() != null ? command.options().pagingState() : null;
     final SortClause sortClause = command.sortClause();
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
