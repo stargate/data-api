@@ -23,7 +23,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
-import javax.validation.constraints.PositiveOrZero;
 
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
@@ -97,7 +96,7 @@ public interface OperationsConfig {
 
     /** @return Defines the maximum retry for lwt failure <code>3</code>. */
     @Max(5)
-    @PositiveOrZero
+    @Positive
     @WithDefault("3")
     int retries();
   }
