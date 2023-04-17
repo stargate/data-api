@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class UpdateManyCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
+  @Inject OperationsConfig operationsConfig;
   @Inject Shredder shredder;
   @Inject UpdateManyCommandResolver resolver;
 
@@ -63,8 +63,8 @@ public class UpdateManyCommandResolverTest {
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
-                assertThat(op.updateLimit()).isEqualTo(documentConfig.maxDocumentUpdateCount());
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -87,9 +87,9 @@ public class UpdateManyCommandResolverTest {
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
-                              .isEqualTo(documentConfig.maxDocumentUpdateCount() + 1);
+                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
@@ -120,8 +120,8 @@ public class UpdateManyCommandResolverTest {
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
-                assertThat(op.updateLimit()).isEqualTo(documentConfig.maxDocumentUpdateCount());
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -140,9 +140,9 @@ public class UpdateManyCommandResolverTest {
                         find -> {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
-                              .isEqualTo(documentConfig.maxDocumentUpdateCount() + 1);
+                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).isEmpty();
@@ -174,8 +174,8 @@ public class UpdateManyCommandResolverTest {
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
-                assertThat(op.updateLimit()).isEqualTo(documentConfig.maxDocumentUpdateCount());
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -198,9 +198,9 @@ public class UpdateManyCommandResolverTest {
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
-                              .isEqualTo(documentConfig.maxDocumentUpdateCount() + 1);
+                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
@@ -232,8 +232,8 @@ public class UpdateManyCommandResolverTest {
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
-                assertThat(op.updateLimit()).isEqualTo(documentConfig.maxDocumentUpdateCount());
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -252,9 +252,9 @@ public class UpdateManyCommandResolverTest {
                         find -> {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(documentConfig.defaultPageSize());
+                          assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
-                              .isEqualTo(documentConfig.maxDocumentUpdateCount() + 1);
+                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).isEmpty();

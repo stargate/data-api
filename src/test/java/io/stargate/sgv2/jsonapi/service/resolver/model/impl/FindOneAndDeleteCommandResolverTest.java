@@ -10,14 +10,13 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.List;
 import javax.inject.Inject;
@@ -28,8 +27,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOneAndDeleteCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
-  @Inject Shredder shredder;
+  @Inject OperationsConfig operationsConfig;
   @Inject FindOneAndDeleteCommandResolver resolver;
 
   @Nested
@@ -56,7 +54,7 @@ public class FindOneAndDeleteCommandResolverTest {
               op -> {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
@@ -96,7 +94,7 @@ public class FindOneAndDeleteCommandResolverTest {
               op -> {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
@@ -141,7 +139,7 @@ public class FindOneAndDeleteCommandResolverTest {
               op -> {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.resultProjection()).isEqualTo(projector);
                 assertThat(op.findOperation())
                     .isInstanceOfSatisfying(

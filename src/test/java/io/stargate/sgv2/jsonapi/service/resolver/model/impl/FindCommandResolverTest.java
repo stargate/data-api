@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
+  @Inject OperationsConfig operationsConfig;
   @Inject FindCommandResolver findCommandResolver;
 
   @Nested
@@ -53,8 +53,8 @@ public class FindCommandResolverTest {
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -91,8 +91,8 @@ public class FindCommandResolverTest {
                       List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")))),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -131,8 +131,8 @@ public class FindCommandResolverTest {
                       "field1", DBFilterBase.TextFilter.Operator.EQ, "value1")),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -166,8 +166,8 @@ public class FindCommandResolverTest {
               List.of(),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -202,13 +202,13 @@ public class FindCommandResolverTest {
               List.of(),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.defaultPageSize(),
-              documentConfig.defaultSortPageSize(),
+              operationsConfig.defaultPageSize(),
+              operationsConfig.defaultSortPageSize(),
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              documentConfig.maxSortReadLimit());
+              operationsConfig.maxDocumentSortCount());
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -238,13 +238,13 @@ public class FindCommandResolverTest {
               List.of(),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.defaultPageSize(),
-              documentConfig.defaultSortPageSize(),
+              operationsConfig.defaultPageSize(),
+              operationsConfig.defaultSortPageSize(),
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              documentConfig.maxSortReadLimit());
+              operationsConfig.maxDocumentSortCount());
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -276,12 +276,12 @@ public class FindCommandResolverTest {
               DocumentProjector.identityProjector(),
               null,
               10,
-              documentConfig.defaultSortPageSize(),
+              operationsConfig.defaultSortPageSize(),
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
-              documentConfig.maxSortReadLimit());
+              operationsConfig.maxDocumentSortCount());
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -315,7 +315,7 @@ public class FindCommandResolverTest {
               DocumentProjector.identityProjector(),
               "dlavjhvbavkjbna",
               10,
-              documentConfig.defaultPageSize(),
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -352,8 +352,8 @@ public class FindCommandResolverTest {
                       "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
               DocumentProjector.identityProjector(),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -401,8 +401,8 @@ public class FindCommandResolverTest {
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
               DocumentProjector.createFromDefinition(projectionDef),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
@@ -446,8 +446,8 @@ public class FindCommandResolverTest {
               List.of(),
               DocumentProjector.createFromDefinition(projectionDef),
               null,
-              documentConfig.maxLimit(),
-              documentConfig.defaultPageSize(),
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
               ReadType.DOCUMENT,
               objectMapper,
               null,
