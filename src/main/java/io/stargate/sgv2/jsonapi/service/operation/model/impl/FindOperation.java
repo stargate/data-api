@@ -270,6 +270,7 @@ public record FindOperation(
     if (idFilterToUse != null) {
       final List<BuiltCondition> inSplit = idFilterToUse.getAll();
       if (inSplit.isEmpty()) {
+        // returning null means return empty result
         return null;
       } else {
         return inSplit.stream()
