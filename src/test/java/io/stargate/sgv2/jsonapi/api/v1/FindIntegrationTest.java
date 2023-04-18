@@ -261,12 +261,36 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     public void inConditionEmptyArray() {
       String json =
           """
-            {
-              "find": {
-                "filter" : {"_id" : {"$in": []}}
-              }
-            }
-                """;
+        {
+          "find": {
+            "filter" : {"_id" : {"$in": []}}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(0))
+          .body("data.docs", hasSize(0))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void inOperatorEmptyArrayWithAdditionalFilters() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"username": "user1", "_id" : {"$in": []}}
+          }
+        }
+        """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
