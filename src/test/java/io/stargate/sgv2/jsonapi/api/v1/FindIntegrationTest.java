@@ -296,7 +296,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(0))
