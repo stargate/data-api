@@ -237,6 +237,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                   getDocumentIdValue(values.get(0))));
 
         case IN:
+          if (values.isEmpty()) return List.of();
           return values.stream()
               .map(
                   v ->

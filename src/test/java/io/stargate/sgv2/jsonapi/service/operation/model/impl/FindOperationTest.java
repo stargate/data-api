@@ -247,6 +247,39 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     }
 
     @Test
+    public void byIdWithInEmptyArray() throws Exception {
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of());
+      FindOperation operation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().docs()).hasSize(0);
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
     public void byIdWithInAndOtherOperator() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 2"

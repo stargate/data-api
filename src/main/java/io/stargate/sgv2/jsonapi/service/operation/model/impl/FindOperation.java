@@ -191,6 +191,9 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
+    if (conditions == null) {
+      return List.of();
+    }
     List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
     conditions.forEach(
         condition ->
@@ -215,7 +218,9 @@ public record FindOperation(
   private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
     List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-
+    if (conditions == null) {
+      return List.of();
+    }
     String[] columns = sortedDataColumns;
     if (orderBy() != null) {
       List<String> sortColumns = Lists.newArrayList(columns);
@@ -263,14 +268,20 @@ public record FindOperation(
     // then add id filter if available, in case of multiple `in` conditions we need to send multiple
     // condtions
     if (idFilterToUse != null) {
-      return idFilterToUse.getAll().stream()
-          .map(
-              idCondition -> {
-                List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
-                conditionsWithId.add(idCondition);
-                return conditionsWithId;
-              })
-          .collect(Collectors.toList());
+      final List<BuiltCondition> inSplit = idFilterToUse.getAll();
+      if (inSplit.isEmpty()) {
+        // returning null means return empty result
+        return null;
+      } else {
+        return inSplit.stream()
+            .map(
+                idCondition -> {
+                  List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
+                  conditionsWithId.add(idCondition);
+                  return conditionsWithId;
+                })
+            .collect(Collectors.toList());
+      }
     } else {
       return List.of(conditions);
     }
