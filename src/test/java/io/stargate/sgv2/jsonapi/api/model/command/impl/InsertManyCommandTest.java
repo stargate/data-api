@@ -93,7 +93,7 @@ class InsertManyCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("amount of documents to insert is over the max limit");
+          .contains("amount of documents to insert is over the max limit (3 vs 2)");
     }
 
     @Test
