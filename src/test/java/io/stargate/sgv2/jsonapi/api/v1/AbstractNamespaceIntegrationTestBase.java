@@ -14,6 +14,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 
+/**
+ * Abstract class for all int tests that needs a namespace to execute tests in. This class
+ * automatically creates a namespace before all tests and drops a namespace after all test have been
+ * run.
+ *
+ * <p>Note that this test uses a small workaround in {@link #getTestPort()} to avoid issue that
+ * Quarkus is not setting-up the rest assured target port in the @BeforeAll and @AfterAll methods
+ * (see https://github.com/quarkusio/quarkus/issues/7690).
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractNamespaceIntegrationTestBase {
 

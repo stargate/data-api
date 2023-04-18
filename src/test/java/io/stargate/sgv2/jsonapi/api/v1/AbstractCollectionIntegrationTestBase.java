@@ -12,6 +12,15 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 
+/**
+ * Abstract class for all int tests that needs a collection to execute tests in. This class
+ * automatically creates a collection before all tests. Namespace handling is done by the super
+ * class.
+ *
+ * <p>Note that this test uses a small workaround in {@link #getTestPort()} to avoid issue that
+ * Quarkus is not setting-up the rest assured target port in the @BeforeAll and @AfterAll methods
+ * (see https://github.com/quarkusio/quarkus/issues/7690).
+ */
 public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractNamespaceIntegrationTestBase {
 
