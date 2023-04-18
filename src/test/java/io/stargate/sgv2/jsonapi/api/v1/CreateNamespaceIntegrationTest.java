@@ -11,7 +11,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,9 +19,9 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class CreateNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
+class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
-  static String DB_NAME = "stargate";
+  private static final String DB_NAME = "stargate";
 
   @BeforeAll
   public static void enableLog() {
@@ -31,7 +30,25 @@ class CreateNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
 
   @AfterEach
   public void deleteKeyspace() {
-    this.session.execute("DROP KEYSPACE IF EXISTS %s".formatted(DB_NAME));
+    String json =
+        """
+        {
+          "dropNamespace": {
+            "name": "%s"
+          }
+        }
+        """
+            .formatted(DB_NAME);
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(GeneralResource.BASE_PATH)
+        .then()
+        .statusCode(200)
+        .body("status.ok", is(1));
   }
 
   @Nested
@@ -70,7 +87,7 @@ class CreateNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
             }
           }
           """
-              .formatted(keyspaceId.asInternal());
+              .formatted(namespaceName);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())

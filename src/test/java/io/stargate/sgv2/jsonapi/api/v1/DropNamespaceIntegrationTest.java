@@ -8,24 +8,16 @@ import static org.hamcrest.Matchers.not;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
-
-  @BeforeAll
-  public static void enableLog() {
-    RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-  }
+class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
   class DropNamespace {
@@ -40,7 +32,7 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
             }
           }
           """
-              .formatted(keyspaceId.asInternal());
+              .formatted(namespaceName);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -69,7 +61,7 @@ class DropNamespaceIntegrationTest extends CqlEnabledIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.namespaces", not(hasItem(keyspaceId.asInternal())));
+          .body("status.namespaces", not(hasItem(namespaceName)));
     }
 
     @Test
