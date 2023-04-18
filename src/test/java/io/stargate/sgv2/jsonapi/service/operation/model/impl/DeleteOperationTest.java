@@ -9,6 +9,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -40,6 +41,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
 
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
+  @Inject QueriesConfig queriesConfig;
 
   @Nested
   class Execute {
@@ -84,6 +86,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -160,6 +163,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -271,6 +275,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -381,6 +386,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -513,6 +519,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -616,6 +623,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
       ValidatingStargateBridge.QueryAssert deleteAssert2 =
           withQuery(
@@ -623,6 +631,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -728,6 +737,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
       ValidatingStargateBridge.QueryAssert deleteAssert2 =
           withQuery(
@@ -735,6 +745,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
@@ -842,6 +853,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
@@ -924,6 +936,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert deleteSecondAssert =
           withQuery(
@@ -931,6 +944,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -1011,6 +1025,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert deleteSecondAssert =
           withQuery(
@@ -1018,6 +1033,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -1104,6 +1120,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert deleteSecondAssert =
           withQuery(
@@ -1111,6 +1128,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
@@ -1283,6 +1301,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       ValidatingStargateBridge.QueryAssert deleteDoc2Assert =
@@ -1291,6 +1310,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       ValidatingStargateBridge.QueryAssert deleteDoc1RetryAssert =
@@ -1299,6 +1319,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id3))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
@@ -1450,6 +1471,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id1))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       ValidatingStargateBridge.QueryAssert deleteDoc2Assert =
@@ -1458,6 +1480,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id2))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       ValidatingStargateBridge.QueryAssert deleteDoc1RetryAssert =
@@ -1466,6 +1489,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
                   Values.of(tx_id3))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
       ValidatingStargateBridge.QueryAssert deleteDoc2RetryAssert =
           withQuery(
@@ -1473,6 +1497,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                   Values.of(
                       CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
                   Values.of(tx_id4))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =

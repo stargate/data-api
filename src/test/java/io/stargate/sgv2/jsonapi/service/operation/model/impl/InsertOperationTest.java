@@ -10,6 +10,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -39,6 +40,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
 
   @Nested
   class Execute {
@@ -93,6 +95,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
@@ -159,6 +162,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
@@ -250,6 +254,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -278,6 +283,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -365,6 +371,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -393,6 +400,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -483,6 +491,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
 
       InsertOperation operation =
@@ -574,6 +583,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -602,6 +612,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan really breaks the test."));
 
       InsertOperation operation =
@@ -697,6 +708,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -725,6 +737,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -819,6 +832,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -847,6 +861,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan really breaks the test."));
 
       InsertOperation operation =
