@@ -107,6 +107,41 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void idFilterWithInOperatorEmptyArrayCondition() throws Exception {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"_id" : { "$in" : []}}
+                    }
+                  }
+                  """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of())),
+              DocumentProjector.identityProjector(),
+              null,
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
     public void byIdInAndOtherConditionTogether() throws Exception {
       String json =
           """

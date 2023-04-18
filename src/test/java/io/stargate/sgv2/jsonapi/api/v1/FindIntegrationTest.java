@@ -275,9 +275,10 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("$in operator must have at least one value"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("data.count", is(0))
+          .body("data.docs", hasSize(0))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
 
     @Test

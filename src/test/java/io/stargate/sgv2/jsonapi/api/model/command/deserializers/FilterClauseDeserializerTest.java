@@ -277,6 +277,21 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleInArrayNonEmpty() throws Exception {
+      String json = """
+               {"_id" : {"$in": []}}
+              """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
     public void mustHandleInIdFieldOnly() throws Exception {
       String json = """
                {"name" : {"$in": ["aaa"]}}
@@ -305,20 +320,6 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
-    public void mustHandleInArrayNonEmpty() throws Exception {
-      String json = """
-               {"_id" : {"$in": []}}
-              """;
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage()).isEqualTo("$in operator must have at least one value");
-              });
-    }
-
-    @Test
     public void mustHandleInArrayWithBigArray() throws Exception {
       // String array with 100 unique numbers
       String json =
@@ -333,7 +334,7 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "$in operator must have at most "
-                            + operationsConfig.defaultPageSize()
+                            + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
     }

@@ -86,15 +86,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           }
 
           if (filterOperation.operand().value() instanceof List<?> list) {
-            if (list.isEmpty()) {
-              throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have at least one value");
-            }
             if (list.size() > operationsConfig.defaultPageSize()) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$in operator must have at most "
-                      + operationsConfig.defaultPageSize()
+                      + operationsConfig.maxInOperatorValueSize()
                       + " values");
             }
           } else {
