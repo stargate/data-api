@@ -14,8 +14,10 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -208,6 +210,46 @@ public class ShredderTest {
   }
 
   @Nested
+  class OkWithDateTime {
+    @Test
+    public void shredDocWithDateTimeColumn() {
+      final long testTimestamp = defaultTestDate().getTime();
+      final String inputJson =
+          """
+              {
+                "_id" : 123,
+                "name" : "Bob",
+                "datetime" : {
+                  "$date" : %d
+                }
+              }
+              """
+              .formatted(testTimestamp);
+      final JsonNode inputDoc = fromJson(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
+
+      JsonNode jsonFromShredded = fromJson(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayEquals()).isEmpty();
+      // 2 non-doc-id main-level properties
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder("name SBob", "datetime T" + testTimestamp);
+      assertThat(doc.subDocEquals()).hasSize(0);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
+      assertThat(doc.queryTimestampValues())
+          .isEqualTo(Map.of(JsonPath.from("datetime"), new Date(testTimestamp)));
+    }
+  }
+
+  @Nested
   class ErrorCases {
 
     @Test
@@ -251,5 +293,10 @@ public class ShredderTest {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  protected Date defaultTestDate() {
+    OffsetDateTime dt = OffsetDateTime.parse("2023-01-01T00:00:00Z");
+    return new Date(dt.toInstant().toEpochMilli());
   }
 }

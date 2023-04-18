@@ -3,11 +3,14 @@ package io.stargate.sgv2.jsonapi.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
 public class JsonUtil {
+  public static final String EJSON_VALUE_KEY_DATE = "$date";
+
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
    * as for JSON but additionally require exact ordering of Object (sub-document) values.
@@ -57,5 +60,23 @@ public class JsonUtil {
     }
     // For other nodes default equals() works fine:
     return Objects.equals(node1, node2);
+  }
+
+  /**
+   * Helper method that will see if given {@link JsonNode} is an EJSON-encoded "Date" (aka
+   * Timestamp) value and if so, constructs and returns matching {@link java.util.Date} value. See
+   * {@href https://docs.meteor.com/api/ejson.html} for details on encoded value.
+   *
+   * @param json JSON value to check
+   * @return
+   */
+  public static Date extractEJsonDate(JsonNode json) {
+    if (json.isObject() && json.size() == 1) {
+      JsonNode value = json.path(EJSON_VALUE_KEY_DATE);
+      if (value.isIntegralNumber() && value.canConvertToLong()) {
+        return new Date(value.longValue());
+      }
+    }
+    return null;
   }
 }

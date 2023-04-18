@@ -144,8 +144,9 @@ public class Shredder {
     final JsonPath path = pathBuilder.build();
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
-      callback.shredObject(path, ob);
-      traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+      if (callback.shredObject(path, ob)) {
+        traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+      }
     } else if (value.isArray()) {
       ArrayNode arr = (ArrayNode) value;
       callback.shredArray(path, arr);
