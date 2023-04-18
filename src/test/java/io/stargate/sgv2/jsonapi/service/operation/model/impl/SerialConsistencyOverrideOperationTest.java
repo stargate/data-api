@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
@@ -25,8 +27,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
-import io.stargate.sgv2.jsonapi.testresource.SerialConsistencyOverrideProfile;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(SerialConsistencyOverrideProfile.class)
+@TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
 public class SerialConsistencyOverrideOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
@@ -44,6 +46,20 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
   @Inject Shredder shredder;
+
+  public static class SerialConsistencyOverrideProfile implements QuarkusTestProfile {
+    @Override
+    public boolean disableGlobalTestResources() {
+      return true;
+    }
+
+    @Override
+    public Map<String, String> getConfigOverrides() {
+      return ImmutableMap.<String, String>builder()
+          .put("stargate.queries.serial-consistency", "LOCAL_SERIAL")
+          .build();
+    }
+  }
 
   @Nested
   class Delete {
