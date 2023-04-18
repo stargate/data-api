@@ -118,11 +118,11 @@ public record WritableShreddedDocument(
 
     @Override
     public boolean shredObject(JsonPath path, ObjectNode obj) {
-      // Either Sub-doc or EJSON-encoded Date/time value:
+      // Either Sub-doc or EJSON-encoded Date/timestamp value:
       Date dtValue = JsonUtil.extractEJsonDate(obj);
       if (dtValue != null) {
-        shredDateTime(path, dtValue);
-        return false; // We are done
+        shredTimestamp(path, dtValue);
+        return false; // we are done
       }
 
       addKey(path);
@@ -133,7 +133,7 @@ public record WritableShreddedDocument(
       return true; // proceed to shred individual entries too
     }
 
-    private void shredDateTime(JsonPath path, Date dtValue) {
+    private void shredTimestamp(JsonPath path, Date dtValue) {
       addKey(path);
       if (queryTimestampValues == null) {
         queryTimestampValues = new HashMap<>();
