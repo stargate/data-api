@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   class DeleteMany {
 
@@ -51,7 +51,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
             .contentType(ContentType.JSON)
             .body(json.formatted(i, i))
             .when()
-            .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
             .then()
             .statusCode(200)
             .body("errors", is(nullValue()));
@@ -75,7 +75,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(1))
@@ -98,7 +98,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -120,7 +120,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]._id", is("doc2"))
@@ -146,7 +146,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(1))
@@ -172,7 +172,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(5))
@@ -195,7 +195,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -219,7 +219,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(20))
@@ -240,7 +240,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -264,7 +264,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(20))
@@ -285,7 +285,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(5))
@@ -337,10 +337,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
                             .contentType(ContentType.JSON)
                             .body(deleteJson)
                             .when()
-                            .post(
-                                CollectionResource.BASE_PATH,
-                                keyspaceId.asInternal(),
-                                collectionName)
+                            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                             .then()
                             .statusCode(200)
                             .body(
@@ -392,7 +389,7 @@ public class DeleteManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", is(empty()));

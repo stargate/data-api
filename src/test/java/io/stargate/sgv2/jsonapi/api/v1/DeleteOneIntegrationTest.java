@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   class DeleteOne {
     @Test
@@ -45,7 +45,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()));
@@ -64,7 +64,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(1))
@@ -86,7 +86,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -111,7 +111,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(0))
@@ -138,7 +138,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()));
@@ -157,7 +157,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(1))
@@ -179,7 +179,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -206,7 +206,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()));
@@ -225,7 +225,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(1))
@@ -247,7 +247,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", jsonEquals("[]"))
@@ -274,7 +274,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()));
@@ -293,7 +293,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(0))
@@ -315,7 +315,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]._id", is("doc5"))
@@ -362,10 +362,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
                             .contentType(ContentType.JSON)
                             .body(deleteJson)
                             .when()
-                            .post(
-                                CollectionResource.BASE_PATH,
-                                keyspaceId.asInternal(),
-                                collectionName)
+                            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                             .then()
                             .statusCode(200)
                             .body("status.deletedCount", anyOf(is(0), is(1)))
@@ -416,7 +413,7 @@ public class DeleteOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", is(empty()));

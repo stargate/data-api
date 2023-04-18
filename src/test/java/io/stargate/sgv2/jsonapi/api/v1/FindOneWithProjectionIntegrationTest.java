@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class FindOneWithProjectionIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class FindOneWithProjectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private static final String DOC1_JSON =
       """
                 {
@@ -69,7 +69,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))
@@ -116,7 +116,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))
@@ -156,7 +156,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))
@@ -202,7 +202,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))
@@ -246,7 +246,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))
@@ -291,7 +291,7 @@ public class FindOneWithProjectionIntegrationTest extends CollectionResourceBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.count", is(1))

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   class FindOneAndReplace {
     @Test
@@ -56,7 +56,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -78,7 +78,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -119,7 +119,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -141,7 +141,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -173,7 +173,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(0))
@@ -195,7 +195,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document));
@@ -247,7 +247,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -269,7 +269,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -301,7 +301,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -324,7 +324,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -356,7 +356,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -400,7 +400,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -422,7 +422,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -464,7 +464,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
                 }
                 """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedAfterProjection))
@@ -493,7 +493,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
                 }
                 """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedAfterReplace));
@@ -532,7 +532,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
                 }
                 """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedWithProjectionBefore))
@@ -561,7 +561,7 @@ public class FindOneAndReplaceIntegrationTest extends CollectionResourceBaseInte
                 }
                 """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedAfterReplace));
