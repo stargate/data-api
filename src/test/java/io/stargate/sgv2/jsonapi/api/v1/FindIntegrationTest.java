@@ -325,7 +325,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[1].message", is("$in operator must have `ARRAY`"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -348,7 +349,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[1].message", is("Can use $in operator only on _id field"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -537,7 +539,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors[1].message", is("$exists operator supports only true"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
