@@ -9,7 +9,6 @@ import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
-import io.stargate.sgv2.common.CqlEnabledIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.InputStream;
 import java.util.Collections;
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
+public class HTTPLimitsIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Test
   @SuppressWarnings("deprecation") // CoreProtocolPNames deprecated
@@ -42,7 +41,7 @@ public class HTTPLimitsIntegrationTest extends CqlEnabledIntegrationTestBase {
         .contentType(ContentType.JSON)
         .body(inputStream)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), "noSuchCollection")
+        .post(CollectionResource.BASE_PATH, namespaceName, "noSuchCollection")
         .then()
         .statusCode(413);
   }
