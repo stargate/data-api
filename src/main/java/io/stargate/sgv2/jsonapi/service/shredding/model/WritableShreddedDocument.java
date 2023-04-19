@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.shredding.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.ShredListener;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -119,10 +121,18 @@ public record WritableShreddedDocument(
     @Override
     public boolean shredObject(JsonPath path, ObjectNode obj) {
       // Either Sub-doc or EJSON-encoded Date/timestamp value:
-      Date dtValue = JsonUtil.extractEJsonDate(obj);
-      if (dtValue != null) {
-        shredTimestamp(path, dtValue);
-        return false; // we are done
+      if (JsonUtil.looksLikeEJsonValue(obj)) {
+        Date dtValue = JsonUtil.extractEJsonDate(obj, path);
+        if (dtValue != null) {
+          shredTimestamp(path, dtValue);
+          return false; // we are done
+        }
+        // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
+        throw new JsonApiException(
+            ErrorCode.SHRED_BAD_EJSON_VALUE,
+            String.format(
+                "%s: unrecognized type '%s' (path '%s')",
+                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(), obj.fieldNames().next(), path));
       }
 
       addKey(path);

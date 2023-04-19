@@ -210,7 +210,7 @@ public class ShredderTest {
   }
 
   @Nested
-  class OkWithDateTime {
+  class EJSONDateTime {
     @Test
     public void shredDocWithDateTimeColumn() {
       final long testTimestamp = defaultTestDate().getTime();
@@ -246,6 +246,33 @@ public class ShredderTest {
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
       assertThat(doc.queryTimestampValues())
           .isEqualTo(Map.of(JsonPath.from("datetime"), new Date(testTimestamp)));
+    }
+
+    @Test
+    public void badEJSONDate() {
+      Throwable t =
+          catchThrowable(
+              () -> shredder.shred(objectMapper.readTree("{ \"date\": { \"$date\": false } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage(
+              "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+
+    @Test
+    public void badEJSONUnrecognized() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  shredder.shred(
+                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage("Bad EJSON value: unrecognized type '$unknownType' (path 'value')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
     }
   }
 
