@@ -117,6 +117,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -143,6 +144,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -315,6 +319,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -341,6 +346,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -475,6 +483,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -501,6 +510,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -619,6 +631,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -645,6 +658,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -825,6 +841,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -851,6 +868,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -1020,6 +1040,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -1046,6 +1067,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -1159,6 +1183,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -1185,6 +1210,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -1428,6 +1456,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -1454,6 +1483,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -1486,6 +1518,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
@@ -1600,6 +1635,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            query_null_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
@@ -1626,6 +1662,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
