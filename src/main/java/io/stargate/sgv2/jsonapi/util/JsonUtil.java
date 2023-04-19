@@ -84,7 +84,10 @@ public class JsonUtil {
    * {@href https://docs.meteor.com/api/ejson.html} for details on encoded value.
    *
    * @param json JSON value to check
-   * @return
+   * @return Date extracted, if given valid EJSON-encoded Date value; or {@code null} if not
+   *     EJSON-like; or {@link JsonApiException} for malformed EJSON value
+   * @throws JsonApiException If value indicates it would be EJSON-encoded date (by key) but has
+   *     invalid value part (not number)
    */
   public static Date extractEJsonDate(JsonNode json, Object path) {
     if (json.isObject() && json.size() == 1) {
@@ -102,6 +105,22 @@ public class JsonUtil {
                 EJSON_VALUE_KEY_DATE,
                 value.getNodeType(),
                 path));
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Similar to {@link #extractEJsonDate(JsonNode, Object)} but will not throw an exception in any
+   * case (simply returns {@code null})
+   */
+  public static Date tryExtractEJsonDate(JsonNode json) {
+    if (json.isObject() && json.size() == 1) {
+      JsonNode value = json.get(EJSON_VALUE_KEY_DATE);
+      if (value != null) {
+        if (value.isIntegralNumber() && value.canConvertToLong()) {
+          return new Date(value.longValue());
+        }
       }
     }
     return null;

@@ -293,6 +293,20 @@ public class DocValueHasherTest {
     }
   }
 
+  @Nested
+  class DateHashing {
+    @Test
+    public void validDate() throws Exception {
+      JsonNode doc = objectMapper.readTree("{\"$date\":123456789}");
+      DocValueHasher hasher = new DocValueHasher();
+      DocValueHash hash = hasher.hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.TIMESTAMP);
+      assertThat(hash.usesMD5()).isFalse();
+      assertThat(hash.hash()).isEqualTo("T123456789");
+    }
+  }
+
   /**
    * Helper method for checking that given String is valid Base64 encoded representation of a
    * 16-byte value -- presumably MD5 hash (but that can not be validated without knowing input etc)

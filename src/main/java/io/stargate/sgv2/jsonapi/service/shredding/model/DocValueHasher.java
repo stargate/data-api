@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.IdentityHashMap;
@@ -80,7 +81,20 @@ public class DocValueHasher {
     return hash;
   }
 
+  /**
+   * Method for getting {@link DocValueHash} for given JSON Object value.
+   *
+   * <p>Note: there are EJSON-encoded types that are passed as JSON Objects; currently one such
+   * supported type is "Date". Hash returned is different from "plain" JSON Object which represents
+   * Sub-documents.
+   */
   public DocValueHash objectHash(ObjectNode n) {
+    // EJSON-encoded value?
+    Date dt = JsonUtil.tryExtractEJsonDate(n);
+    if (dt != null) {
+      return timestampValue(dt).hash();
+    }
+
     DocValueHash hash = structuredHashes.get(n);
     if (hash == null) {
       hash = calcObjectHash(n);
