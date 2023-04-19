@@ -21,9 +21,11 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -159,6 +161,19 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
    */
   private ComparisonExpression createComparisonExpression(Map.Entry<String, JsonNode> entry) {
     ComparisonExpression expression = new ComparisonExpression(entry.getKey(), new ArrayList<>());
+    // Check if the value is EJson date and add filter expression for date filter
+    if (JsonUtil.looksLikeEJsonValue(entry.getValue())) {
+      JsonNode value = entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE);
+      if (value != null) {
+        if (value.isIntegralNumber() && value.canConvertToLong()) {
+          Date date = new Date(value.longValue());
+          return ComparisonExpression.eq(entry.getKey(), date);
+        } else {
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
+        }
+      }
+    }
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();

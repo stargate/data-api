@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,9 @@ public record ComparisonExpression(
     }
     if (value instanceof Boolean) {
       return new JsonLiteral<>((Boolean) value, JsonType.BOOLEAN);
+    }
+    if (value instanceof Date) {
+      return new JsonLiteral<>((Date) value, JsonType.DATE);
     }
     if (value instanceof String) {
       return new JsonLiteral<>((String) value, JsonType.STRING);
