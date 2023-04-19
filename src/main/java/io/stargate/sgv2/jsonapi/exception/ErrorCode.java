@@ -35,6 +35,8 @@ public enum ErrorCode {
 
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
+  SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
+
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),

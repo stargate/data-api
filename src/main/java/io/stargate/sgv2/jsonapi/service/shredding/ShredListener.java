@@ -9,7 +9,11 @@ import java.math.BigDecimal;
  * processing. Callbacks are called in document order when traversing the input document.
  */
 public interface ShredListener {
-  void shredObject(JsonPath path, ObjectNode obj);
+  /**
+   * @return Whether to traverse contents or not: if {@code true} traverse contents, if {@code
+   *     false} do not proceed further.
+   */
+  boolean shredObject(JsonPath path, ObjectNode obj);
 
   void shredArray(JsonPath path, ArrayNode arr);
 

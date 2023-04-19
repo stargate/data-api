@@ -16,7 +16,9 @@ public enum DocValueType {
   BOOLEAN('B', true),
   NUMBER('N', true),
   NULL('Z', true),
-  STRING('S', true);
+  STRING('S', true),
+
+  TIMESTAMP('T', true);
 
   private final char prefix;
 

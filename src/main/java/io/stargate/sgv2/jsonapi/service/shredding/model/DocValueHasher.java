@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +65,10 @@ public class DocValueHasher {
 
   public AtomicValue stringValue(String str) {
     return atomics.stringValue(str);
+  }
+
+  public AtomicValue timestampValue(Date dt) {
+    return atomics.timestampValue(dt);
   }
 
   public DocValueHash arrayHash(ArrayNode n) {

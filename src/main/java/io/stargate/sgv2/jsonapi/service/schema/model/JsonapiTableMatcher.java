@@ -26,6 +26,7 @@ public class JsonapiTableMatcher implements Predicate<Schema.CqlTable> {
             .or(new CqlColumnMatcher.Map("query_bool_values", Basic.VARCHAR, Basic.TINYINT))
             .or(new CqlColumnMatcher.Map("query_dbl_values", Basic.VARCHAR, Basic.DECIMAL))
             .or(new CqlColumnMatcher.Map("query_text_values", Basic.VARCHAR, Basic.VARCHAR))
+            .or(new CqlColumnMatcher.Map("query_timestamp_values", Basic.VARCHAR, Basic.TIMESTAMP))
             .or(new CqlColumnMatcher.Set("query_null_values", Basic.VARCHAR));
   }
 
@@ -56,7 +57,7 @@ public class JsonapiTableMatcher implements Predicate<Schema.CqlTable> {
     }
 
     List<QueryOuterClass.ColumnSpec> columns = cqlTable.getColumnsList();
-    if (columns.size() != 11 || !columns.stream().allMatch(columnsPredicate)) {
+    if (columns.size() != 12 || !columns.stream().allMatch(columnsPredicate)) {
       return false;
     }
 
