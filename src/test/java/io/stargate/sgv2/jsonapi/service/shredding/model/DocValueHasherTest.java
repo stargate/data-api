@@ -39,6 +39,18 @@ public class DocValueHasherTest {
     }
 
     @Test
+    public void shortDocumentWithDate() throws Exception {
+      JsonNode doc = objectMapper.readTree("{\"key\":{\"$date\":123456}}");
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.OBJECT);
+      assertThat(hash.usesMD5()).isFalse();
+      // Three lines: header with type-prefix and entry count; one line for key
+      // and one line for type-prefixed value. No trailing linefeed
+      assertThat(hash.hash()).isEqualTo("O1\nkey\nT123456");
+    }
+
+    @Test
     public void basicDocument() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
@@ -112,6 +124,17 @@ public class DocValueHasherTest {
       // Four lines: header with type-prefix and entry count; one line for each
       // element (type-prefixed value). No trailing linefeed
       assertThat(hash.hash()).isEqualTo("A3\nN1\nB1\nZ");
+    }
+
+    @Test
+    public void shortArrayWithDate() throws Exception {
+      JsonNode doc = objectMapper.readTree("[{\"$date\":123}]");
+      DocValueHash hash = new DocValueHasher().hash(doc);
+      assertThat(hash).isNotNull();
+      assertThat(hash.type()).isEqualTo(DocValueType.ARRAY);
+      assertThat(hash.usesMD5()).isFalse();
+      // Two lines: header with type-prefix and entry count; one line for date.
+      assertThat(hash.hash()).isEqualTo("A1\nT123");
     }
 
     @Test
