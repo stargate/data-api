@@ -228,6 +228,7 @@ public record ReadAndUpdateOperation(
             + "            query_dbl_values = ?,"
             + "            query_text_values = ?,"
             + "            query_null_values = ?,"
+            + "            query_timestamp_values = ?,"
             + "            doc_json  = ?"
             + "        WHERE "
             + "            key = ?"
@@ -253,6 +254,8 @@ public record ReadAndUpdateOperation(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
+            .addValues(
+                Values.of(CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));

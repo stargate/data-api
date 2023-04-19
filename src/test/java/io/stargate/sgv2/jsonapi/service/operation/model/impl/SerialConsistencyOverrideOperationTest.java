@@ -144,9 +144,9 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
   class Insert {
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insert() throws Exception {
@@ -185,7 +185,10 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
@@ -284,6 +287,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               + "            query_dbl_values = ?,"
               + "            query_text_values = ?,"
               + "            query_null_values = ?,"
+              + "            query_timestamp_values = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
               + "            key = ?"
@@ -310,6 +314,9 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))

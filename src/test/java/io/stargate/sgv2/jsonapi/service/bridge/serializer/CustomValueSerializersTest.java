@@ -6,6 +6,7 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,6 +83,17 @@ public class CustomValueSerializersTest {
       final List<QueryOuterClass.Value> to = CustomValueSerializers.getListValue(from);
       final QueryOuterClass.Value next = to.get(0);
       assertThat(Values.string(next)).isEqualTo("field1");
+    }
+
+    @Test
+    public void getTimestampMapValues() {
+      Map<JsonPath, Date> from = Map.of(JsonPath.from("field1"), new Date(10L));
+      final Map<QueryOuterClass.Value, QueryOuterClass.Value> to =
+          CustomValueSerializers.getTimestampMapValues(from);
+      final Map.Entry<QueryOuterClass.Value, QueryOuterClass.Value> next =
+          to.entrySet().iterator().next();
+      assertThat(Values.string(next.getKey())).isEqualTo("field1");
+      assertThat(Values.bigint(next.getValue())).isEqualTo(10L);
     }
   }
 }

@@ -92,6 +92,53 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
+    public void insertDocumentWithDate() {
+      String json =
+          """
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc_date",
+                    "username": "doc_date_user3",
+                    "date_created": {"$date": 1672531200000}
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("doc3"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      String query_json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "doc_date"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(query_json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(json))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void insertDocumentWithNumberId() {
       String json =
           """
