@@ -95,16 +95,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertDocumentWithDate() {
       String json =
           """
-              {
-                "insertOne": {
-                  "document": {
-                    "_id": "doc_date",
-                    "username": "doc_date_user3",
-                    "date_created": {"$date": 1672531200000}
-                  }
-                }
-              }
-              """;
+        {
+          "insertOne": {
+            "document": {
+              "_id": "doc_date",
+              "username": "doc_date_user3",
+              "date_created": {"$date": 1672531200000}
+            }
+          }
+        }
+        """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -118,14 +118,24 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
+      String expected =
+          """
+        {
+          "_id": "doc_date",
+          "username": "doc_date_user3",
+          "date_created": {"$date": 1672531200000}
+        }
+        """;
+
       String query_json =
           """
-              {
-                "find": {
-                  "filter" : {"_id" : "doc_date"}
-                }
-              }
-              """;
+        {
+          "find": {
+            "filter" : {"_id" : "doc_date"}
+          }
+        }
+        """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -134,7 +144,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(json))
+          .body("data.docs[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
     }
 
