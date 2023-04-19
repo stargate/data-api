@@ -114,7 +114,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc3"))
+          .body("status.insertedIds[0]", is("doc_date"))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
