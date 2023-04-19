@@ -47,9 +47,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
 
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_timestamp_values, query_null_values)"
             + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insertOne() throws Exception {
@@ -88,6 +88,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -155,6 +158,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -247,6 +253,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -276,6 +285,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -364,6 +376,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -393,6 +408,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -484,6 +502,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -576,6 +597,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -605,6 +629,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -701,6 +728,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -730,6 +760,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -825,6 +858,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
               .withColumnSpec(
                   List.of(
@@ -854,6 +890,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
               .withColumnSpec(
                   List.of(

@@ -5,6 +5,7 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,16 @@ public class CustomValueSerializers {
     final Map<QueryOuterClass.Value, QueryOuterClass.Value> to = new HashMap<>(from.size());
     for (Map.Entry<JsonPath, String> entry : from.entrySet()) {
       to.put(Values.of(entry.getKey().toString()), Values.of(entry.getValue()));
+    }
+    return to;
+  }
+
+  public static Map<QueryOuterClass.Value, QueryOuterClass.Value> getTimestampMapValues(
+      Map<JsonPath, Date> from) {
+    final Map<QueryOuterClass.Value, QueryOuterClass.Value> to = new HashMap<>(from.size());
+    for (Map.Entry<JsonPath, Date> entry : from.entrySet()) {
+      // We can pass Timestamp value as 64-bit long
+      to.put(Values.of(entry.getKey().toString()), Values.of(entry.getValue().getTime()));
     }
     return to;
   }
