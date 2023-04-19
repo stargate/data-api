@@ -194,7 +194,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final Date dateValue;
 
     public DateFilter(String path, Operator operator, Date value) {
-      super("query_dbl_values", path, operator, value);
+      super("query_timestamp_values", path, operator, value);
       this.dateValue = value;
     }
 
