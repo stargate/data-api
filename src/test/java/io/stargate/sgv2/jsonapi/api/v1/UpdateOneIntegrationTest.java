@@ -34,6 +34,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
               "document": {
                 "_id": "update_doc1",
                 "username": "update_user3",
+                "date_col": {"$date" : 1672531200000},
                 "active_user" : true
               }
             }
@@ -76,6 +77,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           {
             "_id":"update_doc1",
             "username":"update_user3",
+            "date_col": {"$date" : 1672531200000},
             "active_user":false
           }
           """;
