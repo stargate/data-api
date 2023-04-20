@@ -64,7 +64,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
       given()
@@ -105,7 +105,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                         .writeValueAsString(testDatas.get(i))));
           }
         }
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -143,7 +143,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -181,7 +181,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -219,7 +219,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -257,7 +257,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -295,7 +295,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -336,7 +336,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -374,7 +374,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -415,7 +415,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -455,7 +455,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -495,7 +495,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
