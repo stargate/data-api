@@ -429,11 +429,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               },
                               "count": 3
                             }
-                          ],
-                          "status": {
-                            "matchedCount": 1,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "matchedCount": 1,
+                          "modifiedCount": 1
                         }
                       }
                       """),
@@ -450,11 +450,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "location": "New York",
                              "count": 3
                            }
-                         ],
-                         "status": {
-                           "matchedCount": 1,
-                           "modifiedCount": 1
-                         }
+                         ]
+                       },
+                       "status": {
+                         "matchedCount": 1,
+                         "modifiedCount": 1
                        }
                      }
                      """),
@@ -471,10 +471,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "location": "New York",
                                "count": 3
                              }
-                           ],
-                           "status": {
-                             "deletedCount": 1
-                           }
+                           ]
+                         },
+                         "status": {
+                           "deletedCount": 1
                          }
                        }
                        """),
@@ -491,12 +491,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "location": "New York",
                               "count": 3
                             }
-                          ],
-                          "status": {
-                            "upsertedId": "1",
-                            "matchedCount": 0,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "upsertedId": "1",
+                          "matchedCount": 0,
+                          "modifiedCount": 1
                         }
                       }
                   """),
