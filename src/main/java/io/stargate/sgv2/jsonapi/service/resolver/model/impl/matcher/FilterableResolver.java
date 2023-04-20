@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
   private static final Object DYNAMIC_NULL_GROUP = new Object();
+  private static final Object DYNAMIC_DATE_GROUP = new Object();
   private static final Object EXISTS_GROUP = new Object();
   private static final Object ALL_GROUP = new Object();
   private static final Object SIZE_GROUP = new Object();
@@ -76,6 +78,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.BOOLEAN)
         .capture(DYNAMIC_NULL_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
+        .capture(DYNAMIC_DATE_GROUP)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DATE)
         .capture(EXISTS_GROUP)
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
@@ -185,6 +189,18 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     if (nullGroup != null) {
       nullGroup.consumeAllCaptures(
           expression -> filters.add(new DBFilterBase.IsNullFilter(expression.path())));
+    }
+
+    final CaptureGroup<Date> dateGroup =
+        (CaptureGroup<Date>) captures.getGroupIfPresent(DYNAMIC_DATE_GROUP);
+    if (dateGroup != null) {
+      dateGroup.consumeAllCaptures(
+          expression ->
+              filters.add(
+                  new DBFilterBase.DateFilter(
+                      expression.path(),
+                      DBFilterBase.MapFilterBase.Operator.EQ,
+                      expression.value())));
     }
 
     final CaptureGroup<Boolean> existsGroup =

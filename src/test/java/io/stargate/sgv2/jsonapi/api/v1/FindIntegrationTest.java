@@ -45,7 +45,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 "document": {
                   "_id": "doc1",
                   "username": "user1",
-                  "active_user" : true
+                  "active_user" : true,
+                  "date" : {"$date": 1672531200000}
                 }
               }
             }
@@ -187,7 +188,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -213,7 +215,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
         """;
       // findOne resolves any one of the resolved documents. So the order of the documents in the
       // $in clause is not guaranteed.
-      String expected1 = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       String expected2 =
           "{\"_id\":\"doc4\", \"indexedObject\":{\"0\":\"value_0\",\"1\":\"value_1\"}}";
       given()
@@ -241,7 +244,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
         }
         """;
-      String expected1 = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -389,7 +393,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -414,7 +419,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -554,7 +560,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -977,7 +984,33 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void byDateColumn() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"date" : {"$date": 1672531200000}}
+          }
+        }
+      """;
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
