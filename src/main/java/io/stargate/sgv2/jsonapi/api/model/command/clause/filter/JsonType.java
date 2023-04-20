@@ -6,6 +6,7 @@ public enum JsonType {
   NUMBER,
   STRING,
   NULL,
+  DATE,
   SUB_DOC,
   ARRAY,
   // DOCUMENT_ID represent the _id field type which is union of String, Number, Boolean and Null

@@ -20,6 +20,7 @@ public interface DocumentConstants {
     int TYPE_ID_NUMBER = 2;
     int TYPE_ID_BOOLEAN = 3;
     int TYPE_ID_NULL = 4;
+    int TYPE_ID_DATE = 5;
 
     Map<Integer, JsonType> keyIDMap =
         Map.of(
@@ -30,7 +31,9 @@ public interface DocumentConstants {
             TYPE_ID_BOOLEAN,
             JsonType.BOOLEAN,
             TYPE_ID_NULL,
-            JsonType.NULL);
+            JsonType.NULL,
+            TYPE_ID_DATE,
+            JsonType.DATE);
 
     static JsonType getJsonType(int typeId) {
       return keyIDMap.get(typeId);

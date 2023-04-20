@@ -5,22 +5,26 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Value that represents details of MongoDB {@code _id} column: the primary key of all Documents
- * stored in Collections. Its type can be one of 4 native Mongo types:
+ * stored in Collections. Its type can be one of 5 native Mongo types:
  *
  * <ul>
  *   <li>String
  *   <li>Number
  *   <li>Boolean
  *   <li>null
+ *   <li>Date (EJSON-encoded)
  * </ul>
  */
 @RegisterForReflection
@@ -59,34 +63,74 @@ public interface DocumentId {
       case STRING -> {
         return fromString(node.textValue());
       }
+      case OBJECT -> {
+        Date dt = JsonUtil.tryExtractEJsonDate(node);
+        if (dt != null) {
+          return fromTimestamp(dt);
+        }
+      }
     }
     throw new JsonApiException(
         ErrorCode.SHRED_BAD_DOCID_TYPE,
         String.format(
-            "%s: Document Id must be a JSON String, Number, Boolean or NULL instead got %s",
+            "%s: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
             ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), node.getNodeType()));
   }
 
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
-    switch (DocumentConstants.KeyTypeId.getJsonType(typeId)) {
+    JsonType type = DocumentConstants.KeyTypeId.getJsonType(typeId);
+    if (type == null) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_BAD_DOCID_TYPE,
+          String.format(
+              "%s: Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
+              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), typeId));
+    }
+    switch (type) {
       case BOOLEAN -> {
-        return fromBoolean(Boolean.valueOf(documentIdAsText));
+        switch (documentIdAsText) {
+          case "true":
+            return fromBoolean(true);
+          case "false":
+            return fromBoolean(false);
+        }
+        throw new JsonApiException(
+            ErrorCode.SHRED_BAD_DOCID_TYPE,
+            String.format(
+                "%s: Document Id type Boolean stored as invalid String '%s' (must be 'true' or 'false')",
+                ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
       }
       case NULL -> {
         return fromNull();
       }
       case NUMBER -> {
-        return fromNumber(new BigDecimal(documentIdAsText));
+        try {
+          return fromNumber(new BigDecimal(documentIdAsText));
+        } catch (NumberFormatException e) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_DOCID_TYPE,
+              String.format(
+                  "%s: Document Id type Number stored as invalid String '%s' (not a valid Number)",
+                  ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
+        }
       }
       case STRING -> {
         return fromString(documentIdAsText);
       }
+      case DATE -> {
+        try {
+          long ts = Long.parseLong(documentIdAsText);
+          return fromTimestamp(ts);
+        } catch (NumberFormatException e) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_DOCID_TYPE,
+              String.format(
+                  "%s: Document Id type Date stored as invalid String '%s' (needs to be Number)",
+                  ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
+        }
+      }
     }
-    throw new JsonApiException(
-        ErrorCode.SHRED_BAD_DOCID_TYPE,
-        String.format(
-            "%s: Document Id must be a JSON String(1), Number(2), Boolean(3) or NULL(4) instead got %s",
-            ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), typeId));
+    throw new JsonApiException(ErrorCode.SHRED_BAD_DOCID_TYPE);
   }
 
   static DocumentId fromBoolean(boolean key) {
@@ -112,6 +156,14 @@ public interface DocumentId {
 
   static DocumentId fromUUID(UUID uuid) {
     return new StringId(uuid.toString());
+  }
+
+  static DocumentId fromTimestamp(Date key) {
+    return new DateId(key.getTime());
+  }
+
+  static DocumentId fromTimestamp(long keyAsLong) {
+    return new DateId(keyAsLong);
   }
 
   /*
@@ -208,6 +260,33 @@ public interface DocumentId {
     @Override
     public String toString() {
       return String.valueOf(key);
+    }
+  }
+
+  record DateId(long key) implements DocumentId {
+    @Override
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_DATE;
+    }
+
+    @Override
+    public Object value() {
+      return new Date(key());
+    }
+
+    @Override
+    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+      return JsonUtil.createEJSonDate(nodeFactory, key);
+    }
+
+    @Override
+    public String asDBKey() {
+      return String.valueOf(key());
+    }
+
+    @Override
+    public String toString() {
+      return asDBKey();
     }
   }
 
