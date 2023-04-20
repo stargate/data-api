@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,10 @@ public interface ReadOperation extends Operation {
   List<String> sortIndexColumns =
       List.of(
           "query_text_values['%s']",
-          "query_dbl_values['%s']", "query_bool_values['%s']", "query_null_values['%s']");
+          "query_dbl_values['%s']",
+          "query_bool_values['%s']",
+          "query_null_values['%s']",
+          "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
   /**
    * Default implementation to query and parse the result set
@@ -191,30 +195,42 @@ public interface ReadOperation extends Operation {
                     sortColumnCount++) {
                   int columnCounter =
                       SORTED_DATA_COLUMNS + ((sortColumnCount) * SORT_INDEX_COLUMNS_SIZE);
+
+                  // text value
                   QueryOuterClass.Value value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.textNode(Values.string(value)));
                     continue;
                   }
+                  // number value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.numberNode(Values.decimal(value)));
                     continue;
                   }
+                  // boolean value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.booleanNode(Values.int_(value) == 1));
                     continue;
                   }
+                  // null value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.nullNode());
                     continue;
                   }
-
+                  // date value
+                  columnCounter++;
+                  value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.pojoNode(new Date(Values.bigint(value))));
+                    continue;
+                  }
+                  // missing value
                   sortValues.add(nodeFactory.missingNode());
                 }
                 // Create ReadDocument with document id, grpc value for doc json and list of sort
