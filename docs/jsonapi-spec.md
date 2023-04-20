@@ -129,10 +129,8 @@ elements may be present depending on the command.
 <command-status-value>  ::= `<json-value>
 
 <response-data> ::= docs (<document>)*,
-                    (nextPageState <page-state>)?,
-                    (count <document-count>)?
+                    (nextPageState <page-state>)?
 <page-state> ::= <ascii-string>
-<document-count> ::= <positive-integer>
 ```
 
 The contents of the `<response-message>` depend on the command, in
@@ -700,7 +698,7 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 
 | Response Elements | Description                                                                     |
 | ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs`, `count` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
+| `data`            | Present with fields : `docs` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
 | `status`          | Not preset. |
 | `errors`          | Present if errors occur. |
 
