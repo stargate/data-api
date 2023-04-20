@@ -298,7 +298,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean or NULL instead got ARRAY")
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
     }
 
