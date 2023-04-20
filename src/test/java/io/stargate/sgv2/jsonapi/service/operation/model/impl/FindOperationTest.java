@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -772,6 +773,86 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.BoolFilter filter =
           new DBFilterBase.BoolFilter(
               "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true);
+      FindOperation operation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().docs()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithDateFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true,
+                    "date_field" : {"$date" : 1672531200000}
+                  }
+                  """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      "date_field "
+                          + new DocValueHasher().getHash(new Date(1672531200000L)).hash()))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+
+      DBFilterBase.DateFilter filter =
+          new DBFilterBase.DateFilter(
+              "date_field", DBFilterBase.MapFilterBase.Operator.EQ, new Date(1672531200000L));
       FindOperation operation =
           new FindOperation(
               COMMAND_CONTEXT,

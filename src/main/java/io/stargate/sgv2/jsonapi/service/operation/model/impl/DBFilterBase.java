@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -180,6 +181,26 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
       return nodeFactory.numberNode(numberValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return Operator.EQ.equals(operator);
+    }
+  }
+
+  /** Filters db documents based on a date field value */
+  public static class DateFilter extends MapFilterBase<Date> {
+    private final Date dateValue;
+
+    public DateFilter(String path, Operator operator, Date value) {
+      super("query_timestamp_values", path, operator, value);
+      this.dateValue = value;
+    }
+
+    @Override
+    JsonNode asJson(JsonNodeFactory nodeFactory) {
+      return nodeFactory.numberNode(dateValue.getTime());
     }
 
     @Override
@@ -446,6 +467,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return Values.of((Byte) value);
     } else if (value instanceof Integer) {
       return Values.of((Integer) value);
+    } else if (value instanceof Date) {
+      return Values.of(((Date) value).getTime());
     }
     return Values.of((String) null);
   }
@@ -467,6 +490,10 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return nodeFactory.numberNode((BigDecimal) value);
     } else if (value instanceof Boolean) {
       return nodeFactory.booleanNode((Boolean) value);
+    } else if (value instanceof Date) {
+      final ObjectNode objectNode = nodeFactory.objectNode();
+      objectNode.put("$date", ((Date) value).getTime());
+      return objectNode;
     } else if (value instanceof List) {
       List<Object> listValues = (List<Object>) value;
       final ArrayNode arrayNode = nodeFactory.arrayNode(listValues.size());

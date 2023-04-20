@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.util.Date;
 import java.util.List;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +52,45 @@ public class FindCommandResolverTest {
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
+              DocumentProjector.identityProjector(),
+              null,
+              Integer.MAX_VALUE,
+              operationsConfig.defaultPageSize(),
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      assertThat(operation)
+          .isInstanceOf(FindOperation.class)
+          .satisfies(
+              op -> {
+                assertThat(op).isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void dateFilterCondition() throws Exception {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"date_field" : {"$date" : 1672531200000}}
+                }
+              }
+              """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final CommandContext commandContext = new CommandContext("namespace", "collection");
+      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
+      FindOperation expected =
+          new FindOperation(
+              commandContext,
+              List.of(
+                  new DBFilterBase.DateFilter(
+                      "date_field",
+                      DBFilterBase.MapFilterBase.Operator.EQ,
+                      new Date(1672531200000L))),
               DocumentProjector.identityProjector(),
               null,
               Integer.MAX_VALUE,

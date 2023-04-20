@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,37 @@ public class FilterClauseDeserializerTest {
                       ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))));
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void mustHandleDate() throws Exception {
+      String json = """
+            {"dateType": {"$date": 1672531200000}}
+          """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "dateType",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
+    public void mustHandleDateAsEpoch() throws Exception {
+      String json = """
+         {"dateType": {"$date": "2023-01-01"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+              });
     }
 
     @Test

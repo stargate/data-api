@@ -195,6 +195,8 @@ public class DocValueHasher {
       return numberValue((BigDecimal) value).hash();
     } else if (value instanceof Boolean) {
       return booleanValue((Boolean) value).hash();
+    } else if (value instanceof Date) {
+      return timestampValue((Date) value).hash();
     } else if (value instanceof List) {
       return arrayHash((List<Object>) value);
     } else if (value instanceof Map) {
