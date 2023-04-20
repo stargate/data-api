@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -226,7 +227,7 @@ public interface ReadOperation extends Operation {
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.numberNode(Values.bigint(value)));
+                    sortValues.add(nodeFactory.pojoNode(new Date(Values.bigint(value))));
                     continue;
                   }
                   // missing value

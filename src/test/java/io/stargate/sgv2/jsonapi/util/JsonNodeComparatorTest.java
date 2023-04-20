@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.POJONode;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Date;
 import org.junit.jupiter.api.Test;
 
 // No need for injection
@@ -22,6 +24,15 @@ public class JsonNodeComparatorTest {
     _verifyIdentityEquals("false");
 
     _verifyAscending("false", "true");
+  }
+
+  @Test
+  public void testOrderingDate() {
+    assertThat(COMP.compare(new POJONode(new Date(10L)), new POJONode(new Date(10L)))).isEqualTo(0);
+    assertThat(COMP.compare(new POJONode(new Date(10L)), new POJONode(new Date(11L))))
+        .isLessThan(0);
+    assertThat(COMP.compare(new POJONode(new Date(11L)), new POJONode(new Date(10L))))
+        .isGreaterThan(0);
   }
 
   @Test
