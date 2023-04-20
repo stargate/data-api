@@ -221,7 +221,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     @Test
     public void happyPathWithSort() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -287,6 +287,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -299,6 +303,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -307,6 +312,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id2),
                           Values.of(doc2),
                           Values.of("user2"),
+                          Values.NULL,
                           Values.NULL,
                           Values.NULL,
                           Values.NULL)));
@@ -677,7 +683,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     @Test
     public void happyPathReplaceWithSort() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -752,6 +758,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -764,6 +774,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -772,6 +783,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id2),
                           Values.of(doc2),
                           Values.of("user2"),
+                          Values.NULL,
                           Values.NULL,
                           Values.NULL,
                           Values.NULL)));
@@ -866,7 +878,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     @Test
     public void happyPathWithSortDescending() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -932,6 +944,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -944,6 +960,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -952,6 +969,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id2),
                           Values.of(doc2),
                           Values.of("user2"),
+                          Values.NULL,
                           Values.NULL,
                           Values.NULL,
                           Values.NULL)));

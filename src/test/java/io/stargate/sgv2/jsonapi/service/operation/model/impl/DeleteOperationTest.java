@@ -210,7 +210,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       String docJson1 = "{\"_id\":\"doc1\",\"username\":1,\"status\":\"active\"}";
       String docJson2 = "{\"_id\":\"doc2\",\"username\":2,\"status\":\"active\"}";
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
@@ -242,6 +242,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -254,6 +258,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.of(new BigDecimal(1)),
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -263,6 +268,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(docJson2),
                           Values.NULL,
                           Values.of(new BigDecimal(2)),
+                          Values.NULL,
                           Values.NULL,
                           Values.NULL)));
 
@@ -321,7 +327,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       String docJson1 = "{\"_id\":\"doc1\",\"username\":1,\"status\":\"active\"}";
       String docJson2 = "{\"_id\":\"doc2\",\"username\":2,\"status\":\"active\"}";
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
@@ -353,6 +359,10 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
                           .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
                   List.of(
@@ -365,6 +375,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.of(new BigDecimal(1)),
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -374,6 +385,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(docJson2),
                           Values.NULL,
                           Values.of(new BigDecimal(2)),
+                          Values.NULL,
                           Values.NULL,
                           Values.NULL)));
 

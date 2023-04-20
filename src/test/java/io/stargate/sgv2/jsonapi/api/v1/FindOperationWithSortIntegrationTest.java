@@ -64,7 +64,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
       given()
@@ -105,7 +105,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                         .writeValueAsString(testDatas.get(i))));
           }
         }
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -143,7 +143,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -181,7 +181,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -219,7 +219,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -257,7 +257,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -295,7 +295,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -336,7 +336,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -374,7 +374,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
                   objectMapper
                       .writerWithDefaultPrettyPrinter()
                       .writeValueAsString(testDatas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -415,7 +415,87 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           arrayNode.add(
               objectMapper.readTree(
                   objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      } catch (Exception e) {
+      } catch (JsonProcessingException e) {
+        // ignore the object node creation error should never happen
+      }
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(datas.size()))
+          .body("data.docs", jsonEquals(arrayNode.toString()));
+    }
+
+    @Test
+    @Order(12)
+    public void sortByDate() {
+      List<Object> datas =
+          testDatas.stream()
+              .filter(obj -> (obj instanceof TestData o) && o.activeUser())
+              .collect(Collectors.toList());
+      sortByDate(datas, true);
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"activeUser" : true},
+                      "sort" : {"dateValue" : 1}
+                    }
+                  }
+                  """;
+
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      try {
+        for (int i = 0; i < datas.size(); i++)
+          arrayNode.add(
+              objectMapper.readTree(
+                  objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      } catch (JsonProcessingException e) {
+        // ignore the object node creation error should never happen
+      }
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.count", is(datas.size()))
+          .body("data.docs", jsonEquals(arrayNode.toString()));
+    }
+
+    @Test
+    @Order(13)
+    public void sortByDateDescending() {
+      List<Object> datas =
+          testDatas.stream()
+              .filter(obj -> (obj instanceof TestData o) && o.activeUser())
+              .collect(Collectors.toList());
+      sortByDate(datas, false);
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"activeUser" : true},
+                      "sort" : {"dateValue" : -1}
+                    }
+                  }
+                  """;
+
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      try {
+        for (int i = 0; i < datas.size(); i++)
+          arrayNode.add(
+              objectMapper.readTree(
+                  objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      } catch (JsonProcessingException e) {
         // ignore the object node creation error should never happen
       }
 
@@ -512,6 +592,24 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           });
     }
 
+    private void sortByDate(List<Object> testDatas, boolean asc) {
+      Collections.sort(
+          testDatas,
+          new Comparator<Object>() {
+            @Override
+            public int compare(Object o1, Object o2) {
+              JsonNode o1j = getDateValueAsJsonNode(o1);
+              JsonNode o2j = getDateValueAsJsonNode(o2);
+              int compareVal = compareNode(o1j, o2j, asc);
+              if (compareVal != 0) {
+                return compareVal;
+              } else {
+                return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
+              }
+            }
+          });
+    }
+
     private JsonNode getUserNameAsJsonNode(Object data) {
       if (data instanceof TestData td) {
         if (td.username() == null) return objectMapper.getNodeFactory().nullNode();
@@ -565,17 +663,31 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       return objectMapper.getNodeFactory().missingNode();
     }
 
+    private JsonNode getDateValueAsJsonNode(Object data) {
+      if (data instanceof TestData td) {
+        return objectMapper.getNodeFactory().numberNode(td.dateValue().$date());
+      }
+      return objectMapper.getNodeFactory().missingNode();
+    }
+
     private List<Object> getDocuments(int countOfDocuments) {
       List<Object> data = new ArrayList<>(countOfDocuments);
       for (int docId = 1; docId <= countOfDocuments - 3; docId++) {
-        data.add(new TestData("doc" + docId, "user" + docId, docId, docId % 2 == 0));
+        data.add(
+            new TestData(
+                "doc" + docId,
+                "user" + docId,
+                docId,
+                docId % 2 == 0,
+                new DateValue(1672531200000L + docId * 1000)));
       }
       data.add(
           new TestData(
               "doc" + (countOfDocuments - 2),
               null,
               (countOfDocuments - 2),
-              (countOfDocuments - 2) % 2 == 0));
+              (countOfDocuments - 2) % 2 == 0,
+              new DateValue(1672531200000L + (countOfDocuments - 2) * 1000)));
       data.add(
           new TestDataMissingBoolean(
               "doc" + (countOfDocuments - 1),
@@ -600,10 +712,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           });
     }
 
-    record TestData(String _id, String username, int userId, boolean activeUser) {}
+    record TestData(
+        String _id, String username, int userId, boolean activeUser, DateValue dateValue) {}
 
     record TestDataMissingBoolean(String _id, String username, int userId) {}
 
     record TestDataUserIdAsText(String _id, String username, String userId) {}
+
+    record DateValue(long $date) {}
   }
 }
