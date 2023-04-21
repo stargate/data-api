@@ -92,7 +92,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void insertDocumentWithDate() {
+    public void insertDocumentWithDateValue() {
       String json =
           """
         {
@@ -146,6 +146,63 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void insertDocumentWithDateDocId() {
+      String json =
+          """
+            {
+              "insertOne": {
+                "document": {
+                  "_id": {"$date": 1672531200000},
+                  "username": "doc_date_user4",
+                  "status": false
+                }
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672531200000}"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      String expected =
+          """
+            {
+              "_id": {"$date": 1672531200000},
+              "username": "doc_date_user4",
+              "status": false
+            }
+            """;
+
+      String query_json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : {"$date": 1672531200000}}
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(query_json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test

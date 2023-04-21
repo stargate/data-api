@@ -271,7 +271,8 @@ public interface DocumentId {
 
     @Override
     public Object value() {
-      return new Date(key());
+      // Important! Need to serialize as EJSON Encoded representation for use by Jackson
+      return JsonUtil.createEJSonDateAsMap(key());
     }
 
     @Override

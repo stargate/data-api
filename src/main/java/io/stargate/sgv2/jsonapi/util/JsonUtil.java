@@ -132,4 +132,8 @@ public class JsonUtil {
     json.put(EJSON_VALUE_KEY_DATE, timestamp);
     return json;
   }
+
+  public static Map<String, Object> createEJSonDateAsMap(long timestamp) {
+    return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
+  }
 }
