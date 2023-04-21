@@ -155,7 +155,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
             {
               "insertOne": {
                 "document": {
-                  "_id": {"$date": 1672531200000},
+                  "_id": {"$date": 1672539900000},
                   "username": "doc_date_user4",
                   "status": false
                 }
@@ -171,14 +171,14 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672531200000}"))
+          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
       String expected =
           """
             {
-              "_id": {"$date": 1672531200000},
+              "_id": {"$date": 1672539900000},
               "username": "doc_date_user4",
               "status": false
             }
