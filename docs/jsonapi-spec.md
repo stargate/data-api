@@ -478,31 +478,19 @@ Returns the count of documents that match the query for a collection or view.
 *Sample:*
 
 ```json
-db.orders.countDocuments({})
+{ "countDocuments": { "filter": {"location": "London", "race.competitors" : {"$eq" : 100}} } }
 ```
 
 #### countDocuments Command Options
 
 The `countDocuments` command does not support any options.
 
-#### countDocuments TODO considersations
-
-re: https://datastax.jira.com/browse/C2-2491
-
-* What are the limitations on the filters?
-
-* What are the performance problems?
-
-See the IMPORTANT note in https://www.mongodb.com/docs/manual/reference/method/db.collection.countDocuments/#transactions.
-
-* Jeff: Should we also ask core DB for estimated count?
-
 #### Count all documents that match a query
 
-Count the number of the documents in the `purchase` collection with the field `order_date` greater than new Date('01/01/2022'):
+Count the number of the documents in the `purchase` collection where the field `order_date` is greater than `$date` in JSON format. In this example, Epoch `1672531200000` represents 1/1/2023 00:00:00 UTC.
 
-```json5
-db.purchase.countDocuments( { order_date: { $gt: new Date('01/01/2022') } }, { limit: 100 } )
+```json
+{ "countDocuments": { "filter" : { "order_date"  : {"$date" :  1672531200000 }}
 ```
 
 #### countDocuments Multi Document Failure Modes
