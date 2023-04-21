@@ -28,7 +28,7 @@ public interface DocumentConstants {
         case TYPE_ID_BOOLEAN -> JsonType.BOOLEAN;
         case TYPE_ID_NULL -> JsonType.NULL;
         case TYPE_ID_DATE -> JsonType.DATE;
-        default -> throw new IllegalArgumentException("Invalid Type Id: " + typeId);
+        default -> null;
       };
     }
   }
