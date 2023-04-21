@@ -473,9 +473,37 @@ Commands are defined using the BNF-like syntax, with samples presented using a [
 
 ### countDocuments Command
 
+Returns the count of documents that match the query for a collection or view.
+
+*Sample:*
+
+```json
+db.orders.countDocuments({})
+```
+
 #### countDocuments Command Options
 
 The `countDocuments` command does not support any options.
+
+#### countDocuments TODO considersations
+
+re: https://datastax.jira.com/browse/C2-2491
+
+* What are the limitations on the filters?
+
+* What are the performance problems?
+
+See the IMPORTANT note in https://www.mongodb.com/docs/manual/reference/method/db.collection.countDocuments/#transactions.
+
+* Jeff: Should we also ask core DB for estimated count?
+
+#### Count all documents that match a query
+
+Count the number of the documents in the `purchase` collection with the field `order_date` greater than new Date('01/01/2022'):
+
+```json5
+db.purchase.countDocuments( { order_date: { $gt: new Date('01/01/2022') } }, { limit: 100 } )
+```
 
 #### countDocuments Multi Document Failure Modes
 
