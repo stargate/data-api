@@ -188,7 +188,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """
             {
               "find": {
-                "filter" : {"_id" : {"$date": 1672531200000}}
+                "filter" : {"_id" : {"$date": 1672539900000}}
               }
             }
             """;
