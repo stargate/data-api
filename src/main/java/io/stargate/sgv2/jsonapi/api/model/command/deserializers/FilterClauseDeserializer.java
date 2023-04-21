@@ -162,18 +162,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private ComparisonExpression createComparisonExpression(Map.Entry<String, JsonNode> entry) {
     ComparisonExpression expression = new ComparisonExpression(entry.getKey(), new ArrayList<>());
     // Check if the value is EJson date and add filter expression for date filter
-    if (JsonUtil.looksLikeEJsonValue(entry.getValue())) {
-      JsonNode value = entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE);
-      if (value != null) {
-        if (value.isIntegralNumber() && value.canConvertToLong()) {
-          Date date = new Date(value.longValue());
-          return ComparisonExpression.eq(entry.getKey(), date);
-        } else {
-          throw new JsonApiException(
-              ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
-        }
-      }
-    }
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
@@ -183,7 +171,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       } catch (JsonApiException exception) {
         // If getComparisonOperator returns an exception, check for subdocument equality condition,
         // this will happen when shortcut is used "filter" : { "size" : { "w": 21, "h": 14} }
-        if (updateField.getKey().startsWith("$")) {
+        if (updateField.getKey().startsWith("$")
+            && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
           throw exception;
         } else {
           return ComparisonExpression.eq(
@@ -250,14 +239,26 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         }
       case OBJECT:
         {
-          ObjectNode objectNode = (ObjectNode) node;
-          Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
-          final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
-          while (fields.hasNext()) {
-            final Map.Entry<String, JsonNode> nextField = fields.next();
-            values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
+          if (JsonUtil.looksLikeEJsonValue(node)) {
+            JsonNode value = node.get(JsonUtil.EJSON_VALUE_KEY_DATE);
+            if (value != null) {
+              if (value.isIntegralNumber() && value.canConvertToLong()) {
+                return new Date(value.longValue());
+              } else {
+                throw new JsonApiException(
+                    ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
+              }
+            }
+          } else {
+            ObjectNode objectNode = (ObjectNode) node;
+            Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
+            final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+              final Map.Entry<String, JsonNode> nextField = fields.next();
+              values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
+            }
+            return values;
           }
-          return values;
         }
       default:
         throw new JsonApiException(
