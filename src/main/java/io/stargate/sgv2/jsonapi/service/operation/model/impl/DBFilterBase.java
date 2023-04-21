@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -491,9 +492,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     } else if (value instanceof Boolean) {
       return nodeFactory.booleanNode((Boolean) value);
     } else if (value instanceof Date) {
-      final ObjectNode objectNode = nodeFactory.objectNode();
-      objectNode.put("$date", ((Date) value).getTime());
-      return objectNode;
+      return JsonUtil.createEJSonDate(nodeFactory, (Date) value);
     } else if (value instanceof List) {
       List<Object> listValues = (List<Object>) value;
       final ArrayNode arrayNode = nodeFactory.arrayNode(listValues.size());

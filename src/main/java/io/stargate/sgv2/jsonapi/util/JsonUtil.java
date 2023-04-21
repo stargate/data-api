@@ -127,6 +127,10 @@ public class JsonUtil {
     return null;
   }
 
+  public static ObjectNode createEJSonDate(JsonNodeCreator f, Date date) {
+    return createEJSonDate(f, date.getTime());
+  }
+
   public static ObjectNode createEJSonDate(JsonNodeCreator f, long timestamp) {
     ObjectNode json = f.objectNode();
     json.put(EJSON_VALUE_KEY_DATE, timestamp);
