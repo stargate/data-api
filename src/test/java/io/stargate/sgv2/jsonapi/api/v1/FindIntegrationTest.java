@@ -29,8 +29,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
   //  - test names
   //  - order annotations
   //  - format json
-  //  - errors field check
-  //  - empty options test
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -38,7 +36,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     @Order(1)
     public void setUp() {
-      String json =
+      insert(
           """
             {
               "insertOne": {
@@ -50,10 +48,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -69,11 +66,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -85,11 +80,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -99,11 +92,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -114,9 +105,19 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
+      insert(
+          """
+            {
+              "insertOne": {
+                "document": {
+                  "_id": {"$date": 6},
+                  "username": "user6"
+                }
+              }
+            }
+          """);
     }
 
     private void insert(String json) {
@@ -149,7 +150,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(5));
+          .body("data.count", is(6));
     }
 
     @Test
@@ -190,6 +191,36 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
       String expected =
           "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.count", is(1))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void byDateId() {
+      String json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : {"$date": 6 }}
+                  }
+                }
+              """;
+      String expected =
+          """
+            {
+              "_id": {"$date": 6},
+              "username": "user6"
+            }
+            """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
