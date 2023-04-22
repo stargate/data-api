@@ -473,9 +473,42 @@ Commands are defined using the BNF-like syntax, with samples presented using a [
 
 ### countDocuments Command
 
+Returns the count of documents that match the query for a collection or view.
+
+*Sample:*
+
+```json
+{
+  "countDocuments": {
+    "filter": {
+      "location": "London",
+      "race.competitors": {
+        "$eq": 100
+      }
+    }
+  }
+}
+```
+
 #### countDocuments Command Options
 
 The `countDocuments` command does not support any options.
+
+#### Count all documents that match a query
+
+Count the number of the documents in the `purchase` collection where the field `order_date` is greater than `$date` in JSON format. In this example, Epoch `1672531200000` represents 1/1/2023 00:00:00 UTC.
+
+```json
+{
+  "countDocuments": {
+    "filter": {
+      "order_date": {
+        "$date": 1672531200000
+      }
+    }
+  }
+}
+```
 
 #### countDocuments Multi Document Failure Modes
 
