@@ -149,7 +149,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.docs", hasSize(6));
     }
 
     @Test
@@ -198,7 +199,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs", hasSize(1));
     }
 
     @Test
@@ -227,8 +229,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs", hasSize(1));
     }
 
     @Test
