@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOneAndUpdateCommandResolverTest {
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentConfig documentConfig;
+  @Inject OperationsConfig operationsConfig;
   @Inject Shredder shredder;
   @Inject FindOneAndUpdateCommandResolver resolver;
 
@@ -65,7 +65,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -104,7 +104,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 {
                   "findOneAndUpdate": {
                     "filter" : {"status" : "active"},
-                    "sort" : ["user"],
+                    "sort" : {"user" : 1},
                     "update" : {"$set" : {"location" : "New York"}}
                   }
                 }
@@ -123,7 +123,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -184,7 +184,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 assertThat(op.upsert()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -220,18 +220,15 @@ public class FindOneAndUpdateCommandResolverTest {
     public void filterConditionWithOptionsSort() throws Exception {
       String json =
           """
-                        {
-                          "findOneAndUpdate": {
-                            "filter" : {"age" : 35},
-                            "sort": [
-                              "user.name",
-                              "-user.age"
-                            ],
-                            "update" : {"$set" : {"location" : "New York"}},
-                            "options" : {"returnDocument" : "after", "upsert": true }
-                          }
-                        }
-                        """;
+            {
+              "findOneAndUpdate": {
+                "filter" : {"age" : 35},
+                "sort" : {"user.name" : 1, "user.age" : -1},
+                "update" : {"$set" : {"location" : "New York"}},
+                "options" : {"returnDocument" : "after", "upsert": true }
+              }
+            }
+          """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -246,7 +243,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 assertThat(op.upsert()).isTrue();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
@@ -311,7 +308,7 @@ public class FindOneAndUpdateCommandResolverTest {
                 assertThat(op.upsert()).isFalse();
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(documentConfig.lwt().retries());
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,

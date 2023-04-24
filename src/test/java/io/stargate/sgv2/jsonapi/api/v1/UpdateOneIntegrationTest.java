@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   class UpdateOneWithSet {
@@ -34,6 +34,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               "document": {
                 "_id": "update_doc1",
                 "username": "update_user3",
+                "date_col": {"$date" : 1672531200000},
                 "active_user" : true
               }
             }
@@ -45,7 +46,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -63,7 +64,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -76,6 +77,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           {
             "_id":"update_doc1",
             "username":"update_user3",
+            "date_col": {"$date" : 1672531200000},
             "active_user":false
           }
           """;
@@ -92,7 +94,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -116,7 +118,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(0))
@@ -142,7 +144,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is("afterDoc6"))
@@ -171,7 +173,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -195,7 +197,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is(notNullValue()))
@@ -218,7 +220,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", is(notNullValue()));
@@ -242,7 +244,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is("afterDoc7"))
@@ -273,7 +275,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -309,7 +311,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
       given()
@@ -317,7 +319,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(jsonOther)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -335,7 +337,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -365,7 +367,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -390,7 +392,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -408,7 +410,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -435,7 +437,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -460,7 +462,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -478,7 +480,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -507,7 +509,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -542,7 +544,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -570,7 +572,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -621,7 +623,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateBody)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -654,7 +656,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -689,7 +691,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -718,7 +720,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -754,7 +756,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -783,7 +785,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -819,7 +821,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -849,7 +851,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -894,7 +896,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -926,7 +928,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -970,7 +972,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1000,7 +1002,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1035,7 +1037,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1064,7 +1066,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -1095,7 +1097,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1114,7 +1116,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(originalDoc));
@@ -1150,7 +1152,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1179,7 +1181,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -1224,7 +1226,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1256,7 +1258,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1291,7 +1293,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1320,7 +1322,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1355,7 +1357,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1385,7 +1387,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1430,7 +1432,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1462,7 +1464,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1497,7 +1499,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1526,7 +1528,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1561,7 +1563,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1591,7 +1593,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1637,7 +1639,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1667,7 +1669,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1709,7 +1711,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1739,7 +1741,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1787,7 +1789,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
                         .contentType(ContentType.JSON)
                         .body(updateJson)
                         .when()
-                        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                         .then()
                         .statusCode(200)
                         .body("status.matchedCount", is(1))
@@ -1838,7 +1840,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expectedDoc));
@@ -1862,7 +1864,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -1894,7 +1896,7 @@ public class UpdateOneIntegrationTest extends CollectionResourceBaseIntegrationT
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))

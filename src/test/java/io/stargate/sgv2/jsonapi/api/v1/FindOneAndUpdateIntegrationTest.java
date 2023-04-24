@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   class FindOneAndUpdate {
@@ -51,7 +52,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -81,10 +82,48 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void byIdAndSetNoChange() {
+      String document =
+          """
+        {
+          "_id": "doc3",
+          "username": "admin",
+          "active_user" : true
+        }
+        """;
+      insertDoc(document);
+
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"_id" : "doc3"},
+            "sort": { "username": 1 },
+            "update" : {"$set" : {"username": "admin"}},
+            "options": {"returnDocument": "before"}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(1))
+          .body("data.docs[0]", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
     }
 
     @Test
@@ -103,7 +142,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", is(empty()))
@@ -129,7 +168,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", is(empty()))
@@ -140,27 +179,15 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
 
     @Test
     public void byIdReturnDocumentAfter() {
-      String document =
+      insertDoc(
           """
           {
             "_id": "afterDoc3",
             "username": "afterUser3",
             "active_user" : true
           }
-          """;
-      insertDoc(document);
-
-      String json =
-          """
-          {
-            "findOneAndUpdate": {
-              "filter" : {"_id" : "afterDoc3"},
-              "update" : {"$set" : {"active_user": false}},
-              "options" : {"returnDocument" : "after"}
-            }
-          }
-          """;
-      String expected =
+          """);
+      final String expected =
           """
           {
             "_id":"afterDoc3",
@@ -171,9 +198,18 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "afterDoc3"},
+                    "update" : {"$set" : {"active_user": false}},
+                    "options" : {"returnDocument" : "after"}
+                  }
+                }
+          """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -182,23 +218,88 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .body("errors", is(nullValue()));
 
       // assert state after update
-      json =
-          """
-          {
-            "find": {
-              "filter" : {"_id" : "afterDoc3"}
-            }
-          }
-          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "afterDoc3"}
+                  }
+                }
+          """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void byIdReturnDocumentBefore() {
+      final String docBefore =
+          """
+          {
+            "_id": "beforeDoc3",
+            "username": "beforeUser3",
+            "active_user": true
+          }
+          """;
+      insertDoc(docBefore);
+      final String docAfter =
+          """
+              {
+                "_id":"beforeDoc3",
+                "username":"beforeUser3",
+                "active_user":false,
+                "hits": 1
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "beforeDoc3"},
+                    "update" : {
+                      "$set" : {"active_user": false},
+                      "$inc" : {"hits": 1}
+                    },
+                    "options" : {"returnDocument" : "before"}
+                  }
+                }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(docBefore))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "beforeDoc3"}
+                  }
+                }
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(docAfter));
     }
 
     @Test
@@ -219,7 +320,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", is(notNullValue()))
@@ -242,7 +343,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", is(notNullValue()));
@@ -273,7 +374,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -296,7 +397,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -327,7 +428,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -357,7 +458,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -389,7 +490,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -417,7 +518,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -452,7 +553,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           {
             "findOneAndUpdate": {
               "filter" : {"filter_me" : "happy"},
-              "sort" :  ["active_user"],
+              "sort" :  {"active_user" : 1},
               "update" : {"$set" : {"add_me": false}},
               "options" : {"returnDocument" : "after"}
             }
@@ -473,7 +574,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -495,7 +596,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -530,7 +631,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           {
             "findOneAndUpdate": {
               "filter" : {"filter_me" : "happy"},
-              "sort" :  ["-active_user"],
+              "sort" :  {"active_user" : -1},
               "update" : {"$set" : {"add_me": false}},
               "options" : {"returnDocument" : "after"}
             }
@@ -551,7 +652,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -573,7 +674,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -608,7 +709,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -630,7 +731,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
@@ -661,7 +762,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -683,7 +784,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
@@ -715,7 +816,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -740,7 +841,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
@@ -773,7 +874,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -798,7 +899,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
@@ -830,7 +931,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -855,7 +956,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(inputDoc));
@@ -914,7 +1015,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -948,7 +1049,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -994,7 +1095,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -1032,7 +1133,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -1072,7 +1173,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -1094,7 +1195,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -1126,7 +1227,7 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -1149,10 +1250,194 @@ public class FindOneAndUpdateIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  class FindOneAndUpdateWithProjection {
+    @Test
+    public void projectionAfterUpdate() {
+      String document =
+          """
+              {
+                "_id": "update_doc_projection_after",
+                "x": 1,
+                "y": 2,
+                "z": 3,
+                "subdoc": {
+                    "a": 4,
+                    "b": 5,
+                    "c": 6
+                }
+              }
+              """;
+      insertDoc(document);
+
+      String updateQuery =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "update_doc_projection_after"},
+                  "options" : {"returnDocument" : "after"},
+                  "projection" : { "x":0, "subdoc.c":0 },
+                  "update" : {
+                    "$unset" : {
+                      "subdoc.a": 1,
+                      "z": 1
+                    }
+                  }
+                }
+              }
+              """;
+      // assert that returned document shows doc AFTER update WITH given projection
+      String expectedFiltered =
+          """
+                  {
+                    "_id": "update_doc_projection_after",
+                    "y": 2,
+                    "subdoc": {
+                      "b": 5
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateQuery)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expectedFiltered));
+
+      // But also that update itself worked ($unset "z" and "subdoc.a")
+      String expectedUpdated =
+          """
+              {
+                "_id": "update_doc_projection_after",
+                "x": 1,
+                "y": 2,
+                "subdoc": {
+                    "b": 5,
+                    "c": 6
+                }
+              }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"_id" : "update_doc_projection_after"}
+                    }
+                  }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedUpdated));
+    }
+
+    @Test
+    public void projectionBeforeUpdate() {
+      String document =
+          """
+                  {
+                    "_id": "update_doc_projection_before",
+                    "a": 1,
+                    "b": 2,
+                    "c": 3,
+                    "subdoc": {
+                        "x": 4,
+                        "y": 5,
+                        "z": 6
+                    }
+                  }
+                  """;
+      insertDoc(document);
+
+      String updateQuery =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "update_doc_projection_before"},
+                      "options" : {"returnDocument" : "before"},
+                      "projection" : { "a":0, "subdoc.z":0 },
+                      "update" : {
+                        "$unset" : {
+                          "subdoc.x": 1,
+                          "c": 1
+                        }
+                      }
+                    }
+                  }
+                  """;
+      // assert state before update, with given projection (so unsets not visible)
+      String expectedFiltered =
+          """
+                      {
+                        "_id": "update_doc_projection_before",
+                        "b": 2,
+                        "c": 3,
+                        "subdoc": {
+                          "x": 4,
+                          "y": 5
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(updateQuery)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expectedFiltered));
+
+      // And with updates $unset of c and subdoc.x, but no Projection
+      String expectedUpdated =
+          """
+                      {
+                        "_id": "update_doc_projection_before",
+                        "a": 1,
+                        "b": 2,
+                        "subdoc": {
+                            "y": 5,
+                            "z": 6
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "update_doc_projection_before"}
+                            }
+                          }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expectedUpdated));
     }
   }
 

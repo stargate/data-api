@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -52,7 +54,7 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
 
     // If value types differ, base on type precedence as per Mongo specs:
     if (type1 != type2) {
-      return typePriority(type1) - typePriority(type2);
+      return typePriority(type1, o1) - typePriority(type2, o2);
     }
 
     switch (type1) {
@@ -65,6 +67,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         return compareStrings(o1.textValue(), o2.textValue());
       case OBJECT:
         return compareObjects((ObjectNode) o1, (ObjectNode) o2);
+      case POJO:
+        return comparePojos((POJONode) o1, (POJONode) o2);
       case ARRAY:
         return compareArrays((ArrayNode) o1, (ArrayNode) o2);
       case BOOLEAN:
@@ -73,6 +77,16 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         // Should never happen:
         throw new IllegalStateException("Unsupported JsonNodeType for comparison: " + type1);
     }
+  }
+
+  private int comparePojos(POJONode o1, POJONode o2) {
+    Object pojo1 = o1.getPojo();
+    Object pojo2 = o2.getPojo();
+    if (pojo1 instanceof Date) {
+      return ((Date) pojo1).compareTo((Date) pojo2);
+    }
+    // this error should never happen.
+    throw new IllegalStateException("Unsupported POJO type for comparison: " + pojo1.getClass());
   }
 
   private int compareBooleans(boolean b1, boolean b2) {
@@ -132,7 +146,7 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
     return n1.size() - n2.size();
   }
 
-  private int typePriority(JsonNodeType type) {
+  private int typePriority(JsonNodeType type, JsonNode node) {
     switch (type) {
       case MISSING:
         return 0;
@@ -148,8 +162,12 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         return 5;
       case BOOLEAN:
         return 6;
+      case POJO:
+        if (((POJONode) node).getPojo() instanceof Date) {
+          return 7;
+        }
       default:
-        return 7;
+        return 8;
     }
   }
 }

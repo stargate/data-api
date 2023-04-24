@@ -11,12 +11,14 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
@@ -47,10 +49,30 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
+
+  private static String UPDATE =
+      "UPDATE \"%s\".\"%s\" "
+          + "        SET"
+          + "            tx_id = now(),"
+          + "            exist_keys = ?,"
+          + "            sub_doc_equals = ?,"
+          + "            array_size = ?,"
+          + "            array_equals = ?,"
+          + "            array_contains = ?,"
+          + "            query_bool_values = ?,"
+          + "            query_dbl_values = ?,"
+          + "            query_text_values = ?,"
+          + "            query_null_values = ?,"
+          + "            query_timestamp_values = ?,"
+          + "            doc_json  = ?"
+          + "        WHERE "
+          + "            key = ?"
+          + "        IF "
+          + "            tx_id = ?";
 
   @Nested
   class UpdateOne {
-
     @Test
     public void happyPath() throws Exception {
       String collectionReadCql =
@@ -71,6 +93,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
             {
               "_id": "doc1",
               "username": "user1",
+              "date_val" : {"$date": 1672531200000 },
               "name" : "test"
             }
             """;
@@ -103,25 +126,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id),
                           Values.of(doc1))));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -142,6 +147,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))
@@ -151,6 +159,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -169,10 +178,12 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               null,
               0,
               0);
+      String updateClause =
+          """
+                   { "$set" : { "name" : "test", "date_val" : {"$date": 1672531200000 } }}
+              """;
       DocumentUpdater documentUpdater =
-          DocumentUpdater.construct(
-              DocumentUpdaterUtils.updateClause(
-                  UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
+          DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
               COMMAND_CONTEXT,
@@ -208,9 +219,112 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     }
 
     @Test
+    public void noChange() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      UUID tx_id = UUID.randomUUID();
+      String doc1 =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
+
+      ValidatingStargateBridge.QueryAssert selectQueryAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id),
+                          Values.of(doc1))));
+
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      JsonNode jsonNode = objectMapper.readTree(doc1);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      String updateClause =
+          """
+                       { "$set" : { "username" : "user1" }}
+                  """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+      ReadAndUpdateOperation operation =
+          new ReadAndUpdateOperation(
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      selectQueryAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(2)
+          .containsEntry(CommandStatus.MATCHED_COUNT, 1)
+          .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
+      assertThat(result.errors()).isNull();
+      assertThat(result.data().docs()).hasSize(1);
+    }
+
+    @Test
     public void happyPathWithSort() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -267,14 +381,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
                           .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
@@ -288,6 +406,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -298,27 +417,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user2"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL)));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -339,6 +441,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))
@@ -348,6 +453,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -459,25 +565,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id),
                           Values.of(doc1))));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -498,6 +586,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))
@@ -507,6 +598,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -562,9 +654,139 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     }
 
     @Test
+    public void happyPathReplaceUpsert() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String replacement =
+          """
+                  {
+                    "name" : "test"
+                  }
+                  """;
+      String doc1Updated =
+          """
+                {
+                  "_id": "doc1",
+                  "name" : "test"
+                }
+                """;
+      ValidatingStargateBridge.QueryAssert selectQueryAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(List.of());
+
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      JsonNode jsonNode = objectMapper.readTree(doc1Updated);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      ValidatingStargateBridge.QueryAssert updateQueryAssert =
+          withQuery(
+                  collectionUpdateCql,
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.NULL)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
+              .returning(List.of(List.of(Values.of(true))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
+      ReadAndUpdateOperation operation =
+          new ReadAndUpdateOperation(
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              true,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      selectQueryAssert.assertExecuteCount().isOne();
+      updateQueryAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(3)
+          .containsEntry(CommandStatus.MATCHED_COUNT, 0)
+          .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
+          .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
     public void happyPathReplaceWithSort() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -630,14 +852,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
                           .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
@@ -651,6 +877,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -661,27 +888,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user2"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL)));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -702,6 +912,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))
@@ -711,6 +924,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -767,7 +981,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     @Test
     public void happyPathWithSortDescending() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
+          "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
@@ -824,14 +1038,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.DECIMAL)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
+                          .setType(TypeSpecs.BOOLEAN)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("query_null_values['username']")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("query_timestamp_values['username']")
                           .setType(TypeSpecs.VARCHAR)
                           .build()))
               .returning(
@@ -845,6 +1063,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user1"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL),
                       List.of(
                           Values.of(
@@ -855,27 +1074,10 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of("user2"),
                           Values.NULL,
                           Values.NULL,
+                          Values.NULL,
                           Values.NULL)));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc2Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -896,6 +1098,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id2))
@@ -905,6 +1110,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -995,25 +1201,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build()))
               .returning(List.of());
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -1034,6 +1222,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.NULL)
@@ -1043,6 +1234,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =
@@ -1263,25 +1455,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id2),
                           Values.of(doc2))));
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -1302,6 +1476,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id1))
@@ -1311,6 +1488,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       jsonNode = objectMapper.readTree(doc2Updated);
@@ -1333,6 +1511,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id2))
@@ -1342,6 +1523,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.TextFilter filter =
@@ -1433,25 +1615,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build()))
               .returning(List.of());
 
-      String update =
-          "UPDATE %s.%s "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
-              + "            array_size = ?,"
-              + "            array_equals = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -1472,6 +1636,9 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.NULL)
@@ -1481,6 +1648,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       DBFilterBase.IDFilter filter =

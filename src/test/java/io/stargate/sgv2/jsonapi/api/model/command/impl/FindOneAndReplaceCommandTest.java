@@ -60,7 +60,7 @@ public class FindOneAndReplaceCommandTest {
                   {
                     "findOneAndReplace": {
                         "filter" : {"username" : "update_user5"},
-                        "sort" : ["location"],
+                        "sort" : {"location" : 1},
                         "replacement" : { "new_col": {"sub_doc_col" : "new_val2"}},
                         "options" : {"returnDocument" : "after"}
                       }

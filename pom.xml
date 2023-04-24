@@ -4,10 +4,10 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.0.10</version>
+    <version>2.0.12</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.0-ALPHA-5-SNAPSHOT</version>
+  <version>1.0.0-ALPHA-6-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -20,7 +20,7 @@
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <stargate.int-test.cassandra.image-tag>6.8.33</stargate.int-test.cassandra.image-tag>
+    <stargate.int-test.cassandra.image-tag>6.8.34</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-68</stargate.int-test.coordinator.image>
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>

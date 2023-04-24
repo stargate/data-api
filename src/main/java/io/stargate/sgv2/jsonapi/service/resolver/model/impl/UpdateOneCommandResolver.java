@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -23,16 +23,16 @@ import javax.inject.Inject;
 public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneCommand>
     implements CommandResolver<UpdateOneCommand> {
   private final Shredder shredder;
-  private final DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
 
   @Inject
   public UpdateOneCommandResolver(
-      ObjectMapper objectMapper, DocumentConfig documentConfig, Shredder shredder) {
+      ObjectMapper objectMapper, OperationsConfig operationsConfig, Shredder shredder) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
-    this.documentConfig = documentConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Override
@@ -61,7 +61,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         shredder,
         DocumentProjector.identityProjector(),
         1,
-        documentConfig.lwt().retries());
+        operationsConfig.lwt().retries());
   }
 
   private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {

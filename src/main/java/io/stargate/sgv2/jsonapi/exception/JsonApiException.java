@@ -43,11 +43,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       message = errorCode.getMessage();
     }
 
-    // add error code as error field
-    Map<String, Object> fields = Map.of("errorCode", errorCode.name());
-
     // construct and return
-    CommandResult.Error error = new CommandResult.Error(message, fields);
+    CommandResult.Error error = getCommandResultError(message);
 
     // handle cause as well
     Throwable cause = getCause();
@@ -57,6 +54,12 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       CommandResult.Error causeError = ThrowableToErrorMapper.getMapperFunction().apply(cause);
       return new CommandResult(List.of(error, causeError));
     }
+  }
+
+  public CommandResult.Error getCommandResultError(String message) {
+    Map<String, Object> fields =
+        Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
+    return new CommandResult.Error(message, fields);
   }
 
   public ErrorCode getErrorCode() {

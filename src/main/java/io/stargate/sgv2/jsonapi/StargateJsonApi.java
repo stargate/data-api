@@ -45,14 +45,22 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   in = ParameterIn.PATH,
                   name = "namespace",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The namespace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,
                   name = "collection",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The name of the collection.",
                   example = "events")
             },
@@ -64,25 +72,25 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOne` command",
                   value =
                       """
-                              {
-                                "findOne": {
-                                    "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
-                                    "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
-                                    "sort" : ["race.start_date"]
-                                }
-                              }
-                              """),
+                      {
+                        "findOne": {
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                            "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
+                            "sort" : {"race.start_date" : 1}
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "countDocuments",
                   summary = "`countDocuments` command",
                   value =
                       """
-                            {
-                              "countDocuments": {
-                                  "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
-                              }
-                            }
-                            """),
+                      {
+                        "countDocuments": {
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}}
+                        }
+                      }
+                    """),
               @ExampleObject(
                   name = "find",
                   summary = "`find` command",
@@ -92,7 +100,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         "find": {
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                              "projection": {"tags":0},
-                             "sort" : ["location"],
+                             "sort" : {"location" : 1},
                              "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
                         }
                       }
@@ -105,7 +113,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndUpdate": {
                             "filter": {"location": "London"},
-                            "sort" : ["location"],
+                            "sort" : {"location" : 1},
                             "update": {
                                 "$set": {"location": "New York"},
                                 "$inc": {"count": 3}
@@ -119,6 +127,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "findOneAndDelete",
+                  summary = "`findOneAndDelete` command",
+                  value =
+                      """
+                        {
+                          "findOneAndDelete": {
+                              "filter": {"location": "London"},
+                              "sort" : {"race.start_date" : 1},
+                              "projection" : {"location": 1}
+                          }
+                        }
+                        """),
+              @ExampleObject(
                   name = "findOneAndReplace",
                   summary = "`findOneAndReplace` command",
                   value =
@@ -126,14 +147,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       {
                         "findOneAndReplace": {
                             "filter": {"location": "London"},
-                            "sort" : ["race.start_date"]
+                            "sort" : {"race.start_date" : 1},
                             "replacement": {
                                 "location": "New York",
                                 "count": 3
                             },
                             "options" : {
-                               "returnDocument" : "before"
-                            }
+                               "returnDocument" : "before",
+                               "upsert" : true
+                            },
+                            "projection" : {"location": 1}
                         }
                       }
                       """),
@@ -276,6 +299,27 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "findNamespaces",
+                  summary = "`FindNamespaces` command",
+                  value =
+                      """
+                        {
+                            "findNamespaces": {
+                            }
+                        }
+                      """),
+              @ExampleObject(
+                  name = "dropNamespace",
+                  summary = "`DropNamespace` command",
+                  value =
+                      """
+                        {
+                            "dropNamespace": {
+                              "name": "cycling"
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
@@ -283,6 +327,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         {
                             "createCollection": {
                               "name": "events"
+                            }
+                        }
+                      """),
+              @ExampleObject(
+                  name = "findCollections",
+                  summary = "`FindCollections` command",
+                  value =
+                      """
+                        {
+                            "findCollections": {
                             }
                         }
                       """),
@@ -335,8 +389,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "tags": [ "us" ]
                             }
                           ],
-                          "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
-                          "count": 2
+                          "nextPageState": "jA8qg0AitZ8q28568GybNQ=="
                         }
                       }
                       """),
@@ -355,8 +408,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                },
                                "tags": [ "eu" ]
                             }
-                          ],
-                          "count": 1
+                          ]
                         }
                       }
                       """),
@@ -377,15 +429,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               },
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "matchedCount": 1,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "matchedCount": 1,
+                          "modifiedCount": 1
                         }
                       }
-                  """),
+                      """),
               @ExampleObject(
                   name = "resultFindOneAndReplace",
                   summary = "`findOneAndReplace` command result",
@@ -399,15 +450,34 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "location": "New York",
                              "count": 3
                            }
-                         ],
-                         "count": 1,
-                         "status": {
-                           "matchedCount": 1,
-                           "modifiedCount": 1
-                         }
+                         ]
+                       },
+                       "status": {
+                         "matchedCount": 1,
+                         "modifiedCount": 1
                        }
                      }
                      """),
+              @ExampleObject(
+                  name = "resultFindOneAndDelete",
+                  summary = "`findOneAndDetele` command result",
+                  value =
+                      """
+                       {
+                         "data": {
+                           "docs": [
+                             {
+                               "_id": "1",
+                               "location": "New York",
+                               "count": 3
+                             }
+                           ]
+                         },
+                         "status": {
+                           "deletedCount": 1
+                         }
+                       }
+                       """),
               @ExampleObject(
                   name = "resultFindOneAndUpdateUpsert",
                   summary = "`findOneAndUpdate` command with upsert result",
@@ -421,13 +491,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "location": "New York",
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "upsertedId": "1",
-                            "matchedCount": 0,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "upsertedId": "1",
+                          "matchedCount": 0,
+                          "modifiedCount": 1
                         }
                       }
                   """),
@@ -513,6 +582,30 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                   "status": {
                                       "deletedCount": 2,
                                       "moreData" : true
+                                  }
+                                }
+                                """),
+              @ExampleObject(
+                  name = "resultFindNamespaces",
+                  summary = "`findNamespaces` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                    "namespaces": [
+                                      "cycling"
+                                    ]
+                                  }
+                                }
+                                """),
+              @ExampleObject(
+                  name = "resultFindCollections",
+                  summary = "`findCollections` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                      "collections": [ "events" ]
                                   }
                                 }
                                 """),

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -15,6 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that finds a single JSON document from a collection.")
 @JsonTypeName("find")
+@CheckFindOption
 public record FindCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @JsonProperty("projection") JsonNode projectionDefinition,

@@ -15,16 +15,18 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.service.bridge.config;
+package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import javax.validation.Valid;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
-/** Configuration for the documents. */
-@ConfigMapping(prefix = "stargate.document")
-public interface DocumentConfig {
+/** Configuration for the operation execution. */
+@ConfigMapping(prefix = "stargate.jsonapi.operations")
+public interface OperationsConfig {
 
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
@@ -42,22 +44,13 @@ public interface DocumentConfig {
   int defaultSortPageSize();
 
   /**
-   * @return Defines the maximum limit of document that can be returned for a request, defaults to
-   *     <code>1000</code>.
-   */
-  @Max(Integer.MAX_VALUE)
-  @Positive
-  @WithDefault("1000")
-  int maxLimit();
-
-  /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
    *     </code>.
    */
   @Max(10000)
   @Positive
   @WithDefault("10000")
-  int maxSortReadLimit();
+  int maxDocumentSortCount();
 
   /**
    * @return Defines the maximum limit of document that can be deleted for a request, defaults to
@@ -77,10 +70,30 @@ public interface DocumentConfig {
   @WithDefault("20")
   int maxDocumentUpdateCount();
 
-  /** {@inheritDoc} */
+  /**
+   * @return Maximum amount of documents that can be inserted using <code>insertMany</code> command.
+   */
+  @Max(100)
+  @Positive
+  @WithDefault("20")
+  int maxDocumentInsertCount();
+
+  /**
+   * @return Maximum size of _id values array that can be sent in $in operator <code>100</code>
+   *     command.
+   */
+  @Max(100)
+  @Positive
+  @WithDefault("100")
+  int maxInOperatorValueSize();
+
+  @NotNull
+  @Valid
   LwtConfig lwt();
 
+  /** Configuration setup for the Light-weight transactions. */
   interface LwtConfig {
+
     /** @return Defines the maximum retry for lwt failure <code>3</code>. */
     @Max(5)
     @Positive

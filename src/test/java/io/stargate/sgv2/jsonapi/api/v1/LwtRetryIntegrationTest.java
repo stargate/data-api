@@ -18,7 +18,7 @@ import org.junit.jupiter.api.RepeatedTest;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @RepeatedTest(10)
   public void mixedOperations() throws Exception {
@@ -66,7 +66,7 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
                   .contentType(ContentType.JSON)
                   .body(update)
                   .when()
-                  .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                   .then()
                   .statusCode(200)
                   .body("status.matchedCount", anyOf(is(0), is(1)))
@@ -85,7 +85,7 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
                   .contentType(ContentType.JSON)
                   .body(delete)
                   .when()
-                  .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                   .then()
                   .statusCode(200)
                   .body("status.deletedCount", is(1))
@@ -110,7 +110,7 @@ public class LwtRetryIntegrationTest extends CollectionResourceBaseIntegrationTe
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then()
         .statusCode(200)
         .body("data.docs", is(empty()));

@@ -10,6 +10,12 @@ public enum CommandStatus {
   /** The element has the count of deleted documents */
   @JsonProperty("deletedCount")
   DELETED_COUNT,
+  /** Status for reporting existing namespaces. */
+  @JsonProperty("namespaces")
+  EXISTING_NAMESPACES,
+  /** Status for reporting existing collections. */
+  @JsonProperty("collections")
+  EXISTING_COLLECTIONS,
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")
   INSERTED_IDS,

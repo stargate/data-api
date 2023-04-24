@@ -1,6 +1,6 @@
-min_version: "4.17.15"
+min_version: "5.17.1"
 
-description: |
+description: >2
   This workload emulates a key-value data model and access patterns.
   This should be identical to the cql variant except for:
   - Schema creation with the Docs API, we don't use cql because the Docs API is opinionated about schema.
@@ -28,6 +28,9 @@ bindings:
   # http request id
   request_id: ToHashedUUID(); ToString();
 
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
   seq_key: Mod(<<keycount:10000000>>); ToString() -> String
   seq_value: Hash(); Mod(<<valuecount:10000000>>); ToString() -> String
   rw_key: <<keydist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
@@ -41,10 +44,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_keyvalue>>"
@@ -56,10 +59,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -71,10 +74,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
@@ -89,10 +92,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: |
+        body: >2
           {
             "insertOne" : {
               "document" : {
@@ -112,10 +115,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "findOne" : {
               "filter" : {
@@ -130,11 +133,11 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         # because this is not an upsert, modified count could be 0 or 1
         ok-body: ".*\"modifiedCount\":[0,1].*"
-        body: |          
+        body: >2          
           {
             "updateOne" : {
               "filter": {

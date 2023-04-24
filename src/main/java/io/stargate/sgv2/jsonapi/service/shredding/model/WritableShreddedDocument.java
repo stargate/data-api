@@ -3,10 +3,21 @@ package io.stargate.sgv2.jsonapi.service.shredding.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.ShredListener;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /** The fully shredded document, everything we need to write the document. */
 public record WritableShreddedDocument(
@@ -26,6 +37,7 @@ public record WritableShreddedDocument(
     Map<JsonPath, Boolean> queryBoolValues,
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
+    Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues) {
   public static Builder builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
     return new Builder(hasher, id, txID, docJson);
@@ -58,6 +70,7 @@ public record WritableShreddedDocument(
     private Map<JsonPath, Boolean> queryBoolValues;
     private Map<JsonPath, BigDecimal> queryNumberValues;
     private Map<JsonPath, String> queryTextValues;
+    private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
 
     public Builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
@@ -87,6 +100,7 @@ public record WritableShreddedDocument(
           _nonNull(queryBoolValues),
           _nonNull(queryNumberValues),
           _nonNull(queryTextValues),
+          _nonNull(queryTimestampValues),
           _nonNull(queryNullValues));
     }
 
@@ -105,13 +119,37 @@ public record WritableShreddedDocument(
      */
 
     @Override
-    public void shredObject(JsonPath path, ObjectNode obj) {
-      addKey(path);
+    public boolean shredObject(JsonPath path, ObjectNode obj) {
+      // Either Sub-doc or EJSON-encoded Date/timestamp value:
+      if (JsonUtil.looksLikeEJsonValue(obj)) {
+        Date dtValue = JsonUtil.extractEJsonDate(obj, path);
+        if (dtValue != null) {
+          shredTimestamp(path, dtValue);
+          return false; // we are done
+        }
+        // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
+        throw new JsonApiException(
+            ErrorCode.SHRED_BAD_EJSON_VALUE,
+            String.format(
+                "%s: unrecognized type '%s' (path '%s')",
+                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(), obj.fieldNames().next(), path));
+      }
 
+      addKey(path);
       if (subDocEquals == null) {
         subDocEquals = new HashMap<>();
       }
       subDocEquals.put(path, hasher.hash(obj).hash());
+      return true; // proceed to shred individual entries too
+    }
+
+    private void shredTimestamp(JsonPath path, Date dtValue) {
+      addKey(path);
+      if (queryTimestampValues == null) {
+        queryTimestampValues = new HashMap<>();
+      }
+      queryTimestampValues.put(path, dtValue);
+      addArrayContains(path, hasher.timestampValue(dtValue).hash());
     }
 
     @Override

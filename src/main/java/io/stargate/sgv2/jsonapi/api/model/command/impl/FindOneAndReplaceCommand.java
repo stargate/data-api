@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
-import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import javax.annotation.Nullable;
@@ -25,7 +25,7 @@ public record FindOneAndReplaceCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable {
+    implements ModifyCommand, Filterable, Projectable {
 
   @Schema(
       name = "FindOneAndReplaceCommand.Options",
@@ -39,5 +39,10 @@ public record FindOneAndReplaceCommand(
               description =
                   "Specifies which document to perform the projection on. If `before` the projection is performed on the document before the replacement is applied, if `after` the document projection is from the document after the replacement.",
               defaultValue = "before")
-          String returnDocument) {}
+          String returnDocument,
+      @Schema(
+              description =
+                  "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply all _id filter and replacement document to the empty document.",
+              defaultValue = "false")
+          boolean upsert) {}
 }

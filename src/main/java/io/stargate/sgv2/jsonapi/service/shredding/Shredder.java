@@ -144,8 +144,9 @@ public class Shredder {
     final JsonPath path = pathBuilder.build();
     if (value.isObject()) {
       ObjectNode ob = (ObjectNode) value;
-      callback.shredObject(path, ob);
-      traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+      if (callback.shredObject(path, ob)) {
+        traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+      }
     } else if (value.isArray()) {
       ArrayNode arr = (ArrayNode) value;
       callback.shredArray(path, arr);
@@ -168,14 +169,14 @@ public class Shredder {
 
   private void validateDocument(DocumentLimitsConfig limits, ObjectNode doc, String docJson) {
     // First: is the resulting document size (as serialized) too big?
-    if (docJson.length() > limits.maxDocSize()) {
+    if (docJson.length() > limits.maxSize()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
               "%s: document size (%d chars) exceeds maximum allowed (%d)",
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
               docJson.length(),
-              limits.maxDocSize()));
+              limits.maxSize()));
     }
 
     // Second: traverse to check for other constraints
@@ -229,14 +230,14 @@ public class Shredder {
     while (it.hasNext()) {
       var entry = it.next();
       final String key = entry.getKey();
-      if (key.length() > documentLimits.maxNameLength()) {
+      if (key.length() > documentLimits.maxPropertyNameLength()) {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
             String.format(
                 "%s: Property name length (%d) exceeds maximum allowed (%s)",
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
                 key.length(),
-                limits.maxNameLength()));
+                limits.maxPropertyNameLength()));
       }
       validateDocValue(limits, entry.getValue(), depth);
     }
@@ -256,12 +257,12 @@ public class Shredder {
   }
 
   private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
-    if (depth > limits.maxDocDepth()) {
+    if (depth > limits.maxDepth()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
               "%s: document depth exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDocDepth()));
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDepth()));
     }
   }
 }

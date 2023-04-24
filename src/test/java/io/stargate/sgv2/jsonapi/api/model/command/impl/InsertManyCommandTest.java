@@ -22,7 +22,7 @@ class InsertManyCommandTest {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-      return Map.of("stargate.jsonapi.doc-limits.max-insert-many-documents", "2");
+      return Map.of("stargate.jsonapi.operations.max-document-insert-count", "2");
     }
   }
 
@@ -93,7 +93,7 @@ class InsertManyCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("amount of documents to insert is over the max limit");
+          .contains("amount of documents to insert is over the max limit (3 vs 2)");
     }
 
     @Test

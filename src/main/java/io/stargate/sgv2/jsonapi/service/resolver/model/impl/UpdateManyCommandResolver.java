@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.service.bridge.config.DocumentConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -23,16 +23,16 @@ import javax.inject.Inject;
 public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyCommand>
     implements CommandResolver<UpdateManyCommand> {
   private final Shredder shredder;
-  private final DocumentConfig documentConfig;
+  private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
 
   @Inject
   public UpdateManyCommandResolver(
-      ObjectMapper objectMapper, Shredder shredder, DocumentConfig documentConfig) {
+      ObjectMapper objectMapper, Shredder shredder, OperationsConfig operationsConfig) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
-    this.documentConfig = documentConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Override
@@ -60,8 +60,8 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         upsert,
         shredder,
         DocumentProjector.identityProjector(),
-        documentConfig.maxDocumentUpdateCount(),
-        documentConfig.lwt().retries());
+        operationsConfig.maxDocumentUpdateCount(),
+        operationsConfig.lwt().retries());
   }
 
   private FindOperation getFindOperation(CommandContext commandContext, UpdateManyCommand command) {
@@ -71,8 +71,8 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         filters,
         DocumentProjector.identityProjector(),
         null,
-        documentConfig.maxDocumentUpdateCount() + 1,
-        documentConfig.defaultPageSize(),
+        operationsConfig.maxDocumentUpdateCount() + 1,
+        operationsConfig.defaultPageSize(),
         ReadType.DOCUMENT,
         objectMapper,
         null,

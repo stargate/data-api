@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import java.util.Map;
 
 public interface DocumentConstants {
   /** Names of "special" fields in Documents */
@@ -20,20 +19,17 @@ public interface DocumentConstants {
     int TYPE_ID_NUMBER = 2;
     int TYPE_ID_BOOLEAN = 3;
     int TYPE_ID_NULL = 4;
-
-    Map<Integer, JsonType> keyIDMap =
-        Map.of(
-            TYPE_ID_STRING,
-            JsonType.STRING,
-            TYPE_ID_NUMBER,
-            JsonType.NUMBER,
-            TYPE_ID_BOOLEAN,
-            JsonType.BOOLEAN,
-            TYPE_ID_NULL,
-            JsonType.NULL);
+    int TYPE_ID_DATE = 5;
 
     static JsonType getJsonType(int typeId) {
-      return keyIDMap.get(typeId);
+      return switch (typeId) {
+        case TYPE_ID_STRING -> JsonType.STRING;
+        case TYPE_ID_NUMBER -> JsonType.NUMBER;
+        case TYPE_ID_BOOLEAN -> JsonType.BOOLEAN;
+        case TYPE_ID_NULL -> JsonType.NULL;
+        case TYPE_ID_DATE -> JsonType.DATE;
+        default -> null;
+      };
     }
   }
 }

@@ -1,6 +1,6 @@
-min_version: "4.17.31"
+min_version: "5.17.1"
 
-description: |
+description: >2
   This workload emulates advanced search filter combinations for the Stargate Documents API.
   During the rampup phase, it generates documents, writes them to a table, and then warms up the search paths.
   During the main phase it performs various basic search filters and times their execution.
@@ -44,6 +44,9 @@ bindings:
   # http request id
   request_id: ToHashedUUID(); ToString();
 
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
   seq_key: Mod(<<docscount:10000000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
 
@@ -71,10 +74,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createNamespace": {
               "name": "<<namespace:jsonapi_search_advanced>>"
@@ -86,10 +89,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "deleteCollection": {
               "name": "<<collection:docs_collection>>"
@@ -101,10 +104,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
-        body: |
+        body: >2
           {
             "createCollection": {
               "name": "<<collection:docs_collection>>"
@@ -119,10 +122,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: |
+        body: >2
           {
             "insertOne": {
               "document": {
@@ -162,10 +165,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -186,10 +189,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -210,10 +213,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -237,10 +240,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -270,10 +273,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -312,10 +315,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -363,10 +366,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -416,10 +419,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -440,10 +443,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -464,10 +467,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -491,10 +494,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -524,10 +527,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -566,10 +569,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {
@@ -617,10 +620,10 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<table:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
-        body: |
+        body: >2
           {
             "find" : {
               "filter" : {

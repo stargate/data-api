@@ -33,6 +33,25 @@ public class DocumentProjectorTest {
     }
 
     @Test
+    public void verifyNoEmptyPath() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+              { "root" :
+                { "branch" :
+                  { "": 1 }
+                }
+              }
+              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: empty paths (and path segments) not allowed");
+    }
+
+    @Test
     public void verifyNoIncludeAfterExclude() throws Exception {
       JsonNode def =
           objectMapper.readTree(
@@ -130,6 +149,100 @@ public class DocumentProjectorTest {
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr2)));
       assertThat(proj2)
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1)));
+    }
+  }
+
+  @Nested
+  class ProjectorSliceValidation {
+    @Test
+    public void verifyNoUnknownOperators() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      { "include" : {
+                           "$set" : 1
+                         }
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
+    }
+
+    @Test
+    public void verifyNoOverlapWithPath() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                              {
+                                "branch.x" : {
+                                   "$slice" : 3
+                                },
+                                "branch.x.leaf" : 1
+                              }
+                              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: projection path conflict between 'branch.x' and 'branch.x.leaf'");
+    }
+
+    @Test
+    public void verifyNoRootOperators() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                              { "$slice" : 1 }
+                              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: path cannot start with '$' (no root-level operators)");
+    }
+
+    @Test
+    public void verifySliceDefinitionNumberOrArray() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      {
+                        "include" : {
+                           "$slice" : "text-not-accepted"
+                        }
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessageStartingWith(
+              "Unsupported projection parameter: path ('include') has unsupported parameter for '$slice' (STRING)");
+    }
+
+    @Test
+    public void verifySliceDefinitionToReturnPositive() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                              {
+                                "include" : {
+                                   "$slice" : [1, -2]
+                                }
+                              }
+                              """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessageStartingWith(
+              "Unsupported projection parameter: path ('include') has unsupported parameter for '$slice' (ARRAY): second NUMBER");
     }
   }
 
@@ -265,7 +378,7 @@ public class DocumentProjectorTest {
   @Nested
   class ProjectorApplyExclusions {
     @Test
-    public void testExcludeWithIdIncluded() throws Exception {
+    public void excludeWithIdIncluded() throws Exception {
       final JsonNode doc =
           objectMapper.readTree(
               """
@@ -315,7 +428,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testExcludeWithIdExcluded() throws Exception {
+    public void excludeWithIdExcluded() throws Exception {
       final JsonNode doc =
           objectMapper.readTree(
               """
@@ -361,7 +474,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testSimpleExcludeInArray() throws Exception {
+    public void excludeInArray() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -395,7 +508,7 @@ public class DocumentProjectorTest {
     }
 
     @Test
-    public void testExcludeSubDoc() throws Exception {
+    public void excludeInSubDoc() throws Exception {
       JsonNode doc =
           objectMapper.readTree(
               """
@@ -427,6 +540,655 @@ public class DocumentProjectorTest {
                                 }
                               }
                               """));
+    }
+
+    // "Empty" Projection is not really inclusion or exclusion, but technically
+    // let's consider it exclusion for sake of consistency (empty list to exclude
+    // is same as no Projection applied; empty inclusion would produce no output)
+    @Test
+    public void emptyProjectionAsExclude() throws Exception {
+      final String docJson =
+          """
+                      {
+                        "_id": "doc5",
+                        "value": 4
+                      }
+                      """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{}"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+    }
+  }
+
+  @Nested
+  class ProjectorApplySimpleSlice {
+    @Test
+    public void simpleSliceWithExclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 1,
+                        "y": 2
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "x": 0,
+                            "values": {
+                              "$slice": 3
+                             }
+                           }
+                        """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 1, 2, 3 ],
+                            "y": 2
+                          }
+                          """));
+    }
+
+    @Test
+    public void simpleSliceWithExclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 1,
+                        "y": 2
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "y": 0,
+                      "values": {
+                        "$slice": -2
+                       }
+                     }
+      """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 4, 5 ],
+                            "x": 1
+                          }
+                            """));
+    }
+
+    @Test
+    public void simpleSliceWithExclusionsNested() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              {
+                                "data": {
+                                  "values" : [ 1, 2, 3, 4, 5 ],
+                                  "x": 9
+                                },
+                                "x": 17,
+                                "y": 13
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                      {
+                                        "x": 0,
+                                        "data.values": {
+                                          "$slice": 2
+                                         }
+                                       }
+                                    """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                  {
+                                    "data": {
+                                      "values" : [ 1, 2 ],
+                                      "x": 9
+                                    },
+                                    "y": 13
+                                  }
+                                    """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 9,
+                        "y": -7
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "x": 1,
+                      "values": {
+                        "$slice": 2
+                       }
+                     }
+      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      { "values" : [ 1, 2 ],
+                                        "x": 9
+                                      }
+                                      """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsHeadOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 9,
+                                "y": -7
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                {
+                                  "x": 1,
+                                  "values": {
+                                    "$slice": 17
+                                   }
+                                 }
+                  """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                                  { "values" : [ 1, 2, 3, 4, 5 ],
+                                                    "x": 9
+                                                  }
+                                                  """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 9,
+                        "y": -7
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                    {
+                      "values": {
+                        "$slice": -4
+                       },
+                       "y": 1
+                     }
+      """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 2, 3, 4, 5 ],
+                            "y": -7
+                          }
+                          """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsTailOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                              { "values" : [ 1, 2, 3, 4, 5 ],
+                                "x": 9,
+                                "y": -7
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                {
+                                  "values": {
+                                    "$slice": -99
+                                   },
+                                   "y": 1
+                                 }
+                  """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      { "values" : [ 1, 2, 3, 4, 5 ],
+                                        "y": -7
+                                      }
+                                      """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsTailSubDocs() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      {
+                        "data": {
+                           "values" : [ {"a":1}, {"b":2}, {"c":3}],
+                           "x": 16
+                         },
+                        "x": 9,
+                        "y": -7
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "data.values": {
+                              "$slice": -2
+                             },
+                             "y": 1
+                           }
+                        """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                      {
+                        "data": {
+                           "values" : [{"b":2}, {"c":3}]
+                         },
+                        "y": -7
+                      }
+                    """));
+    }
+
+    @Test
+    public void simpleSliceWithInclusionsTailNestedOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                                      {
+                                        "data": {
+                                           "values" : [ 1, 2, 3, 4, 5 ],
+                                           "x": 16
+                                         },
+                                        "x": 9,
+                                        "y": -7
+                                      }
+                                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                                  {
+                                                    "data.values": {
+                                                      "$slice": -99
+                                                     },
+                                                     "y": 1
+                                                   }
+                                          """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                          {
+                                            "data": {
+                                               "values" : [ 1, 2, 3, 4, 5 ]
+                                             },
+                                            "y": -7
+                                          }
+                                          """));
+    }
+  }
+
+  @Nested
+  class ProjectorApplyFullSlice {
+    @Test
+    public void fullSliceWithExclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "x": 0,
+                            "values": {
+                              "$slice": [1, 3]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 2, 3, 4 ],
+                            "y": 9
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithExclusionsHeadNested() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      {
+                         "data": {
+                            "values" : [ 1, 2, 3, 4, 5 ],
+                            "x": 7
+                          },
+                          "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                      {
+                                        "x": 0,
+                                        "data.values": {
+                                          "$slice": [1, 3]
+                                         }
+                                       }
+                                      """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          {
+                             "data": {
+                                "values" : [ 2, 3, 4 ],
+                                "x": 7
+                              },
+                              "y": 9
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithExclusionsHeadOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "x": 0,
+                            "values": {
+                              "$slice": [1, 111]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 2, 3, 4, 5 ],
+                            "y": 9
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithExclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "y": 0,
+                            "values": {
+                              "$slice": [-3, 2]
+                             }
+                           }
+                  """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 3, 4 ],
+                            "x": 7
+                          }
+                            """));
+    }
+
+    @Test
+    public void fullSliceWithExclusionsTailOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "y": 0,
+                            "values": {
+                              "$slice": [-3, 199]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 3, 4, 5 ],
+                            "x": 7
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithInclusionsHead() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "x": 1,
+                            "values": {
+                              "$slice": [1, 3]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 2, 3, 4 ],
+                            "x": 7
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithInclusionsHeadOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "x": 1,
+                            "values": {
+                              "$slice": [1, 111]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 2, 3, 4, 5 ],
+                            "x": 7
+                          }
+                          """));
+    }
+
+    @Test
+    public void fullSliceWithInclusionsTail() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "y": 1,
+                            "values": {
+                              "$slice": [-3, 2]
+                             }
+                           }
+                          """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 3, 4 ],
+                            "y": 9
+                          }
+                            """));
+    }
+
+    @Test
+    public void fullSliceWithInclusionsTailOverrun() throws Exception {
+      JsonNode doc =
+          objectMapper.readTree(
+              """
+                      { "values" : [ 1, 2, 3, 4, 5 ],
+                        "x": 7,
+                        "y": 9
+                      }
+                      """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                          {
+                            "y": 1,
+                            "values": {
+                              "$slice": [-3, 199]
+                             }
+                           }
+                              """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                          { "values" : [ 3, 4, 5 ],
+                            "y": 9
+                          }
+                            """));
     }
   }
 }

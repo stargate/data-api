@@ -10,6 +10,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -45,10 +46,30 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
 
   // TODO: as part of https://github.com/stargate/jsonapi/issues/214
   //  - non-lwt failure partial, full
   //  - non-lwt failure on retry
+  private static String UPDATE =
+      "UPDATE \"%s\".\"%s\" "
+          + "        SET"
+          + "            tx_id = now(),"
+          + "            exist_keys = ?,"
+          + "            sub_doc_equals = ?,"
+          + "            array_size = ?,"
+          + "            array_equals = ?,"
+          + "            array_contains = ?,"
+          + "            query_bool_values = ?,"
+          + "            query_dbl_values = ?,"
+          + "            query_text_values = ?,"
+          + "            query_null_values = ?,"
+          + "            query_timestamp_values = ?,"
+          + "            doc_json  = ?"
+          + "        WHERE "
+          + "            key = ?"
+          + "        IF "
+          + "            tx_id = ?";
 
   @Test
   public void findOneAndUpdateWithRetry() throws Exception {
@@ -135,25 +156,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(tx_id2),
                         Values.of(doc1))));
 
-    String update =
-        "UPDATE %s.%s "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
-            + "            array_size = ?,"
-            + "            array_equals = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -172,6 +175,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id1))
@@ -181,6 +187,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -199,6 +206,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id2))
@@ -208,6 +218,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
     DBFilterBase.TextFilter filter =
@@ -350,25 +361,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(tx_id2),
                         Values.of(doc1))));
 
-    String update =
-        "UPDATE %s.%s "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
-            + "            array_size = ?,"
-            + "            array_equals = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -387,6 +380,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id1))
@@ -396,6 +392,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -414,6 +411,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id2))
@@ -423,6 +423,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =
@@ -574,25 +575,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(tx_id2),
                         Values.of(doc1))));
 
-    String update =
-        "UPDATE %s.%s "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
-            + "            array_size = ?,"
-            + "            array_equals = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -611,6 +594,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id1))
@@ -620,6 +606,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -638,6 +625,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id2))
@@ -647,6 +637,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =
@@ -825,25 +816,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(tx_id2),
                         Values.of(doc1))));
 
-    String update =
-        "UPDATE %s.%s "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
-            + "            array_size = ?,"
-            + "            array_equals = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -862,6 +835,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id1))
@@ -871,6 +847,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -889,6 +866,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id2))
@@ -898,6 +878,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -919,6 +900,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id3))
@@ -928,6 +912,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
     DBFilterBase.TextFilter filter =
@@ -1137,25 +1122,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(tx_id4),
                         Values.of(doc2))));
 
-    String update =
-        "UPDATE %s.%s "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
-            + "            array_size = ?,"
-            + "            array_equals = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -1174,6 +1141,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id1))
@@ -1183,6 +1153,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -1201,6 +1172,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id2))
@@ -1210,6 +1184,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             // `false` in response for LWT indicate failure
             .returning(List.of(List.of(Values.of(false))));
 
@@ -1231,6 +1206,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id3))
@@ -1240,6 +1218,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     ValidatingStargateBridge.QueryAssert updateRetryQueryDoc2Assert =
@@ -1257,6 +1236,9 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                 Values.of(
                     CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
                 Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                Values.of(
+                    CustomValueSerializers.getTimestampMapValues(
+                        shredDocument.queryTimestampValues())),
                 Values.of(shredDocument.docJson()),
                 Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                 Values.of(tx_id4))
@@ -1266,6 +1248,7 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         .setName("applied")
                         .setType(TypeSpecs.BOOLEAN)
                         .build()))
+            .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
     DBFilterBase.TextFilter filter =

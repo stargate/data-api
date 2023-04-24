@@ -25,8 +25,9 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("The provided command is not implemented.");
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -46,8 +47,9 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Custom message is more important.");
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -66,8 +68,9 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("The provided command is not implemented.");
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "COMMAND_NOT_IMPLEMENTED")
+                    .containsEntry("exceptionClass", "JsonApiException");
               })
           .anySatisfy(
               error -> {

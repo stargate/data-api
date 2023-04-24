@@ -45,10 +45,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"col" : "val"}
               }
             }
@@ -70,10 +67,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ]
+                "sort" : {"user.name" : 1, "user.age" : -1}
               }
             }
             """;
@@ -94,10 +88,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"col" : "val", "col2" : 10}
               }
             }
@@ -122,10 +113,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"col" : "val"}
               }
             }
@@ -153,10 +141,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ]
+                "sort" : {"user.name" : 1, "user.age" : -1}
               }
             }
             """;
@@ -177,10 +162,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"col" : "val", "col2" : 10}
               }
             }
@@ -205,10 +187,7 @@ public class FilterMatcherTest {
           """
             {
               "findOne": {
-                "sort": [
-                  "user.name",
-                  "-user.age"
-                ],
+                "sort" : {"user.name" : 1, "user.age" : -1},
                 "filter" : {"col" : "val"}
               }
             }

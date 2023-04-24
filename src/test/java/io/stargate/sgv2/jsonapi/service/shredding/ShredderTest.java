@@ -14,8 +14,10 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -208,6 +210,73 @@ public class ShredderTest {
   }
 
   @Nested
+  class EJSONDateTime {
+    @Test
+    public void shredDocWithDateTimeColumn() {
+      final long testTimestamp = defaultTestDate().getTime();
+      final String inputJson =
+          """
+              {
+                "_id" : 123,
+                "name" : "Bob",
+                "datetime" : {
+                  "$date" : %d
+                }
+              }
+              """
+              .formatted(testTimestamp);
+      final JsonNode inputDoc = fromJson(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
+
+      JsonNode jsonFromShredded = fromJson(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayEquals()).isEmpty();
+      // 2 non-doc-id main-level properties
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder("name SBob", "datetime T" + testTimestamp);
+      assertThat(doc.subDocEquals()).hasSize(0);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
+      assertThat(doc.queryTimestampValues())
+          .isEqualTo(Map.of(JsonPath.from("datetime"), new Date(testTimestamp)));
+    }
+
+    @Test
+    public void badEJSONDate() {
+      Throwable t =
+          catchThrowable(
+              () -> shredder.shred(objectMapper.readTree("{ \"date\": { \"$date\": false } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage(
+              "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+
+    @Test
+    public void badEJSONUnrecognized() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  shredder.shred(
+                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage("Bad EJSON value: unrecognized type '$unknownType' (path 'value')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+  }
+
+  @Nested
   class ErrorCases {
 
     @Test
@@ -229,7 +298,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean or NULL instead got ARRAY")
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
     }
 
@@ -251,5 +320,10 @@ public class ShredderTest {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  protected Date defaultTestDate() {
+    OffsetDateTime dt = OffsetDateTime.parse("2023-01-01T00:00:00Z");
+    return new Date(dt.toInstant().toEpochMilli());
   }
 }

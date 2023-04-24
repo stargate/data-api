@@ -42,9 +42,6 @@ public class ObjectMapperConfiguration {
 
         // Prevent use of Engineering Notation with trailing zeroes:
         .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
-
-        // don't fail on unknown props, mainly for empty options object in commands
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .build();
   }
 }
