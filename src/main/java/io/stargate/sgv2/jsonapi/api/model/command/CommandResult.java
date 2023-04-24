@@ -85,8 +85,7 @@ public record CommandResult(
    * Response data object that's included in the {@link CommandResult}.
    *
    * @param docs Documents.
-   * @param nextPageState
-   * @param count
+   * @param nextPageState Optional next paging state.
    */
   public record ResponseData(
       @NotNull
@@ -97,8 +96,7 @@ public record CommandResult(
               minItems = 0)
           List<JsonNode> docs,
       @Schema(description = "Next page state for pagination.", nullable = true)
-          String nextPageState,
-      @Schema(description = "Count of returned documents.") int count) {
+          String nextPageState) {
 
     /**
      * Constructor that sets documents without next paging state.
@@ -107,18 +105,6 @@ public record CommandResult(
      */
     public ResponseData(List<JsonNode> docs) {
       this(docs, null);
-    }
-
-    /**
-     * Constructor that sets documents with next paging state.
-     *
-     * @param docs Documents, must not be <code>null</code>.
-     * @param nextPageState Paging state
-     */
-    public ResponseData(List<JsonNode> docs, String nextPageState) {
-      // TODO Aaron&Team is this correct, is count always relating to the number of documents in the
-      // docs?
-      this(docs, nextPageState, docs.size());
     }
   }
 

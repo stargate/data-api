@@ -389,8 +389,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "tags": [ "us" ]
                             }
                           ],
-                          "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
-                          "count": 2
+                          "nextPageState": "jA8qg0AitZ8q28568GybNQ=="
                         }
                       }
                       """),
@@ -409,8 +408,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                },
                                "tags": [ "eu" ]
                             }
-                          ],
-                          "count": 1
+                          ]
                         }
                       }
                       """),
@@ -431,12 +429,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               },
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "matchedCount": 1,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "matchedCount": 1,
+                          "modifiedCount": 1
                         }
                       }
                       """),
@@ -453,12 +450,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "location": "New York",
                              "count": 3
                            }
-                         ],
-                         "count": 1,
-                         "status": {
-                           "matchedCount": 1,
-                           "modifiedCount": 1
-                         }
+                         ]
+                       },
+                       "status": {
+                         "matchedCount": 1,
+                         "modifiedCount": 1
                        }
                      }
                      """),
@@ -475,11 +471,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "location": "New York",
                                "count": 3
                              }
-                           ],
-                           "count": 1,
-                           "status": {
-                             "deletedCount": 1
-                           }
+                           ]
+                         },
+                         "status": {
+                           "deletedCount": 1
                          }
                        }
                        """),
@@ -496,13 +491,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "location": "New York",
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "upsertedId": "1",
-                            "matchedCount": 0,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "upsertedId": "1",
+                          "matchedCount": 0,
+                          "modifiedCount": 1
                         }
                       }
                   """),
