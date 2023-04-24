@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * Simple immutable value container class used when shredding documents, to contain "full" value as
@@ -23,6 +24,11 @@ public record AtomicValue(DocValueType type, String typedFullValue, DocValueHash
   public static AtomicValue forNumber(BigDecimal num) {
     // For Numbers just make sure not to use Engineering notation:
     return create(DocValueType.NUMBER, num.toPlainString());
+  }
+
+  public static AtomicValue forTimestamp(Date dt) {
+    // Long-value of timestamp still fits without truncation
+    return create(DocValueType.TIMESTAMP, String.valueOf(dt.getTime()));
   }
 
   static AtomicValue create(DocValueType type, String fullValue) {

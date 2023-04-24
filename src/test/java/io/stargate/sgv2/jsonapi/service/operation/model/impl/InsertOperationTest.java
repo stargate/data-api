@@ -10,6 +10,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -39,15 +40,16 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
+  @Inject QueriesConfig queriesConfig;
 
   @Nested
   class Execute {
 
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values)"
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insertOne() throws Exception {
@@ -60,7 +62,8 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
             "boolean": true,
             "nullval" : null,
             "array" : ["a", "b"],
-            "sub_doc" : {"col": "val"}
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
           }
           """;
 
@@ -86,13 +89,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
@@ -152,13 +159,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                       CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
@@ -243,13 +254,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -271,13 +286,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -358,13 +377,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -386,13 +409,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -476,13 +503,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
 
       InsertOperation operation =
@@ -567,13 +598,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -595,13 +630,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan really breaks the test."));
 
       InsertOperation operation =
@@ -690,13 +729,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -718,13 +761,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
       InsertOperation operation =
@@ -812,13 +859,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument1.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument1.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument1.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument1.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan breaks the test."));
       ValidatingStargateBridge.QueryAssert insertSecondAssert =
           withQuery(
@@ -840,13 +891,17 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
                           shredDocument2.queryNumberValues())),
                   Values.of(
                       CustomValueSerializers.getStringMapValues(shredDocument2.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())))
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument2.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument2.queryTimestampValues())))
               .withColumnSpec(
                   List.of(
                       QueryOuterClass.ColumnSpec.newBuilder()
                           .setName("applied")
                           .setType(TypeSpecs.BOOLEAN)
                           .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
               .returningFailure(new RuntimeException("Ivan really breaks the test."));
 
       InsertOperation operation =

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   class FindOneAndDelete {
     @Test
@@ -46,7 +46,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -67,7 +67,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(0));
@@ -98,7 +98,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.deletedCount", is(0))
@@ -141,7 +141,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document))
@@ -162,7 +162,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(0));
@@ -204,7 +204,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(document1))
@@ -225,7 +225,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(0));
@@ -275,7 +275,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -296,7 +296,7 @@ public class FindOneAndDeleteIntegrationTest extends CollectionResourceBaseInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs", hasSize(0));

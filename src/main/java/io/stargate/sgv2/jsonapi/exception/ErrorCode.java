@@ -19,6 +19,8 @@ public enum ErrorCode {
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
+  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
+
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
@@ -32,6 +34,10 @@ public enum ErrorCode {
   SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
 
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
+
+  SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
+
+  INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 

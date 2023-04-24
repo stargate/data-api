@@ -46,6 +46,7 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             + "    query_bool_values   map<text, tinyint>,"
             + "    query_dbl_values    map<text, decimal>,"
             + "    query_text_values   map<text, text>, "
+            + "    query_timestamp_values map<text, timestamp>, "
             + "    query_null_values   set<text>,     "
             + "    PRIMARY KEY (key))";
     return QueryOuterClass.Query.newBuilder()
@@ -110,6 +111,13 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
     statements.add(
         QueryOuterClass.Query.newBuilder()
             .setCql(String.format(textQuery, table, keyspace, table))
+            .build());
+
+    String timestampQuery =
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
+    statements.add(
+        QueryOuterClass.Query.newBuilder()
+            .setCql(String.format(timestampQuery, table, keyspace, table))
             .build());
 
     String nullQuery =

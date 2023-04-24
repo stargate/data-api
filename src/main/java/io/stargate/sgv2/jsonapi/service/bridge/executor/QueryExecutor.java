@@ -59,8 +59,13 @@ public class QueryExecutor {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().writes();
     QueryOuterClass.ConsistencyValue.Builder consistencyValue =
         QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
+    QueryOuterClass.Consistency serialConsistency = queriesConfig.serialConsistency();
+    QueryOuterClass.ConsistencyValue.Builder serialConsistencyValue =
+        QueryOuterClass.ConsistencyValue.newBuilder().setValue(serialConsistency);
     QueryOuterClass.QueryParameters.Builder params =
-        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
+        QueryOuterClass.QueryParameters.newBuilder()
+            .setConsistency(consistencyValue)
+            .setSerialConsistency(serialConsistencyValue);
     return queryBridge(
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }

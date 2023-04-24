@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   class UpdateMany {
 
@@ -57,7 +57,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -87,7 +87,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -114,7 +114,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -138,7 +138,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(0))
@@ -164,7 +164,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(5))
@@ -184,7 +184,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs.active_user", everyItem(is(false)));
@@ -207,7 +207,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(20))
@@ -228,11 +228,10 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs.active_user", everyItem(is(false)))
-          .body("data.count", is(20))
           .body("errors", is(nullValue()));
     }
 
@@ -253,7 +252,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(20))
@@ -274,11 +273,10 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs.active_user", everyItem(is(true)))
-          .body("data.count", is(5));
+          .body("data.docs.active_user", everyItem(is(true)));
     }
 
     @Test
@@ -299,7 +297,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is("doc6"))
@@ -329,7 +327,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -353,7 +351,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.matchedCount", is(1))
@@ -382,7 +380,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -406,7 +404,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is(notNullValue()))
@@ -429,7 +427,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", is(notNullValue()));
@@ -453,7 +451,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.upsertedId", is("doc6"))
@@ -484,7 +482,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -535,7 +533,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
                         .contentType(ContentType.JSON)
                         .body(updateJson)
                         .when()
-                        .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+                        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
                         .then()
                         .statusCode(200)
                         .body("status.matchedCount", is(5))
@@ -578,11 +576,10 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs.count", everyItem(is(3)))
-          .body("data.count", is(5));
+          .body("data.docs.count", everyItem(is(3)));
     }
   }
 
@@ -604,7 +601,7 @@ public class UpdateManyIntegrationTest extends CollectionResourceBaseIntegration
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))

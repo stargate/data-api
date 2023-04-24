@@ -162,8 +162,17 @@ public record ReadAndUpdateOperation(
               // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
                   documentUpdater().apply(readDocument.document().deepCopy(), upsert);
-              if (!documentUpdaterResponse.modified()) {
-                return Uni.createFrom().nullItem();
+
+              // In case no change to document and not an upsert document, short circuit and return
+              if (!documentUpdaterResponse.modified() && !upsert) {
+                // If no change return the original document Issue #390
+                if (returnDocumentInResponse) {
+                  resultProjection.applyProjection(originalDocument);
+                  return Uni.createFrom()
+                      .item(new UpdatedDocument(readDocument.id(), upsert, originalDocument, null));
+                } else {
+                  return Uni.createFrom().nullItem();
+                }
               }
 
               // otherwise shred
@@ -228,6 +237,7 @@ public record ReadAndUpdateOperation(
             + "            query_dbl_values = ?,"
             + "            query_text_values = ?,"
             + "            query_null_values = ?,"
+            + "            query_timestamp_values = ?,"
             + "            doc_json  = ?"
             + "        WHERE "
             + "            key = ?"
@@ -253,6 +263,8 @@ public record ReadAndUpdateOperation(
                 Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
             .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
+            .addValues(
+                Values.of(CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));

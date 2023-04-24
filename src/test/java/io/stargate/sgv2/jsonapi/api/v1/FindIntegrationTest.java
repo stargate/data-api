@@ -3,7 +3,10 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -20,14 +23,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   // TODO refactor in https://github.com/stargate/jsonapi/issues/174
   //  - test names
   //  - order annotations
   //  - format json
-  //  - errors field check
-  //  - empty options test
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -35,21 +36,21 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
     @Test
     @Order(1)
     public void setUp() {
-      String json =
+      insert(
           """
             {
               "insertOne": {
                 "document": {
                   "_id": "doc1",
                   "username": "user1",
-                  "active_user" : true
+                  "active_user" : true,
+                  "date" : {"$date": 1672531200000}
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -65,11 +66,9 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -81,11 +80,9 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -95,11 +92,9 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
-
-      json =
+      insert(
           """
             {
               "insertOne": {
@@ -110,9 +105,19 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
                 }
               }
             }
-          """;
+          """);
 
-      insert(json);
+      insert(
+          """
+            {
+              "insertOne": {
+                "document": {
+                  "_id": {"$date": 6},
+                  "username": "user6"
+                }
+              }
+            }
+          """);
     }
 
     private void insert(String json) {
@@ -121,14 +126,14 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
     }
 
     @Test
     @Order(2)
-    public void findNoFilter() {
+    public void noFilter() {
       String json =
           """
             {
@@ -141,16 +146,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(5));
+          .body("data.docs", hasSize(6));
     }
 
     @Test
     @Order(2)
-    public void findNoFilterWithOptions() {
+    public void noFilterWithOptions() {
       String json =
           """
             {
@@ -166,16 +171,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(1));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findById() {
+    public void byId() {
       String json =
           """
             {
@@ -184,23 +188,204 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs", hasSize(1));
+    }
+
+    @Test
+    public void byDateId() {
+      String json =
+          """
+                {
+                  "find": {
+                    "filter" : {"_id" : {"$date": 6 }}
+                  }
+                }
+              """;
+      String expected =
+          """
+            {
+              "_id": {"$date": 6},
+              "username": "user6"
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.docs", hasSize(1));
+    }
+
+    @Test
+    public void inCondition() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : {"$in": ["doc1", "doc4"]}}
+          }
+        }
+        """;
+      // findOne resolves any one of the resolved documents. So the order of the documents in the
+      // $in clause is not guaranteed.
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      String expected2 =
+          "{\"_id\":\"doc4\", \"indexedObject\":{\"0\":\"value_0\",\"1\":\"value_1\"}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(2))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+    }
+
+    @Test
+    public void inConditionWithOtherCondition() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : {"$in": ["doc1", "doc4"]}, "username" : "user1" }
+          }
+        }
+        """;
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected1));
+    }
+
+    @Test
+    public void inConditionEmptyArray() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : {"$in": []}}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(0))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void inOperatorEmptyArrayWithAdditionalFilters() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"username": "user1", "_id" : {"$in": []}}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(0))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void inConditionNonArrayArray() {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : {"$in": true}}
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].message", is("$in operator must have `ARRAY`"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+    }
+
+    @Test
+    public void inConditionNonIdField() {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"non_id" : {"$in": ["a", "b", "c"]}}
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].message", is("Can use $in operator only on _id field"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
     @Order(2)
-    public void findByIdWithProjection() {
+    public void byIdWithProjection() {
       String json =
           """
                 {
@@ -215,17 +400,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals("{\"username\":\"user1\"}"));
     }
 
     @Test
     @Order(2)
-    public void findByColumn() {
+    public void byColumn() {
       String json =
           """
             {
@@ -234,23 +418,23 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqComparisonOperator() {
+    public void withEqComparisonOperator() {
       String json =
           """
             {
@@ -259,23 +443,23 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubDoc() {
+    public void withEqSubDoc() {
       String json =
           """
             {
@@ -291,17 +475,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubDocWithIndex() {
+    public void withEqSubDocWithIndex() {
       String json =
           """
             {
@@ -323,17 +506,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqArrayElement() {
+    public void withEqArrayElement() {
       String json =
           """
             {
@@ -356,17 +538,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithExistFalseOperator() {
+    public void withExistFalseOperator() {
       String json =
           """
             {
@@ -380,15 +561,17 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is("$exists is supported only with true option"));
+          .body("errors[1].message", is("$exists operator supports only true"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
     @Order(2)
-    public void findWithExistOperator() {
+    public void withExistOperator() {
       String json =
           """
             {
@@ -397,23 +580,23 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithAllOperator() {
+    public void withAllOperator() {
       String json =
           """
             {
@@ -431,17 +614,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithAllOperatorLongerString() {
+    public void withAllOperatorLongerString() {
       String json =
           """
             {
@@ -459,17 +641,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithAllOperatorMixedAFormatArray() {
+    public void withAllOperatorMixedAFormatArray() {
       String json =
           """
             {
@@ -487,17 +668,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithAllOperatorNoMatch() {
+    public void withAllOperatorNoMatch() {
       String json =
           """
             {
@@ -511,16 +691,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubdocumentShortcut() {
+    public void withEqSubdocumentShortcut() {
       String json =
           """
             {
@@ -542,17 +721,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubdocument() {
+    public void withEqSubdocument() {
       String json =
           """
             {
@@ -574,17 +752,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubdocumentOrderChangeNoMatch() {
+    public void withEqSubdocumentOrderChangeNoMatch() {
       String json =
           """
             {
@@ -599,16 +776,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithEqSubdocumentNoMatch() {
+    public void withEqSubdocumentNoMatch() {
       String json =
           """
             {
@@ -623,16 +799,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithSizeOperator() {
+    public void withSizeOperator() {
       String json =
           """
             {
@@ -650,17 +825,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithSizeOperatorNoMatch() {
+    public void withSizeOperatorNoMatch() {
       String json =
           """
             {
@@ -678,16 +852,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithEqOperatorArray() {
+    public void withEqOperatorArray() {
       String json =
           """
             {
@@ -705,17 +878,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqOperatorNestedArray() {
+    public void withEqOperatorNestedArray() {
       String json =
           """
             {
@@ -733,17 +905,16 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.count", is(1))
           .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
     @Order(2)
-    public void findWithEqOperatorArrayNoMatch() {
+    public void withEqOperatorArrayNoMatch() {
       String json =
           """
             {
@@ -757,16 +928,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithEqOperatorNestedArrayNoMatch() {
+    public void withEqOperatorNestedArrayNoMatch() {
       String json =
           """
             {
@@ -780,16 +950,15 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.count", is(0));
+          .body("errors", is(nullValue()));
     }
 
     @Test
     @Order(2)
-    public void findWithNEComparisonOperator() {
+    public void withNEComparisonOperator() {
       String json =
           """
             {
@@ -803,7 +972,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors[1].message", startsWith("Unsupported filter operator $ne"));
@@ -811,7 +980,7 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
 
     @Test
     @Order(2)
-    public void findByBooleanColumn() {
+    public void byBooleanColumn() {
       String json =
           """
             {
@@ -820,13 +989,39 @@ public class FindIntegrationTest extends CollectionResourceBaseIntegrationTest {
               }
             }
           """;
-      String expected = "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true}";
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(2)
+    public void byDateColumn() {
+      String json =
+          """
+        {
+          "find": {
+            "filter" : {"date" : {"$date": 1672531200000}}
+          }
+        }
+      """;
+      String expected =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))

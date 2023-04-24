@@ -84,6 +84,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    query_bool_values   map<text, tinyint>,"
             + "    query_dbl_values    map<text, decimal>,"
             + "    query_text_values   map<text, text>, "
+            + "    query_timestamp_values map<text, timestamp>, "
             + "    query_null_values   set<text>,     "
             + "    PRIMARY KEY (key))";
     queries.add(create.formatted(namespace, collection));
@@ -110,6 +111,9 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'"
+            .formatted(collection, namespace, collection));
+    queries.add(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'"

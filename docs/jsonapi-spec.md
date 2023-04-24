@@ -129,10 +129,8 @@ elements may be present depending on the command.
 <command-status-value>  ::= `<json-value>
 
 <response-data> ::= docs (<document>)*,
-                    (nextPageState <page-state>)?,
-                    (count <document-count>)?
+                    (nextPageState <page-state>)?
 <page-state> ::= <ascii-string>
-<document-count> ::= <positive-integer>
 ```
 
 The contents of the `<response-message>` depend on the command, in
@@ -370,6 +368,9 @@ JSON documents must adhere to the following limits. Attempting to insert
 or modify a document beyond these limits will result in the command
 failing.
 
+> Note that all limits are configurable using run-time properties. 
+> See the [Document limits configuration](./../CONFIGURATION.md#document-limits-configuration) for further info.
+
 #### Document Size Limit
 
 The maximum size of a single document is 1 megabyte. The size is
@@ -390,10 +391,10 @@ The maximum number of fields allowed in a single JSON object is 64.
 
 The maximum size of field values are:
 
-| JSON Type   | Maximum Value                                           |
-| ----------- | ------------------------------------------------------- |
-| `string`    | Maximum length of 16384 unicode characters              |
-| `number`    | TODO: define max num that is well handled by BigDecimal |
+| JSON Type | Maximum Value                                           |
+|-----------|---------------------------------------------------------|
+| `string`  | Maximum length of 16,000 unicode characters             |
+| `number`  | TODO: define max num that is well handled by BigDecimal |
 
 
 #### Document Array Limits
@@ -401,27 +402,53 @@ The maximum size of field values are:
 The maximum length of an array is 100 elements.
 
 
+### Equality handling with arrays and subdocs
+
+Given the query `{"foo" : "bar"}`, this matches: 
+
+* `foo` as a string with value `bar` 
+
+* `foo` is an array that contains at least one item that is the string `"bar"`. The length of the array is not important.
+
+Given the query `{"foo" : ["bar"]}`, this:
+
+* Matches `foo` as an array that is exactly `["bar"]`
+
+* Does not support sub-arrays. Thus, it does not match `foo == [ ["bar"], "baz"]`
+
+*NOTE:* this query is not a reflexive operation. I.e., if the Right Hand Side (RHS) operand is a string (or other value), we will match against a field of that type or field with an array item of that type. However, if the RHS operand is an array, we only match against fields that are arrays.
+
+For subdocs, the query has to be an exact match. Given the following:
+
+```json5
+{"foo" : {"col1" : "bar1", "col2" :  "bar2"}}
+```
+
+It must match a field `foo` which has document value `{"col1" : "bar1", "col2" :  "bar2"}`.
+
+
 ## Commands
 
-Commands are included in a request and are executed against a single
-collection.
+Commands are included in a request and are executed against a single collection.
 
-Each command specifies one or more [Clauses](#clauses) that control how
-it operates, and may include set of options to further modify behavior.
+Each command specifies one or more [Clauses](#clauses) that control how it operates, and may include set of options to further modify behavior.
 
 The following commands are supported for collections:
 
--   [`countDocuments`](#countDocuments-command)
--   [`deleteMany`](#deleteMany-command)
--   [`deleteOne`](#deleteOne-command)
--   [`estimatedDocumentCount`](#estimatedDocumentCount-command)
+-   [`countDocuments`](#countdocuments-command)
+-   [`createCollection`](#createcollection-command)
+-   [`deleteMany`](#deletemany-command)
+-   [`deleteOne`](#deleteone-command)
+-   [`estimatedDocumentCount`](#estimateddocumentcount-command)
 -   [`find`](#find-command)
--   [`findOne`](#findOne-command)
--   [`findOneAndUpdate`](#findOneAndUpdate-command)
--   [`insertMany`](#insertMany-command)
--   [`insertOne`](#insertOne-command)
--   [`updateMany`](#updateMany-command)
--   [`updateOne`](#updateOne-command)
+-   [`findCollections`](#findcollections-command)
+-   [`findOne`](#findone-command)
+-   [`findOneAndReplace`](#findoneandreplace-command)
+-   [`findOneAndUpdate`](#findoneandupdate-command)
+-   [`insertMany`](#insertmany-command)
+-   [`insertOne`](#insertone-command)
+-   [`updateMany`](#updatemany-command)
+-   [`updateOne`](#updateone-command)
 
 Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [JSON API HTTP Specification](jsonapi-network-spec.md).
 
@@ -444,9 +471,42 @@ Commands are defined using the BNF-like syntax, with samples presented using a [
 
 ### countDocuments Command
 
+Returns the count of documents that match the query for a collection or view.
+
+*Sample:*
+
+```json
+{
+  "countDocuments": {
+    "filter": {
+      "location": "London",
+      "race.competitors": {
+        "$eq": 100
+      }
+    }
+  }
+}
+```
+
 #### countDocuments Command Options
 
 The `countDocuments` command does not support any options.
+
+#### Count all documents that match a query
+
+Count the number of the documents in the `purchase` collection where the field `order_date` is greater than `$date` in JSON format. In this example, Epoch `1672531200000` represents 1/1/2023 00:00:00 UTC.
+
+```json
+{
+  "countDocuments": {
+    "filter": {
+      "order_date": {
+        "$date": 1672531200000
+      }
+    }
+  }
+}
+```
 
 #### countDocuments Multi Document Failure Modes
 
@@ -464,6 +524,52 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
  
 If an error occurs the command will not return `status`.
 
+
+### createCollection Command
+
+Creates a new collection in the current namespace.
+
+*Sample*
+
+```json
+{
+  "createCollection": {
+    "name": "purchase"
+  }
+}
+```
+
+#### createCollection Command Options
+
+The `createCollection` command does not support any options.
+
+#### createCollection Multi Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing.
+
+See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### createCollection Command Response
+
+| Response Elements | Description                        |
+| ----------------- | -----------------------------------|
+| `data`            | Not present.                       |
+| `status`          | Not preset.                        |
+| `errors`          | Present if errors occur.           |
+ 
+Status example:
+
+```json
+{
+  "status": {
+    "ok": 1
+  }
+}
+```
+
+If an error occurs the command will not return `status`.
+
+
 ### deleteMany Command
 
 #### deleteMany Command Options
@@ -475,6 +581,10 @@ The `deleteMany` command does not support any options.
 Fail Silently, a storage failure does not stop the command from processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### deleteMany Command Limits
+
+The maximum amount of documents that can be deleted in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### deleteMany Command Response
 
@@ -580,16 +690,122 @@ Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
+#### find Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### find Command Response
 
 | Response Elements | Description                                                                     |
 | ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs`, `count` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
+| `data`            | Present with fields : `docs` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
 | `status`          | Not preset. |
 | `errors`          | Present if errors occur. |
 
 
 If an error occurs the command will not return `data`.
+
+
+### findCollections Command
+
+`findCollections` returns all collections from a given namespace.
+
+There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{namespace}`.
+
+*Syntax:*
+
+```bnf
+<findCollections-command>            ::= findCollections
+<findCollections-command-response>   ::= status.collections: ["col1", "col2"]
+```
+
+#### findCollections Command Options
+
+None. 
+
+#### findCollections Command Response
+
+| Response Elements | Description                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `status`          | Status has `collections` field with array of the available collection names.       |
+| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`.       |
+
+
+### findOneAndReplace Command
+
+`findOneAndReplace` replaces the first document in the collection that matches the filter. Optionally use a `sort-clause` to determine which document is modified.
+
+*Syntax:*
+
+```bnf
+<find-one-and-replace-command> ::= findOneAndReplace <find-one-and-replace-command-payload> 
+<find-one-and-replace-command-payload> ::= <filter-clause>? 
+                             <sort-clause>? 
+                             <replacement>?
+                             <find-one-and-replace-command-options>?
+
+<find-one-and-replace-command-option> ::= (<find-one-and-replace-option-name> <find-one-and-replace-option-value>,)*
+```
+
+*Sample:*
+
+```json5
+// Replaces a single document based on the specified filter and sort. Returns a document in response.
+{ "findOneAndReplace" : 
+    { "filter" : {<filter-clause>}, 
+      "sort" : {<sort-clause>}, 
+      "replacement" : {<document-to-replace>}, 
+      "options" : 
+          {"returnDocument" : "before/after"},
+          {"upsert" : "true/false"}
+     }
+}
+```
+
+#### findOneAndReplace Command Order of Operations
+
+`findOneAndReplace` commands are processed using the following order of operation:
+
+1.  `<filter-clause>` is applied to the collection to select one or more candidate document(s). Example:  `"filter": {"location": "London"}`.
+2.  `<sort-clause>` can be applied to the candidate document to determine its order. Example: `"sort" : ["race.start_date"]`. If no `<sort-clause>` is supplied, the document maintains its current order.
+3.  `<document-to-replace>` specifies the replacement action. Example: `"replacement": { "location": "New York", "count": 3 }`.
+
+The <replacement> document cannot specify an `_id` value that differs from the replaced document.
+
+#### findOneAndReplace Command Options
+
+`<find-one-and-replace-command-option>` is a map of key-value pairs that modify the behavior of the command. 
+
+If `returnDocument` is `before`, return the existing document. if `returnDocument` is `after`, return the replaced document. 
+
+| Option            | Type        | Description                                                                     |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| `returnDocument`  | String      | Specifies which document to perform the projection on. If `"before"` the projection is performed on the document before the update is applied. If  `"after"` the document projection is from the document after replacement. Defaults to `"before"`. |
+| `upsert `         | Boolean     | When `true` if no documents match the `filter` clause the command will create a new *empty* document and apply the `update` clause to the empty document. If the `_id` field is included in the `filter` the new document will use this `_id`, otherwise a random value will be used see [Upsert Considerations](#upsert-considerations) for details. When false the command will only update a document if one matches the filter. Defaults to `false`. |
+
+#### findOneAndReplace Document Failure Modes
+
+Fail Fast, a storage failure causes the command to stop processing.
+
+If the replacement document `_id` field is different from the document read from the database, the JSON API throws an error.
+
+NOTE: you can omit `_id` in the replacement document. If `_id` is in the replacement, it should be exactly equal to the `_id` in the database. But if `_id` was omitted, 
+`findOneAndReplace` will use the existing document's `_id`.
+
+#### findOneAndReplace Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
+#### findOneAndReplace Command Response
+
+| Response Elements | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `data`            | Present with fields : `docs` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
+| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted. |
+| `errors`          | Present if errors occur. |
+
+If an error occurs the command will not return `data` or `status`.
+
 
 ### findOneAndUpdate Command
 
@@ -651,6 +867,10 @@ Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
 
+#### findOneAndUpdate Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
+
 #### findOneAndUpdate Command Response
 
 | Response Elements | Description                                                                     |
@@ -660,7 +880,7 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 | `errors`          | Present if errors occur. |
 
 
-If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned .
+If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned.
 
 If an error occurs the command will not return `data` or `status`.
 
@@ -675,6 +895,10 @@ The `findOne` command does not support any options.
 Fail Fast, a storage failure causes the command to stop processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### findOne Command Limits
+
+If `<sort-clause>` is present, the maximum amount of documents that could be sorted using the in-memory sorting is 10,000. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### findOne Command Response
 
@@ -704,6 +928,10 @@ Depends on the `ordered` option. When `true` the command uses Fail Fast to stop 
 See [insertMany Command Options](#insertMany-command-options) for `ordered`.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### insertMany Command Limits
+
+The maximum amount of documents that can be inserted in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### insertMany Command Response
 
@@ -755,6 +983,10 @@ behavior applied when not provided.
 Fail Silently, a storage failure does not stop the command from processing.
 
 See [Multi-Document Failure Considerations](#multi-document-failure-considerations).
+
+#### updateMany Command Limits
+
+The maximum amount of documents that can be updated in a single operation is 20. This limit is configurable using the [Operations configuration properties](./../CONFIGURATION.md#operations-configuration).
 
 #### updateMany Command Response
  
@@ -1241,7 +1473,13 @@ value of the operation.
 
 #### $all operation
 
-TODO:
+The `$all` operation allows users to check for documents that have an array field with all of the given values.  Example:
+
+```json5
+{"locations" : { $all : ["New York", "Texas"]}}
+```
+
+If provided to a `find()`, return all the documents where the locations field contains the two values – “New York” and “Texas”. It does not matter how many more values the locations field contains. The operation will match if the specified values are present. Similarly, if even one the value is missing, the document will not be matched. So the `$all` operation is useful while retrieving data.  
 
 #### $elemMatch operation
 
@@ -1249,7 +1487,16 @@ TODO:
 
 #### $size operation
 
-TODO:
+The `$size` operation allows users to match any array with the number of elements specified by the argument. Example:
+
+```json5
+db.collection.find( { field: { $size: 2 } } );
+```
+
+That expression returns, e.g.: `{ field: [ red, green ] }` and `{ field: [ apple, lime ] }`, but not `{ field: fruit }` or `{ field: [ orange, lemon, grapefruit ] }`.
+
+If the given field is not an array, there's no match. `$size` should ignore non-arrays.
+
 
 ### Projection Clause
 

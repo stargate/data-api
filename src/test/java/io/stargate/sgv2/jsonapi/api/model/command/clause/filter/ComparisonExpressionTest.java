@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -78,6 +79,19 @@ public class ComparisonExpressionTest {
                       ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))));
 
       ComparisonExpression result = ComparisonExpression.eq("nullVal", null);
+      assertThat(result).isEqualTo(expectedResult);
+    }
+
+    @Test
+    public void dateValueComparisonExpression() throws Exception {
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "dateVal",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral(new Date(10L), JsonType.DATE))));
+
+      ComparisonExpression result = ComparisonExpression.eq("dateVal", new Date(10L));
       assertThat(result).isEqualTo(expectedResult);
     }
   }

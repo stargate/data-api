@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -38,29 +39,39 @@ public interface ReadOperation extends Operation {
   List<String> sortIndexColumns =
       List.of(
           "query_text_values['%s']",
-          "query_dbl_values['%s']", "query_bool_values['%s']", "query_null_values['%s']");
+          "query_dbl_values['%s']",
+          "query_bool_values['%s']",
+          "query_null_values['%s']",
+          "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
   /**
    * Default implementation to query and parse the result set
    *
    * @param queryExecutor
-   * @param query
+   * @param queries - Multiple queries only in case of `in` condition on `_id` field
    * @param pagingState
    * @param readDocument This flag is set to false if the read is done to just identify the document
    *     id and tx_id to perform another DML operation
    * @param objectMapper
+   * @param projection
+   * @param limit - How many documents to return
    * @return
    */
   default Uni<FindResponse> findDocument(
       QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
+      List<QueryOuterClass.Query> queries,
       String pagingState,
       int pageSize,
       boolean readDocument,
       ObjectMapper objectMapper,
-      DocumentProjector projection) {
-    return queryExecutor
-        .executeRead(query, Optional.ofNullable(pagingState), pageSize)
+      DocumentProjector projection,
+      int limit) {
+
+    return Multi.createFrom()
+        .items(queries.stream())
+        .onItem()
+        .transformToUniAndMerge(
+            query -> queryExecutor.executeRead(query, Optional.ofNullable(pagingState), pageSize))
         .onItem()
         .transform(
             rSet -> {
@@ -88,6 +99,34 @@ public interface ReadOperation extends Operation {
                 documents.add(document);
               }
               return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
+            })
+        .collect()
+        .asList()
+        .onItem()
+        .transform(
+            list -> {
+              // Merge all find responses
+              List<ReadDocument> documents = new ArrayList<>();
+              String tempPagingState = null;
+              if (limit == 1) {
+                // In case of findOne limit will be 1 return one document. Need to do it to support
+                // `in` operator
+                for (FindResponse response : list) {
+                  if (!response.docs().isEmpty()) {
+                    documents.add(response.docs().get(0));
+                    break;
+                  }
+                }
+              } else {
+                // pagination is handled only when single query is run(non `in` filter), so here
+                // paging state of the last query is returned
+                for (FindResponse response : list) {
+                  documents.addAll(response.docs());
+                  // picking the last paging state
+                  tempPagingState = response.pagingState();
+                }
+              }
+              return new FindResponse(documents, tempPagingState);
             });
   }
 
@@ -95,7 +134,7 @@ public interface ReadOperation extends Operation {
    * This method reads upto system fixed limit
    *
    * @param queryExecutor
-   * @param query
+   * @param queries Multiple queries only in case of `in` condition on `_id` field
    * @param pageSize
    * @param objectMapper
    * @param comparator -
@@ -109,7 +148,7 @@ public interface ReadOperation extends Operation {
    */
   default Uni<FindResponse> findOrderDocument(
       QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
+      List<QueryOuterClass.Query> queries,
       int pageSize,
       ObjectMapper objectMapper,
       Comparator<ReadDocument> comparator,
@@ -120,18 +159,24 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
-    return Multi.createBy()
-        .repeating()
-        .uni(
-            () -> new AtomicReference<String>(null),
-            stateRef -> {
-              return queryExecutor
-                  .executeRead(query, Optional.ofNullable(stateRef.get()), pageSize)
-                  .onItem()
-                  .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
-            })
-        // Read document while pagingState exists, limit for read is set at updateLimit +1
-        .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null)
+    return Multi.createFrom()
+        .items(queries.stream())
+        .onItem()
+        .transformToMultiAndMerge(
+            q ->
+                Multi.createBy()
+                    .repeating()
+                    .uni(
+                        () -> new AtomicReference<String>(null),
+                        stateRef -> {
+                          return queryExecutor
+                              .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                              .onItem()
+                              .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
+                        })
+                    // Read document while pagingState exists, limit for read is set at updateLimit
+                    // +1
+                    .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null))
         .onItem()
         .transformToUniAndMerge(
             resultSet -> {
@@ -150,30 +195,42 @@ public interface ReadOperation extends Operation {
                     sortColumnCount++) {
                   int columnCounter =
                       SORTED_DATA_COLUMNS + ((sortColumnCount) * SORT_INDEX_COLUMNS_SIZE);
+
+                  // text value
                   QueryOuterClass.Value value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.textNode(Values.string(value)));
                     continue;
                   }
+                  // number value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.numberNode(Values.decimal(value)));
                     continue;
                   }
+                  // boolean value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.booleanNode(Values.int_(value) == 1));
                     continue;
                   }
+                  // null value
                   columnCounter++;
                   value = row.getValues(columnCounter);
                   if (!value.hasNull()) {
                     sortValues.add(nodeFactory.nullNode());
                     continue;
                   }
-
+                  // date value
+                  columnCounter++;
+                  value = row.getValues(columnCounter);
+                  if (!value.hasNull()) {
+                    sortValues.add(nodeFactory.pojoNode(new Date(Values.bigint(value))));
+                    continue;
+                  }
+                  // missing value
                   sortValues.add(nodeFactory.missingNode());
                 }
                 // Create ReadDocument with document id, grpc value for doc json and list of sort

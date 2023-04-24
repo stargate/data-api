@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest {
+public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
@@ -56,7 +56,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc3"))
@@ -84,11 +84,125 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void insertDocumentWithDateValue() {
+      String json =
+          """
+        {
+          "insertOne": {
+            "document": {
+              "_id": "doc_date",
+              "username": "doc_date_user3",
+              "date_created": {"$date": 1672531200000}
+            }
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("doc_date"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      String expected =
+          """
+        {
+          "_id": "doc_date",
+          "username": "doc_date_user3",
+          "date_created": {"$date": 1672531200000}
+        }
+        """;
+
+      String query_json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : "doc_date"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(query_json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void insertDocumentWithDateDocId() {
+      String json =
+          """
+            {
+              "insertOne": {
+                "document": {
+                  "_id": {"$date": 1672539900000},
+                  "username": "doc_date_user4",
+                  "status": false
+                }
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      String expected =
+          """
+            {
+              "_id": {"$date": 1672539900000},
+              "username": "doc_date_user4",
+              "status": false
+            }
+            """;
+
+      String query_json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : {"$date": 1672539900000}}
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(query_json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.docs[0]", jsonEquals(expected));
     }
 
     @Test
@@ -110,7 +224,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is(4))
@@ -138,7 +252,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected))
@@ -165,7 +279,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc3"))
@@ -192,7 +306,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("duplicate"))
@@ -215,7 +329,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", jsonEquals("[]"))
@@ -246,7 +360,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -269,7 +383,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is(notNullValue()))
@@ -292,7 +406,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
@@ -322,7 +436,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -354,7 +468,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -393,7 +507,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4", "doc5"))
@@ -413,7 +527,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -449,7 +563,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4"))
@@ -470,7 +584,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(1))
@@ -544,7 +658,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
@@ -564,7 +678,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -601,7 +715,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
@@ -622,7 +736,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -654,7 +768,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("5", 5))
@@ -682,7 +796,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -708,7 +822,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.docs[0]", jsonEquals(expected));
@@ -740,7 +854,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4", "doc5"))
@@ -767,7 +881,7 @@ public class InsertIntegrationTest extends CollectionResourceBaseIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspaceId.asInternal(), collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", hasSize(2))

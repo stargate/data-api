@@ -45,14 +45,22 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   in = ParameterIn.PATH,
                   name = "namespace",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The namespace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,
                   name = "collection",
                   required = true,
-                  schema = @Schema(implementation = String.class, pattern = "\\w+"),
+                  schema =
+                      @Schema(
+                          implementation = String.class,
+                          pattern = "[a-zA-Z][a-zA-Z0-9_]*",
+                          maxLength = 48),
                   description = "The name of the collection.",
                   example = "events")
             },
@@ -323,6 +331,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
+                  name = "findCollections",
+                  summary = "`FindCollections` command",
+                  value =
+                      """
+                        {
+                            "findCollections": {
+                            }
+                        }
+                      """),
+              @ExampleObject(
                   name = "deleteCollection",
                   summary = "`DeleteCollection` command",
                   value =
@@ -371,8 +389,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "tags": [ "us" ]
                             }
                           ],
-                          "nextPageState": "jA8qg0AitZ8q28568GybNQ==",
-                          "count": 2
+                          "nextPageState": "jA8qg0AitZ8q28568GybNQ=="
                         }
                       }
                       """),
@@ -391,8 +408,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                },
                                "tags": [ "eu" ]
                             }
-                          ],
-                          "count": 1
+                          ]
                         }
                       }
                       """),
@@ -413,12 +429,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               },
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "matchedCount": 1,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "matchedCount": 1,
+                          "modifiedCount": 1
                         }
                       }
                       """),
@@ -435,12 +450,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "location": "New York",
                              "count": 3
                            }
-                         ],
-                         "count": 1,
-                         "status": {
-                           "matchedCount": 1,
-                           "modifiedCount": 1
-                         }
+                         ]
+                       },
+                       "status": {
+                         "matchedCount": 1,
+                         "modifiedCount": 1
                        }
                      }
                      """),
@@ -457,11 +471,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                "location": "New York",
                                "count": 3
                              }
-                           ],
-                           "count": 1,
-                           "status": {
-                             "deletedCount": 1
-                           }
+                           ]
+                         },
+                         "status": {
+                           "deletedCount": 1
                          }
                        }
                        """),
@@ -478,13 +491,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "location": "New York",
                               "count": 3
                             }
-                          ],
-                          "count": 1,
-                          "status": {
-                            "upsertedId": "1",
-                            "matchedCount": 0,
-                            "modifiedCount": 1
-                          }
+                          ]
+                        },
+                        "status": {
+                          "upsertedId": "1",
+                          "matchedCount": 0,
+                          "modifiedCount": 1
                         }
                       }
                   """),
@@ -583,6 +595,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     "namespaces": [
                                       "cycling"
                                     ]
+                                  }
+                                }
+                                """),
+              @ExampleObject(
+                  name = "resultFindCollections",
+                  summary = "`findCollections` command result",
+                  value =
+                      """
+                                {
+                                  "status": {
+                                      "collections": [ "events" ]
                                   }
                                 }
                                 """),
