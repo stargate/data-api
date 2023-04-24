@@ -72,7 +72,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",
@@ -119,7 +118,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",
@@ -159,7 +157,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",
@@ -205,7 +202,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",
@@ -249,7 +245,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",
@@ -294,7 +289,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(1))
           .body("data.docs", hasSize(1))
           .body(
               "data.docs[0]",

@@ -232,7 +232,6 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .then()
           .statusCode(200)
           .body("data.docs.active_user", everyItem(is(false)))
-          .body("data.count", is(20))
           .body("errors", is(nullValue()));
     }
 
@@ -277,8 +276,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs.active_user", everyItem(is(true)))
-          .body("data.count", is(5));
+          .body("data.docs.active_user", everyItem(is(true)));
     }
 
     @Test
@@ -581,8 +579,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs.count", everyItem(is(3)))
-          .body("data.count", is(5));
+          .body("data.docs.count", everyItem(is(3)));
     }
   }
 

@@ -71,7 +71,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("limit should be grater than or equal to `0`");
+          .contains("limit should be greater than or equal to `0`");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("skip should be grater than or equal to `0`");
+          .contains("skip should be greater than or equal to `0`");
     }
 
     @Test
