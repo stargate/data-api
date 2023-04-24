@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -124,5 +125,19 @@ public class JsonUtil {
       }
     }
     return null;
+  }
+
+  public static ObjectNode createEJSonDate(JsonNodeCreator f, Date date) {
+    return createEJSonDate(f, date.getTime());
+  }
+
+  public static ObjectNode createEJSonDate(JsonNodeCreator f, long timestamp) {
+    ObjectNode json = f.objectNode();
+    json.put(EJSON_VALUE_KEY_DATE, timestamp);
+    return json;
+  }
+
+  public static Map<String, Object> createEJSonDateAsMap(long timestamp) {
+    return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
   }
 }

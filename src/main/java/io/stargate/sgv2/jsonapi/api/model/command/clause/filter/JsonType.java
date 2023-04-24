@@ -6,9 +6,14 @@ public enum JsonType {
   NUMBER,
   STRING,
   NULL,
+  /** Stored as a special EJSON-encoded JSON Object (1 entry with key "$date") */
   DATE,
+  /** JSON Objects other than EJSON-encoded special types */
   SUB_DOC,
   ARRAY,
-  // DOCUMENT_ID represent the _id field type which is union of String, Number, Boolean and Null
+  /**
+   * DOCUMENT_ID represents the _id field type which is union of String, Number, Boolean, Date and
+   * Null (separate type due to use as Cassandra partition key; tuple of TINYINT and String)
+   */
   DOCUMENT_ID
 }
