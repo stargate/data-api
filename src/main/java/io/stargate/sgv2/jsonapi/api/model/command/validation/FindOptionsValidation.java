@@ -21,14 +21,14 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
     }
     if (options.skip() != null && options.skip() < 0) {
       context
-          .buildConstraintViolationWithTemplate("skip should be grater than or equal to `0`")
+          .buildConstraintViolationWithTemplate("skip should be greater than or equal to `0`")
           .addPropertyNode("options.skip")
           .addConstraintViolation();
       return false;
     }
     if (options.limit() != null && options.limit() < 0) {
       context
-          .buildConstraintViolationWithTemplate("limit should be grater than or equal to `0`")
+          .buildConstraintViolationWithTemplate("limit should be greater than or equal to `0`")
           .addPropertyNode("options.limit")
           .addConstraintViolation();
       return false;
