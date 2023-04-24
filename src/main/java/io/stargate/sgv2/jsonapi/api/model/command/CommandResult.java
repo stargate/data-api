@@ -85,6 +85,7 @@ public record CommandResult(
    * Response data object that's included in the {@link CommandResult}.
    *
    * @param docs Documents.
+   * @param nextPageState Optional next paging state.
    */
   public record ResponseData(
       @NotNull
