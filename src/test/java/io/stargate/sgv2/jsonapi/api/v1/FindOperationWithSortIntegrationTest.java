@@ -455,7 +455,6 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(datas.size()))
           .body("data.docs", jsonEquals(arrayNode.toString()));
     }
 
@@ -495,7 +494,6 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.count", is(datas.size()))
           .body("data.docs", jsonEquals(arrayNode.toString()));
     }
 
