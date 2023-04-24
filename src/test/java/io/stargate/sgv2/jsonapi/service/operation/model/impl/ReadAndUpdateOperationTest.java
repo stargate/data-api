@@ -219,6 +219,109 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
     }
 
     @Test
+    public void noChange() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      UUID tx_id = UUID.randomUUID();
+      String doc1 =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
+
+      ValidatingStargateBridge.QueryAssert selectQueryAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id),
+                          Values.of(doc1))));
+
+      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      JsonNode jsonNode = objectMapper.readTree(doc1);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      FindOperation findOperation =
+          new FindOperation(
+              COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              null,
+              1,
+              1,
+              ReadType.DOCUMENT,
+              objectMapper,
+              null,
+              0,
+              0);
+      String updateClause =
+          """
+                       { "$set" : { "username" : "user1" }}
+                  """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+      ReadAndUpdateOperation operation =
+          new ReadAndUpdateOperation(
+              COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      selectQueryAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(2)
+          .containsEntry(CommandStatus.MATCHED_COUNT, 1)
+          .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
+      assertThat(result.errors()).isNull();
+      assertThat(result.data().docs()).hasSize(1);
+    }
+
+    @Test
     public void happyPathWithSort() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"

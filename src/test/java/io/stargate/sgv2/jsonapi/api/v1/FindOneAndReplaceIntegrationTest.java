@@ -176,7 +176,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0))
+          .body("data.docs", hasSize(1))
+          .body("data.docs[0]", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("errors", is(nullValue()));
