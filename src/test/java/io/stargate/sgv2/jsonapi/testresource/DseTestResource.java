@@ -10,7 +10,7 @@ public class DseTestResource extends StargateTestResource {
     super();
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
-      System.setProperty("testing.containers.cassandra-image", "datastax/dse-server:6.8.33");
+      System.setProperty("testing.containers.cassandra-image", "datastax/dse-server:6.8.34");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
