@@ -1,8 +1,9 @@
-# JSON API CRUD Basic
+# JSON API search, filter and sort
 
 ## Description
 
-The JSON API CRUD Advanced workflow targets Stargate's JSON API using generated JSON documents.
+The JSON API search, filter and sort workflow targets Stargate's JSON API using generated JSON documents.
+The operations in this workflow uses find commands with different filter clause, sort clause and projection clause.
 The documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
 * each document has 13 leaf values, with a maximum depth of 3
@@ -41,9 +42,6 @@ The example JSON looks like:
   "debt":null
 }
 ```
-
-In contrast to other workflows, this one is not split into ramp-up and main phases.
-Instead, there is only the main phase with 5 different load types (write, read-single, read-multiple, update and delete).
 
 ## Named Scenarios
 
