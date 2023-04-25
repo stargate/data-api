@@ -24,7 +24,15 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                 {
                   "_id": "doc1",
                   "username": "user1",
-                  "active_user" : true
+                  "active_user" : true,
+                  "created_at": {
+                     "$date": 123456789
+                  },
+                  "extra" : {
+                     "modified": {
+                       "$date": 111111111
+                     }
+                  }
                 }
                 """;
 
@@ -83,6 +91,97 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                                           "sub_doc" : { "a": 5 }
                                         }
                                         """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.docs", hasSize(1));
+    }
+
+    @Test
+    public void byIdIncludeDates() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "doc1"},
+                  "projection": {
+                    "created_at": 1,
+                    "extra.modified": 1
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                          {
+                            "_id": "doc1",
+                            "created_at": {
+                               "$date": 123456789
+                            },
+                            "extra" : {
+                               "modified": {
+                                 "$date": 111111111
+                               }
+                            }
+                          }
+                          """))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void byIdExcludeDates() {
+      insertDoc(DOC1_JSON);
+      insertDoc(DOC2_JSON);
+      insertDoc(DOC3_JSON);
+      String json =
+          """
+                  {
+                    "findOne": {
+                      "filter" : {"_id" : "doc1"},
+                      "projection": {
+                        "created_at": 0,
+                        "extra.modified": 0
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(1))
+          .body(
+              "data.docs[0]",
+              jsonEquals(
+                  """
+                                {
+                                  "_id": "doc1",
+                                  "username": "user1",
+                                  "active_user" : true,
+                                  "extra": {
+                                  }
+                                }
+                                """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
