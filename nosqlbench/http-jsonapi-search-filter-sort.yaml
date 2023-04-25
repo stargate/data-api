@@ -1,4 +1,4 @@
-min_version: "5.17.1"
+min_version: "5.17.3"
 
 # nb5 -v run driver=http yaml=http-jsonapi_crud_advanced jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
@@ -39,7 +39,7 @@ bindings:
   request_id: ToHashedUUID(); ToString();
 
   # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
-  # token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
   seq_key: Mod(<<docscount:10000000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
@@ -64,7 +64,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: |
@@ -79,7 +79,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: |
@@ -94,7 +94,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: |
@@ -113,7 +113,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
         body: |
@@ -155,7 +155,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -176,7 +176,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -193,7 +193,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -212,7 +212,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -229,7 +229,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -247,7 +247,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -266,7 +266,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -286,7 +286,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -305,7 +305,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -316,74 +316,5 @@ blocks:
               },
               "sort": {"full_name" : 1},
               "projection": {"_id" : 0}
-            }
-          }
-  update:
-    ops:
-      # aka updateOne
-      # for parity with other tests this only uses set, not unset, no return value
-      update-document:
-        space: "{space}"
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
-        Content-Type: "application/json"
-        # because this is not an upsert, modified count could technically be 0 or 1,
-        # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
-        # every update during this phase should update exactly 1 document.
-        ok-body: ".*\"modifiedCount\":1.*"
-        body: |
-          {
-            "updateOne" : {
-              "filter": {
-                "_id" : "{random_key}"
-              },
-              "update": {
-                "$set": {
-                  "user_id":      "{user_id}",
-                  "created_on":   {created_on},
-                  "gender":       "{gender}",
-                  "full_name":    "{full_name}",
-                  "married":      {married},
-                  "address": {
-                    "primary": {
-                        "city":   "{city}",
-                        "cc":     "{country_code}"
-                    },
-                    "secondary":  {}
-                  },
-                  "coordinates": [
-                                  {lat},
-                                  {lng}
-                  ],
-                  "children":     [],
-                  "friends": [
-                                  "{friend_id}"
-                  ],
-                  "debt":         null
-                }
-              }
-            }
-          }
-
-  delete:
-    ops:
-      delete-document:
-        space: "{space}"
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
-        Content-Type: "application/json"
-        ok-body: ".*\"deletedCount\":[0,1].*"
-        body: |
-          {
-            "deleteOne" : {
-              "filter" : {
-                "_id" : "{random_key}"
-              }
             }
           }
