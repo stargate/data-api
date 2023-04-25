@@ -159,7 +159,7 @@ blocks:
           
   read-multiple:
     ops:
-      # aka find with field which will use secondary index.
+      # aka find with field which will use secondary index, sort and projection
       read-document:
         space: "{space}"
         method: POST
