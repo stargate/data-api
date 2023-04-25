@@ -3,19 +3,26 @@ min_version: "5.17.1"
 # nb5 -v run driver=http yaml=http-jsonapi_crud_advanced jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
 description: |
-  This workload emulates CRUD operations for the Stargate JSON API.
+  This workload emulates search, filter and sort operations for the Stargate JSON API.
   It generates a simple JSON document to be used for writes and updates.
   During the main phase it performs various search filters and times their execution.
   Note that jsonapi_port should reflect the port where the JSON API is exposed (defaults to 8080).
 
 scenarios:
-  default:
-    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
-    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    read-single:     run driver=http tags==block:read-single cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    read-multiple:     run driver=http tags==block:read-multiple cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+  schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+  rampup:
+    write: run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    read: run driver=http tags==block:read cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+  main:
+    all: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-eq: run driver=http tags==name:main--main-get-eq cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-multiple-condition: run driver=http tags==name:main--main-get-multiple-condition cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-exists: run driver=http tags==name:main--main-get-exists cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-size: run driver=http tags==name:main--main-get-size cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort: run driver=http tags==name:main--main-get-sort cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort-options: run driver=http tags==name:main--main-get-sort-options cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-projection: run driver=http tags==name:main--main-get-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort-projection: run driver=http tags==name:main--main-get-sort-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -139,10 +146,10 @@ blocks:
             }
           }
 
-  read-single:
+  read:
     ops:
       # aka findOne with _id as filter
-      read-document:
+      read:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
@@ -160,10 +167,10 @@ blocks:
             }
           }
 
-  read-multiple:
+  main:
     ops:
       # aka find with filter using custom index, sort and projection
-      read-document:
+      main-get-eq:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
@@ -180,7 +187,26 @@ blocks:
               }
             }
           }
-      read-document-exists:
+      main-get-multiple-condition:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: |
+          {
+            "find" : {
+              "filter" : {
+                "city" : "{city}",
+                "state" : "{state}"
+              }
+            }
+          }
+
+      main-get-exists:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
@@ -197,8 +223,25 @@ blocks:
               }
             }
           }
+      main-get-size:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: |
+          {
+            "find" : {
+              "filter" : {
+                "coordinates" : {"$size":2}
+              }
+            }
+          }
 
-      read-document-sort:
+      main-get-sort:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
@@ -216,7 +259,8 @@ blocks:
               "sort": {"full_name" : 1}
             }
           }
-      read-document-projection:
+
+      main-get-sort-options:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
@@ -231,6 +275,46 @@ blocks:
               "filter" : {
                 "city" : "{city}"
               },
+              "sort": {"full_name" : 1},
+              "options": {"limit": 10, "skip": 20}
+            }
+          }
+
+      main-get-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: |
+          {
+            "find" : {
+              "filter" : {
+                "city" : "{city}"
+              },
+              "projection": {"_id" : 0}
+            }
+          }
+
+      main-get-sort-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "<<auth_token:my_auth_token>>"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: |
+          {
+            "find" : {
+              "filter" : {
+                "city" : "{city}"
+              },
+              "sort": {"full_name" : 1},
               "projection": {"_id" : 0}
             }
           }

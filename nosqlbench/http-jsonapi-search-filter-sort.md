@@ -47,11 +47,25 @@ Instead, there is only the main phase with 5 different load types (write, read-s
 
 ## Named Scenarios
 
-### default
+### schema
 
-The default scenario for http-jsonapi-crud-basic.yaml runs each type of the main phase sequentially: write, read, update and delete.
-This means that setting cycles for each of the phases should be done using the: `write-cycles`, `read-cycles`, `update-cycles` and `delete-cycles`.
-The default value for all 4 cycles variables is the amount of documents to process (see [Workload Parameters](#workload-parameters)).
+Creates namespace and collections for the JSON API testing
+
+### rampup
+
+Writes documents to the database and runs read test using id.
+
+### main
+
+Runs find command that can return multiple documents. Find command is run with different options
+* eq conditions that use secondary index
+* eq conditions on multiple fields that use secondary index
+* use $exists operators that check if field exists
+* use $size operator that check if array has specific size
+* use sort, performs in memory sort based on the field in the request
+* use sort with limit and skip options with sort
+* use projection clause to return only specific fields
+
 
 Note that error handling is set to `errors=timer,warn`, which means that in case of HTTP errors the scenario is not stopped.
 
