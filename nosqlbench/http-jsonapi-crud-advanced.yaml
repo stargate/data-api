@@ -1,10 +1,11 @@
-min_version: "4.17.15"
+min_version: "5.17.1"
 
 # nb5 -v run driver=http yaml=http-jsonapi-crud-basic jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
 description: |
   This workload emulates CRUD operations for the Stargate JSON API.
   It generates a simple JSON document to be used for writes and updates.
+  During the main phase it performs various search filters and times their execution.
   Note that jsonapi_port should reflect the port where the JSON API is exposed (defaults to 8080).
 
 scenarios:
@@ -29,6 +30,9 @@ bindings:
 
   # http request id
   request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  # token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
   seq_key: Mod(<<docscount:10000000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
