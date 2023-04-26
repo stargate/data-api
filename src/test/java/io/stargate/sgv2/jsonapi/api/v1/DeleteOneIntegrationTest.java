@@ -6,6 +6,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -321,6 +322,71 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("data.docs[0]._id", is("doc5"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void withSort() {
+      String document =
+          """
+            {
+              "_id": "doc7",
+              "username": "user7",
+              "active_user" : true
+            }
+            """;
+      insertDoc(document);
+
+      String document1 =
+          """
+            {
+              "_id": "doc6",
+              "username": "user6",
+              "active_user" : true
+            }
+            """;
+      insertDoc(document1);
+
+      String json =
+          """
+            {
+              "deleteOne": {
+                "filter" : {"active_user" : true},
+                "sort" : {"username" : 1}
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+            {
+              "find": {
+                "filter" : {"_id" : "doc6"}
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs", hasSize(0));
+
+      // cleanUp
+      deleteAllDocuments();
     }
   }
 

@@ -203,7 +203,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                     {
                       "deleteOne": {
-                          "filter": {"_id": "1"}
+                          "filter": {"_id": "1"},
+                          "sort" : {"race.start_date" : 1}
                       }
                     }
                     """),
