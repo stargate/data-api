@@ -17,6 +17,7 @@ on:
         type: string
         default: '20'
   schedule:
+    # schedules the tests to run nightly at 4am GMT
     # * is a special character in YAML so you have to quote this string
     - cron:  '0 4 * * *'
 
@@ -122,6 +123,7 @@ jobs:
         run: |
           cd docker-compose
           DATA_DIR=$(docker-compose exec -T coordinator find /tmp -name "data")
+          echo 'Num documents:' ${{ inputs.docscount }} >> $GITHUB_STEP_SUMMARY
           echo 'Data size:' $(docker-compose exec -T coordinator du -sh "$DATA_DIR/${{ matrix.keyspace }}") >> $GITHUB_STEP_SUMMARY
 
       - name: Save Results
