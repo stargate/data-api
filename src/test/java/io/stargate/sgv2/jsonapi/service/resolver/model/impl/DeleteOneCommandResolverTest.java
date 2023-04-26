@@ -146,5 +146,51 @@ public class DeleteOneCommandResolverTest {
                         });
               });
     }
+
+    @Test
+    public void dynamicFilterConditionWithSort() throws Exception {
+      String json =
+          """
+                  {
+                    "deleteOne": {
+                      "filter" : {"col" : "val"},
+                      "sort" : {"sort_col" : 1}
+                    }
+                  }
+                  """;
+
+      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, deleteOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
+              op -> {
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.deleteLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(100);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.orderBy()).hasSize(1);
+                          assertThat(find.orderBy().get(0))
+                              .isEqualTo(new FindOperation.OrderBy("sort_col", true));
+                          assertThat(find.maxSortReadLimit())
+                              .isEqualTo(operationsConfig.maxDocumentSortCount());
+                        });
+              });
+    }
   }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
@@ -18,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record UpdateOneCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
+    @Valid @JsonProperty("sort") SortClause sortClause,
     @Nullable Options options)
     implements ReadCommand, Filterable {
 

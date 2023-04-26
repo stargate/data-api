@@ -6,6 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
@@ -23,6 +27,40 @@ class UpdateOneCommandTest {
 
   @Nested
   class Validation {
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+        {
+          "updateOne": {
+              "filter" : {"username" : "update_user5"},
+              "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+              "sort" : {"username" : 1},
+              "options" : {}
+            }
+        }
+        """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              UpdateOneCommand.class,
+              updateOneCommand -> {
+                FilterClause filterClause = updateOneCommand.filterClause();
+                assertThat(filterClause).isNotNull();
+                final UpdateClause updateClause = updateOneCommand.updateClause();
+                assertThat(updateClause).isNotNull();
+                assertThat(updateClause.buildOperations()).hasSize(1);
+                final SortClause sortClause = updateOneCommand.sortClause();
+                assertThat(sortClause).isNotNull();
+                assertThat(sortClause.sortExpressions()).hasSize(1);
+                assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("username");
+                assertThat(sortClause.sortExpressions().get(0).ascending()).isTrue();
+                final UpdateOneCommand.Options options = updateOneCommand.options();
+                assertThat(options).isNotNull();
+              });
+    }
 
     @Test
     public void noUpdateClause() throws Exception {

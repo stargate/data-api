@@ -374,6 +374,102 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
     }
 
     @Test
+    public void byColumnWithSortAndSet() {
+      String json =
+          """
+        {
+          "insertOne": {
+            "document": {
+              "_id": "update_doc2",
+              "username": "update_user2",
+              "location": "my_city"
+            }
+          }
+        }
+        """;
+      String jsonOther =
+          """
+        {
+          "insertOne": {
+            "document": {
+              "_id": "update_doc3",
+              "username": "update_user3",
+              "location": "my_city"
+            }
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(jsonOther)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200);
+
+      json =
+          """
+        {
+          "updateOne": {
+            "filter" : {"location": "my_city"},
+            "update" : {"$set" : {"new_col": "new_val"}},
+            "sort" : {"username" : 1}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("status.moreData", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+        {
+          "_id":"update_doc2",
+          "username":"update_user2",
+              "location": "my_city",
+          "new_col": "new_val"
+        }
+        """;
+      json =
+          """
+        {
+          "find": {
+            "filter" : {"_id" : "update_doc2"}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.docs[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void byColumnAndSetArray() {
       String json =
           """

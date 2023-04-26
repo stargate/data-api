@@ -172,6 +172,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "$set": {"location": "New York"},
                               "$push": {"tags": "marathon"}
                           },
+                          "sort" :  {"race.start_date" : 1},
                           "options" : {
                               "upsert" : true
                           }
@@ -203,7 +204,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                     {
                       "deleteOne": {
-                          "filter": {"_id": "1"}
+                          "filter": {"_id": "1"},
+                          "sort" : {"race.start_date" : 1}
                       }
                     }
                     """),
