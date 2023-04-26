@@ -16,6 +16,10 @@ on:
         required: true
         type: string
         default: '20'
+  schedule:
+    # schedules the tests to run nightly at 4am GMT
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 4 * * *'
 
 # global env vars, available in all jobs and steps
 env:
@@ -48,6 +52,12 @@ jobs:
             build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
             docker-flags: '-n'
             docker-image: 'jsonapi-native'
+
+          - test: http-jsonapi-crud-basic
+            keyspace: 'jsonapi_crud_basic'
+
+          - test: http-jsonapi-keyvalue
+            keyspace: 'jsonapi_keyvalue'
 
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
@@ -107,6 +117,14 @@ jobs:
           cd nosqlbench
           export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
           ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }} connections=${{ inputs.connections }}
+
+      # Simple approach measuring size of data directory
+      - name: Collect Data Size Stats
+        run: |
+          cd docker-compose
+          DATA_DIR=$(docker-compose exec -T coordinator find /tmp -name "data")
+          echo 'Num documents:' ${{ inputs.docscount }} >> $GITHUB_STEP_SUMMARY
+          echo 'Data size:' $(docker-compose exec -T coordinator du -sh "$DATA_DIR/${{ matrix.keyspace }}") >> $GITHUB_STEP_SUMMARY
 
       - name: Save Results
         uses: actions/upload-artifact@v3
