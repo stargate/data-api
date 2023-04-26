@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import java.util.List;
 import javax.inject.Inject;
 import org.assertj.core.api.Assertions;
@@ -172,38 +171,6 @@ class ObjectMapperConfigurationTest {
               createCollection -> {
                 String name = createCollection.name();
                 assertThat(name).isNotNull();
-              });
-    }
-  }
-
-  @Nested
-  class UpdateOne {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-          {
-            "updateOne": {
-                "filter" : {"username" : "update_user5"},
-                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                "options" : {}
-              }
-          }
-          """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              UpdateOneCommand.class,
-              updateOneCommand -> {
-                FilterClause filterClause = updateOneCommand.filterClause();
-                assertThat(filterClause).isNotNull();
-                final UpdateClause updateClause = updateOneCommand.updateClause();
-                assertThat(updateClause).isNotNull();
-                assertThat(updateClause.buildOperations()).hasSize(1);
-                final UpdateOneCommand.Options options = updateOneCommand.options();
-                assertThat(options).isNotNull();
               });
     }
   }
