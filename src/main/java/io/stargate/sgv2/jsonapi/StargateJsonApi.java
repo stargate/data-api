@@ -172,6 +172,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "$set": {"location": "New York"},
                               "$push": {"tags": "marathon"}
                           },
+                          "sort" :  {"race.start_date" : 1},
                           "options" : {
                               "upsert" : true
                           }

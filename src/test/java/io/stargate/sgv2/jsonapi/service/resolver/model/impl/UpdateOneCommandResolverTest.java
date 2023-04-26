@@ -206,6 +206,69 @@ public class UpdateOneCommandResolverTest {
     }
 
     @Test
+    public void dynamicFilterConditionWithSort() throws Exception {
+      String json =
+          """
+                  {
+                    "updateOne": {
+                      "filter" : {"col" : "val"},
+                        "update" : {"$set" : {"location" : "New York"}},
+                        "sort" : {"sort_col" : 1}
+                      }
+                    }
+                  """;
+
+      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              ReadAndUpdateOperation.class,
+              op -> {
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.returnDocumentInResponse()).isFalse();
+                assertThat(op.returnUpdatedDocument()).isFalse();
+                assertThat(op.upsert()).isFalse();
+                assertThat(op.shredder()).isEqualTo(shredder);
+                assertThat(op.updateLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        updater -> {
+                          UpdateClause updateClause =
+                              DocumentUpdaterUtils.updateClause(
+                                  UpdateOperator.SET,
+                                  objectMapper.createObjectNode().put("location", "New York"));
+
+                          assertThat(updater.updateOperations())
+                              .isEqualTo(updateClause.buildOperations());
+                        });
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
+                          assertThat(find.pageSize()).isEqualTo(100);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.orderBy()).hasSize(1);
+                          assertThat(find.orderBy().get(0))
+                              .isEqualTo(new FindOperation.OrderBy("sort_col", true));
+                          assertThat(find.maxSortReadLimit())
+                              .isEqualTo(operationsConfig.maxDocumentSortCount());
+                        });
+              });
+    }
+
+    @Test
     public void withUpsert() throws Exception {
       String json =
           """
