@@ -598,6 +598,15 @@ If an error occurs the command will still return `status` as some documents may 
 
 ### deleteOne Command
 
+*Syntax:*
+
+```bnf
+<delete-one-command> ::= delete-one <delete-one-command-payload> 
+
+<delete-one-command-payload> ::= <filter-clause>?
+                             <sort-clause>? 
+```
+
 #### deleteOne Command Options
 
 The `deleteOne` command does not support any options.
@@ -1000,6 +1009,17 @@ The maximum amount of documents that can be updated in a single operation is 20.
 If an error occurs the command will still return `status` as some documents may have been inserted.
 
 ### updateOne Command
+
+```bnf
+<update-one-command> ::= deleteOne <update-one-command-payload> 
+
+<update-one-command-payload> ::= <filter-clause>?
+                                 <update-clause>?
+                                 <sort-clause>? 
+                                 <update-one-command-options>?
+                             
+<update-one-command-options> ::= <update-one-command-options>?
+```
 
 #### updateOne Command Options
 
@@ -1672,26 +1692,27 @@ of this include ordering a large result set that will returned as pages,
 or sorting a candidate set of documents to determine which document will
 be returned when only a single document is required.
 
-**TODO** THis is wrong, it needs to be a map.
-
 *Syntax:*
 
 ```
-`<sort-clause>`  ::= [`<sort-expression>` *]
+`<sort-clause>`  ::= `<sort-expression>` *
+`<sort-expression>`  ::= `<sort-field-path>`  `<sort-field-order>`
+`<sort-field-path>`  ::= `<document-path>` 
+`<sort-field-order>`  ::= `<sort-ascending>` | `<sort-descending>`
+`<sort-ascending>`  ::= `1`
+`<sort-descending>`  ::= `-1` 
 
-`<sort-expression>`  ::= (-)?`<document-path>` 
 ```
 
-Each `<sort-clause>` contains an ordered list of `<sort-expression>`'s
-which are used to sort a candidate set of documents. The order of
+Each `<sort-clause>` contains a json document `<sort-expression>`'s
+which are used to sort set of documents. The order of
 `<sort-expression>`'s is important and should be preserved as the
 request is transmitted and processed.
 
 Each `<sort-expression>` identifies a field in the document to sort by.
-By default the field values are sorted in ascending order, if the field
-name is prefixed with a `-` the field is sorted in descending order. A
-maximum of **TODO** number of `<sort-expression>`'s may be included in a
-`<sort-clause>`.
+`<sort-field-path>` is a [Document Path](#document-path) that identifies
+the field to sort by. 
+`<sort-field-order>` can have value `1` for ascending and `-1` for descending order. 
 
 *Sample:*
 
