@@ -8,9 +8,9 @@ metadata:
 spec:
   ports:
   - name: stargate-jsonapi
-    port: 8080
+    port: 8181
     protocol: TCP
-    targetPort: 8080
+    targetPort: 8181
   selector:
     app: stargate-jsonapi
   type: ClusterIP

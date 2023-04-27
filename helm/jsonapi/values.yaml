@@ -25,14 +25,14 @@ memory: 2048
 probe:
   readiness:
     url: /stargate/health/ready
-    port: 8080
+    port: 8181
     timeoutSeconds: 10
     periodSeconds: 10
     failureThreshold: 30
     initialDelaySeconds: 30
   liveness:
     url: /stargate/health/live
-    port: 8080
+    port: 8181
     timeoutSeconds: 10
     periodSeconds: 10
     failureThreshold: 5
