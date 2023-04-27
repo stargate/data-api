@@ -92,6 +92,7 @@ public class UpdateOneCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -144,6 +145,7 @@ public class UpdateOneCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).isEmpty();
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -201,6 +203,7 @@ public class UpdateOneCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -264,6 +267,7 @@ public class UpdateOneCommandResolverTest {
                               .isEqualTo(new FindOperation.OrderBy("sort_col", true));
                           assertThat(find.maxSortReadLimit())
                               .isEqualTo(operationsConfig.maxDocumentSortCount());
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -317,6 +321,7 @@ public class UpdateOneCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).isEmpty();
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }

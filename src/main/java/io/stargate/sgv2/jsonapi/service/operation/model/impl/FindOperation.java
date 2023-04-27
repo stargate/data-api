@@ -41,9 +41,44 @@ public record FindOperation(
     ObjectMapper objectMapper,
     List<OrderBy> orderBy,
     int skip,
-    int maxSortReadLimit)
+    int maxSortReadLimit,
+    boolean singleResponse)
     implements ReadOperation {
 
+  /**
+   * Constructs find operation for unsorted single document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @return FindOperation for a single document unsorted find
+   */
+  public static FindOperation unsortedSingle(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      ReadType readType,
+      ObjectMapper objectMapper) {
+
+    return new FindOperation(
+        commandContext, filters, projection, null, 1, 1, readType, objectMapper, null, 0, 0, true);
+  }
+
+  /**
+   * Constructs find operation for unsorted multi document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param pagingState paging state to use
+   * @param limit limit of rows to fetch
+   * @param pageSize page size
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @return FindOperation for a multi document unsorted find
+   */
   public static FindOperation unsorted(
       CommandContext commandContext,
       List<DBFilterBase> filters,
@@ -64,9 +99,65 @@ public record FindOperation(
         objectMapper,
         null,
         0,
-        0);
+        0,
+        false);
   }
 
+  /**
+   * Constructs find operation for sorted single document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param pageSize page size for in memory sorting
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @param orderBy order by clause
+   * @param skip number of elements to skip
+   * @param maxSortReadLimit sorting limit
+   * @return FindOperation for a single document sorted find
+   */
+  public static FindOperation sortedSingle(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      int pageSize,
+      ReadType readType,
+      ObjectMapper objectMapper,
+      List<OrderBy> orderBy,
+      int skip,
+      int maxSortReadLimit) {
+    return new FindOperation(
+        commandContext,
+        filters,
+        projection,
+        null,
+        1,
+        pageSize,
+        readType,
+        objectMapper,
+        orderBy,
+        skip,
+        maxSortReadLimit,
+        true);
+  }
+
+  /**
+   * Constructs find operation for sorted multi document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param pagingState paging state to use
+   * @param limit limit of rows to fetch
+   * @param pageSize page size for in memory sorting
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @param orderBy order by clause
+   * @param skip number of elements to skip
+   * @param maxSortReadLimit sorting limit
+   * @return FindOperation for a multi document sorted find
+   */
   public static FindOperation sorted(
       CommandContext commandContext,
       List<DBFilterBase> filters,
@@ -90,7 +181,8 @@ public record FindOperation(
         objectMapper,
         orderBy,
         skip,
-        maxSortReadLimit);
+        maxSortReadLimit,
+        false);
   }
 
   @Override
@@ -99,7 +191,7 @@ public record FindOperation(
     return getDocuments(queryExecutor, pagingState(), null)
 
         // map the response to result
-        .map(docs -> new ReadOperationPage(docs.docs(), docs.pagingState()));
+        .map(docs -> new ReadOperationPage(docs.docs(), docs.pagingState(), singleResponse));
   }
 
   /**

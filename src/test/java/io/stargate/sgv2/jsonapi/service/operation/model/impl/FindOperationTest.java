@@ -110,7 +110,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -225,7 +226,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -263,7 +265,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -377,7 +380,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -492,7 +496,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -570,7 +575,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -635,7 +641,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -710,7 +717,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -789,7 +797,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -871,7 +880,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -946,7 +956,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1025,7 +1036,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1101,7 +1113,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1179,7 +1192,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1258,7 +1272,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1328,7 +1343,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       Throwable failure =
           operation
@@ -1511,7 +1527,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1724,7 +1741,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("sort_date", true)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1918,7 +1936,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2110,7 +2129,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2199,7 +2219,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2274,7 +2295,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2347,7 +2369,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2422,7 +2445,8 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       DBFilterBase.IDFilter idFilter =
           new DBFilterBase.IDFilter(

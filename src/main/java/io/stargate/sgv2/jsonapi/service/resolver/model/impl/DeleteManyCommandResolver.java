@@ -63,6 +63,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
         objectMapper,
         null,
         0,
-        0);
+        0,
+        false);
   }
 }

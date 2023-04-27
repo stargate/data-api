@@ -105,7 +105,8 @@ public record CommandResult(
           @Schema(
               description = "Document that resulted from a command.",
               type = SchemaType.OBJECT,
-              implementation = Object.class)
+              implementation = Object.class,
+              nullable = true)
           JsonNode document)
       implements ResponseData {
 

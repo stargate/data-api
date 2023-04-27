@@ -70,6 +70,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -113,6 +114,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy())
                               .isEqualTo(List.of(new FindOperation.OrderBy("user", true)));
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -156,6 +158,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }

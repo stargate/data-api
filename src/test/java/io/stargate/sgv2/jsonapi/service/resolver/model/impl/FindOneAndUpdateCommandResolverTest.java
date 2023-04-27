@@ -93,6 +93,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -154,6 +155,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy())
                               .isEqualTo(List.of(new FindOperation.OrderBy("user", true)));
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -212,6 +214,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -279,6 +282,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   List.of(
                                       new FindOperation.OrderBy("user.name", true),
                                       new FindOperation.OrderBy("user.age", false)));
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }
@@ -336,6 +340,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.singleResponse()).isTrue();
                         });
               });
     }

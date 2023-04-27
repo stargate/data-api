@@ -60,6 +60,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.filters()).singleElement().isEqualTo(filter);
                 assertThat(op.orderBy()).isNull();
+                assertThat(op.singleResponse()).isTrue();
               });
     }
 
@@ -99,6 +100,7 @@ public class FindOneCommandResolverTest {
                         List.of(
                             new FindOperation.OrderBy("user.name", true),
                             new FindOperation.OrderBy("user.age", false)));
+                assertThat(op.singleResponse()).isTrue();
               });
     }
 
@@ -127,6 +129,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.filters()).isEmpty();
+                assertThat(op.singleResponse()).isTrue();
               });
     }
 
@@ -159,6 +162,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(op.singleResponse()).isTrue();
               });
     }
   }

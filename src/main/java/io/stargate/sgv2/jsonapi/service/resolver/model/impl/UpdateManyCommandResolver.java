@@ -77,6 +77,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         objectMapper,
         null,
         0,
-        0);
+        0,
+        false);
   }
 }
