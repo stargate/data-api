@@ -103,7 +103,7 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
     }
   }
 
-  // Since equality semantics of sub-docs differ, have separate sets for them
+  // Since equality semantics of sub-documents differ, have separate sets for them
   @Nested
   class AddToSetWithSubDocs {
     @Test

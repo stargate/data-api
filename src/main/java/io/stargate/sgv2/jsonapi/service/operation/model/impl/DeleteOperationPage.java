@@ -73,12 +73,12 @@ public record DeleteOperationPage(
 
     if (moreData)
       return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
+          deletedDoc.isEmpty() ? null : new CommandResult.MultiResponseData(deletedDoc),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount, CommandStatus.MORE_DATA, true),
           errors.isEmpty() ? null : errors);
     else
       return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
+          deletedDoc.isEmpty() ? null : new CommandResult.MultiResponseData(deletedDoc),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount),
           errors.isEmpty() ? null : errors);
   }

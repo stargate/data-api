@@ -90,7 +90,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.documents", jsonEquals("[]"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -183,7 +183,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.documents", jsonEquals("[]"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -251,7 +251,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.documents", jsonEquals("[]"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -319,7 +319,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]._id", is("doc5"))
+          .body("data.documents[0]._id", is("doc5"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -383,7 +383,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0));
+          .body("data.documents", hasSize(0));
 
       // cleanUp
       deleteAllDocuments();
@@ -482,7 +482,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()));
+          .body("data.documents", is(empty()));
     }
   }
 }

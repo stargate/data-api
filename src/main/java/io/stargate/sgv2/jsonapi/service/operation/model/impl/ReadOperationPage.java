@@ -13,8 +13,8 @@ public record ReadOperationPage(List<ReadDocument> docs, String pagingState)
   public CommandResult get() {
     final List<JsonNode> jsonNodes = new ArrayList<>();
     docs.stream().forEach(doc -> jsonNodes.add(doc.document()));
-    final CommandResult.ResponseData responseData =
-        new CommandResult.ResponseData(jsonNodes, pagingState);
+    final CommandResult.MultiResponseData responseData =
+        new CommandResult.MultiResponseData(jsonNodes, pagingState);
     return new CommandResult(responseData);
   }
 }

@@ -97,7 +97,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -176,7 +176,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -223,7 +223,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", is(notNullValue()));
+          .body("data.documents[0]", is(notNullValue()));
     }
 
     @Test
@@ -278,7 +278,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -370,7 +370,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -466,7 +466,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -536,7 +536,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -608,7 +608,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -671,7 +671,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -755,7 +755,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -819,7 +819,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -884,7 +884,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -950,7 +950,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -1027,7 +1027,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1101,7 +1101,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1165,7 +1165,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     // Test for case where nothing is actually added
@@ -1215,7 +1215,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(originalDoc));
+          .body("data.documents[0]", jsonEquals(originalDoc));
     }
 
     @Test
@@ -1280,7 +1280,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -1357,7 +1357,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
 
     @Test
@@ -1421,7 +1421,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
 
     @Test
@@ -1486,7 +1486,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1563,7 +1563,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
 
     @Test
@@ -1627,7 +1627,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
 
     @Test
@@ -1692,7 +1692,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1768,7 +1768,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1840,7 +1840,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 
@@ -1939,7 +1939,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedDoc));
+          .body("data.documents[0]", jsonEquals(expectedDoc));
     }
   }
 

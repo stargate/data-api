@@ -13,8 +13,8 @@ import java.util.Map;
 /**
  * Implementation of {@code $min} and {@code $max} update operation used to modify numeric field
  * values in documents. See {@href
- * https://www.mongodb.com/docs/manual/reference/operator/update/min/} and {@href
- * https://www.mongodb.com/docs/manual/reference/operator/update/max/} for full explanations.
+ * https://www.mongodb.com/documents/manual/reference/operator/update/min/} and {@href
+ * https://www.mongodb.com/documents/manual/reference/operator/update/max/} for full explanations.
  */
 public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   private final boolean isMaxAction;

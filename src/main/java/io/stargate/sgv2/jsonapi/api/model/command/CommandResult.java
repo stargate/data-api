@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Collections;
@@ -26,7 +27,8 @@ public record CommandResult(
     @Schema(
             description =
                 "A response data holding documents that were returned as the result of a command.",
-            nullable = true)
+            nullable = true,
+            oneOf = {CommandResult.MultiResponseData.class, CommandResult.SingleResponseData.class})
         ResponseData data,
     @Schema(
             description =
@@ -45,18 +47,18 @@ public record CommandResult(
     @Schema(nullable = true) List<Error> errors) {
 
   /**
-   * Constructor for only specifying the {@link ResponseData}.
+   * Constructor for only specifying the {@link MultiResponseData}.
    *
-   * @param responseData {@link ResponseData}
+   * @param responseData {@link MultiResponseData}
    */
   public CommandResult(ResponseData responseData) {
     this(responseData, null, null);
   }
 
   /**
-   * Constructor for specifying the {@link ResponseData} and statuses.
+   * Constructor for specifying the {@link MultiResponseData} and statuses.
    *
-   * @param responseData {@link ResponseData}
+   * @param responseData {@link MultiResponseData}
    * @param status Map of status information.
    */
   public CommandResult(ResponseData responseData, Map<CommandStatus, Object> status) {
@@ -81,30 +83,62 @@ public record CommandResult(
     this(null, null, errors);
   }
 
+  public interface ResponseData {
+
+    @JsonIgnore
+    List<JsonNode> documents();
+  }
+
   /**
-   * Response data object that's included in the {@link CommandResult}.
+   * Response data object that's included in the {@link CommandResult}, for a single document
+   * responses.
    *
-   * @param docs Documents.
+   * @param document Document.
+   */
+  @Schema(description = "Response data for a single document commands.")
+  public record SingleResponseData(
+      @NotNull
+          @Schema(
+              description = "Document that resulted from a command.",
+              type = SchemaType.OBJECT,
+              implementation = Object.class)
+          JsonNode document)
+      implements ResponseData {
+
+    @JsonIgnore
+    @Override
+    public List<JsonNode> documents() {
+      return List.of(document);
+    }
+  }
+
+  /**
+   * Response data object that's included in the {@link CommandResult}, for multi document
+   * responses.
+   *
+   * @param documents Documents.
    * @param nextPageState Optional next paging state.
    */
-  public record ResponseData(
+  @Schema(description = "Response data for multiple documents commands.")
+  public record MultiResponseData(
       @NotNull
           @Schema(
               description = "Documents that resulted from a command.",
               type = SchemaType.ARRAY,
               implementation = Object.class,
               minItems = 0)
-          List<JsonNode> docs,
+          List<JsonNode> documents,
       @Schema(description = "Next page state for pagination.", nullable = true)
-          String nextPageState) {
+          String nextPageState)
+      implements ResponseData {
 
     /**
      * Constructor that sets documents without next paging state.
      *
-     * @param docs Documents, must not be <code>null</code>.
+     * @param documents Documents, must not be <code>null</code>.
      */
-    public ResponseData(List<JsonNode> docs) {
-      this(docs, null);
+    public MultiResponseData(List<JsonNode> documents) {
+      this(documents, null);
     }
   }
 

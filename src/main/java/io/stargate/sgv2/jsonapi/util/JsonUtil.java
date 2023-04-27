@@ -82,7 +82,7 @@ public class JsonUtil {
   /**
    * Helper method that will see if given {@link JsonNode} is an EJSON-encoded "Date" (aka
    * Timestamp) value and if so, constructs and returns matching {@link java.util.Date} value. See
-   * {@href https://docs.meteor.com/api/ejson.html} for details on encoded value.
+   * {@href https://documents.meteor.com/api/ejson.html} for details on encoded value.
    *
    * @param json JSON value to check
    * @return Date extracted, if given valid EJSON-encoded Date value; or {@code null} if not

@@ -64,7 +64,7 @@ public record UpdateOperationPage(
     if (moreDataFlag) updateStatus.put(CommandStatus.MORE_DATA, moreDataFlag);
     if (returnDocs) {
       return new CommandResult(
-          new CommandResult.ResponseData(updatedDocs),
+          new CommandResult.MultiResponseData(updatedDocs),
           updateStatus,
           errors.isEmpty() ? null : errors);
     } else {

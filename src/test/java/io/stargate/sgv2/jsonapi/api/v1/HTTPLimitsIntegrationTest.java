@@ -27,7 +27,7 @@ public class HTTPLimitsIntegrationTest extends AbstractNamespaceIntegrationTestB
     RandomBytesInputStream inputStream = new RandomBytesInputStream(1024 * 1024 + 1024);
 
     // Fails before getting to business logic no need for real collection (or keyspace fwtw)
-    // While docs don't say it, Quarkus tests show 413 as expected fail message:
+    // While documents don't say it, Quarkus tests show 413 as expected fail message:
     given()
         // https://stackoverflow.com/questions/66299813/apache-httpclient-4-5-13-java-net-socketexception-broken-pipe-write-failed
         .config(

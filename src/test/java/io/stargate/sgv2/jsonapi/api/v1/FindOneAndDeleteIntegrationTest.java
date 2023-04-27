@@ -49,7 +49,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.documents[0]", jsonEquals(document))
           .body("status.deletedCount", is(1))
           .body("errors", is(nullValue()));
 
@@ -70,7 +70,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0));
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -144,7 +144,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.documents[0]", jsonEquals(document))
           .body("status.deletedCount", is(1))
           .body("errors", is(nullValue()));
 
@@ -165,7 +165,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0));
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -207,7 +207,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document1))
+          .body("data.documents[0]", jsonEquals(document1))
           .body("status.deletedCount", is(1))
           .body("errors", is(nullValue()));
 
@@ -228,7 +228,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0));
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -278,7 +278,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.documents[0]", jsonEquals(expected))
           .body("status.deletedCount", is(1))
           .body("errors", is(nullValue()));
 
@@ -299,7 +299,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0));
+          .body("data.documents", hasSize(0));
     }
   }
 

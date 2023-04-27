@@ -99,7 +99,7 @@ public class DocValueHasherTest {
       // long enough to require MD5 hashing
       assertMD5Base64(hash);
 
-      // 3 documents (main doc, 2 sub-docs)
+      // 3 documents (main doc, 2 sub-documents)
       // Note: unlike with atomic values,
       // structured values are not de-duplicated (JsonNode identity only used to avoid
       // re-processing)

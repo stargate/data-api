@@ -80,9 +80,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                                         {
@@ -93,7 +93,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                                         """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs", hasSize(1));
+          .body("data.documents", hasSize(1));
     }
 
     @Test
@@ -122,9 +122,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                           {
@@ -169,9 +169,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                                 {
@@ -217,9 +217,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                                       {
@@ -256,9 +256,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                                       {
@@ -301,9 +301,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                           {
@@ -344,9 +344,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                           {
@@ -388,9 +388,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.documents[0]",
               jsonEquals(
                   """
                                       {

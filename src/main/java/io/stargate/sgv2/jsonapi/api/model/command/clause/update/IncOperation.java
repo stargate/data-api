@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Implementation of {@code $inc} update operation used to modify numeric field values in documents.
- * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/inc/} for full
+ * See {@href https://www.mongodb.com/documents/manual/reference/operator/update/inc/} for full
  * explanation.
  */
 public class IncOperation extends UpdateOperation<IncOperation.Action> {
