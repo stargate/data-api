@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Implementation of {@code $mul} update operation used to modify numeric field values in documents.
- * See {@href https://www.mongodb.com/documents/manual/reference/operator/update/mul/} for full
+ * See {@href https://www.mongodb.com/docs/manual/reference/operator/update/mul/} for full
  * explanation.
  */
 public class MulOperation extends UpdateOperation<MulOperation.Action> {
