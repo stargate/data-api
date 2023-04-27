@@ -125,7 +125,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .containsOnly(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
@@ -240,7 +240,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       candidatesAssert2.assertExecuteCount().isOne();
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
@@ -275,7 +275,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(0);
+      assertThat(result.data().getResponseDocuments()).hasSize(0);
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -392,7 +392,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       candidatesAssert2.assertExecuteCount().isOne();
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
@@ -507,7 +507,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       candidatesAssert2.assertExecuteCount().isOne();
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(1)
           .containsAnyOf(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
@@ -585,7 +585,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -648,7 +650,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).isEmpty();
+      assertThat(result.data().getResponseDocuments()).isEmpty();
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -723,7 +725,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -800,7 +804,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -880,7 +886,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -953,7 +961,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -1030,7 +1040,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -1104,7 +1116,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -1180,7 +1194,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -1257,7 +1273,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents()).hasSize(1).containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
@@ -1508,7 +1526,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(5)
           .isEqualTo(
               List.of(
@@ -1721,7 +1739,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(5)
           .isEqualTo(
               List.of(
@@ -1915,7 +1933,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(1)
           .isEqualTo(List.of(objectMapper.readTree(doc6)));
       assertThat(result.status()).isNullOrEmpty();
@@ -2107,7 +2125,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       // then result
       CommandResult result = execute.get();
-      assertThat(result.data().documents())
+      assertThat(result.data().getResponseDocuments())
           .hasSize(5)
           .isEqualTo(
               List.of(

@@ -199,8 +199,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().documents()).hasSize(1);
-      assertThat(result.data().documents().get(0).toString()).isEqualTo(docJson);
+      assertThat(result.data().getResponseDocuments()).hasSize(1);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson);
     }
 
     @Test
@@ -317,7 +317,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().documents().get(0).toString()).isEqualTo(docJson1);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson1);
     }
 
     @Test
@@ -434,7 +434,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().documents().get(0).toString()).isEqualTo(docJson2);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson2);
     }
 
     @Test

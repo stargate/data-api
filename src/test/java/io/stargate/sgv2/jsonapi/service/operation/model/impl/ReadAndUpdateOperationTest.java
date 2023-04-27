@@ -318,7 +318,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
       assertThat(result.errors()).isNull();
-      assertThat(result.data().documents()).hasSize(1);
+      assertThat(result.data().getResponseDocuments()).hasSize(1);
     }
 
     @Test

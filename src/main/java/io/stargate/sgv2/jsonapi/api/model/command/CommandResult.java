@@ -85,8 +85,12 @@ public record CommandResult(
 
   public interface ResponseData {
 
+    /**
+     * @return Simple shared method to get the response documents. Usually used only in tests,
+     *     ignored in JSON response.
+     */
     @JsonIgnore
-    List<JsonNode> documents();
+    List<JsonNode> getResponseDocuments();
   }
 
   /**
@@ -105,9 +109,9 @@ public record CommandResult(
           JsonNode document)
       implements ResponseData {
 
-    @JsonIgnore
+    /** {@inheritDoc} */
     @Override
-    public List<JsonNode> documents() {
+    public List<JsonNode> getResponseDocuments() {
       return List.of(document);
     }
   }
@@ -139,6 +143,12 @@ public record CommandResult(
      */
     public MultiResponseData(List<JsonNode> documents) {
       this(documents, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<JsonNode> getResponseDocuments() {
+      return documents;
     }
   }
 
