@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -59,7 +58,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -122,7 +121,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -176,8 +175,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("errors", is(nullValue()));
@@ -251,7 +249,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -305,7 +303,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.upsertedId", is("doc2"))
@@ -404,7 +402,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -468,7 +466,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expectedAfterProjection))
+          .body("data.document", jsonEquals(expectedAfterProjection))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -536,7 +534,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expectedWithProjectionBefore))
+          .body("data.document", jsonEquals(expectedWithProjectionBefore))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
