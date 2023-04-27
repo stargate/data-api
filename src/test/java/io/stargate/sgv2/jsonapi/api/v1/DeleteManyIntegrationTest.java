@@ -101,7 +101,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", jsonEquals("[]"))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
 
@@ -123,7 +123,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]._id", is("doc2"))
+          .body("data.document._id", is("doc2"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
