@@ -30,7 +30,7 @@ spec:
       - name: jsonapi
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
-        - containerPort: 8080
+        - containerPort: 8181
         readinessProbe:
           httpGet:
             path: {{ .Values.probe.readiness.url }}

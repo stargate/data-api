@@ -52,6 +52,8 @@ quarkus:
       # Let's lower maximum HTTP request size from 10 megs to 1
       max-body-size: 1M
 
+    port: 8181
+
   # built-in micrometer properties
   micrometer:
     binder:

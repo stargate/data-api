@@ -13,7 +13,7 @@ spec:
           service:
             name: stargate-jsonapi
             port:
-              number: 8080
+              number: 8181
         path: /
         pathType: Prefix
 {{ end }}

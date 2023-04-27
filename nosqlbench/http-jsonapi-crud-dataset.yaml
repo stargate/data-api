@@ -3,7 +3,7 @@ min_version: "5.17.1"
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
   It requires a data set file, where each line is a single JSON document to be used for writes and updates.
-  Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8080).
+  Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
   default:
@@ -38,7 +38,7 @@ blocks:
     ops:
       create-namespace:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -53,7 +53,7 @@ blocks:
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -68,7 +68,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_crud_basic>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -100,7 +100,7 @@ blocks:
       read-document:
         space: "{space}"
         method: GET
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -110,7 +110,7 @@ blocks:
       update-document:
         space: "{space}"
         method: PUT
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -120,7 +120,7 @@ blocks:
       delete-document:
         space: "{space}"
         method: DELETE
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8080>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{seq_key}
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{seq_key}
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
