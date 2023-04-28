@@ -103,7 +103,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -180,7 +181,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -199,8 +201,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().docs()).hasSize(1);
-      assertThat(result.data().docs().get(0).toString()).isEqualTo(docJson);
+      assertThat(result.data().getResponseDocuments()).hasSize(1);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson);
     }
 
     @Test
@@ -298,7 +300,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              3);
+              3,
+              false);
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -317,7 +320,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().docs().get(0).toString()).isEqualTo(docJson1);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson1);
     }
 
     @Test
@@ -415,7 +418,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              3);
+              3,
+              false);
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -434,7 +438,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-      assertThat(result.data().docs().get(0).toString()).isEqualTo(docJson2);
+      assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson2);
     }
 
     @Test
@@ -474,7 +478,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -548,7 +553,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -660,7 +666,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -774,7 +781,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -882,7 +890,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -973,7 +982,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1062,7 +1072,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1157,7 +1168,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1221,7 +1233,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -1348,7 +1361,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1526,7 +1540,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =

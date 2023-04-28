@@ -371,7 +371,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "docs": [
+                          "documents": [
                             {
                                "_id": "1",
                                "location": "London",
@@ -402,15 +402,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "docs": [
-                            {
-                               "location": "London",
-                               "race": {
-                                 "start_date": "2022-08-15"
-                               },
-                               "tags": [ "eu" ]
-                            }
-                          ]
+                          "document": {
+                             "location": "London",
+                             "race": {
+                               "start_date": "2022-08-15"
+                             },
+                             "tags": [ "eu" ]
+                          }
                         }
                       }
                       """),
@@ -421,17 +419,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "docs": [
-                            {
-                              "_id": "1",
-                              "location": "New York",
-                              "race": {
-                                "competitors": 100,
-                                "start_date": "2022-08-15"
-                              },
-                              "count": 3
-                            }
-                          ]
+                          "document": {
+                            "_id": "1",
+                            "location": "New York",
+                            "race": {
+                              "competitors": 100,
+                              "start_date": "2022-08-15"
+                            },
+                            "count": 3
+                          }
                         },
                         "status": {
                           "matchedCount": 1,
@@ -446,13 +442,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                      {
                        "data": {
-                         "docs": [
-                           {
-                             "_id": "1",
-                             "location": "New York",
-                             "count": 3
-                           }
-                         ]
+                         "document": {
+                           "_id": "1",
+                           "location": "New York",
+                           "count": 3
+                         }
                        },
                        "status": {
                          "matchedCount": 1,
@@ -467,13 +461,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                        {
                          "data": {
-                           "docs": [
-                             {
-                               "_id": "1",
-                               "location": "New York",
-                               "count": 3
-                             }
-                           ]
+                           "document": {
+                             "_id": "1",
+                             "location": "New York",
+                             "count": 3
+                           }
                          },
                          "status": {
                            "deletedCount": 1
@@ -487,13 +479,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "docs": [
-                            {
-                              "_id": "1",
-                              "location": "New York",
-                              "count": 3
-                            }
-                          ]
+                          "document": {
+                            "_id": "1",
+                            "location": "New York",
+                            "count": 3
+                          }
                         },
                         "status": {
                           "upsertedId": "1",

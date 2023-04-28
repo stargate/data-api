@@ -87,7 +87,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.documents[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
     }
 
@@ -144,7 +144,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.documents[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
     }
 
@@ -202,7 +202,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -255,7 +255,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.documents[0]", jsonEquals(expected))
           .body("errors", is(nullValue()));
     }
 
@@ -363,7 +363,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -799,7 +799,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
 
       json =
           """
@@ -825,7 +825,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test

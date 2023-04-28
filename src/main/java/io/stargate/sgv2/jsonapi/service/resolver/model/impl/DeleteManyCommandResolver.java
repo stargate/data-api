@@ -52,7 +52,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   private FindOperation getFindOperation(CommandContext commandContext, DeleteManyCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     // Read One extra document than delete limit so return moreData flag
-    return new FindOperation(
+    return FindOperation.unsorted(
         commandContext,
         filters,
         DocumentProjector.identityProjector(),
@@ -60,9 +60,6 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
         operationsConfig.maxDocumentDeleteCount() + 1,
         operationsConfig.defaultPageSize(),
         ReadType.KEY,
-        objectMapper,
-        null,
-        0,
-        0);
+        objectMapper);
   }
 }

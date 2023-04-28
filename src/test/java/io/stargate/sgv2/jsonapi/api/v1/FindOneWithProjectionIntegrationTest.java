@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -80,20 +80,19 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
-                                        {
-                                          "_id": "doc3",
-                                          "username": "user3",
-                                          "sub_doc" : { "a": 5 }
-                                        }
-                                        """))
+                            {
+                              "_id": "doc3",
+                              "username": "user3",
+                              "sub_doc" : { "a": 5 }
+                            }
+                            """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs", hasSize(1));
+          .body("data.document", is(not(nullValue())));
     }
 
     @Test
@@ -103,16 +102,16 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC3_JSON);
       String json =
           """
-              {
-                "findOne": {
-                  "filter" : {"_id" : "doc1"},
-                  "projection": {
-                    "created_at": 1,
-                    "extra.modified": 1
-                  }
-                }
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc1"},
+              "projection": {
+                "created_at": 1,
+                "extra.modified": 1
               }
-              """;
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -122,9 +121,8 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
                           {
@@ -150,16 +148,16 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC3_JSON);
       String json =
           """
-                  {
-                    "findOne": {
-                      "filter" : {"_id" : "doc1"},
-                      "projection": {
-                        "created_at": 0,
-                        "extra.modified": 0
-                      }
-                    }
-                  }
-                  """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc1"},
+              "projection": {
+                "created_at": 0,
+                "extra.modified": 0
+              }
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -169,19 +167,18 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
-                                {
-                                  "_id": "doc1",
-                                  "username": "user1",
-                                  "active_user" : true,
-                                  "extra": {
-                                  }
-                                }
-                                """))
+                            {
+                              "_id": "doc1",
+                              "username": "user1",
+                              "active_user" : true,
+                              "extra": {
+                              }
+                            }
+                            """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -201,13 +198,13 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC3_JSON);
       String json =
           """
-                      {
-                        "findOne": {
-                          "filter" : {"_id" : "doc2"},
-                          "projection": { "tags": { "$slice" : 2 }  }
-                        }
-                      }
-                      """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc2"},
+              "projection": { "tags": { "$slice" : 2 }  }
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -217,18 +214,17 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
-                                      {
-                                        "_id": "doc2",
-                                        "username": "user2",
-                                        "tags" : ["tag1", "tag2"],
-                                        "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
-                                      }
-                                      """))
+                            {
+                              "_id": "doc2",
+                              "username": "user2",
+                              "tags" : ["tag1", "tag2"],
+                              "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                            }
+                            """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -256,18 +252,17 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
-                                      {
-                                        "_id": "doc2",
-                                        "username": "user2",
-                                        "tags" : ["tag1972", "zzzz"],
-                                        "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
-                                      }
-                                      """))
+                            {
+                              "_id": "doc2",
+                              "username": "user2",
+                              "tags" : ["tag1972", "zzzz"],
+                              "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
+                            }
+                            """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -282,16 +277,16 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC3_JSON);
       String json =
           """
-                        {
-                          "findOne": {
-                            "filter" : {"_id" : "doc2"},
-                            "projection": {
-                              "tags": { "$slice" : [3, 99] },
-                              "username" : 1
-                            }
-                          }
-                        }
-                        """;
+          {
+            "findOne": {
+              "filter" : {"_id" : "doc2"},
+              "projection": {
+                "tags": { "$slice" : [3, 99] },
+                "username" : 1
+              }
+            }
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -301,9 +296,8 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
                           {
@@ -344,9 +338,8 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
                           {
@@ -388,17 +381,16 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
           .body(
-              "data.docs[0]",
+              "data.document",
               jsonEquals(
                   """
-                                      {
-                                        "_id": "doc2",
-                                        "tags" : ["tag1", "tag2", "tag42", "tag1972", "zzzz"],
-                                        "nestedArray" : [["tag3", null]]
-                                      }
-                                      """))
+                            {
+                              "_id": "doc2",
+                              "tags" : ["tag1", "tag2", "tag42", "tag1972", "zzzz"],
+                              "nestedArray" : [["tag3", null]]
+                            }
+                            """))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }

@@ -120,7 +120,8 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -344,7 +345,8 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(

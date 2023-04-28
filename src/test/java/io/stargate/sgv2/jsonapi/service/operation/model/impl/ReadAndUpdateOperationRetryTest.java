@@ -235,7 +235,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             objectMapper,
             null,
             0,
-            0);
+            0,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -440,7 +441,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             objectMapper,
             null,
             0,
-            0);
+            0,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -654,7 +656,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             objectMapper,
             null,
             0,
-            0);
+            0,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -929,7 +932,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             objectMapper,
             null,
             0,
-            0);
+            0,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(
@@ -1265,7 +1269,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             objectMapper,
             null,
             0,
-            0);
+            0,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(

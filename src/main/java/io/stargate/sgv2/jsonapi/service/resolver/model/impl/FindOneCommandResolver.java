@@ -42,12 +42,10 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
-      return FindOperation.sorted(
+      return FindOperation.sortedSingle(
           commandContext,
           filters,
           command.buildProjector(),
-          null,
-          1,
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -58,15 +56,8 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount());
     } else {
-      return FindOperation.unsorted(
-          commandContext,
-          filters,
-          command.buildProjector(),
-          null,
-          1,
-          1,
-          ReadType.DOCUMENT,
-          objectMapper);
+      return FindOperation.unsortedSingle(
+          commandContext, filters, command.buildProjector(), ReadType.DOCUMENT, objectMapper);
     }
   }
 }

@@ -128,7 +128,9 @@ elements may be present depending on the command.
 <command-status-name> ::= <json-string>
 <command-status-value>  ::= `<json-value>
 
-<response-data> ::= docs (<document>)*,
+<response-data> ::= <single-response-data> | <multi-response-data>
+<single-response-data> ::= document <document>
+<multi-response-data> ::= documents (<document>)*,
                     (nextPageState <page-state>)?
 <page-state> ::= <ascii-string>
 ```
@@ -167,7 +169,7 @@ state.
 ```json
 {
     "data" : {
-        "docs" : [
+        "documents" : [
             {"username" : "aaron"}
         ] 
     }
@@ -705,11 +707,11 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 
 #### find Command Response
 
-| Response Elements | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
-| `status`          | Not preset. |
-| `errors`          | Present if errors occur. |
+| Response Elements | Description                                                                                                           |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `data`            | Present with fields : `documents` and `nextPageState`. `nextPageState` may be `null` if no further data is available. |
+| `status`          | Not preset.                                                                                                           |
+| `errors`          | Present if errors occur.                                                                                              |
 
 
 If an error occurs the command will not return `data`.
@@ -807,11 +809,11 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 
 #### findOneAndReplace Command Response
 
-| Response Elements | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
-| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted. |
-| `errors`          | Present if errors occur. |
+| Response Elements | Description                                                                                                                                        |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `data`            | Present with fields : `document` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
+| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted.                                                           |
+| `errors`          | Present if errors occur.                                                                                                                           |
 
 If an error occurs the command will not return `data` or `status`.
 
@@ -882,11 +884,11 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 
 #### findOneAndUpdate Command Response
 
-| Response Elements | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `data`            | Present with fields : `docs` only, see [findOneAndUpdate Command Options](#findOneAndUpdate-command-options) for controlling the projection. |
-| `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted. |
-| `errors`          | Present if errors occur. |
+| Response Elements | Description                                                                                                                                      |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `data`            | Present with fields : `document` only, see [findOneAndUpdate Command Options](#findOneAndUpdate-command-options) for controlling the projection. |
+| `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted.                                                                  |
+| `errors`          | Present if errors occur.                                                                                                                         |
 
 
 If `upsert` option was set to `true`, and no documents matched a filter a new document is created. The `_id` of the document is included in the status field `upsertedId`, otherwise no status is returned.
@@ -911,11 +913,11 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 
 #### findOne Command Response
 
-| Response Element | Description                       |                     
-| ---------------- | ----------------------------------|
-| `data`           | Present with fields : `docs` only |
-| `status`         | Not present.                      |
-| `errors`         | Present if errors occur.          |
+| Response Element | Description                           |                     
+|------------------|---------------------------------------|
+| `data`           | Present with fields : `document` only |
+| `status`         | Not present.                          |
+| `errors`         | Present if errors occur.              |
 
 If an error occurs the command will not return `data`.
 

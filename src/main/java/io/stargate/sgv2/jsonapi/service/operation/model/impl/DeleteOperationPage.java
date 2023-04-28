@@ -69,16 +69,18 @@ public record DeleteOperationPage(
                   ExceptionUtil.getError(
                       ERROR, documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
             });
-    // Return the result
 
+    // return the result
+    // note that we always target a single document to be returned
+    // thus fixed to the SingleResponseData
     if (moreData)
       return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
+          deletedDoc.isEmpty() ? null : new CommandResult.SingleResponseData(deletedDoc.get(0)),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount, CommandStatus.MORE_DATA, true),
           errors.isEmpty() ? null : errors);
     else
       return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.ResponseData(deletedDoc),
+          deletedDoc.isEmpty() ? null : new CommandResult.SingleResponseData(deletedDoc.get(0)),
           Map.of(CommandStatus.DELETED_COUNT, deletedCount),
           errors.isEmpty() ? null : errors);
   }

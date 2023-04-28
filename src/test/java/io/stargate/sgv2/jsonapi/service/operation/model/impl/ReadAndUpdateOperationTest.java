@@ -177,7 +177,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       String updateClause =
           """
                    { "$set" : { "name" : "test", "date_val" : {"$date": 1672531200000 } }}
@@ -280,7 +281,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       String updateClause =
           """
                        { "$set" : { "username" : "user1" }}
@@ -318,7 +320,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
       assertThat(result.errors()).isNull();
-      assertThat(result.data().docs()).hasSize(1);
+      assertThat(result.data().getResponseDocuments()).hasSize(1);
     }
 
     @Test
@@ -470,7 +472,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000);
+              10000,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -616,7 +619,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -745,7 +749,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -941,7 +946,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000);
+              10000,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -1127,7 +1133,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              10000);
+              10000,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1252,7 +1259,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1335,7 +1343,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1540,7 +1549,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1666,7 +1676,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1745,7 +1756,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(

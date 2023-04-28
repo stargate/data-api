@@ -53,12 +53,10 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
-      return FindOperation.sorted(
+      return FindOperation.sortedSingle(
           commandContext,
           filters,
           DocumentProjector.identityProjector(),
-          null,
-          1,
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -69,13 +67,10 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount());
     } else {
-      return FindOperation.unsorted(
+      return FindOperation.unsortedSingle(
           commandContext,
           filters,
           DocumentProjector.identityProjector(),
-          null,
-          1,
-          1,
           ReadType.KEY,
           objectMapper);
     }

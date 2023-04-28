@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -55,7 +53,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -85,7 +83,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -119,8 +117,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("errors", is(nullValue()));
@@ -145,7 +142,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.documents", is(nullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("errors", is(nullValue()));
@@ -171,7 +168,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.documents", is(nullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("errors", is(nullValue()));
@@ -212,7 +209,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -234,7 +231,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -277,7 +274,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(docBefore))
+          .body("data.document", jsonEquals(docBefore))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -299,7 +296,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(docAfter));
+          .body("data.documents[0]", jsonEquals(docAfter));
     }
 
     @Test
@@ -323,7 +320,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", is(notNullValue()))
+          .body("data.document", is(notNullValue()))
           .body("status.upsertedId", is(notNullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
@@ -346,7 +343,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", is(notNullValue()));
+          .body("data.documents[0]", is(notNullValue()));
     }
 
     @Test
@@ -377,7 +374,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.upsertedId", is("afterDoc4"))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
@@ -400,7 +397,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -431,7 +428,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -461,7 +458,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -493,7 +490,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(document))
+          .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -521,7 +518,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -577,7 +574,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -599,7 +596,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -655,7 +652,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
@@ -677,7 +674,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -734,7 +731,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(inputDoc));
+          .body("data.documents[0]", jsonEquals(inputDoc));
     }
 
     @Test
@@ -787,7 +784,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(inputDoc));
+          .body("data.documents[0]", jsonEquals(inputDoc));
     }
 
     @Test
@@ -844,7 +841,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(inputDoc));
+          .body("data.documents[0]", jsonEquals(inputDoc));
     }
 
     @Test
@@ -902,7 +899,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(inputDoc));
+          .body("data.documents[0]", jsonEquals(inputDoc));
     }
 
     @Test
@@ -959,7 +956,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(inputDoc));
+          .body("data.documents[0]", jsonEquals(inputDoc));
     }
   }
 
@@ -1052,7 +1049,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -1136,7 +1133,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -1176,7 +1173,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.upsertedId", is("setOnInsertDoc1"))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
@@ -1198,7 +1195,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
 
       // However: with update for upsert, $setOnInsert not to be applied
       json =
@@ -1230,7 +1227,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected))
+          .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.upsertedId", nullValue())
@@ -1253,7 +1250,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -1315,7 +1312,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expectedFiltered));
+          .body("data.document", jsonEquals(expectedFiltered));
 
       // But also that update itself worked ($unset "z" and "subdoc.a")
       String expectedUpdated =
@@ -1346,7 +1343,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedUpdated));
+          .body("data.documents[0]", jsonEquals(expectedUpdated));
     }
 
     @Test
@@ -1407,7 +1404,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expectedFiltered));
+          .body("data.document", jsonEquals(expectedFiltered));
 
       // And with updates $unset of c and subdoc.x, but no Projection
       String expectedUpdated =
@@ -1437,7 +1434,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]", jsonEquals(expectedUpdated));
+          .body("data.documents[0]", jsonEquals(expectedUpdated));
     }
   }
 

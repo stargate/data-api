@@ -62,9 +62,13 @@ public record UpdateOperationPage(
     updateStatus.put(CommandStatus.MODIFIED_COUNT, modifiedCount());
 
     if (moreDataFlag) updateStatus.put(CommandStatus.MORE_DATA, moreDataFlag);
+
+    // note that we always target a single document to be returned
+    // thus fixed to the SingleResponseData
     if (returnDocs) {
+      JsonNode node = updatedDocs.size() > 0 ? updatedDocs.get(0) : null;
       return new CommandResult(
-          new CommandResult.ResponseData(updatedDocs),
+          new CommandResult.SingleResponseData(node),
           updateStatus,
           errors.isEmpty() ? null : errors);
     } else {

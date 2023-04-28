@@ -113,7 +113,7 @@ public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBa
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then()
         .statusCode(200)
-        .body("data.docs", is(empty()));
+        .body("data.documents", is(empty()));
   }
 
   @AfterEach

@@ -101,7 +101,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
 
@@ -123,7 +123,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs[0]._id", is("doc2"))
+          .body("data.document._id", is("doc2"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -198,7 +198,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.documents", jsonEquals("[]"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -243,7 +243,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", jsonEquals("[]"))
+          .body("data.documents", jsonEquals("[]"))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -288,7 +288,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(5))
+          .body("data.documents", hasSize(5))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -299,7 +299,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @RepeatedTest(10)
     public void concurrentDeletes() throws Exception {
-      // with 10 docs
+      // with 10 documents
       int totalDocuments = 10;
 
       String document =
@@ -392,7 +392,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()));
+          .body("data.documents", is(empty()));
     }
   }
 

@@ -60,7 +60,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -99,7 +100,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -137,7 +139,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -172,7 +175,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -212,7 +216,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -247,7 +252,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -283,7 +289,8 @@ public class FindCommandResolverTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              operationsConfig.maxDocumentSortCount());
+              operationsConfig.maxDocumentSortCount(),
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -319,7 +326,8 @@ public class FindCommandResolverTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              operationsConfig.maxDocumentSortCount());
+              operationsConfig.maxDocumentSortCount(),
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -356,7 +364,8 @@ public class FindCommandResolverTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
-              operationsConfig.maxDocumentSortCount());
+              operationsConfig.maxDocumentSortCount(),
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -395,7 +404,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -433,7 +443,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -482,7 +493,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(
@@ -527,7 +539,8 @@ public class FindCommandResolverTest {
               objectMapper,
               null,
               0,
-              0);
+              0,
+              false);
       assertThat(operation)
           .isInstanceOf(FindOperation.class)
           .satisfies(

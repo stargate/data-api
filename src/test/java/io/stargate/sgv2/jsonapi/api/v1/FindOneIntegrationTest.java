@@ -4,9 +4,8 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -102,7 +101,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -125,7 +124,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -149,7 +148,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -173,10 +172,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(DOC4_JSON)); // missing value is the lowest precedence
+          .body("data.document", jsonEquals(DOC4_JSON)); // missing value is the lowest precedence
     }
 
     @Test
@@ -198,10 +197,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(DOC5_JSON)); // missing value is the lowest precedence
+          .body("data.document", jsonEquals(DOC5_JSON)); // missing value is the lowest precedence
     }
 
     @Test
@@ -223,8 +222,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC1_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -248,7 +247,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -273,10 +272,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", anyOf(jsonEquals(DOC5_JSON), jsonEquals(DOC4_JSON)));
+          .body("data.document", anyOf(jsonEquals(DOC5_JSON), jsonEquals(DOC4_JSON)));
     }
 
     @Test
@@ -297,7 +296,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -369,8 +368,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC1_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -394,7 +393,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -418,7 +417,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -443,8 +442,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC1_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -469,9 +468,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.document", is(not(nullValue())))
           // post sorting by sort id , it uses document id by default.
-          .body("data.docs[0]", jsonEquals(DOC5_JSON))
+          .body("data.document", jsonEquals(DOC5_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -495,8 +494,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC1_JSON))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC1_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -546,7 +545,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -570,7 +569,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -594,7 +593,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -644,8 +643,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
-          .body("data.docs[0]", jsonEquals(DOC3_JSON))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC3_JSON))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -669,7 +668,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", is(empty()))
+          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }

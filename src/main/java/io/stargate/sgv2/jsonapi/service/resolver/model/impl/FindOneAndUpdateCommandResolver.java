@@ -75,14 +75,12 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
-      return FindOperation.sorted(
+      return FindOperation.sortedSingle(
           commandContext,
           filters,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),
-          null,
-          1,
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -93,15 +91,12 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount());
     } else {
-      return FindOperation.unsorted(
+      return FindOperation.unsortedSingle(
           commandContext,
           filters,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),
-          null,
-          1,
-          1,
           ReadType.DOCUMENT,
           objectMapper);
     }

@@ -150,7 +150,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs", hasSize(6));
+          .body("data.documents", hasSize(6));
     }
 
     @Test
@@ -199,8 +199,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected))
-          .body("data.docs", hasSize(1));
+          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.documents", hasSize(1));
     }
 
     @Test
@@ -229,8 +229,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected))
-          .body("data.docs", hasSize(1));
+          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.documents", hasSize(1));
     }
 
     @Test
@@ -257,10 +257,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(2))
+          .body("data.documents", hasSize(2))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
     }
 
     @Test
@@ -283,10 +283,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(1))
+          .body("data.documents", hasSize(1))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected1));
+          .body("data.documents[0]", jsonEquals(expected1));
     }
 
     @Test
@@ -307,7 +307,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0))
+          .body("data.documents", hasSize(0))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -330,7 +330,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.docs", hasSize(0))
+          .body("data.documents", hasSize(0))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -404,7 +404,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals("{\"username\":\"user1\"}"));
+          .body("data.documents[0]", jsonEquals("{\"username\":\"user1\"}"));
     }
 
     @Test
@@ -429,7 +429,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -454,7 +454,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -479,7 +479,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -510,7 +510,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -542,7 +542,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -591,7 +591,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -618,7 +618,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -645,7 +645,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -672,7 +672,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -725,7 +725,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -756,7 +756,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -829,7 +829,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -882,7 +882,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -909,7 +909,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -1000,7 +1000,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -1025,7 +1025,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.docs[0]", jsonEquals(expected));
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 }
