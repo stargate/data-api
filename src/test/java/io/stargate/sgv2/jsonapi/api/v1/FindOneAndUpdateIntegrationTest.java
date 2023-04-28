@@ -1438,6 +1438,126 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
     }
   }
 
+  @Nested
+  class FindOneAndUpdateWithDate {
+    @Test
+    public void setWithDateField() {
+      final String document =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
+      insertDoc(document);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "doc1"},
+                    "update" : {"$set" : {"date": { "$date": 1234567890 }}},
+                    "options": {"upsert": true}
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "date": { "$date": 1234567890 }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "doc1"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void unsetWithDateField() {
+      final String document =
+          """
+                    {
+                      "_id": "doc1",
+                      "createdAt": {
+                        "$date": 1234567
+                      }
+                    }
+                    """;
+      insertDoc(document);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "doc1"},
+                            "update" : {"$unset" : {"createdAt": 1}}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+                      {
+                        "_id": "doc1"
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc1"}
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+  }
+
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
