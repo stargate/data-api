@@ -1,6 +1,6 @@
 min_version: "5.17.3"
 
-# nb5 -v run driver=http yaml=http-jsonapi_crud_advanced jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
+# nb5 -v run driver=http yaml=http-jsonapi_search_filter_sort jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
 description: |
   This workload emulates search, filter and sort operations for the Stargate JSON API.
@@ -70,13 +70,13 @@ blocks:
         body: |
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_crud_advanced>>"
+              "name": "<<namespace:jsonapi_search_filter_sort>>"
             }
           }
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -91,7 +91,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -110,7 +110,7 @@ blocks:
       write-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -152,7 +152,7 @@ blocks:
       read:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -173,7 +173,7 @@ blocks:
       main-get-eq:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -190,7 +190,7 @@ blocks:
       main-get-multiple-condition:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -209,7 +209,7 @@ blocks:
       main-get-exists:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -226,7 +226,7 @@ blocks:
       main-get-size:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -244,7 +244,7 @@ blocks:
       main-get-sort:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -263,7 +263,7 @@ blocks:
       main-get-sort-options:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -283,7 +283,7 @@ blocks:
       main-get-projection:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -302,7 +302,7 @@ blocks:
       main-get-sort-projection:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_advanced>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"

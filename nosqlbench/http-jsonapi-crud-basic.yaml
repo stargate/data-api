@@ -1,4 +1,4 @@
-min_version: "5.17.1"
+min_version: "5.17.3"
 
 # nb5 -v run driver=http yaml=http-jsonapi-crud-basic jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
 
