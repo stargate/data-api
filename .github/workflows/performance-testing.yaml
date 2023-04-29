@@ -59,6 +59,8 @@ jobs:
           - test: http-jsonapi-keyvalue
             keyspace: 'jsonapi_keyvalue'
 
+          - test: http-jsonapi-search-filter-sort
+            keyspace: 'jsonapi_keyvalue'
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
@@ -114,9 +116,10 @@ jobs:
       # Run test after first obtaining an auth token
       - name: Run NoSQLBench Test
         run: |
+          DOCSCOUNT=${{ inputs.docscount != null && inputs.docscount || '1000000' }}          
+          CONNECTIONS=${{ inputs.connections != null && inputs.connections || '20' }}          
           cd nosqlbench
-          export AUTH_TOKEN=$(curl -s -X POST 'http://localhost:8081/v1/auth' -H 'Content-Type: application/json' --data-raw '{"username": "cassandra", "password": "cassandra"}' | jq -r '.authToken')
-          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost auth_token=$AUTH_TOKEN docscount=${{ inputs.docscount }} connections=${{ inputs.connections }}
+          ../nb5 -v --report-csv-to logs --log-histograms logs/hdr_metrics.log ${{ matrix.test }} jsonapi_host=localhost docscount=$DOCSCOUNT connections=$CONNECTIONS
 
       # Simple approach measuring size of data directory
       - name: Collect Data Size Stats
