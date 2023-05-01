@@ -40,7 +40,7 @@ jobs:
       matrix:
         type: [ java, native ]
 
-        test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue ]
+        test: [ http-jsonapi-crud-basic, http-jsonapi-keyvalue, http-jsonapi-search-filter-sort ]
 
         include:
           - type: java
