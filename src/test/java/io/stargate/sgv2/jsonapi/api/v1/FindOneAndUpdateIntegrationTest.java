@@ -1556,6 +1556,44 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected));
     }
+
+    @Test
+    public void trySetWithInvalidDateField() {
+      final String document =
+          """
+                        {
+                          "_id": "doc1",
+                          "createdAt": {
+                            "$date": 1234567
+                          }
+                        }
+                        """;
+      insertDoc(document);
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "doc1"},
+                  "update" : {"$set" : {"createdAt": { "$date": "2023-01-01T00:00:00Z" }}}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad EJSON value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+    }
   }
 
   @AfterEach
