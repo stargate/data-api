@@ -123,5 +123,26 @@ public class UpdateClauseDeserializerTest {
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
     }
+
+    @Test
+    public void mustHandleDate() throws Exception {
+      String json =
+          """
+                {"$set" : {"dateType": {"$date": 123456}}}
+                """;
+      final UpdateOperation operation =
+          SetOperation.constructSet(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                              {
+                                "dateType": {
+                                  "$date": 123456
+                                }
+                              }
+                              """));
+      UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
+      assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
+    }
   }
 }
