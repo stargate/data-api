@@ -60,7 +60,7 @@ jobs:
             keyspace: 'jsonapi_keyvalue'
 
           - test: http-jsonapi-search-filter-sort
-            keyspace: 'jsonapi_keyvalue'
+            keyspace: 'jsonapi_search_filter_sort'
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
