@@ -10,7 +10,10 @@ import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Implementation of {@code $unset} update operation used to remove fields from documents. */
+/**
+ * Implementation of {@code currentDate} update operation used to set field(s) to the current server
+ * time (at time of update).
+ */
 public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.Action> {
   private CurrentDateOperation(List<Action> actions) {
     super(actions);
