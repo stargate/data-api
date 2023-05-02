@@ -288,6 +288,39 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
+    public void noOptionsAllowed() {
+      String json =
+          """
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "docWithOptions"
+                  },
+                  "options": {"setting":"abc"}
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(2))
+          .body("errors[0].message", startsWith("Command accepts no options: InsertOneCommand"))
+          .body("errors[0].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].message", startsWith("Command accepts no options: InsertOneCommand"))
+          .body("errors[1].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
+          .body("errors[1].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void insertDuplicateDocument() {
       String json =
           """
