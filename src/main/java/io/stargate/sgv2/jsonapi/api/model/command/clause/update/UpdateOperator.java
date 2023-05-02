@@ -15,6 +15,13 @@ public enum UpdateOperator {
     }
   },
 
+  CURRENT_DATE("$currentDate") {
+    @Override
+    public UpdateOperation resolveOperation(ObjectNode arguments) {
+      return CurrentDateOperation.construct(arguments);
+    }
+  },
+
   INC("$inc") {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
