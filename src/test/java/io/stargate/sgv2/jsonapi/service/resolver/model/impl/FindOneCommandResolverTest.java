@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchException;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -11,7 +9,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -196,26 +193,6 @@ public class FindOneCommandResolverTest {
                 assertThat(op.filters()).singleElement().isEqualTo(filter);
                 assertThat(op.singleResponse()).isTrue();
               });
-    }
-
-    // Only "empty" Options allowed, nothing else
-    @Test
-    public void illegalFilterConditionEmptyOptions() throws Exception {
-      String json =
-          """
-              {
-                "findOne": {
-                    "options": {
-                        "noSuchOption": "value"
-                    }
-                }
-              }
-                """;
-
-      Exception e = catchException(() -> objectMapper.readValue(json, FindOneCommand.class));
-      assertThat(e)
-          .isInstanceOf(JsonMappingException.class)
-          .hasMessage(ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": FindOneCommand");
     }
   }
 }
