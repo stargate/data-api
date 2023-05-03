@@ -7,9 +7,10 @@ description: >2
 
 scenarios:
   default:
-    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
-    write:    run driver=http tags==block:write cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
-    main:     run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
+    schema-namespace:   run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+    schema-collection:   run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+    write:              run driver=http tags==block:write cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    main:               run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -43,7 +44,7 @@ bindings:
   friend_id: Add(-1); ToHashedUUID(); ToString() -> String
 
 blocks:
-  schema:
+  schema-namespace:
     ops:
       create-namespace:
         method: POST
@@ -60,6 +61,8 @@ blocks:
             }
           }
 
+  schema-collection:
+    ops:
       delete-collection:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>
@@ -232,7 +235,7 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "address.primary.cc": "{country_code}"
+                "gender": "{gender}"
               },
               "sort": {
                 "full_name": 1
@@ -347,7 +350,7 @@ blocks:
               "filter" : {
               }
             }
-          }          
+          }
 
       # count by gender property
       count-by-gender:
@@ -366,4 +369,4 @@ blocks:
                 "gender": "{gender}"
               }
             }
-          }          
+          }
