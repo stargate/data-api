@@ -34,12 +34,12 @@ public class FindOneCommandResolverTest {
     public void idFilterCondition() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "filter" : {"_id" : "id"}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "filter" : {"_id" : "id"}
+                            }
+                          }
+                          """;
 
       FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -68,13 +68,13 @@ public class FindOneCommandResolverTest {
     public void filterConditionAndSort() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"status" : "active"}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "sort" : {"user.name" : 1, "user.age" : -1},
+                              "filter" : {"status" : "active"}
+                            }
+                          }
+                          """;
 
       FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -108,12 +108,41 @@ public class FindOneCommandResolverTest {
     public void noFilterCondition() throws Exception {
       String json =
           """
-            {
-              "findOne": {
+                          {
+                            "findOne": {
 
-              }
-            }
-            """;
+                            }
+                          }
+                          """;
+
+      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              op -> {
+                assertThat(op.objectMapper()).isEqualTo(objectMapper);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.limit()).isEqualTo(1);
+                assertThat(op.pageSize()).isEqualTo(1);
+                assertThat(op.pagingState()).isNull();
+                assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(op.filters()).isEmpty();
+                assertThat(op.singleResponse()).isTrue();
+              });
+    }
+
+    @Test
+    public void noFilterConditionEmptyOptions() throws Exception {
+      String json =
+          """
+                          {
+                            "findOne": {
+                                "options": { }
+                            }
+                          }
+                            """;
 
       FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);
@@ -137,12 +166,12 @@ public class FindOneCommandResolverTest {
     public void dynamicFilterCondition() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "filter" : {"col" : "val"}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "filter" : {"col" : "val"}
+                            }
+                          }
+                          """;
 
       FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);

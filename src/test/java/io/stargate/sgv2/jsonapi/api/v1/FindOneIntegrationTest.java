@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -151,6 +152,36 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data.document", is(not(nullValue())))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void noOptionsAllowed() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "options": { "unknown":"value"}
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(2))
+          .body("errors[0].message", is("Command accepts no options: FindOneCommand"))
+          .body("errors[0].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].message", is("Command accepts no options: FindOneCommand"))
+          .body("errors[1].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
+          .body("errors[1].exceptionClass", is("JsonApiException"));
     }
 
     @Test

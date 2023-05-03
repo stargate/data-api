@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,10 +20,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.util.List;
 import javax.inject.Inject;
 import org.assertj.core.api.Assertions;
@@ -118,6 +122,27 @@ class ObjectMapperConfigurationTest {
               FindOneCommand.class,
               findOne -> Assertions.assertThat(findOne.filterClause()).isNull());
     }
+
+    // Only "empty" Options allowed, nothing else
+    @Test
+    public void failForNonEmptyOptions() throws Exception {
+      String json =
+          """
+                  {
+                    "findOne": {
+                        "options": {
+                            "noSuchOption": "value"
+                        }
+                    }
+                  }
+                """;
+
+      Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
+      assertThat(e)
+          .isInstanceOf(JsonMappingException.class)
+          .hasMessageStartingWith(
+              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": FindOneCommand");
+    }
   }
 
   @Nested
@@ -147,6 +172,90 @@ class ObjectMapperConfigurationTest {
                 assertThat(document).isNotNull();
                 assertThat(document.required("some").required("data").asBoolean()).isTrue();
               });
+    }
+
+    // Only "empty" Options allowed, nothing else
+    @Test
+    public void failForNonEmptyOptions() throws Exception {
+      String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": {
+                        "some": {
+                          "data": true
+                        }
+                      },
+                      "options": {
+                        "noSuchOption": "value"
+                      }
+                    }
+                  }
+                """;
+
+      Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
+      assertThat(e)
+          .isInstanceOf(JsonMappingException.class)
+          .hasMessageStartingWith(
+              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": InsertOneCommand");
+    }
+  }
+
+  @Nested
+  class DeleteOne {
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+                  {
+                    "deleteOne": {
+                      "filter" : {"username" : "Aaron"}
+                    }
+                  }
+                """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DeleteOneCommand.class,
+              cmd -> {
+                FilterClause filterClause = cmd.filterClause();
+                assertThat(filterClause).isNotNull();
+                assertThat(filterClause.comparisonExpressions()).hasSize(1);
+                assertThat(filterClause.comparisonExpressions())
+                    .singleElement()
+                    .satisfies(
+                        expression -> {
+                          ValueComparisonOperation<String> op =
+                              new ValueComparisonOperation<>(
+                                  ValueComparisonOperator.EQ,
+                                  new JsonLiteral<>("Aaron", JsonType.STRING));
+
+                          assertThat(expression.path()).isEqualTo("username");
+                          assertThat(expression.filterOperations()).singleElement().isEqualTo(op);
+                        });
+              });
+    }
+
+    // Only "empty" Options allowed, nothing else
+    @Test
+    public void failForNonEmptyOptions() throws Exception {
+      String json =
+          """
+                  {
+                    "deleteOne": {
+                      "filter" : {"_id" : "doc1"},
+                      "options": {"setting":"abc"}
+                    }
+                  }
+                  """;
+
+      Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
+      assertThat(e)
+          .isInstanceOf(JsonMappingException.class)
+          .hasMessageStartingWith(
+              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": DeleteOneCommand");
     }
   }
 
