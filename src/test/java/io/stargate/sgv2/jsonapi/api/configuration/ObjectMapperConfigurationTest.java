@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -202,6 +203,41 @@ class ObjectMapperConfigurationTest {
 
   @Nested
   class DeleteOne {
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+                  {
+                    "deleteOne": {
+                      "filter" : {"username" : "Aaron"}
+                    }
+                  }
+                """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DeleteOneCommand.class,
+              cmd -> {
+                FilterClause filterClause = cmd.filterClause();
+                assertThat(filterClause).isNotNull();
+                assertThat(filterClause.comparisonExpressions()).hasSize(1);
+                assertThat(filterClause.comparisonExpressions())
+                    .singleElement()
+                    .satisfies(
+                        expression -> {
+                          ValueComparisonOperation<String> op =
+                              new ValueComparisonOperation<>(
+                                  ValueComparisonOperator.EQ,
+                                  new JsonLiteral<>("Aaron", JsonType.STRING));
+
+                          assertThat(expression.path()).isEqualTo("username");
+                          assertThat(expression.filterOperations()).singleElement().isEqualTo(op);
+                        });
+              });
+    }
+
     // Only "empty" Options allowed, nothing else
     @Test
     public void failForNonEmptyOptions() throws Exception {
