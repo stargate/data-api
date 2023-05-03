@@ -1,8 +1,9 @@
 min_version: "5.17.3"
 
-# nb5 -v run driver=http yaml=http-jsonapi_search_filter_sort jsonapi_host=my_jsonapi_host auth_token=$AUTH_TOKEN
+# Example command line (when Stargate is running on localhost):
+# nb5 -v http-jsonapi-search-filter-sort jsonapi_host=localhost docscount=20000 threads=20
 
-description: |
+description: >2
   This workload emulates search, filter and sort operations for the Stargate JSON API.
   It generates a simple JSON document to be used for writes and updates.
   During the main phase it performs various search filters and times their execution.
@@ -11,19 +12,18 @@ description: |
 scenarios:
   default:
     schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
-    rampup:
-      write: run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-      read: run driver=http tags==block:read cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    main:
-      all: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-eq: run driver=http tags==name:main--main-get-eq cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-multiple-condition: run driver=http tags==name:main--main-get-multiple-condition cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-exists: run driver=http tags==name:main--main-get-exists cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-size: run driver=http tags==name:main--main-get-size cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-sort: run driver=http tags==name:main--main-get-sort cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-sort-options: run driver=http tags==name:main--main-get-sort-options cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-projection: run driver=http tags==name:main--main-get-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
-      get-sort-projection: run driver=http tags==name:main--main-get-sort-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    rampup-write: run driver=http tags==block:write cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    rampup-read: run driver=http tags==block:read cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    main: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+  get:
+    get-eq: run driver=http tags==name:main--main-get-eq cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-multiple-condition: run driver=http tags==name:main--main-get-multiple-condition cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-exists: run driver=http tags==name:main--main-get-exists cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-size: run driver=http tags==name:main--main-get-size cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort: run driver=http tags==name:main--main-get-sort cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort-options: run driver=http tags==name:main--main-get-sort-options cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-projection: run driver=http tags==name:main--main-get-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
+    get-sort-projection: run driver=http tags==name:main--main-get-sort-projection cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=<<threads:auto>> errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer

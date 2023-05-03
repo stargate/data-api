@@ -1,5 +1,7 @@
 min_version: "5.17.3"
 
+# TODO: This workload relies on features that are not yet implemented in the JSON API
+
 description: >2
   This workload emulates basic search operations for the Stargate Documents API.
   During the rampup phase, it generates documents, writes them to a table, and then warms up the search paths.
