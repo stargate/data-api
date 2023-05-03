@@ -3,10 +3,15 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -1435,6 +1440,271 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expectedUpdated));
+    }
+  }
+
+  @Nested
+  class FindOneAndUpdateWithDate {
+    @Test
+    public void setWithDateField() {
+      final String document =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
+      insertDoc(document);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "findOneAndUpdate": {
+                    "filter" : {"_id" : "doc1"},
+                    "update" : {"$set" : {"date": { "$date": 1234567890 }}},
+                    "options": {"upsert": true}
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "date": { "$date": 1234567890 }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "doc1"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void unsetWithDateField() {
+      final String document =
+          """
+                    {
+                      "_id": "doc1",
+                      "createdAt": {
+                        "$date": 1234567
+                      }
+                    }
+                    """;
+      insertDoc(document);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "doc1"},
+                            "update" : {"$unset" : {"createdAt": 1}}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      String expected =
+          """
+                      {
+                        "_id": "doc1"
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc1"}
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+
+    @Test
+    public void trySetWithInvalidDateField() {
+      final String document =
+          """
+                        {
+                          "_id": "doc1",
+                          "createdAt": {
+                            "$date": 1234567
+                          }
+                        }
+                        """;
+      insertDoc(document);
+      String json =
+          """
+              {
+                "findOneAndUpdate": {
+                  "filter" : {"_id" : "doc1"},
+                  "update" : {"$set" : {"createdAt": { "$date": "2023-01-01T00:00:00Z" }}}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad EJSON value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+    }
+  }
+
+  @Nested
+  class FindOneAndUpdateWithCurrentDate {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Test
+    public void simpleCurrentDate() throws Exception {
+      final long startTime = System.currentTimeMillis();
+      final String document =
+          """
+                    {
+                      "_id": "doc1",
+                      "createdAt": {
+                        "$date" : 123456
+                      }
+                    }
+                    """;
+      insertDoc(document);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "findOneAndUpdate": {
+                            "filter" : {"_id" : "doc1"},
+                            "update" : {
+                              "$currentDate": {
+                                "createdAt": true,
+                                "updatedAt": true
+                              }
+                            }
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(document))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      String json =
+          given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(
+                  """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc1"}
+                                }
+                              }
+                              """)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("data.documents", hasSize(1))
+              .extract()
+              .asString();
+
+      // Alas can't compare to static doc due to current-date value varying so need
+      // to extract separately
+      final long endTime = System.currentTimeMillis();
+      JsonNode foundDoc = MAPPER.readTree(json).at("/data/documents/0");
+      assertThat(foundDoc.size()).isEqualTo(3);
+      assertThat(foundDoc.path("_id").textValue()).isEqualTo("doc1");
+      long createdAt = foundDoc.at("/createdAt/$date").longValue();
+      assertThat(createdAt).isBetween(startTime, endTime);
+      long updatedAt = foundDoc.at("/updatedAt/$date").longValue();
+      assertThat(updatedAt).isBetween(startTime, endTime);
+      // Also should use same timestamp for all updates of one operation
+      assertThat(createdAt).isEqualTo(updatedAt);
+    }
+
+    @Test
+    public void tryCurrentDateWithInvalidArg() {
+      insertDoc("{\"_id\": \"doc1\"}");
+      String json =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "filter" : {"_id" : "doc1"},
+                      "update" : {"$currentDate" : {"createdAt": 123}}
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Unsupported update operation parameter: $currentDate requires argument of"));
     }
   }
 

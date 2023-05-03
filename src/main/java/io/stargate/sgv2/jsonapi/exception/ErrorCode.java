@@ -6,6 +6,8 @@ public enum ErrorCode {
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
+  COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
+
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
