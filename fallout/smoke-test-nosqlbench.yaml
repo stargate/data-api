@@ -1,0 +1,369 @@
+min_version: "5.17.3"
+
+# nb5 -v run driver=http yaml=smoke-test-nosqlbench connections=25 rate=250
+
+description: >2
+  This workload is designed for a smoke test of Stargate JSON API.
+
+scenarios:
+  default:
+    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
+    write:    run driver=http tags==block:write cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    main:     run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: jsonapi_host=host1
+  #   multiple hosts: jsonapi_host=host1,host2,host3
+  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+  seq_key: Mod(<<docscount:10000>>); ToString() -> String
+  random_key: Uniform(0,<<docscount:10000>>); ToString() -> String
+
+  user_id: ToHashedUUID(); ToString() -> String
+  created_on: Uniform(1262304000,1577836800) -> long
+  gender: WeightedStrings('M:10;F:10;O:1')
+  full_name: FullNames()
+  married: ModuloToBoolean()
+  city: Cities()
+  country_code: CountryCodes()
+  lat: Uniform(-180d, 180d)
+  lng: Hash() -> long; Uniform(-180d, 180d)
+  friend_id: Add(-1); ToHashedUUID(); ToString() -> String
+
+blocks:
+  schema:
+    ops:
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createNamespace": {
+              "name": "<<namespace:jsonapi_smoke_test>>"
+            }
+          }
+
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+  write:
+    ops:
+      # aka insertOne
+      write-document:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
+        body: >2
+          {
+            "insertOne" : {
+              "document" : {
+                "_id" :         "{seq_key}",
+                "user_id":      "{user_id}",
+                "created_on":   {created_on},
+                "gender":       "{gender}",
+                "full_name":    "{full_name}",
+                "married":      {married},
+                "address": {
+                  "primary": {
+                      "city":   "{city}",
+                      "cc":     "{country_code}"
+                  },
+                  "secondary":  {}
+                },
+                "coordinates": [
+                                {lat},
+                                {lng}
+                ],
+                "children":     [],
+                "friends": [
+                                "{friend_id}"
+                ]
+              }
+            }
+          }
+
+  main:
+    ops:
+
+      # aka findOne with _id as filter
+      find-one-id:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "_id" : "{seq_key}"
+              }
+            }
+          }
+
+      # aka findOne with single property as filter
+      find-one-by-city:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "address.primary.city" : "{city}"
+              }
+            }
+          }
+
+      # aka find with $eq and $exist
+      find-multi-by-married-name-exists:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "married": true,
+                "full_name": { "$exists": true }
+              }
+            }
+          }
+
+      # aka find with $eq and $exist and $projection
+      find-multi-by-married-name-exists-with-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "married": true,
+                "full_name": { "$exists": true }
+              },
+              "projection": {
+                "full_name": 1,
+                "gender": 1,
+                "address.primary.city": 1,
+                "address.primary.cc": 1
+              }
+            }
+          }
+
+      # aka find with filter and sort
+      find-multi-find-by-country-sort-by-name:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "address.primary.cc": "{country_code}"
+              },
+              "sort": {
+                "full_name": 1
+              }
+            }
+          }
+
+      # find one and update
+      find-by-name-newest-and-update-city:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOneAndUpdate" : {
+              "filter":{
+                "full_name": "{full_name}"
+              },
+              "sort" : {
+                "created_on": 1
+              },
+              "update": {
+                "$set" : {"address.primary.city": "{city}"}
+              },
+              "options": {
+                "upsert": false
+              }
+            }
+          }
+
+      # delete one
+      delete-one:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
+        body: >2
+          {
+            "deleteOne" : {
+              "filter" : {
+                "_id": "{random_key}"
+              }
+            }
+          }
+
+      # find one and replace with upsert
+      find-one-and-replace-upsert:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOneAndReplace" : {
+              "filter" : {
+                "_id": "{random_key}"
+              },
+              "replacement": {
+                "user_id":      "{user_id}",
+                "created_on":   {created_on},
+                "gender":       "{gender}",
+                "full_name":    "{full_name}",
+                "married":      {married},
+                "address": {
+                  "primary": {
+                      "city":   "{city}",
+                      "cc":     "{country_code}"
+                  },
+                  "secondary":  {}
+                },
+                "coordinates": [
+                                {lat},
+                                {lng}
+                ],
+                "children":     [],
+                "friends": [
+                                "{friend_id}"
+                ]
+              },
+              "options": {
+                "upsert": true
+              }
+            }
+          }
+
+      # count all in the database
+      count-all:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"count\".*"
+        body: >2
+          {
+            "countDocuments" : {
+              "filter" : {
+              }
+            }
+          }          
+
+      # count by gender property
+      count-by-gender:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"count\".*"
+        body: >2
+          {
+            "countDocuments" : {
+              "filter" : {
+                "gender": "{gender}"
+              }
+            }
+          }          
