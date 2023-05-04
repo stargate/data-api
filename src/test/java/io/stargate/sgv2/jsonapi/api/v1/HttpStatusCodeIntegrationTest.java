@@ -2,9 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -36,7 +38,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then()
         .statusCode(401)
-        .body("description", is(nullValue()))
+        .body("description", is(notNullValue()))
         .body("description", endsWith("UNAUTHENTICATED: Invalid token"));
   }
 
@@ -60,10 +62,12 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
         .post(CollectionResource.BASE_PATH, namespaceName, "badCollection")
         .then()
         .statusCode(200)
-        .body("description", is(nullValue()))
+        .body("errors", is(notNullValue()))
+        .body("errors[0].message", is(not(blankString())))
         .body(
-            "description",
-            endsWith("INVALID_ARGUMENT: table purchase_database.purchase does not exist"));
+            "errors[0].message",
+            endsWith("INVALID_ARGUMENT: table purchase_database.purchase does not exist"))
+        .body("errors[0].exceptionClass", is("StatusRuntimeException"));
   }
 
   @Test
@@ -83,7 +87,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post("/v2/{namespace}/{collection}", namespaceName, "badCollection")
+        .post("/unknown/{namespace}/{collection}", namespaceName, collectionName)
         .then()
         .statusCode(404);
   }
