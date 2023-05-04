@@ -8,7 +8,7 @@ description: >2
 scenarios:
   default:
     schema-namespace:   run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
-    schema-collection:   run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+    schema-collection:  run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
     write:              run driver=http tags==block:write cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
     main:               run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
 
@@ -96,7 +96,7 @@ blocks:
   write:
     ops:
       # aka insertOne
-      write-document:
+      - name: write-document
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -222,7 +222,7 @@ blocks:
           }
 
       # aka find with filter and sort
-      find-multi-find-by-country-sort-by-name:
+      find-multi-find-by-gender-sort-by-name:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -272,7 +272,7 @@ blocks:
           }
 
       # delete one
-      delete-one:
+      delete-one-id:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -291,7 +291,7 @@ blocks:
           }
 
       # find one and replace with upsert
-      find-one-and-replace-upsert:
+      find-one-id-and-replace-upsert:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
