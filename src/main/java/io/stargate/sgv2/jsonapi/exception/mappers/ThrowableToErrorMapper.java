@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Map;
@@ -18,10 +20,23 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message);
         }
-
+        // Override response error code
+        if (throwable instanceof StatusRuntimeException sre) {
+          Map<String, Object> fields =
+              Map.of("exceptionClass", throwable.getClass().getSimpleName());
+          if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
+            return new CommandResult.Error(message, fields, 401);
+          } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
+            return new CommandResult.Error(message, fields, 500);
+          } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+            return new CommandResult.Error(message, fields, 502);
+          } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+            return new CommandResult.Error(message, fields, 504);
+          }
+        }
         // add error code as error field
         Map<String, Object> fields = Map.of("exceptionClass", throwable.getClass().getSimpleName());
-        return new CommandResult.Error(message, fields);
+        return new CommandResult.Error(message, fields, 200);
       };
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =

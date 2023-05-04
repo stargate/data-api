@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.v1.response.MapToRestResult;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import javax.inject.Inject;
@@ -90,7 +91,7 @@ public class NamespaceResource {
     // call processor
     return commandProcessor
         .processCommand(commandContext, command)
-        // map to 2xx always
-        .map(RestResponse::ok);
+        // map to 2xx unless overridden by error
+        .map(commandResult -> MapToRestResult.map(commandResult));
   }
 }

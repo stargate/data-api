@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,8 +15,7 @@ import java.util.function.Supplier;
  * The internal to insert operation results, keeping ids of successfully and not-successfully
  * inserted documents.
  *
- * <p>Can serve as an aggregator, using the {@link #aggregate(WritableShreddedDocument, Throwable)}
- * function.
+ * <p>Can serve as an aggregator, using the {@link #aggregate(DocumentId, Throwable)} function.
  *
  * @param insertedIds Documents IDs that we successfully inserted.
  * @param failedIds Document IDs that failed to be inserted.
@@ -55,7 +54,7 @@ public record InsertOperationPage(
     if (throwable instanceof JsonApiException jae) {
       fields.put("errorCode", jae.getErrorCode().name());
     }
-    return new CommandResult.Error(message, fields);
+    return ThrowableToErrorMapper.getMapperWithMessageFunction().apply(throwable, message);
   }
 
   /**

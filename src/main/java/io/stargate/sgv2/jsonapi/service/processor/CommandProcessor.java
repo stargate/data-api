@@ -67,7 +67,6 @@ public class CommandProcessor {
               if (t instanceof JsonApiException jsonApiException) {
                 return jsonApiException;
               }
-
               // otherwise use generic for now
               return new ThrowableCommandResultSupplier(t);
             })

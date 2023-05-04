@@ -168,7 +168,9 @@ public record CommandResult(
             implementation = String.class)
       })
   public record Error(
-      String message, @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields) {
+      String message,
+      @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
+      @JsonIgnore int errorCode) {
 
     // this is a compact constructor for records
     // ensure message is not set in the fields key
@@ -185,7 +187,7 @@ public record CommandResult(
      * @param message Error message.
      */
     public Error(String message) {
-      this(message, Collections.emptyMap());
+      this(message, Collections.emptyMap(), 200);
     }
   }
 }
