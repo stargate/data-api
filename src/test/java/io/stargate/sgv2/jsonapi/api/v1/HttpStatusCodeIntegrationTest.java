@@ -66,7 +66,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
         .body("errors[0].message", is(not(blankString())))
         .body(
             "errors[0].message",
-            endsWith("INVALID_ARGUMENT: table purchase_database.purchase does not exist"))
+            endsWith(
+                "INVALID_ARGUMENT: table %s.%s does not exist"
+                    .formatted(namespaceName, "badCollection")))
         .body("errors[0].exceptionClass", is("StatusRuntimeException"));
   }
 
