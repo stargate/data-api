@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -168,7 +167,6 @@ public record CommandResult(
             description = "Human-readable error message.",
             implementation = String.class)
       })
-  @RegisterForReflection
   public record Error(
       String message,
       @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,

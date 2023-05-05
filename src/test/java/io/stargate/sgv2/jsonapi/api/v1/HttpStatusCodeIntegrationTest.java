@@ -38,8 +38,8 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then()
         .statusCode(401)
-        .body("description", is(notNullValue()))
-        .body("description", endsWith("UNAUTHENTICATED: Invalid token"));
+        .body("errors", is(notNullValue()))
+        .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
   }
 
   @Test
