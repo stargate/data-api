@@ -170,6 +170,7 @@ public record CommandResult(
   public record Error(
       String message,
       @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
+      // Http status code to be used in the response, defaulted to 200
       @JsonIgnore int errorCode) {
 
     // this is a compact constructor for records

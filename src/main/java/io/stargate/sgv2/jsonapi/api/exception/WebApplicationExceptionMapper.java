@@ -13,6 +13,7 @@ public class WebApplicationExceptionMapper {
 
   @ServerExceptionMapper
   public RestResponse<CommandResult> genericExceptionMapper(WebApplicationException e) {
+    //Return 405 for method not allowed and 404 for not found
     if (e instanceof NotAllowedException) {
       return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED);
     }
