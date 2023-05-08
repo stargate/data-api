@@ -1,0 +1,132 @@
+# region setup
+astra_provider: aws
+astra_region: eu-west-1
+
+# client setup
+client_count: 1
+client_provider: ec2
+client_region: eu-west-1
+client_type: m5.2xlarge
+
+# keyspace setup
+keyspace: jsonapi_smoke_test
+
+# documents 10K to enable sorting
+docs_count: 10000
+
+# load setup
+op_cycles: 1000000
+op_rate: 25
+connections: 25
+
+# ops from main block of smoke-test-nosqlbench.yaml
+ops:
+  - op: find-one-id
+  - op: find-one-by-city
+  - op: find-multi-by-married-name-exists
+  - op: find-multi-by-married-name-exists-with-projection
+  - op: find-multi-find-by-gender-sort-by-name
+  - op: find-by-name-newest-and-update-city
+  - op: delete-one-id
+  - op: find-one-id-and-replace-upsert
+  - op: count-all
+  - op: count-by-gender
+
+---
+
+ensemble:
+  server:
+    node.count: 1
+    provisioner:
+      name: astra
+      properties:
+        cloud.provider: {{astra_provider}}
+        cloud.region: {{astra_region}}
+        keyspace: {{keyspace}}
+        settle_time: 120
+
+  client:
+    node.count: {{client_count}}
+    provisioner:
+      name: ctool
+      properties:
+        cloud.provider: {{client_provider}}
+        cloud.region: {{client_region}}
+        cloud.instance.type: {{client_type}}
+    configuration_manager:
+      - name: nosqlbench_ssh
+        properties:
+          version: 5.17.3-release
+
+workload:
+  phases:
+
+    # set schema phase, ensures collection table is created from scratch
+    - nb_set_schema:
+        module: nosqlbench
+        properties:
+          client.size: 1
+          alias: schema
+          service_type: stargate
+          args:
+            - driver=http
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - tags=block:schema-collection
+            - namespace={{keyspace}}
+            - protocol=https
+            - jsonapi_port=443
+            - path_prefix=/api/json
+            - errors=stop
+
+    # prepare phase that inserts desired amount of documents
+    # executed only on a single client, stopped on errors
+    - prepare:
+        module: nosqlbench
+        properties:
+          client.size: 1
+          alias: prepare
+          service_type: stargate
+          cycles: {{docs_count}}
+          args:
+            - driver=http
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - tags=block:write
+            - threads={{connections}}
+            - errors=stop
+            - namespace={{keyspace}}
+            - protocol=https
+            - jsonapi_port=443
+            - path_prefix=/api/json
+            - connections={{connections}}
+            - docscount={{docs_count}}
+
+    -
+      {{#ops}}
+      main_{{op}}:
+        module: nosqlbench
+        properties:
+          alias: main_{{op}}
+          service_type: stargate
+          cycles: {{op_cycles}}
+          args:
+            - driver=http
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - tags=block:main,name:.*{{op}}
+            - threads=1x
+            - errors=histogram
+            - namespace={{keyspace}}
+            - protocol=https
+            - jsonapi_port=443
+            - path_prefix=/api/json
+            - connections={{connections}}
+            - docscount={{docs_count}}
+            - rate={{op_rate}}
+      {{/ops}}
+
+  checkers:
+    verify_success:
+      checker: nofail
+
+  artifact_checkers:
+    process_hdr:
+      artifact_checker: hdrtool
