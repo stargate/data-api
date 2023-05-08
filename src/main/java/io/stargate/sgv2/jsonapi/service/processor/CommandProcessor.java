@@ -71,6 +71,7 @@ public class CommandProcessor {
               // otherwise use generic for now
               return new ThrowableCommandResultSupplier(t);
             })
+
         // if we have a non-null item
         // call supplier get to map to the command result
         .onItem()
