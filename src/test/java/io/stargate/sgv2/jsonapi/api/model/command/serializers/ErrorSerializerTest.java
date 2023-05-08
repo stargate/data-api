@@ -25,7 +25,8 @@ class ErrorSerializerTest {
     @Test
     public void happyPath() throws Exception {
       CommandResult.Error error =
-          new CommandResult.Error("My message.", Map.of("field", "value"), 200);
+          new CommandResult.Error(
+              "My message.", Map.of("field", "value"), CommandResult.Error.StatusCode.OK);
 
       String result = objectMapper.writeValueAsString(error);
 
@@ -48,7 +49,11 @@ class ErrorSerializerTest {
     public void messageFieldNotAllowed() throws Exception {
       Throwable throwable =
           catchThrowable(
-              () -> new CommandResult.Error("My message.", Map.of("message", "value"), 200));
+              () ->
+                  new CommandResult.Error(
+                      "My message.",
+                      Map.of("message", "value"),
+                      CommandResult.Error.StatusCode.OK));
 
       assertThat(throwable)
           .isInstanceOf(IllegalArgumentException.class)
@@ -57,7 +62,8 @@ class ErrorSerializerTest {
 
     @Test
     public void withNulls() throws Exception {
-      CommandResult.Error error = new CommandResult.Error(null, null, 200);
+      CommandResult.Error error =
+          new CommandResult.Error(null, null, CommandResult.Error.StatusCode.OK);
 
       String result = objectMapper.writeValueAsString(error);
 

@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.v1.response.MapToRestResult;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import javax.inject.Inject;
@@ -148,6 +147,6 @@ public class CollectionResource {
     return commandProcessor
         .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
-        .map(commandResult -> MapToRestResult.map(commandResult));
+        .map(commandResult -> commandResult.map());
   }
 }

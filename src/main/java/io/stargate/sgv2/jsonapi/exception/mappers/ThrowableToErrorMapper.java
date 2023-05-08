@@ -25,18 +25,22 @@ public final class ThrowableToErrorMapper {
           Map<String, Object> fields =
               Map.of("exceptionClass", throwable.getClass().getSimpleName());
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
-            return new CommandResult.Error(message, fields, 401);
+            return new CommandResult.Error(
+                message, fields, CommandResult.Error.StatusCode.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
-            return new CommandResult.Error(message, fields, 500);
+            return new CommandResult.Error(
+                message, fields, CommandResult.Error.StatusCode.INTERNAL_SERVER_ERROR);
           } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-            return new CommandResult.Error(message, fields, 502);
+            return new CommandResult.Error(
+                message, fields, CommandResult.Error.StatusCode.BAD_GATEWAY);
           } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
-            return new CommandResult.Error(message, fields, 504);
+            return new CommandResult.Error(
+                message, fields, CommandResult.Error.StatusCode.GATEWAY_TIMEOUT);
           }
         }
         // add error code as error field
         Map<String, Object> fields = Map.of("exceptionClass", throwable.getClass().getSimpleName());
-        return new CommandResult.Error(message, fields, 200);
+        return new CommandResult.Error(message, fields, CommandResult.Error.StatusCode.OK);
       };
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =

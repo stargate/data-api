@@ -27,7 +27,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.errorCode()).isEqualTo(200);
+                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "RuntimeException");
@@ -49,7 +49,7 @@ class ThrowableCommandResultSupplierTest {
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.errorCode()).isEqualTo(200);
+                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "RuntimeException");
@@ -77,7 +77,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("ALREADY_EXISTS");
-                assertThat(error.errorCode()).isEqualTo(200);
+                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -98,7 +98,8 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("UNAUTHENTICATED");
-                assertThat(error.errorCode()).isEqualTo(401);
+                assertThat(error.statusCode())
+                    .isEqualTo(CommandResult.Error.StatusCode.UNAUTHORIZED);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -119,7 +120,8 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("INTERNAL");
-                assertThat(error.errorCode()).isEqualTo(500);
+                assertThat(error.statusCode())
+                    .isEqualTo(CommandResult.Error.StatusCode.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -140,7 +142,8 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("UNAVAILABLE");
-                assertThat(error.errorCode()).isEqualTo(502);
+                assertThat(error.statusCode())
+                    .isEqualTo(CommandResult.Error.StatusCode.BAD_GATEWAY);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -161,7 +164,8 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("DEADLINE_EXCEEDED");
-                assertThat(error.errorCode()).isEqualTo(504);
+                assertThat(error.statusCode())
+                    .isEqualTo(CommandResult.Error.StatusCode.GATEWAY_TIMEOUT);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");

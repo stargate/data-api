@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -13,9 +12,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class MapToRestResponseTest {
+public class CommandResultToRestResponseTest {
 
   @Nested
   class RestResponseMapper {
@@ -23,7 +21,7 @@ public class MapToRestResponseTest {
     @Test
     public void happyPath() {
       CommandResult result = new CommandResult(Map.of(CommandStatus.OK, 1));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
@@ -31,8 +29,10 @@ public class MapToRestResponseTest {
     public void errorWithOkStatus() {
       CommandResult result =
           new CommandResult(
-              List.of(new CommandResult.Error("My message.", Map.of("field", "value"), 200)));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+              List.of(
+                  new CommandResult.Error(
+                      "My message.", Map.of("field", "value"), CommandResult.Error.StatusCode.OK)));
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
@@ -40,8 +40,12 @@ public class MapToRestResponseTest {
     public void unauthorized() {
       CommandResult result =
           new CommandResult(
-              List.of(new CommandResult.Error("My message.", Map.of("field", "value"), 401)));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+              List.of(
+                  new CommandResult.Error(
+                      "My message.",
+                      Map.of("field", "value"),
+                      CommandResult.Error.StatusCode.UNAUTHORIZED)));
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
     }
@@ -50,8 +54,12 @@ public class MapToRestResponseTest {
     public void badGateway() {
       CommandResult result =
           new CommandResult(
-              List.of(new CommandResult.Error("My message.", Map.of("field", "value"), 502)));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+              List.of(
+                  new CommandResult.Error(
+                      "My message.",
+                      Map.of("field", "value"),
+                      CommandResult.Error.StatusCode.BAD_GATEWAY)));
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.BAD_GATEWAY.getStatusCode());
     }
@@ -60,8 +68,12 @@ public class MapToRestResponseTest {
     public void internalError() {
       CommandResult result =
           new CommandResult(
-              List.of(new CommandResult.Error("My message.", Map.of("field", "value"), 500)));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+              List.of(
+                  new CommandResult.Error(
+                      "My message.",
+                      Map.of("field", "value"),
+                      CommandResult.Error.StatusCode.INTERNAL_SERVER_ERROR)));
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
@@ -70,8 +82,12 @@ public class MapToRestResponseTest {
     public void gatewayError() {
       CommandResult result =
           new CommandResult(
-              List.of(new CommandResult.Error("My message.", Map.of("field", "value"), 504)));
-      final RestResponse mappedResult = MapToRestResult.map(result);
+              List.of(
+                  new CommandResult.Error(
+                      "My message.",
+                      Map.of("field", "value"),
+                      CommandResult.Error.StatusCode.GATEWAY_TIMEOUT)));
+      final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.GATEWAY_TIMEOUT.getStatusCode());
     }
