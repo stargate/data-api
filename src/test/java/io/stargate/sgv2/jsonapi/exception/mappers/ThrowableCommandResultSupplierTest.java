@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "RuntimeException");
@@ -49,7 +50,7 @@ class ThrowableCommandResultSupplierTest {
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "RuntimeException");
@@ -77,7 +78,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("ALREADY_EXISTS");
-                assertThat(error.statusCode()).isEqualTo(CommandResult.Error.StatusCode.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -98,8 +99,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("UNAUTHENTICATED");
-                assertThat(error.statusCode())
-                    .isEqualTo(CommandResult.Error.StatusCode.UNAUTHORIZED);
+                assertThat(error.status()).isEqualTo(Response.Status.UNAUTHORIZED);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -120,8 +120,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("INTERNAL");
-                assertThat(error.statusCode())
-                    .isEqualTo(CommandResult.Error.StatusCode.INTERNAL_SERVER_ERROR);
+                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -142,8 +141,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("UNAVAILABLE");
-                assertThat(error.statusCode())
-                    .isEqualTo(CommandResult.Error.StatusCode.BAD_GATEWAY);
+                assertThat(error.status()).isEqualTo(Response.Status.BAD_GATEWAY);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
@@ -164,8 +162,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("DEADLINE_EXCEEDED");
-                assertThat(error.statusCode())
-                    .isEqualTo(CommandResult.Error.StatusCode.GATEWAY_TIMEOUT);
+                assertThat(error.status()).isEqualTo(Response.Status.GATEWAY_TIMEOUT);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");

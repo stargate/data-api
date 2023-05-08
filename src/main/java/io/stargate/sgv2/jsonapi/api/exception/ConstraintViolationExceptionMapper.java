@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Path;
+import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -34,6 +35,6 @@ public class ConstraintViolationExceptionMapper {
     String message = violation.getMessage();
     Path propertyPath = violation.getPropertyPath();
     String msg = "Request invalid, the field %s not valid: %s.".formatted(propertyPath, message);
-    return new CommandResult.Error(msg, ERROR_FIELDS, CommandResult.Error.StatusCode.OK);
+    return new CommandResult.Error(msg, ERROR_FIELDS, Response.Status.OK);
   }
 }

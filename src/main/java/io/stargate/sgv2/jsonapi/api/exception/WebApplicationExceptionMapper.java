@@ -13,15 +13,15 @@ public class WebApplicationExceptionMapper {
 
   @ServerExceptionMapper
   public RestResponse<CommandResult> genericExceptionMapper(WebApplicationException e) {
-    // Return 405 for method not allowed and 404 for not found
-    if (e instanceof NotAllowedException) {
-      return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED);
-    }
-    if (e instanceof NotFoundException) {
-      return RestResponse.status(RestResponse.Status.NOT_FOUND);
-    }
     Throwable toReport = null != e.getCause() ? e.getCause() : e;
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
+    // Return 405 for method not allowed and 404 for not found
+    if (e instanceof NotAllowedException) {
+      return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED, commandResult);
+    }
+    if (e instanceof NotFoundException) {
+      return RestResponse.status(RestResponse.Status.NOT_FOUND, commandResult);
+    }
     return RestResponse.ok(commandResult);
   }
 }

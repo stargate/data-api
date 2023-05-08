@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.ws.rs.core.Response;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.
@@ -59,7 +60,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message) {
     Map<String, Object> fields =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    return new CommandResult.Error(message, fields, CommandResult.Error.StatusCode.OK);
+    return new CommandResult.Error(message, fields, Response.Status.OK);
   }
 
   public ErrorCode getErrorCode() {

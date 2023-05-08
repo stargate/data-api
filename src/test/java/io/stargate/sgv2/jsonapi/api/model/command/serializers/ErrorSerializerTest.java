@@ -10,6 +10,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +26,7 @@ class ErrorSerializerTest {
     @Test
     public void happyPath() throws Exception {
       CommandResult.Error error =
-          new CommandResult.Error(
-              "My message.", Map.of("field", "value"), CommandResult.Error.StatusCode.OK);
+          new CommandResult.Error("My message.", Map.of("field", "value"), Response.Status.OK);
 
       String result = objectMapper.writeValueAsString(error);
 
@@ -51,9 +51,7 @@ class ErrorSerializerTest {
           catchThrowable(
               () ->
                   new CommandResult.Error(
-                      "My message.",
-                      Map.of("message", "value"),
-                      CommandResult.Error.StatusCode.OK));
+                      "My message.", Map.of("message", "value"), Response.Status.OK));
 
       assertThat(throwable)
           .isInstanceOf(IllegalArgumentException.class)
@@ -62,8 +60,7 @@ class ErrorSerializerTest {
 
     @Test
     public void withNulls() throws Exception {
-      CommandResult.Error error =
-          new CommandResult.Error(null, null, CommandResult.Error.StatusCode.OK);
+      CommandResult.Error error = new CommandResult.Error(null, null, Response.Status.OK);
 
       String result = objectMapper.writeValueAsString(error);
 

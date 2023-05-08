@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.ws.rs.core.Response;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
@@ -25,22 +26,18 @@ public final class ThrowableToErrorMapper {
           Map<String, Object> fields =
               Map.of("exceptionClass", throwable.getClass().getSimpleName());
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
-            return new CommandResult.Error(
-                message, fields, CommandResult.Error.StatusCode.UNAUTHORIZED);
+            return new CommandResult.Error(message, fields, Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
-            return new CommandResult.Error(
-                message, fields, CommandResult.Error.StatusCode.INTERNAL_SERVER_ERROR);
+            return new CommandResult.Error(message, fields, Response.Status.INTERNAL_SERVER_ERROR);
           } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-            return new CommandResult.Error(
-                message, fields, CommandResult.Error.StatusCode.BAD_GATEWAY);
+            return new CommandResult.Error(message, fields, Response.Status.BAD_GATEWAY);
           } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
-            return new CommandResult.Error(
-                message, fields, CommandResult.Error.StatusCode.GATEWAY_TIMEOUT);
+            return new CommandResult.Error(message, fields, Response.Status.GATEWAY_TIMEOUT);
           }
         }
         // add error code as error field
         Map<String, Object> fields = Map.of("exceptionClass", throwable.getClass().getSimpleName());
-        return new CommandResult.Error(message, fields, CommandResult.Error.StatusCode.OK);
+        return new CommandResult.Error(message, fields, Response.Status.OK);
       };
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =
