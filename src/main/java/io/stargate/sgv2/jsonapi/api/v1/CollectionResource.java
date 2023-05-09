@@ -146,8 +146,7 @@ public class CollectionResource {
     // call processor
     return commandProcessor
         .processCommand(commandContext, command)
-
-        // map to 2xx always
-        .map(RestResponse::ok);
+        // map to 2xx unless overridden by error
+        .map(commandResult -> commandResult.map());
   }
 }

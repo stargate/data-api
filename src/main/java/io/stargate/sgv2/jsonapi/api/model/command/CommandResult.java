@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * POJO object (data no behavior) that has the result of running a command, either documents, list
@@ -168,7 +171,10 @@ public record CommandResult(
             implementation = String.class)
       })
   public record Error(
-      String message, @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields) {
+      String message,
+      @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
+      // Http status to be used in the response, defaulted to 200
+      @JsonIgnore Response.Status status) {
 
     // this is a compact constructor for records
     // ensure message is not set in the fields key
@@ -185,7 +191,27 @@ public record CommandResult(
      * @param message Error message.
      */
     public Error(String message) {
-      this(message, Collections.emptyMap());
+      this(message, Collections.emptyMap(), Response.Status.OK);
     }
+  }
+
+  /**
+   * Maps CommandResult to RestResponse. Except for few selective errors, all errors are mapped to
+   * http status 200. In case of 401, 500, 502 and 504 response is sent with appropriate status
+   * code.
+   *
+   * @return
+   */
+  public RestResponse map() {
+    if (null != this.errors() && !this.errors().isEmpty()) {
+      final Optional<Error> first =
+          this.errors().stream()
+              .filter(error -> error.status().getStatusCode() != Response.Status.OK.getStatusCode())
+              .findFirst();
+      if (first.isPresent()) {
+        return RestResponse.ResponseBuilder.create(first.get().status(), this).build();
+      }
+    }
+    return RestResponse.ok(this);
   }
 }
