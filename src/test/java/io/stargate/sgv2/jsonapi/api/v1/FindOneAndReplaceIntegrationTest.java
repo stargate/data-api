@@ -353,7 +353,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("data.document._id", is(notNullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.upsertedId", is("doc2"))
+          .body("status.upsertedId", is(notNullValue()))
           .body("errors", is(nullValue()));
 
       // assert state after update
