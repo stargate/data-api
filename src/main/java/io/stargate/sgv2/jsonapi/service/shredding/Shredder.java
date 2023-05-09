@@ -92,7 +92,7 @@ public class Shredder {
     validateDocument(documentLimits, docWithId, docJson);
 
     final WritableShreddedDocument.Builder b =
-        WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson);
+        WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson, docWithId);
 
     // And now let's traverse the document, _including DocumentId so it will also
     // be indexed along with other fields.
