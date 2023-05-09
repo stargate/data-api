@@ -95,7 +95,7 @@ public record DocumentUpdater(
     }
     // remove all data and add _id as first field
     docToUpdate.removeAll();
-    docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
+    if (idNode != null) docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
     docToUpdate.setAll(replaceDocument());
     // return modified flag as true
     return true;
