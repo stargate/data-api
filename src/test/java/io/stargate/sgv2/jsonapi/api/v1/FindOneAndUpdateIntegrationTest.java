@@ -326,6 +326,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .then()
           .statusCode(200)
           .body("data.document", is(notNullValue()))
+          .body("data.document._id", is(notNullValue()))
           .body("status.upsertedId", is(notNullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))

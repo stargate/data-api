@@ -29,6 +29,7 @@ public record WritableShreddedDocument(
     /** Optional transaction id used for optimistic locking */
     UUID txID,
     String docJson,
+    JsonNode docJsonNode,
     Set<JsonPath> existKeys,
     Map<JsonPath, String> subDocEquals,
     Map<JsonPath, Integer> arraySize,
@@ -39,8 +40,9 @@ public record WritableShreddedDocument(
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues) {
-  public static Builder builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
-    return new Builder(hasher, id, txID, docJson);
+  public static Builder builder(
+      DocValueHasher hasher, DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
+    return new Builder(hasher, id, txID, docJson, docJsonNode);
   }
 
   /**
@@ -58,7 +60,7 @@ public record WritableShreddedDocument(
     private final UUID txID;
 
     private final String docJson;
-
+    private final JsonNode docJsonNode;
     private final Set<JsonPath> existKeys;
 
     private Map<JsonPath, String> subDocEquals;
@@ -73,12 +75,13 @@ public record WritableShreddedDocument(
     private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
 
-    public Builder(DocValueHasher hasher, DocumentId id, UUID txID, String docJson) {
+    public Builder(
+        DocValueHasher hasher, DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
       this.hasher = hasher;
       this.id = id;
       this.txID = txID;
       this.docJson = Objects.requireNonNull(docJson);
-
+      this.docJsonNode = docJsonNode;
       existKeys = new LinkedHashSet<>(); // retain document order
     }
 
@@ -92,6 +95,7 @@ public record WritableShreddedDocument(
           id,
           txID,
           docJson,
+          docJsonNode,
           existKeys,
           _nonNull(subDocEquals),
           _nonNull(arraySize),
