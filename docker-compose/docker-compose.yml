@@ -7,8 +7,7 @@ services:
       - stargate
     mem_limit: 2G
     environment:
-      - HEAP_NEWSIZE=128M
-      - MAX_HEAP_SIZE=1024M
+      - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=dse-${DSETAG}-cluster
       - DC=dc1
       - RACK=rack1
@@ -28,8 +27,7 @@ services:
       dse-1:
         condition: service_healthy
     environment:
-      - HEAP_NEWSIZE=128M
-      - MAX_HEAP_SIZE=1024M
+      - MAX_HEAP_SIZE=1536M
       - SEEDS=dse-1
       - CLUSTER_NAME=dse-${DSETAG}-cluster
       - DC=dc1
@@ -50,8 +48,7 @@ services:
       dse-2:
         condition: service_healthy
     environment:
-      - HEAP_NEWSIZE=128M
-      - MAX_HEAP_SIZE=1024M
+      - MAX_HEAP_SIZE=1536M
       - SEEDS=dse-1
       - CLUSTER_NAME=dse-${DSETAG}-cluster
       - DC=dc1
@@ -74,7 +71,7 @@ services:
       - "8081:8081"
     mem_limit: 2G
     environment:
-      - JAVA_OPTS="-Xmx2G"
+      - JAVA_OPTS="-Xmx1536M"
       - CLUSTER_NAME=dse-${DSETAG}-cluster
       - CLUSTER_VERSION=6.8
       - DSE=1
@@ -99,6 +96,9 @@ services:
       - "8181:8181"
     mem_limit: 2G
     environment:
+      - JAVA_MAX_MEM_RATIO=75
+      - JAVA_INITIAL_MEM_RATIO=50
+      - GC_CONTAINER_OPTIONS=-XX:+UseG1GC
       - QUARKUS_GRPC_CLIENTS_BRIDGE_HOST=coordinator
       - QUARKUS_GRPC_CLIENTS_BRIDGE_PORT=8091
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG}
