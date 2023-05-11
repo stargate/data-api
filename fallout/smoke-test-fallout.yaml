@@ -7,6 +7,7 @@ client_count: 1
 client_provider: ec2
 client_region: eu-west-1
 client_type: m5.2xlarge
+client_nb_version: 5.17.3-release
 
 # keyspace setup
 keyspace: jsonapi_smoke_test
@@ -15,9 +16,9 @@ keyspace: jsonapi_smoke_test
 docs_count: 10000
 
 # load setup
-op_cycles: 1000000
+op_cycles: 100000
 op_rate: 25
-connections: 25
+op_connections: 3
 
 # ops from main block of smoke-test-nosqlbench.yaml
 ops:
@@ -56,7 +57,7 @@ ensemble:
     configuration_manager:
       - name: nosqlbench_ssh
         properties:
-          version: 5.17.3-release
+          version: {{client_nb_version}}
 
 workload:
   phases:
@@ -91,13 +92,13 @@ workload:
             - driver=http
             - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
             - tags=block:write
-            - threads={{connections}}
+            - threads=30
             - errors=stop
             - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
-            - connections={{connections}}
+            - connections=30
             - docscount={{docs_count}}
 
     -
@@ -118,7 +119,7 @@ workload:
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
-            - connections={{connections}}
+            - connections={{op_connections}}
             - docscount={{docs_count}}
             - rate={{op_rate}}
       {{/ops}}
