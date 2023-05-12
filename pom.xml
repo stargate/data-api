@@ -7,7 +7,7 @@
     <version>2.0.13</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.0-ALPHA-8-SNAPSHOT</version>
+  <version>1.0.0-ALPHA-9-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
