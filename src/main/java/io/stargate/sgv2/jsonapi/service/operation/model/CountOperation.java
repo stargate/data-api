@@ -35,7 +35,7 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
     }
     return new QueryBuilder()
         .select()
-        .count("key")
+        .count()
         .as("count")
         .from(commandContext.namespace(), commandContext.collection())
         .where(conditions)

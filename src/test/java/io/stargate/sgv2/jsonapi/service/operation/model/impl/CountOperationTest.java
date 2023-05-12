@@ -39,7 +39,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
@@ -77,7 +77,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void countWithDynamic() {
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
@@ -123,7 +123,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void countWithDynamicNoMatch() {
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
@@ -172,7 +172,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
       RuntimeException failure = new RuntimeException("Ivan fails the test.");
 
       String collectionReadCql =
-          "SELECT COUNT(key) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
