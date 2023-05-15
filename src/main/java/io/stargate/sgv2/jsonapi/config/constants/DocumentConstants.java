@@ -1,12 +1,18 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import java.util.regex.Pattern;
 
 public interface DocumentConstants {
   /** Names of "special" fields in Documents */
   interface Fields {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
+
+    // Current definition of valid JSON API names: note that this only validates
+    // characters, not length limits (nor empty nor "too long" allowed but validated
+    // separately)
+    Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
   }
 
   interface KeyTypeId {

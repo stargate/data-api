@@ -229,17 +229,27 @@ public class Shredder {
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      final String key = entry.getKey();
-      if (key.length() > documentLimits.maxPropertyNameLength()) {
-        throw new JsonApiException(
-            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-            String.format(
-                "%s: Property name length (%d) exceeds maximum allowed (%s)",
-                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                key.length(),
-                limits.maxPropertyNameLength()));
-      }
+      validateObjectKey(limits, entry.getKey());
       validateDocValue(limits, entry.getValue(), depth);
+    }
+  }
+
+  private void validateObjectKey(DocumentLimitsConfig limits, String key) {
+    if (key.length() > documentLimits.maxPropertyNameLength()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: Property name length (%d) exceeds maximum allowed (%s)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              key.length(),
+              limits.maxPropertyNameLength()));
+    }
+    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
+          String.format(
+              "%s: Property name ('%s') contains character(s) not allowed",
+              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
     }
   }
 

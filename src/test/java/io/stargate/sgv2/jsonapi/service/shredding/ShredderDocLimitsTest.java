@@ -178,7 +178,7 @@ public class ShredderDocLimitsTest {
     public void allowNotTooLongNames() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      doc.put("prop-123456789-123456789-123456789-123456789", true);
+      doc.put("prop_123456789_123456789_123456789_123456789", true);
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
@@ -188,7 +188,7 @@ public class ShredderDocLimitsTest {
       doc.put("_id", 123);
       ObjectNode ob = doc.putObject("subdoc");
       final String propName =
-          "property-with-way-too-long-name-123456789-123456789-123456789-123456789";
+          "property_with_way_too_long_name_123456789_123456789_123456789_123456789";
       ob.put(propName, true);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -206,10 +206,27 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
+    public void catchInvalidNames() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      final String invalidName = "$date"; // property names must not start with $
+      doc.put(invalidName, 123456);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              "Document key name constraints violated: Property name ('$date') contains character(s) not allowed");
+    }
+
+    @Test
     public void allowNotTooLongStringValues() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      // Max is 16_000 so do bit less
+      // Max is 16_000 so do a bit less
       doc.put("text", RandomStringUtils.randomAscii(12_000));
       assertThat(shredder.shred(doc)).isNotNull();
     }
