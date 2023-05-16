@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -229,12 +230,12 @@ public class Shredder {
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      validateObjectKey(limits, entry.getKey());
+      validateObjectKey(limits, entry.getKey(), entry.getValue());
       validateDocValue(limits, entry.getValue(), depth);
     }
   }
 
-  private void validateObjectKey(DocumentLimitsConfig limits, String key) {
+  private void validateObjectKey(DocumentLimitsConfig limits, String key, JsonNode value) {
     if (key.length() > documentLimits.maxPropertyNameLength()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -245,11 +246,17 @@ public class Shredder {
               limits.maxPropertyNameLength()));
     }
     if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
-          String.format(
-              "%s: Property name ('%s') contains character(s) not allowed",
-              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
+      // Special names are accepted in some cases: for now only one such case for
+      // Date values -- if more needed, will refactor. But for now inline:
+      if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isIntegralNumber()) {
+        ; // Fine, looks like legit Date value
+      } else {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
+            String.format(
+                "%s: Property name ('%s') contains character(s) not allowed",
+                ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
+      }
     }
   }
 
