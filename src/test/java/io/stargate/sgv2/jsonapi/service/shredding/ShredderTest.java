@@ -43,7 +43,7 @@ public class ShredderTest {
                       { "_id" : "abc",
                         "name" : "Bob",
                         "values" : [ 1, 2 ],
-                        "[extra.stuff]" : true,
+                        "extra_stuff" : true,
                         "nullable" : null
                       }
                       """;
@@ -57,7 +57,7 @@ public class ShredderTest {
               JsonPath.from("values"),
               JsonPath.from("values.0", true),
               JsonPath.from("values.1", true),
-              JsonPath.from("[extra.stuff]"),
+              JsonPath.from("extra_stuff"),
               JsonPath.from("nullable"));
 
       // First verify paths
@@ -76,7 +76,7 @@ public class ShredderTest {
               "name SBob",
               "values N1",
               "values N2",
-              "[extra.stuff] B1",
+              "extra_stuff B1",
               "nullable Z",
               "values.0 N1",
               "values.1 N2");
@@ -90,7 +90,7 @@ public class ShredderTest {
 
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
-          .isEqualTo(Collections.singletonMap(JsonPath.from("[extra.stuff]"), Boolean.TRUE));
+          .isEqualTo(Collections.singletonMap(JsonPath.from("extra_stuff"), Boolean.TRUE));
       Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
       expNums.put(JsonPath.from("values.0", true), BigDecimal.valueOf(1));
       expNums.put(JsonPath.from("values.1", true), BigDecimal.valueOf(2));
@@ -271,8 +271,8 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("Bad EJSON value: unrecognized type '$unknownType' (path 'value')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+          .hasMessageStartingWith("Document key name constraints violated")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION);
     }
   }
 

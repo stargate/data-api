@@ -16,6 +16,8 @@ import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -205,11 +207,11 @@ public class ShredderDocLimitsTest {
                   + ")");
     }
 
-    @Test
-    public void catchInvalidNames() {
+    @ParameterizedTest
+    @ValueSource(strings = {"$function", "dot.ted", "index[1]"})
+    public void catchInvalidFieldName(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      final String invalidName = "$date"; // property names must not start with $
       doc.put(invalidName, 123456);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -219,7 +221,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "Document key name constraints violated: Property name ('$date') contains character(s) not allowed");
+              "Document key name constraints violated: Property name ('"
+                  + invalidName
+                  + "') contains character(s) not allowed");
     }
 
     @Test

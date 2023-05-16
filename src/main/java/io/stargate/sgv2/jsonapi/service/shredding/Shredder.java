@@ -248,7 +248,7 @@ public class Shredder {
     if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
       // Special names are accepted in some cases: for now only one such case for
       // Date values -- if more needed, will refactor. But for now inline:
-      if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isIntegralNumber()) {
+      if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
         ; // Fine, looks like legit Date value
       } else {
         throw new JsonApiException(
