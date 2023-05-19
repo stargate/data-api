@@ -180,6 +180,62 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
     }
 
     @Test
+    public void byIdUpsertSetOnInsert() {
+      String json =
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "no-such-doc"},
+                  "update" : {
+                    "$set" : {"active_user": true},
+                    "$setOnInsert" : {"_id": "upsertSetOnInsert1"}
+                  },
+                  "options" : {"upsert" : true}
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.upsertedId", is("upsertSetOnInsert1"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+
+      // assert state after update
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "upsertSetOnInsert1"}
+                }
+              }
+              """;
+      String expected =
+          """
+              {
+                "_id": "upsertSetOnInsert1",
+                "active_user": true
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void byColumnUpsert() {
       String json =
           """
