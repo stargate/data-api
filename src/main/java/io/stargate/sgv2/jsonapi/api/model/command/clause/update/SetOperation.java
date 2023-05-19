@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -30,7 +31,10 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     return construct(args, false, UpdateOperator.SET);
   }
 
-  /** Override method used to create an operation that $sets a single property */
+  /**
+   * Override method used to create an operation that $sets a single property (never used for
+   * $setOnInsert)
+   */
   public static SetOperation constructSet(String filterPath, JsonNode value) {
     List<Action> additions = new ArrayList<>();
     String path = validateUpdatePath(UpdateOperator.SET, filterPath);
@@ -51,7 +55,11 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     var it = args.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      String path = validateUpdatePath(operator, entry.getKey());
+      // 19-May-2023, tatu: As per [json-api#433] need to allow _id override on $setOnInsert
+      String path = entry.getKey();
+      if (!onlyOnInsert || !DocumentConstants.Fields.DOC_ID.equals(path)) {
+        path = validateUpdatePath(operator, path);
+      }
       additions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));
     }
     return new SetOperation(additions, onlyOnInsert);

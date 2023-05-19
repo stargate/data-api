@@ -1261,6 +1261,71 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected));
     }
+
+    @Test
+    public void useGivenDocIdOnInsert() {
+      String json =
+          """
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id" : "noSuchItem"},
+                          "update" : {
+                              "$set" : {
+                                  "active_user": true,
+                                  "extra": 13
+                              },
+                              "$setOnInsert" : {
+                                  "_id": "setOnInsertDoc2",
+                                  "new_user": true
+                              }
+                          },
+                          "options" : {"returnDocument" : "after", "upsert" : true}
+                        }
+                      }
+                      """;
+
+      // On Insert (for Upsert) should apply both $set and $setOnInsert
+      String expected =
+          """
+                      {
+                        "_id": "setOnInsertDoc2",
+                        "active_user": true,
+                        "new_user": true,
+                        "extra": 13
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", jsonEquals(expected))
+          .body("status.upsertedId", is("setOnInsertDoc2"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("errors", is(nullValue()));
+
+      // And verify that the document was inserted as expected:
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "setOnInsertDoc2"}
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
   }
 
   @Nested
