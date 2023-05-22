@@ -346,7 +346,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
   @Nested
   class InvalidCasesRoot {
     @Test
-    public void testNoReplacingDocId() {
+    public void testNoReplacingDocIdWithSet() {
       Exception e =
           catchException(
               () -> {
@@ -362,6 +362,27 @@ public class SetOperationTest extends UpdateOperationTestBase {
           .withFailMessage("Should throw exception on $set of _id")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
           .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
+    }
+
+    // As per [json-api#433]: Ok to override _id for $setOnInsert
+    @Test
+    public void testReplaceDocIdWithSetOnInsert() {
+      UpdateOperation oper =
+          UpdateOperator.SET_ON_INSERT.resolveOperation(
+              objectFromJson("""
+                      { "_id": 1 }
+                      """));
+      assertThat(oper).isInstanceOf(SetOperation.class);
+      // Should indicate document being modified
+      ObjectNode doc =
+          objectFromJson("""
+                      { "_id": 0, "a": 1 }
+                      """);
+      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(doc)
+          .isEqualTo(fromJson("""
+                  { "_id": 1, "a": 1 }
+                  """));
     }
   }
 

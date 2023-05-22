@@ -334,6 +334,63 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
+    public void upsertWithSetOnInsert() {
+      insert(2);
+      String json =
+          """
+              {
+                "updateMany": {
+                  "filter" : {"_id": "no-such-doc"},
+                  "update" : {
+                    "$set" : {"active_user": true},
+                    "$setOnInsert" : {"_id": "docX"}
+                  },
+                  "options" : {"upsert" : true}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.upsertedId", is("docX"))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("status.moreData", nullValue())
+          .body("errors", is(nullValue()));
+
+      // assert upsert
+      String expected =
+          """
+              {
+                "_id": "docX",
+                "active_user": true
+              }
+              """;
+      json =
+          """
+              {
+                "find": {
+                  "filter" : {"_id" : "docX"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expected));
+    }
+
+    @Test
     public void byIdNoChange() {
       insert(2);
       String json =
