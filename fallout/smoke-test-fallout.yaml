@@ -12,10 +12,15 @@ client_nb_version: 5.17.3-release
 # keyspace setup
 keyspace: jsonapi_smoke_test
 
-# documents 10K to enable sorting
-docs_count: 10000
+# 100K documents and 25 groups, so that sort and count target ~4K docs
+# adapt if needed, but keep in mind that sort supports max 10K docs per operation
+docs_count: 100000
+sort_groups: 25
 
-# load setup
+# load setup:
+# - total of 1M ops split between 10 operations equally
+# - each operation limited to 25ops/s, totals to 250ops/s
+# - each operation will be executed by 3 clients, totals to 30 clients
 op_cycles: 100000
 op_rate: 25
 op_connections: 3
@@ -26,11 +31,11 @@ ops:
   - op: find-one-by-city
   - op: find-multi-by-married-name-exists
   - op: find-multi-by-married-name-exists-with-projection
-  - op: find-multi-find-by-gender-sort-by-name
-  - op: find-by-name-newest-and-update-city
+  - op: find-multi-find-by-group-sort-by-name
+  - op: find-one-by-name-newest-and-update-city
   - op: delete-one-id
   - op: find-one-id-and-replace-upsert
-  - op: count-all
+  - op: update-many-by-country
   - op: count-by-gender
 
 ---
@@ -121,6 +126,7 @@ workload:
             - path_prefix=/api/json
             - connections={{op_connections}}
             - docscount={{docs_count}}
+            - sort_groups={{sort_groups}}
             - rate={{op_rate}}
       {{/ops}}
 

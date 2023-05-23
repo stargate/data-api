@@ -34,6 +34,7 @@ bindings:
 
   user_id: ToHashedUUID(); ToString() -> String
   created_on: Uniform(1262304000,1577836800) -> long
+  group: HashRange(1,<<sort_groups:20>>); ToString();
   gender: WeightedStrings('M:10;F:10;O:1')
   full_name: FullNames()
   married: ModuloToBoolean()
@@ -112,6 +113,7 @@ blocks:
                 "_id" :         "{seq_key}",
                 "user_id":      "{user_id}",
                 "created_on":   {created_on},
+                "group":        "{group}",
                 "gender":       "{gender}",
                 "full_name":    "{full_name}",
                 "married":      {married},
@@ -222,7 +224,7 @@ blocks:
           }
 
       # aka find with filter and sort
-      find-multi-find-by-gender-sort-by-name:
+      find-multi-find-by-group-sort-by-name:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -235,7 +237,7 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "gender": "{gender}"
+                "group": "{group}"
               },
               "sort": {
                 "full_name": 1
@@ -244,7 +246,7 @@ blocks:
           }
 
       # find one and update
-      find-by-name-newest-and-update-city:
+      find-one-by-name-newest-and-update-city:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -309,6 +311,7 @@ blocks:
               "replacement": {
                 "user_id":      "{user_id}",
                 "created_on":   {created_on},
+                "group":        "{group}",
                 "gender":       "{gender}",
                 "full_name":    "{full_name}",
                 "married":      {married},
@@ -334,8 +337,8 @@ blocks:
             }
           }
 
-      # count all in the database
-      count-all:
+      # update many
+      update-many-by-country:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -343,17 +346,26 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
-        ok-body: ".*\"count\".*"
+        ok-body: ".*\"status\".*"
         body: >2
           {
-            "countDocuments" : {
+            "updateMany" : {
               "filter" : {
+                "address.primary.cc": "{country_code}"
+              },
+              "update": {
+                  "$set": {
+                    "married": {married}
+                  },
+                  "$push": {
+                    "children": "{full_name}"
+                  }
               }
             }
           }
 
       # count by gender property
-      count-by-gender:
+      count-by-group:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_smoke_test>>/<<collection:docs_collection>>
@@ -366,7 +378,7 @@ blocks:
           {
             "countDocuments" : {
               "filter" : {
-                "gender": "{gender}"
+                "group": "{group}"
               }
             }
           }
