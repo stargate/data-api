@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,18 +15,12 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
-/**
- * The filter for counting HTTP requests per tenant. Controlled by {@link
- * MetricsConfig.TenantRequestCounterConfig}.
- */
+/** The filter for counting HTTP requests per command. = */
 @ApplicationScoped
-public class ErrorRequestMetricsFilter {
+public class RequestMetricsFilter {
 
   // split pattern for the user agent, extract only first part of the agent
   private static final Pattern USER_AGENT_SPLIT = Pattern.compile("[\\s/]");
-
-  // same as V1 io.stargate.core.metrics.StargateMetricConstants#UNKNOWN
-  private static final String UNKNOWN_VALUE = "unknown";
 
   /** The {@link MeterRegistry} to report to. */
   private final MeterRegistry meterRegistry;
@@ -46,7 +39,7 @@ public class ErrorRequestMetricsFilter {
 
   /** Default constructor. */
   @Inject
-  public ErrorRequestMetricsFilter(MeterRegistry meterRegistry, ObjectMapper objectMapper) {
+  public RequestMetricsFilter(MeterRegistry meterRegistry, ObjectMapper objectMapper) {
     this.meterRegistry = meterRegistry;
     this.objectMapper = objectMapper;
   }
@@ -69,18 +62,24 @@ public class ErrorRequestMetricsFilter {
 
     Tags tags = Tags.of(apiTag, commandTag, statusCodeTag, errorTag);
     // record
-    meterRegistry.counter("http_server_requests_seconds_custom_count", tags).increment();
+    meterRegistry.counter("http_server_requests_custom_seconds_count", tags).increment();
   }
 
+  /**
+   * Gets the command name from the request.
+   *
+   * @param inputStream {@link InputStream}
+   * @return the command name
+   */
   private String getCommandName(InputStream inputStream) {
     try {
       // reset the stream to fetch from beginning of stream
       inputStream.reset();
       // get body from requestContext
       final Iterator<String> fieldIterator = objectMapper.readTree(inputStream).fieldNames();
-      return fieldIterator.hasNext() ? fieldIterator.next() : UNKNOWN_VALUE;
+      return fieldIterator.hasNext() ? fieldIterator.next() : MetricsConstants.UNKNOWN_VALUE;
     } catch (IOException e) {
-      return UNKNOWN_VALUE;
+      return MetricsConstants.UNKNOWN_VALUE;
     }
   }
 
