@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -52,8 +51,8 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    // 13-Dec-2022, tatu: Although we could otherwise allow non-Object documents, requirement
-    //    to have the _id (or at least place for it) means we cannot allow that.
+    // Although we could otherwise allow non-Object documents, requirement
+    // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
       throw new JsonApiException(
           ErrorCode.SHRED_BAD_DOCUMENT_TYPE,
@@ -62,28 +61,14 @@ public class Shredder {
               ErrorCode.SHRED_BAD_DOCUMENT_TYPE.getMessage(), doc.getNodeType()));
     }
 
-    // We will extract id if there is one; stored separately, but also included in JSON document
-    // before storing in persistence. Need to make copy to avoid modifying input doc
-    ObjectNode docWithoutId = ((ObjectNode) doc).objectNode().setAll((ObjectNode) doc);
-    JsonNode idNode = docWithoutId.remove(DocumentConstants.Fields.DOC_ID);
-
-    // We will use `_id`, if passed (but must be JSON String or Number); if not passed,
-    // need to generate
-    DocumentId docId = (idNode == null) ? generateDocumentId() : DocumentId.fromJson(idNode);
-
-    // We will re-serialize document; gets rid of pretty-printing (if any);
-    // unifies escaping.
-    // NOTE! Since we removed "_id" if it existed (and generated if it didn't),
-    // need to add back. Moreover we want it as the FIRST field anyway so need
-    // to reconstruct document.
-    ObjectNode docWithId = docWithoutId.objectNode(); // simple constructor, not linked
-    docWithId.set(DocumentConstants.Fields.DOC_ID, docId.asJson(objectMapper));
-    docWithId.setAll(docWithoutId);
-
-    // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
+    final ObjectNode docWithId = normalizeDocumentId(doc);
+    final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
+    // Need to re-serialize document now that _id is normalized. Also gets rid of
+    // pretty-printing (if any) and unifies escaping.
     try {
+      // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
       docJson = objectMapper.writeValueAsString(docWithId);
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
@@ -93,16 +78,45 @@ public class Shredder {
     validateDocument(documentLimits, docWithId, docJson);
 
     final WritableShreddedDocument.Builder b =
-        WritableShreddedDocument.builder(new DocValueHasher(), docId, txId, docJson, docWithId);
+        WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
-    // And now let's traverse the document, _including DocumentId so it will also
-    // be indexed along with other fields.
+    // And finally let's traverse the document to actually "shred" (build index fields)
     traverse(docWithId, b, JsonPath.rootBuilder());
     return b.build();
   }
 
-  private DocumentId generateDocumentId() {
-    return DocumentId.fromUUID(UUID.randomUUID());
+  /**
+   * Method called to ensure that Document has Document Id (generating id if necessary), and that it
+   * is the very first field in the document (reordering as needed). Note that a new document is
+   * created and returned; input document is never modified.
+   *
+   * @param doc Document to use as the base
+   * @return Document that has _id as its first field
+   */
+  private ObjectNode normalizeDocumentId(JsonNode doc) {
+    // First: see if we have Object Id present or not
+    ObjectNode docWithoutId;
+    JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
+
+    // And based on that, handle differently
+    if (idNode == null) { // Generate, use existing doc as it has no _id
+      docWithoutId = (ObjectNode) doc;
+      idNode = generateDocumentId();
+    } else { // Use id as is, create a copy of Doc Object without _id
+      docWithoutId = ((ObjectNode) doc).objectNode();
+      docWithoutId.setAll((ObjectNode) doc);
+      docWithoutId.remove(DocumentConstants.Fields.DOC_ID);
+    }
+
+    // And now we need to construct actual document with _id as the first field
+    ObjectNode docWithId = docWithoutId.objectNode(); // simple constructor, not linked
+    docWithId.set(DocumentConstants.Fields.DOC_ID, idNode);
+    docWithId.setAll(docWithoutId);
+    return docWithId;
+  }
+
+  private JsonNode generateDocumentId() {
+    return objectMapper.getNodeFactory().textNode(UUID.randomUUID().toString());
   }
 
   /**
@@ -110,7 +124,7 @@ public class Shredder {
    * shredding logic from that of recursive-descent traversal.
    */
   private void traverse(JsonNode doc, ShredListener callback, JsonPath.Builder pathBuilder) {
-    // NOTE: main level is handled bit differently; no callbacks for Objects or Arrays,
+    // NOTE: main level is handled a bit differently; no callbacks for Objects or Arrays,
     // only for the (rare) case of atomic values. Just traversal.
 
     if (doc.isObject()) {
