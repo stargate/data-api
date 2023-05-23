@@ -39,7 +39,7 @@ ops:
   - op: delete-one-id
   - op: find-one-id-and-replace-upsert
   - op: update-many-by-country
-  - op: count-by-gender
+  - op: count-by-group
 
 ---
 
