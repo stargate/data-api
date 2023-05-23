@@ -65,8 +65,8 @@ public class Shredder {
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
-    // Need to re-serialize document now that _id is normalized. Also gets rid of
-    // pretty-printing (if any) and unifies escaping.
+    // Need to re-serialize document now that _id is normalized.
+    // Also gets rid of pretty-printing (if any) and unifies escaping.
     try {
       // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
       docJson = objectMapper.writeValueAsString(docWithId);
@@ -95,21 +95,20 @@ public class Shredder {
    */
   private ObjectNode normalizeDocumentId(JsonNode doc) {
     // First: see if we have Object Id present or not
-    ObjectNode docWithoutId;
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
+    ObjectNode docWithoutId;
 
-    // And based on that, handle differently
-    if (idNode == null) { // Generate, use existing doc as it has no _id
+    if (idNode == null) { // No id: generate, doc fine to use as source
       docWithoutId = (ObjectNode) doc;
       idNode = generateDocumentId();
-    } else { // Use id as is, create a copy of Doc Object without _id
-      docWithoutId = ((ObjectNode) doc).objectNode();
+    } else { // Has id, use as-is, but create a copy of Doc without id
+      docWithoutId = objectMapper.createObjectNode();
       docWithoutId.setAll((ObjectNode) doc);
       docWithoutId.remove(DocumentConstants.Fields.DOC_ID);
     }
 
     // And now we need to construct actual document with _id as the first field
-    ObjectNode docWithId = docWithoutId.objectNode(); // simple constructor, not linked
+    final ObjectNode docWithId = objectMapper.createObjectNode();
     docWithId.set(DocumentConstants.Fields.DOC_ID, idNode);
     docWithId.setAll(docWithoutId);
     return docWithId;
