@@ -33,7 +33,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
-          .statusCode(200)
+          .statusCode(401)
           .body(
               "errors[0].message",
               is(
