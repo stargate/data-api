@@ -109,7 +109,6 @@ public class MetricsTest {
 
     // ensure namespace not in tags when no auth token used
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "bad-auth-token")
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -136,7 +135,7 @@ public class MetricsTest {
             .filter(
                 line ->
                     line.startsWith("http_server_requests_custom_seconds_count")
-                        && line.contains("command=\"find\"")
+                        && line.contains("command=\"unknown\"")
                         && line.contains("error=\"true\"")
                         && line.contains("statusCode=\"401\""))
             .toList();
@@ -193,7 +192,6 @@ public class MetricsTest {
 
     // ensure namespace not in tags when no auth token used
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "bad-auth-token")
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -220,7 +218,7 @@ public class MetricsTest {
             .filter(
                 line ->
                     line.startsWith("http_server_requests_custom_seconds_count")
-                        && line.contains("command=\"createNamespace\"")
+                        && line.contains("command=\"unknown\"")
                         && line.contains("error=\"true\"")
                         && line.contains("statusCode=\"401\""))
             .toList();
