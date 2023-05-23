@@ -95,7 +95,7 @@ public class ErrorChallengeSender implements ChallengeSender {
 
       // write and map to true
       return Uni.createFrom()
-          .completionStage(context.response().write(response).map(false).toCompletionStage());
+          .completionStage(context.response().write(response).map(true).toCompletionStage());
     } catch (JsonProcessingException e) {
       LOG.error("Unable to serialize CommandResult instance {} to JSON.", commandResult, e);
 
