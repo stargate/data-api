@@ -9,6 +9,9 @@ client_region: eu-west-1
 client_type: m5.2xlarge
 client_nb_version: 5.17.3-release
 
+# branch where NoSQLBench test file is located
+test_branch: main
+
 # keyspace setup
 keyspace: jsonapi_smoke_test
 
@@ -76,7 +79,7 @@ workload:
           service_type: stargate
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:schema-collection
             - namespace={{keyspace}}
             - protocol=https
@@ -95,7 +98,7 @@ workload:
           cycles: {{docs_count}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:write
             - threads=30
             - errors=stop
@@ -116,7 +119,7 @@ workload:
           cycles: {{op_cycles}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/ise-fallout/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
             - threads=1x
             - errors=histogram
