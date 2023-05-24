@@ -94,7 +94,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
     }
   }
 
-  public void checkMetrics(String commandName) {
+  public static void checkMetrics(String commandName) {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
     List<String> countMetrics =
         metrics

@@ -18,16 +18,20 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
+  @Order(1)
   class FindOneAndUpdate {
 
     @Test
@@ -689,6 +693,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(2)
   class FindOneAndUpdateFailures {
 
     @Test
@@ -971,6 +976,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(3)
   class FindOneAndUpdateNested {
 
     @Test
@@ -1148,6 +1154,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(4)
   class FindOneAndUpdateWithSetOnInsert {
 
     @Test
@@ -1330,6 +1337,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(5)
   class FindOneAndUpdateWithProjection {
     @Test
     public void projectionAfterUpdate() {
@@ -1514,6 +1522,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(6)
   class FindOneAndUpdateWithDate {
     @Test
     public void setWithDateField() {
@@ -1672,6 +1681,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
+  @Order(7)
   class FindOneAndUpdateWithCurrentDate {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -1783,8 +1793,12 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
     deleteAllDocuments();
   }
 
-  @AfterAll
-  public void checkMetrics() {
-    checkMetrics("FindOneAndUpdateCommand");
+  @Nested
+  @Order(8)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      FindOneAndUpdateIntegrationTest.super.checkMetrics("FindOneAndUpdateCommand");
+    }
   }
 }

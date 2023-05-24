@@ -18,15 +18,19 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
+  @Order(1)
   class DeleteOne {
     @Test
     public void byId() {
@@ -518,8 +522,12 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
     }
   }
 
-  @AfterAll
-  public void checkMetrics() {
-    checkMetrics("DeleteOneCommand");
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      DeleteOneIntegrationTest.super.checkMetrics("DeleteOneCommand");
+    }
   }
 }

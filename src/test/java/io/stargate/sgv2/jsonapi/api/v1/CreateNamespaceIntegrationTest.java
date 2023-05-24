@@ -12,14 +12,17 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   private static final String DB_NAME = "stargate";
@@ -153,8 +156,12 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
   }
 
-  @AfterAll
-  public void checkMetrics() {
-    checkMetrics("CreateNamespaceCommand");
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      CreateNamespaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
+    }
   }
 }
