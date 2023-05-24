@@ -14,6 +14,7 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
@@ -2064,5 +2065,10 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("UpdateOneCommand");
   }
 }

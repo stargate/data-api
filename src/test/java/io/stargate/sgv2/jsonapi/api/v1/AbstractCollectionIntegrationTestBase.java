@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -9,6 +10,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -101,5 +103,28 @@ public abstract class AbstractCollectionIntegrationTestBase
         // Sanity check: let's look for non-empty inserted id
         .body("status.insertedIds[0]", not(emptyString()))
         .statusCode(200);
+  }
+
+  public void checkMetrics(String commandName) {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> countMetrics =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("command_processor_count")
+                        && line.contains("command=\"" + commandName + "\""))
+            .toList();
+    assertThat(countMetrics.size()).isGreaterThan(0);
+
+    List<String> totalMetrics =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("command_processor_total")
+                        && line.contains("command=\"" + commandName + "\""))
+            .toList();
+    assertThat(totalMetrics.size()).isGreaterThan(0);
   }
 }

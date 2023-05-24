@@ -12,6 +12,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -306,5 +307,10 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("FindOneAndDeleteCommand");
   }
 }

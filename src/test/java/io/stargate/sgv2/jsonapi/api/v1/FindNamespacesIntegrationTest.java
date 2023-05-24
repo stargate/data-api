@@ -11,6 +11,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +43,10 @@ class FindNamespacesIntegrationTest extends AbstractNamespaceIntegrationTestBase
           .body("status.namespaces", hasSize(greaterThan(1)))
           .body("status.namespaces", hasItem(namespaceName));
     }
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("FindNamespaceCommand");
   }
 }

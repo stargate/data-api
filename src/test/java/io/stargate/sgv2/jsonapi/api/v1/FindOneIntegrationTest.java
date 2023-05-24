@@ -15,6 +15,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -729,5 +730,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("FindOneCommand");
   }
 }

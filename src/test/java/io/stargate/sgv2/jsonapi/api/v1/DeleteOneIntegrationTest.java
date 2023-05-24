@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -515,5 +516,10 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .statusCode(200)
           .body("data.documents", is(empty()));
     }
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("DeleteOneCommand");
   }
 }

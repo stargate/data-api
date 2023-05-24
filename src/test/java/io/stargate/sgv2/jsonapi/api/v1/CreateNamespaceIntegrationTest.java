@@ -12,6 +12,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -150,5 +151,10 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
+  }
+
+  @AfterAll
+  public void checkMetrics() {
+    checkMetrics("CreateNamespaceCommand");
   }
 }
