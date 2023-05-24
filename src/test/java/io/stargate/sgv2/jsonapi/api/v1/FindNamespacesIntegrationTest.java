@@ -54,7 +54,7 @@ class FindNamespacesIntegrationTest extends AbstractNamespaceIntegrationTestBase
   class Metrics {
     @Test
     public void checkMetrics() {
-      FindNamespacesIntegrationTest.super.checkMetrics("FindNamespaceCommand");
+      FindNamespacesIntegrationTest.super.checkMetrics("FindNamespacesCommand");
     }
   }
 }
