@@ -10,8 +10,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import javax.inject.Inject;
-import javax.validation.Validator;
+import jakarta.inject.Inject;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 /** Configures the {@link ObjectMapper} instance that going to be injectable and used in the app. */
 public class ObjectMapperConfiguration {

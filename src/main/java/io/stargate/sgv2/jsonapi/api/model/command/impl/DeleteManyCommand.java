@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**

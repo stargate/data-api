@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.inject.Inject;
 import java.io.IOException;
-import javax.inject.Inject;
 
 abstract class UpdateOperationTestBase {
   @Inject protected ObjectMapper objectMapper;

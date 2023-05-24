@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.validation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class FindOptionsValidation implements ConstraintValidator<CheckFindOption, FindCommand> {
 
