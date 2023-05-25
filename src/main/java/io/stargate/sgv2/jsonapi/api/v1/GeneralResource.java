@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
+import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -35,11 +35,11 @@ public class GeneralResource {
 
   public static final String BASE_PATH = "/v1";
 
-  private final CommandProcessor commandProcessor;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public GeneralResource(CommandProcessor commandProcessor) {
-    this.commandProcessor = commandProcessor;
+  public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
+    this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
   @Operation(summary = "Execute command", description = "Executes a single general command.")
@@ -72,7 +72,7 @@ public class GeneralResource {
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
 
     // call processor
-    return commandProcessor
+    return meteredCommandProcessor
         .processCommand(CommandContext.empty(), command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());

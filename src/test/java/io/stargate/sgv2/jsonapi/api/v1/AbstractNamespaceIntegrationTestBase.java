@@ -101,19 +101,9 @@ public abstract class AbstractNamespaceIntegrationTestBase {
             .lines()
             .filter(
                 line ->
-                    line.startsWith("command_processor_count")
+                    line.startsWith("command_processor_process")
                         && line.contains("command=\"" + commandName + "\""))
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
-
-    List<String> totalMetrics =
-        metrics
-            .lines()
-            .filter(
-                line ->
-                    line.startsWith("command_processor_total")
-                        && line.contains("command=\"" + commandName + "\""))
-            .toList();
-    assertThat(totalMetrics.size()).isGreaterThan(0);
   }
 }

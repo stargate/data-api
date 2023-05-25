@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
+import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -51,11 +51,11 @@ public class CollectionResource {
 
   public static final String BASE_PATH = "/v1/{namespace}/{collection}";
 
-  private final CommandProcessor commandProcessor;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public CollectionResource(CommandProcessor commandProcessor) {
-    this.commandProcessor = commandProcessor;
+  public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
+    this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
   @Operation(
@@ -144,7 +144,7 @@ public class CollectionResource {
     CommandContext commandContext = new CommandContext(namespace, collection);
 
     // call processor
-    return commandProcessor
+    return meteredCommandProcessor
         .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
