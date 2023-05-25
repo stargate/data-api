@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.api.v1.metrics;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @ConfigMapping(prefix = "stargate.metrics")
 public interface JsonApiMetricsConfig {

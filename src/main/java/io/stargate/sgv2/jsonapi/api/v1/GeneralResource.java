@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
+import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
