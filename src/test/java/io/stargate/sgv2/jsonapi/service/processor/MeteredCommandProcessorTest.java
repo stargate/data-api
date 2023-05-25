@@ -66,7 +66,7 @@ public class MeteredCommandProcessorTest {
       assertThat(httpMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isGreaterThan(0);
+                assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"CountDocumentsCommands\"");
@@ -115,7 +115,7 @@ public class MeteredCommandProcessorTest {
       assertThat(httpMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isGreaterThan(0);
+                assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"CountDocumentsCommands\"");
