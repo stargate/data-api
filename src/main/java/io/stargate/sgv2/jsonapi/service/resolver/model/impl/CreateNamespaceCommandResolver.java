@@ -5,8 +5,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateNamespaceOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
-import javax.enterprise.context.ApplicationScoped;
 
 /**
  * Command resolver for {@link CreateNamespaceCommand}. Responsible for creating the replication

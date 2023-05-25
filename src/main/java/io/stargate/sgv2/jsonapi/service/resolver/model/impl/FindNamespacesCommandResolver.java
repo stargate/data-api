@@ -6,8 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindNamespacesOperations;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /** Command resolver for {@link FindNamespacesCommand}. */
 @ApplicationScoped

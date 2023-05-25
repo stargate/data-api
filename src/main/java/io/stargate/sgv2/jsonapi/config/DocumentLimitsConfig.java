@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import javax.validation.constraints.Positive;
+import jakarta.validation.constraints.Positive;
 
 /** Configuration Object that defines limits on Documents managed by JSON API. */
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")

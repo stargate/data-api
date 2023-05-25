@@ -9,10 +9,10 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.validation.Constraint;
-import javax.validation.Payload;
 
 /**
  * Limits the maximum amount of documents to insert, as defined in the {@link DocumentLimitsConfig}.

@@ -22,9 +22,9 @@ import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
