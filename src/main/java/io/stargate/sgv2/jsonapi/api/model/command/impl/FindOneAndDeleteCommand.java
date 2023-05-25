@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(

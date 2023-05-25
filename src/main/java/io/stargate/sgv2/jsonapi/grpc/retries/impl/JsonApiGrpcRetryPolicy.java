@@ -6,8 +6,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.ProtoUtils;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.grpc.retries.GrpcRetryPredicate;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Objects;
-import javax.enterprise.context.ApplicationScoped;
 
 /**
  * Default gRPC retry policy used in the project. The policy defines retries when:
