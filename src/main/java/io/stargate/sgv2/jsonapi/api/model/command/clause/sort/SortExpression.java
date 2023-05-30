@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public record SortExpression(
 

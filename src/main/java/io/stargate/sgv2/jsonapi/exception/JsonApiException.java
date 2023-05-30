@@ -2,10 +2,10 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Response;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.

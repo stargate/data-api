@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
-import javax.validation.constraints.NotNull;
 
 /**
  * This object represents the operator and rhs operand of a filter clause

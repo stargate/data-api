@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /** Resolver for the {@link DeleteCollectionCommand}. */
 @ApplicationScoped
