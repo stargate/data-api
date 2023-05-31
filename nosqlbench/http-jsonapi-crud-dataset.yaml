@@ -1,17 +1,19 @@
 min_version: "5.17.3"
 
+# Example command line (when Stargate is running on localhost):
+# nb5 -v http-jsonapi-crud-dataset jsonapi_host=localhost docscount=20000 threads=20 dataset=dataset.txt
+
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
-  It requires a data set file, where each line is a single JSON document to be used for writes and updates.
+  It requires a data set file (default dataset.txt), where each line is a single JSON document to be used for writes and updates.
   Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
   default:
     schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
     write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    read:    run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    delete:    run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -32,6 +34,7 @@ bindings:
 
   seq_key: Mod(<<docscount:10000000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
+  document_json_without_id: HashedLineToString('<<dataset:dataset.txt>>');
 
 blocks:
   schema:
@@ -68,7 +71,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -81,47 +84,64 @@ blocks:
             }
           }
 
-  main:
-    bindings:
-      document_json: ModuloLineToString('<<dataset_file>>');
+  write:
     ops:
-      # TODO expect the document have the ID in it?
       write-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
-        body: "{document_json}"
-
+        body: >2
+          {
+            "insertOne" : {
+              "document" : { 
+                "_id" :         "{seq_key}",
+                "data" :      {document_json_without_id}
+              }
+            }
+          }
+          
+  read:
+    ops:
+      # aka findOne with _id as filter
       read-document:
         space: "{space}"
-        method: GET
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "_id" : "{random_key}"
+              }
+            }
+          }        
 
-      update-document:
-        space: "{space}"
-        method: PUT
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
-        Content-Type: "application/json"
-        body: "{document_json}"
-
+  delete:
+    ops:
       delete-document:
         space: "{space}"
-        method: DELETE
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{seq_key}
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
+        body: >2
+          {
+            "deleteOne" : {
+              "filter" : {
+                "_id" : "{random_key}"
+              }
+            }
+          }
