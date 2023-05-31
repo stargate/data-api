@@ -27,7 +27,7 @@ public class MeteredCommandProcessor {
 
   private final StargateRequestInfo stargateRequestInfo;
 
-  private final JsonApiMetricsConfig.CustomMetricsConfig customMetricsConfig;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
 
@@ -53,14 +53,14 @@ public class MeteredCommandProcessor {
       MetricsConfig metricsConfig) {
     this.commandProcessor = commandProcessor;
     this.meterRegistry = meterRegistry;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     tenantConfig = metricsConfig.tenantRequestCounter();
-    customMetricsConfig = jsonApiMetricsConfig.customMetricsConfig();
     this.stargateRequestInfo = stargateRequestInfo;
     errorTrue = Tag.of(tenantConfig.errorTag(), "true");
     errorFalse = Tag.of(tenantConfig.errorTag(), "false");
     tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
-    defaultErrorCode = Tag.of(customMetricsConfig.errorCode(), NA);
-    defaultErrorClass = Tag.of(customMetricsConfig.errorClass(), NA);
+    defaultErrorCode = Tag.of(jsonApiMetricsConfig.errorCode(), NA);
+    defaultErrorClass = Tag.of(jsonApiMetricsConfig.errorClass(), NA);
   }
 
   /**
@@ -82,7 +82,7 @@ public class MeteredCommandProcessor {
             result -> {
               Tags tags = getCustomTags(command, result);
               // add metrics
-              sample.stop(meterRegistry.timer(customMetricsConfig.metricsName(), tags));
+              sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
             });
   }
 
@@ -94,7 +94,7 @@ public class MeteredCommandProcessor {
    * @return
    */
   private Tags getCustomTags(Command command, CommandResult result) {
-    Tag commandTag = Tag.of(customMetricsConfig.command(), command.getClass().getSimpleName());
+    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     String tenant = stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
     Tag errorTag = errorFalse;
@@ -105,10 +105,10 @@ public class MeteredCommandProcessor {
       errorTag = errorTrue;
       String errorClass =
           (String) result.errors().get(0).fields().getOrDefault("exceptionClass", UNKNOWN_VALUE);
-      errorClassTag = Tag.of(customMetricsConfig.errorClass(), errorClass);
+      errorClassTag = Tag.of(jsonApiMetricsConfig.errorClass(), errorClass);
       String errorCode =
           (String) result.errors().get(0).fields().getOrDefault("errorCode", UNKNOWN_VALUE);
-      errorCodeTag = Tag.of(customMetricsConfig.errorCode(), errorCode);
+      errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
     Tags tags = Tags.of(commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag);
     return tags;

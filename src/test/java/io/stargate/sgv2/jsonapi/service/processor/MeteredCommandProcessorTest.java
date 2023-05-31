@@ -13,8 +13,10 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +54,10 @@ public class MeteredCommandProcessorTest {
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
       Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
-      meteredCommandProcessor.processCommand(commandContext, countCommand).await().indefinitely();
+      meteredCommandProcessor
+          .processCommand(commandContext, countCommand)
+          .await()
+          .atMost(Duration.ofMinutes(1));
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
       List<String> httpMetrics =
           metrics
@@ -80,15 +85,65 @@ public class MeteredCommandProcessorTest {
     }
 
     @Test
+    public void errorMetricsWithNoErrorCode() throws Exception {
+      String json = """
+        {
+          "find": {
+
+          }
+        }
+        """;
+
+      FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
+      CommandContext commandContext = new CommandContext("namespace", "collection");
+      Map<String, Object> fields = new HashMap<>();
+      fields.put("exceptionClass", "TestExceptionClass");
+      CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
+      CommandResult commandResult = new CommandResult(Collections.singletonList(error));
+      Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
+          .thenReturn(Uni.createFrom().item(commandResult));
+      Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      meteredCommandProcessor
+          .processCommand(commandContext, countCommand)
+          .await()
+          .atMost(Duration.ofMinutes(1));
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> httpMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("command_processor_process")
+                          && line.contains("error=\"true\"")
+                          && line.contains("command=\"FindCommand\""))
+              .toList();
+
+      assertThat(httpMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"FindCommand\"");
+                      assertThat(line).contains("tenant=\"test-tenant\"");
+                      assertThat(line).contains("error=\"true\"");
+                      assertThat(line).contains("error_code=\"unknown\"");
+                      assertThat(line).contains("error_class=\"TestExceptionClass\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
+    }
+
+    @Test
     public void errorMetrics() throws Exception {
       String json =
           """
-                                    {
-                                      "countDocuments": {
+          {
+            "countDocuments": {
 
-                                      }
-                                    }
-                                    """;
+            }
+          }
+          """;
 
       CountDocumentsCommands countCommand =
           objectMapper.readValue(json, CountDocumentsCommands.class);
@@ -101,7 +156,10 @@ public class MeteredCommandProcessorTest {
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
       Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
-      meteredCommandProcessor.processCommand(commandContext, countCommand).await().indefinitely();
+      meteredCommandProcessor
+          .processCommand(commandContext, countCommand)
+          .await()
+          .atMost(Duration.ofMinutes(1));
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
       List<String> httpMetrics =
           metrics
@@ -109,7 +167,8 @@ public class MeteredCommandProcessorTest {
               .filter(
                   line ->
                       line.startsWith("command_processor_process")
-                          && line.contains("error=\"true\""))
+                          && line.contains("error=\"true\"")
+                          && line.contains("command=\"CountDocumentsCommands\""))
               .toList();
 
       assertThat(httpMetrics)
