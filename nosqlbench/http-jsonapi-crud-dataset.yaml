@@ -13,6 +13,7 @@ scenarios:
     schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
     write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
     read:    run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    update: run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
     delete:    run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
 
 bindings:
@@ -124,7 +125,37 @@ blocks:
                 "_id" : "{random_key}"
               }
             }
-          }        
+          }  
+
+  update:
+    ops:
+      # aka updateOne
+      # for parity with other tests this only uses set, not unset, no return value
+      update-document:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        # because this is not an upsert, modified count could technically be 0 or 1,
+        # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
+        # every update during this phase should update exactly 1 document.
+        ok-body: ".*\"modifiedCount\":[0,1].*"
+        body: >2
+          {
+            "updateOne" : {
+              "filter": {
+                "_id" : "{random_key}"
+              },
+              "update": {
+                "$set": {
+                  "update_field": "update_value"
+                }
+              }
+            }
+          }
 
   delete:
     ops:
