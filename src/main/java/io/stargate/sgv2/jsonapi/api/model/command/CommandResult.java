@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -183,15 +182,6 @@ public record CommandResult(
         throw new IllegalArgumentException(
             "Error fields can not contain the reserved message key.");
       }
-    }
-
-    /**
-     * Constructor that sets documents only the message.
-     *
-     * @param message Error message.
-     */
-    public Error(String message) {
-      this(message, Collections.emptyMap(), Response.Status.OK);
     }
   }
 

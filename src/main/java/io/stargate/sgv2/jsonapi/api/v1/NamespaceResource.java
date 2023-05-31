@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
+import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,11 +40,11 @@ public class NamespaceResource {
 
   public static final String BASE_PATH = "/v1/{namespace}";
 
-  private final CommandProcessor commandProcessor;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public NamespaceResource(CommandProcessor commandProcessor) {
-    this.commandProcessor = commandProcessor;
+  public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
+    this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
   @Operation(
@@ -88,7 +88,7 @@ public class NamespaceResource {
     CommandContext commandContext = new CommandContext(namespace, null);
 
     // call processor
-    return commandProcessor
+    return meteredCommandProcessor
         .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());

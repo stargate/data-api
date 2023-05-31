@@ -10,6 +10,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,8 @@ class ErrorSerializerTest {
 
     @Test
     public void withoutProps() throws Exception {
-      CommandResult.Error error = new CommandResult.Error("My message.");
+      CommandResult.Error error =
+          new CommandResult.Error("My message.", Collections.emptyMap(), Response.Status.OK);
 
       String result = objectMapper.writeValueAsString(error);
 

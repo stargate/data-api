@@ -37,3 +37,13 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 | `stargate.jsonapi.operations.max-document-delete-count`  | `int` | `20`     | The maximum amount of documents that can be deleted in a single operation. In case there are more documents that could be deleted, the operation will set the `moreData` response status to `true`. |
 | `stargate.jsonapi.operations.max-in-operator-value-size` | `int` | `100`    | The maximum number of _id values that can be passed for `$in` operator.   |
 | `stargate.jsonapi.operations.lwt.retries`                | `int` | `3`      | The amount of client side retries in case of a LWT failure.                                                                                                                                        |
+
+## Jsonapi metering configuration
+*Configuration for jsonapi metering, defined by [JsonApiMetricsConfig.java](io/stargate/sgv2/jsonapi/api/v1/metrics/JsonApiMetricsConfig.java).*
+
+| Property                              | Type     | Default       | Description                                                  |
+|---------------------------------------|----------|---------------|--------------------------------------------------------------|
+| `stargate.jsonapi.metric.error-class` | `string` | `error.class` | Metrics tag that provides information about the error class. |
+| `stargate.jsonapi.metric.error-code`  | `string` | `error.code`  | Metrics tag that provides information about the error code.  |
+| `stargate.jsonapi.metric.command`     | `string` | `command`     | Metrics tag that provides information about the command.     |
+| `stargate.jsonapi.metric.metrics.name`| `string` | `jsonapi`     | Metrics name prefix.                                         |

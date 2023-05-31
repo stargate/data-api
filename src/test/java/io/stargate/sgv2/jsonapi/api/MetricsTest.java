@@ -8,16 +8,16 @@ import io.quarkus.test.junit.TestProfile;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
-import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
+import io.stargate.sgv2.jsonapi.api.v1.GeneralResource;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class UnauthorizedMetricsTest {
+public class MetricsTest {
 
   @Test
-  public void namespaceResource() {
+  public void unauthorizedNamespaceResource() {
     String json =
         """
         {
@@ -32,9 +32,40 @@ public class UnauthorizedMetricsTest {
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(NamespaceResource.BASE_PATH, "keyspace")
+        .post(GeneralResource.BASE_PATH)
         .then()
-        .statusCode(200);
+        .statusCode(401);
+
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> httpMetrics =
+        metrics.lines().filter(line -> line.startsWith("http_server_requests_seconds")).toList();
+    assertThat(httpMetrics)
+        .allSatisfy(
+            line ->
+                assertThat(line)
+                    .containsAnyOf(
+                        "uri=\"/v1\"",
+                        "uri=\"/v1/{namespace}\"",
+                        "uri=\"/v1/{namespace}/{collection}\""));
+  }
+
+  @Test
+  public void unauthorizedCollectionResource() {
+    String json = """
+        {
+          "find": {
+          }
+        }
+        """;
+
+    // ensure namespace not in tags when no auth token used
+    given()
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, "keyspace", "collection")
+        .then()
+        .statusCode(401);
 
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
     List<String> httpMetrics =
@@ -51,10 +82,12 @@ public class UnauthorizedMetricsTest {
   }
 
   @Test
-  public void collectionResource() {
-    String json = """
+  public void unauthorizedGeneralResource() {
+    String json =
+        """
         {
-          "find": {
+          "createNamespace": {
+          "name": "purchase_database"
           }
         }
         """;
@@ -64,9 +97,9 @@ public class UnauthorizedMetricsTest {
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(CollectionResource.BASE_PATH, "keyspace", "collection")
+        .post(GeneralResource.BASE_PATH)
         .then()
-        .statusCode(200);
+        .statusCode(401);
 
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
     List<String> httpMetrics =

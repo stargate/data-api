@@ -14,13 +14,18 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
+  @Order(1)
   class FindOneAndReplace {
     @Test
     public void byId() {
@@ -480,6 +485,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
   }
 
   @Nested
+  @Order(2)
   class FindOneAndReplaceWithProjection {
     @Test
     public void byIdProjectionAfter() {
@@ -621,5 +627,14 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @Nested
+  @Order(3)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      FindOneAndReplaceIntegrationTest.super.checkMetrics("FindOneAndReplaceCommand");
+    }
   }
 }
