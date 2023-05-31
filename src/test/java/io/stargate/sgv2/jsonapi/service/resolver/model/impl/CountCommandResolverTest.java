@@ -11,8 +11,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import jakarta.inject.Inject;
 import java.util.List;
-import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest

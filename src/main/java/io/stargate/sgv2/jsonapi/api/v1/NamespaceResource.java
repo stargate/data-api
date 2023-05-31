@@ -6,18 +6,18 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
-import javax.inject.Inject;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -40,11 +40,11 @@ public class NamespaceResource {
 
   public static final String BASE_PATH = "/v1/{namespace}";
 
-  private final CommandProcessor commandProcessor;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public NamespaceResource(CommandProcessor commandProcessor) {
-    this.commandProcessor = commandProcessor;
+  public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
+    this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
   @Operation(
@@ -88,7 +88,7 @@ public class NamespaceResource {
     CommandContext commandContext = new CommandContext(namespace, null);
 
     // call processor
-    return commandProcessor
+    return meteredCommandProcessor
         .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());

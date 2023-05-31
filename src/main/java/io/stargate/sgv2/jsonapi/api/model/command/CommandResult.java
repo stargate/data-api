@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Collections;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
@@ -183,15 +182,6 @@ public record CommandResult(
         throw new IllegalArgumentException(
             "Error fields can not contain the reserved message key.");
       }
-    }
-
-    /**
-     * Constructor that sets documents only the message.
-     *
-     * @param message Error message.
-     */
-    public Error(String message) {
-      this(message, Collections.emptyMap(), Response.Status.OK);
     }
   }
 

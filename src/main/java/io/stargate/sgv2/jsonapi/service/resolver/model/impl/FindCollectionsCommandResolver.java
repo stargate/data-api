@@ -6,8 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindCollectionsOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /** Command resolver for the {@link FindCollectionsCommand}. */
 @ApplicationScoped

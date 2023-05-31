@@ -20,7 +20,7 @@ import io.stargate.sgv2.api.common.grpc.RetriableStargateBridge;
 import io.stargate.sgv2.api.common.grpc.qualifier.Retriable;
 import io.stargate.sgv2.common.bridge.BridgeTest;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest

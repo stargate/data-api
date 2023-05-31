@@ -19,10 +19,10 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")

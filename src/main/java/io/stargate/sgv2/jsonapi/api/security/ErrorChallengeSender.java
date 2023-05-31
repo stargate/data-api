@@ -7,11 +7,13 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +36,12 @@ public class ErrorChallengeSender implements ChallengeSender {
           String headerName,
       ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
-
     // create the response
     String message =
         "Role unauthorized for operation: Missing token, expecting one in the %s header."
             .formatted(headerName);
-    CommandResult.Error error = new CommandResult.Error(message);
+    CommandResult.Error error =
+        new CommandResult.Error(message, Collections.emptyMap(), Response.Status.UNAUTHORIZED);
     commandResult = new CommandResult(List.of(error));
   }
 
@@ -59,8 +61,8 @@ public class ErrorChallengeSender implements ChallengeSender {
           .headers()
           .set(HttpHeaders.CONTENT_LENGTH, String.valueOf(response.getBytes().length));
 
-      // always set status to 200
-      context.response().setStatusCode(200);
+      // Return the status code from the challenge data
+      context.response().setStatusCode(challengeData.status);
 
       // write and map to true
       return Uni.createFrom()

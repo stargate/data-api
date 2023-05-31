@@ -15,16 +15,20 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
+  @Order(1)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOne {
     private static final String DOC1_JSON =
@@ -728,6 +732,15 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("errors[1].message", is("$size operator must have integer"))
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      FindOneIntegrationTest.super.checkMetrics("FindOneCommand");
     }
   }
 }

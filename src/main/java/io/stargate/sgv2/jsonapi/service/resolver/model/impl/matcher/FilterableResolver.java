@@ -12,13 +12,13 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
 
 /**
  * Base for resolvers that are {@link Filterable}, there are a number of commands like find,

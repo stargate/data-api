@@ -9,11 +9,11 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import javax.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

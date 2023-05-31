@@ -7,10 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import jakarta.inject.Inject;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

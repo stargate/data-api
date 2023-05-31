@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
