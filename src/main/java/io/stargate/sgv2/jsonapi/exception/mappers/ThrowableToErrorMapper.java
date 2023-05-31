@@ -4,10 +4,10 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.ws.rs.core.Response;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default

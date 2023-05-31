@@ -9,9 +9,9 @@ import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.util.function.Supplier;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 /**
  * Processes valid document {@link Command} to read, write, schema change, etc. This is a single
