@@ -61,7 +61,7 @@ public class Shredder {
               ErrorCode.SHRED_BAD_DOCUMENT_TYPE.getMessage(), doc.getNodeType()));
     }
 
-    final ObjectNode docWithId = normalizeDocumentId(doc);
+    final ObjectNode docWithId = normalizeDocumentId((ObjectNode) doc);
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
@@ -93,28 +93,26 @@ public class Shredder {
    * @param doc Document to use as the base
    * @return Document that has _id as its first field
    */
-  private ObjectNode normalizeDocumentId(JsonNode doc) {
+  private ObjectNode normalizeDocumentId(ObjectNode doc) {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
-    ObjectNode docWithoutId;
 
-    if (idNode == null) { // No id: generate, doc fine to use as source
-      docWithoutId = (ObjectNode) doc;
+    // If not, generateone
+    if (idNode == null) {
       idNode = generateDocumentId();
-    } else { // Has id, use as-is, but create a copy of Doc without id
-      docWithoutId = objectMapper.createObjectNode();
-      docWithoutId.setAll((ObjectNode) doc);
-      docWithoutId.remove(DocumentConstants.Fields.DOC_ID);
     }
-
-    // And now we need to construct actual document with _id as the first field
-    final ObjectNode docWithId = objectMapper.createObjectNode();
-    docWithId.set(DocumentConstants.Fields.DOC_ID, idNode);
-    docWithId.setAll(docWithoutId);
-    return docWithId;
+    // Either way we need to construct actual document with _id as the first field;
+    // unfortunately there is no way to reorder fields in-place.
+    final ObjectNode docWithIdAsFirstField = objectMapper.createObjectNode();
+    docWithIdAsFirstField.set(DocumentConstants.Fields.DOC_ID, idNode);
+    // Ok to add all fields, possibly including doc id since order won't change
+    docWithIdAsFirstField.setAll(doc);
+    return docWithIdAsFirstField;
   }
 
   private JsonNode generateDocumentId() {
+    // Currently we generate UUID-as-String; alternatively could use and create
+    // ObjectId-compatible values for better interoperability
     return objectMapper.getNodeFactory().textNode(UUID.randomUUID().toString());
   }
 
