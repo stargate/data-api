@@ -15,14 +15,17 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   // TODO refactor in https://github.com/stargate/jsonapi/issues/174
@@ -32,6 +35,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(1)
   class Find {
     @Test
     @Order(1)
@@ -1026,6 +1030,15 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      FindIntegrationTest.super.checkMetrics("FindCommand");
     }
   }
 }

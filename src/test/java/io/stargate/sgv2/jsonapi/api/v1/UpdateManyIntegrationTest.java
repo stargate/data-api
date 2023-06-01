@@ -16,14 +16,19 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
+  @Order(1)
   class UpdateMany {
 
     private void insert(int countOfDocument) {
@@ -547,6 +552,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
   }
 
   @Nested
+  @Order(2)
   class Concurrency {
 
     @RepeatedTest(10)
@@ -641,6 +647,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
   }
 
   @Nested
+  @Order(3)
   class ClientErrors {
 
     @Test
@@ -674,5 +681,14 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @Nested
+  @Order(3)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      UpdateManyIntegrationTest.super.checkMetrics("UpdateManyCommand");
+    }
   }
 }

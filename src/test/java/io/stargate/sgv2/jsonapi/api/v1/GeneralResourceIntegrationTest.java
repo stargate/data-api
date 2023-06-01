@@ -37,7 +37,7 @@ class GeneralResourceIntegrationTest {
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
-          .statusCode(200)
+          .statusCode(401)
           .body(
               "errors[0].message",
               is(

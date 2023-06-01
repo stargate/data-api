@@ -15,15 +15,20 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
+  @Order(1)
   class UpdateOneWithSet {
     @Test
     public void byIdAndSet() {
@@ -669,6 +674,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(2)
   class UpdateOneWithUnset {
     @Test
     public void byIdAndUnset() {
@@ -732,6 +738,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(3)
   class UpdateOneWithPop {
 
     @Test
@@ -816,6 +823,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(4)
   class UpdateOneWithPush {
 
     @Test
@@ -1011,6 +1019,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(5)
   class UpdateOneWithInc {
 
     @Test
@@ -1088,6 +1097,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(6)
   class UpdateOneWithMul {
     @Test
     public void byColumnAndMultiply() {
@@ -1162,6 +1172,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(7)
   class UpdateOneWithAddToSet {
 
     @Test
@@ -1341,6 +1352,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(8)
   class UpdateOneWithMin {
 
     @Test
@@ -1547,6 +1559,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(9)
   class UpdateOneWithMax {
 
     @Test
@@ -1753,6 +1766,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(10)
   class UpdateOneWithRename {
 
     @Test
@@ -1830,6 +1844,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
 
   // Tests combining more than update operator, mostly for cross-validation
   @Nested
+  @Order(11)
   class UpdateOneMultipleOperationTypes {
     @Test
     public void byColumnUseSetAndUnset() {
@@ -1901,6 +1916,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(12)
   class Concurrency {
 
     @RepeatedTest(10)
@@ -2000,6 +2016,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   }
 
   @Nested
+  @Order(13)
   class ClientErrors {
     @Test
     public void invalidCommand() {
@@ -2064,5 +2081,14 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @Nested
+  @Order(14)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      UpdateOneIntegrationTest.super.checkMetrics("UpdateOneCommand");
+    }
   }
 }

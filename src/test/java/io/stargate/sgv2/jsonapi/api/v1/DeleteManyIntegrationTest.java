@@ -21,14 +21,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
+  @Order(1)
   class DeleteMany {
 
     private void insert(int countOfDocument) {
@@ -399,5 +404,14 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
+  }
+
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      DeleteManyIntegrationTest.super.checkMetrics("DeleteManyCommand");
+    }
   }
 }

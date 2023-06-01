@@ -23,11 +23,15 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @AfterEach
   public void cleanUpData() {
@@ -35,6 +39,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
+  @Order(1)
   class InsertOne {
 
     @Test
@@ -513,6 +518,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
+  @Order(2)
   class InsertMany {
 
     @Test
@@ -920,6 +926,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds", hasSize(2))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(3)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
   }
 }

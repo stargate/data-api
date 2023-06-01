@@ -40,9 +40,8 @@ public record WritableShreddedDocument(
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues) {
-  public static Builder builder(
-      DocValueHasher hasher, DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
-    return new Builder(hasher, id, txID, docJson, docJsonNode);
+  public static Builder builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
+    return new Builder(id, txID, docJson, docJsonNode);
   }
 
   /**
@@ -76,9 +75,8 @@ public record WritableShreddedDocument(
     private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
 
-    public Builder(
-        DocValueHasher hasher, DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
-      this.hasher = hasher;
+    public Builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
+      hasher = new DocValueHasher();
       this.id = id;
       this.txID = txID;
       this.docJson = Objects.requireNonNull(docJson);

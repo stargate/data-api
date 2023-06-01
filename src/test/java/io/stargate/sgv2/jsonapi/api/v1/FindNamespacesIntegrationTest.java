@@ -11,14 +11,19 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class FindNamespacesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
+  @Order(1)
   class FindNamespaces {
 
     @Test
@@ -41,6 +46,15 @@ class FindNamespacesIntegrationTest extends AbstractNamespaceIntegrationTestBase
           .statusCode(200)
           .body("status.namespaces", hasSize(greaterThan(1)))
           .body("status.namespaces", hasItem(namespaceName));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class Metrics {
+    @Test
+    public void checkMetrics() {
+      FindNamespacesIntegrationTest.super.checkMetrics("FindNamespacesCommand");
     }
   }
 }
