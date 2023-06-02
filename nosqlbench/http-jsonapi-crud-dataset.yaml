@@ -1,7 +1,7 @@
 min_version: "5.17.3"
 
 # Example command line (when Stargate is running on localhost):
-# nb5 -v http-jsonapi-crud-dataset jsonapi_host=localhost docscount=20000 threads=20 dataset=dataset.txt
+# nb5 -v http-jsonapi-crud-dataset jsonapi_host=localhost docscount=20000 threads=20 dataset=sample-dataset.txt
 
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
@@ -10,11 +10,9 @@ description: >2
 
 scenarios:
   default:
-    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
-    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    read:    run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    update: run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    delete:    run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    schema:  run driver=http tags==block:schema threads==1 cycles==UNDEF
+    write:   run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    main:    run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -22,7 +20,7 @@ bindings:
   #   single host: jsonapi_host=host1
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
@@ -33,9 +31,15 @@ bindings:
   # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
   token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
-  seq_key: Mod(<<docscount:10000000>>); ToString() -> String
-  random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
-  document_json_without_id: HashedLineToString('<<dataset:dataset.txt>>');
+  seq_key: Mod(<<docscount:10000>>); ToString() -> String
+  update_seq_key: Mod(<<docscount:10000>>); ToString() -> String
+  random_key: Uniform(0,<<docscount:10000>>); ToString() -> String
+  document_json_without_id: HashedLineToString('<<dataset:sample-dataset.txt>>');
+
+  #Adding some data to verify different types of filters
+  city: Cities()
+  full_name: FullNames()
+  married: ModuloToBoolean()
 
 blocks:
   schema:
@@ -51,13 +55,13 @@ blocks:
         body: >2
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_crud_basic>>"
+              "name": "<<namespace:jsonapi_crud_dataset>>"
             }
           }
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -72,7 +76,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -90,7 +94,7 @@ blocks:
       write-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -101,18 +105,21 @@ blocks:
             "insertOne" : {
               "document" : { 
                 "_id" :         "{seq_key}",
+                "city" :        "{city}",
+                "full_name" :   "{full_name}",
+                "married" :     "{married}",
                 "data" :      {document_json_without_id}
               }
             }
           }
-          
-  read:
+
+  main:
     ops:
       # aka findOne with _id as filter
-      read-document:
+      find-one-id:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -125,16 +132,128 @@ blocks:
                 "_id" : "{random_key}"
               }
             }
+          } 
+
+      # aka findOne with single property as filter
+      find-one-by-city:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "city" : "{city}"
+              }
+            }
           }  
 
-  update:
-    ops:
+      # aka find with $eq and $exist
+      find-multi-by-married-name-exists:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "married": true,
+                "full_name": { "$exists": true }
+              }
+            }
+          }
+
+      # aka find with $eq and $exist and $projection
+      find-multi-by-married-name-exists-with-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "married": true,
+                "full_name": { "$exists": true }
+              },
+              "projection": {
+                "full_name": 1,
+                "married": 1,
+                "city": 1
+              }
+            }
+          }
+
+      # aka find with filter and sort
+      find-multi-find-by-group-sort-by-name:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "city": "{city}"
+              },
+              "sort": {
+                "full_name": 1
+              }
+            }
+          }
+
+      # find one and update
+      find-one-by-name-newest-and-update-city:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOneAndUpdate" : {
+              "filter":{
+                "city": "{city}"
+              },
+              "sort" : {
+                "full_name": 1
+              },
+              "update": {
+                "$set" : {"update_one_field": "{city}"}
+              },
+              "options": {
+                "upsert": false
+              }
+            }
+          }
+
       # aka updateOne
       # for parity with other tests this only uses set, not unset, no return value
       update-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -151,18 +270,17 @@ blocks:
               },
               "update": {
                 "$set": {
-                  "update_field": "update_value"
+                  "update_field": "{update_seq_key}"
                 }
               }
             }
           }
 
-  delete:
-    ops:
+      # Delete record by id
       delete-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -176,3 +294,32 @@ blocks:
               }
             }
           }
+
+        # find one and replace with upsert
+        find-one-id-and-replace-upsert:
+          space: "{space}"
+          method: POST
+          uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+          Accept: "application/json"
+          X-Cassandra-Request-Id: "{request_id}"
+          X-Cassandra-Token: "{token}"
+          Content-Type: "application/json"
+          ok-body: ".*\"data\".*"
+          body: >2
+            {
+              "findOneAndReplace" : {
+                "filter" : {
+                  "_id": "{random_key}"
+                },
+                "replacement": {
+                  "_id" : "{seq_key}",
+                  "city" : "{city}",
+                  "full_name" : "{full_name}",
+                  "married" : "{married}",
+                  "data" : {document_json_without_id}
+                },
+                "options": {
+                  "upsert": true
+                }
+              }
+            }  
