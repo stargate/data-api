@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import jakarta.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -14,7 +13,7 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 @Provider
 public class JsonMappingExceptionMapper {
   @ServerExceptionMapper(JsonMappingException.class)
-  public RestResponse<CommandResult> constraintsExceptionMapper(Throwable t) {
+  public RestResponse<CommandResult> jsonMappingExceptionMapper(Throwable t) {
     // Ok: need to look for root cause to see if it's constraints-violation or not
     while (t.getCause() != null) {
       t = t.getCause();
@@ -23,8 +22,9 @@ public class JsonMappingExceptionMapper {
       JsonApiException apiException =
           new JsonApiException(
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-              ((StreamConstraintsException) t).getOriginalMessage());
-      return RestResponse.ok(new ThrowableCommandResultSupplier(apiException).get());
+              ((StreamConstraintsException) t).getOriginalMessage(),
+              t);
+      return RestResponse.ok(apiException.get());
     }
     // Otherwise it's something else, let Quarkus handle it
     return null;
