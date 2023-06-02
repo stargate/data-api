@@ -100,16 +100,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertDocumentWithDateValue() {
       String json =
           """
-        {
-          "insertOne": {
-            "document": {
-              "_id": "doc_date",
-              "username": "doc_date_user3",
-              "date_created": {"$date": 1672531200000}
+          {
+            "insertOne": {
+              "document": {
+                "_id": "doc_date",
+                "username": "doc_date_user3",
+                "date_created": {"$date": 1672531200000}
+              }
             }
           }
-        }
-        """;
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -125,21 +125,21 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       String expected =
           """
-        {
-          "_id": "doc_date",
-          "username": "doc_date_user3",
-          "date_created": {"$date": 1672531200000}
-        }
-        """;
+          {
+            "_id": "doc_date",
+            "username": "doc_date_user3",
+            "date_created": {"$date": 1672531200000}
+          }
+          """;
 
       String query_json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "doc_date"}
+          {
+            "find": {
+              "filter" : {"_id" : "doc_date"}
+            }
           }
-        }
-        """;
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -157,16 +157,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertDocumentWithDateDocId() {
       String json =
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": {"$date": 1672539900000},
-                  "username": "doc_date_user4",
-                  "status": false
-                }
+          {
+            "insertOne": {
+              "document": {
+                "_id": {"$date": 1672539900000},
+                "username": "doc_date_user4",
+                "status": false
               }
             }
-            """;
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -182,21 +182,21 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       String expected =
           """
-            {
-              "_id": {"$date": 1672539900000},
-              "username": "doc_date_user4",
-              "status": false
-            }
-            """;
+          {
+            "_id": {"$date": 1672539900000},
+            "username": "doc_date_user4",
+            "status": false
+          }
+          """;
 
       String query_json =
           """
-            {
-              "find": {
-                "filter" : {"_id" : {"$date": 1672539900000}}
-              }
+          {
+            "find": {
+              "filter" : {"_id" : {"$date": 1672539900000}}
             }
-            """;
+          }
+          """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -214,15 +214,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertDocumentWithNumberId() {
       String json =
           """
-          {
-            "insertOne": {
-              "document": {
-                "_id": 4,
-                "username": "user4"
-              }
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": 4,
+                            "username": "user4"
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -238,19 +238,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : 4}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : 4}
+                        }
+                      }
+                      """;
       String expected =
           """
-          {
-            "_id": 4,
-            "username":"user4"
-          }
-          """;
+                      {
+                        "_id": 4,
+                        "username":"user4"
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -268,16 +268,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void emptyOptionsAllowed() {
       String json =
           """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc3",
-                "username": "user3"
-              },
-              "options": {}
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "doc3",
+                            "username": "user3"
+                          },
+                          "options": {}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -296,15 +296,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void noOptionsAllowed() {
       String json =
           """
-              {
-                "insertOne": {
-                  "document": {
-                    "_id": "docWithOptions"
-                  },
-                  "options": {"setting":"abc"}
-                }
-              }
-              """;
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "docWithOptions"
+                          },
+                          "options": {"setting":"abc"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -329,15 +329,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertDuplicateDocument() {
       String json =
           """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "duplicate",
-                "username": "user4"
-              }
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "duplicate",
+                            "username": "user4"
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -353,15 +353,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       json =
           """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "duplicate",
-                "username": "different_user_name"
-              }
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "duplicate",
+                            "username": "different_user_name"
+                          }
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -379,19 +379,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "duplicate"}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "duplicate"}
+                        }
+                      }
+                      """;
       String expected =
           """
-              {
-                "_id": "duplicate",
-                "username":"user4"
-              }
-              """;
+                      {
+                        "_id": "duplicate",
+                        "username":"user4"
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -408,13 +408,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void emptyDocument() {
       String json =
           """
-          {
-            "insertOne": {
-              "document": {
-              }
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                          "document": {
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -433,11 +433,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void notValidDocumentMissing() {
       String json =
           """
-          {
-            "insertOne": {
-            }
-          }
-          """;
+                      {
+                        "insertOne": {
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -450,7 +450,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
+  }
 
+  @Nested
+  @Order(2)
+  class InsertOneConstraintFailures {
     @Test
     public void tryInsertTooBigArray() {
       final ObjectMapper mapper = new ObjectMapper();
@@ -515,10 +519,44 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               is(
                   "Document size limitation violated: Property name length (100) exceeds maximum allowed (48)"));
     }
+
+    @Test
+    public void tryInsertTooLongNumber() {
+      // Max number length: 50; use 60
+      String tooLongNumStr = "1234567890".repeat(6);
+      String json =
+          """
+                    {
+                      "insertOne": {
+                        "document": {
+                           "_id" : 123,
+                           "bigNumber" : %s
+                        }
+                      }
+                    }
+                    """
+              .formatted(tooLongNumStr);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(2))
+          .body(
+              "errors[0].message", startsWith("Number length (60) exceeds the maximum length (50)"))
+          .body("errors[0].exceptionClass", is("JsonMappingException"))
+          .body(
+              "errors[1].message", startsWith("Number length (60) exceeds the maximum length (50)"))
+          .body("errors[1].exceptionClass", is("StreamConstraintsException"));
+    }
   }
 
   @Nested
-  @Order(2)
+  @Order(3)
   class InsertMany {
 
     @Test
