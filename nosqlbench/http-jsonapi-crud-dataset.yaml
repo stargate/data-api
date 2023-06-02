@@ -5,7 +5,7 @@ min_version: "5.17.3"
 
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
-  It requires a data set file (default dataset.txt), where each line is a single JSON document to be used for writes and updates.
+  It requires a data set file (default sample-dataset.txt), where each line is a single JSON document to be used for writes and updates.
   Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
@@ -25,8 +25,10 @@ bindings:
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
 
+  # field name to be used to check the $exists filter
   exists_key: WeightedStrings('<<exists_key:data>>'); ToString();
 
+  # field name to be used for sorting
   sort_key: WeightedStrings('<<sort_key:data.size>>'); ToString();
 
   # http request id
