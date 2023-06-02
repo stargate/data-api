@@ -25,6 +25,10 @@ bindings:
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
 
+  exists_key: WeightedStrings('<<exists_key:data>>'); ToString();
+
+  sort_key: WeightedStrings('<<sort_key:data.size>>'); ToString();
+
   # http request id
   request_id: ToHashedUUID(); ToString();
 
@@ -37,9 +41,8 @@ bindings:
   document_json_without_id: HashedLineToString('<<dataset:sample-dataset.txt>>');
 
   #Adding some data to verify different types of filters
-  city: Cities()
   full_name: FullNames()
-  married: ModuloToBoolean()
+
 
 blocks:
   schema:
@@ -105,9 +108,7 @@ blocks:
             "insertOne" : {
               "document" : { 
                 "_id" :         "{seq_key}",
-                "city" :        "{city}",
                 "full_name" :   "{full_name}",
-                "married" :     "{married}",
                 "data" :      {document_json_without_id}
               }
             }
@@ -148,13 +149,13 @@ blocks:
           {
             "findOne" : {
               "filter" : {
-                "city" : "{city}"
+                "full_name" : "{full_name}"
               }
             }
           }  
 
-      # aka find with $eq and $exist
-      find-multi-by-married-name-exists:
+      # aka find with $exist
+      find-multi-by-exists:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
@@ -167,8 +168,7 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "married": true,
-                "full_name": { "$exists": true }
+                "{exists_key}": { "$exists": true }
               }
             }
           }
@@ -187,13 +187,11 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "married": true,
                 "full_name": { "$exists": true }
               },
               "projection": {
                 "full_name": 1,
-                "married": 1,
-                "city": 1
+                "data": 1
               }
             }
           }
@@ -212,38 +210,10 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "city": "{city}"
+                "full_name": "{full_name}"
               },
               "sort": {
-                "full_name": 1
-              }
-            }
-          }
-
-      # find one and update
-      find-one-by-name-newest-and-update-city:
-        space: "{space}"
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
-        Content-Type: "application/json"
-        ok-body: ".*\"data\".*"
-        body: >2
-          {
-            "findOneAndUpdate" : {
-              "filter":{
-                "city": "{city}"
-              },
-              "sort" : {
-                "full_name": 1
-              },
-              "update": {
-                "$set" : {"update_one_field": "{city}"}
-              },
-              "options": {
-                "upsert": false
+                "{sort_key}": 1
               }
             }
           }
@@ -313,9 +283,7 @@ blocks:
                 },
                 "replacement": {
                   "_id" : "{seq_key}",
-                  "city" : "{city}",
                   "full_name" : "{full_name}",
-                  "married" : "{married}",
                   "data" : {document_json_without_id}
                 },
                 "options": {
