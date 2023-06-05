@@ -968,11 +968,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(3)
+  @Order(99)
   class Metrics {
     @Test
-    public void checkMetrics() {
+    public void checkInsertOneMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
+    }
+
+    @Test
+    public void checkInsertManyMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
   }
