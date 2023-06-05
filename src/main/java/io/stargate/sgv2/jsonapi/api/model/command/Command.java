@@ -38,10 +38,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
  *
  * <p>Each command should validate itself using the <i>javax.validation</i> framework.
  */
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.WRAPPER_OBJECT,
-    property = "commandName")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CountDocumentsCommands.class),
   @JsonSubTypes.Type(value = CreateNamespaceCommand.class),

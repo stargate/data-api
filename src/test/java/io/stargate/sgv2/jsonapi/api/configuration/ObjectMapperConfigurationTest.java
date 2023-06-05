@@ -25,6 +25,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.Test;
 class ObjectMapperConfigurationTest {
 
   @Inject ObjectMapper objectMapper;
+
+  @Inject DocumentLimitsConfig documentLimitsConfig;
 
   @Nested
   class FindOne {
@@ -198,6 +201,35 @@ class ObjectMapperConfigurationTest {
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
               ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": InsertOneCommand");
+    }
+
+    @Test
+    public void failForTooLongNumbers() {
+      String tooLongNumStr = "1234567890".repeat(6);
+      String json =
+          """
+                {
+                  "insertOne": {
+                    "document": {
+                       "_id" : 123,
+                       "bigNumber" : %s
+                    }
+                  }
+                }
+                """
+              .formatted(tooLongNumStr);
+
+      Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
+      // Without exception mappers we just get default Jackson JsonMappingException wrapping the
+      // constraints violation exception
+      assertThat(e)
+          .isInstanceOf(JsonMappingException.class)
+          .hasMessageContaining(
+              "Number length ("
+                  + tooLongNumStr.length()
+                  + ") exceeds the maximum length ("
+                  + documentLimitsConfig.maxNumberLength()
+                  + ")");
     }
   }
 

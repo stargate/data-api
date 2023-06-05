@@ -1,10 +1,15 @@
 package io.stargate.sgv2.jsonapi.config;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.constraints.Positive;
 
-/** Configuration Object that defines limits on Documents managed by JSON API. */
+/**
+ * Configuration Object that defines limits on Documents managed by JSON API. Needed early for
+ * providers so has to be declared as {@link StaticInitSafe}.
+ */
+@StaticInitSafe
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
   /**
@@ -36,6 +41,11 @@ public interface DocumentLimitsConfig {
   @Positive
   @WithDefault("64")
   int maxObjectProperties();
+
+  /** @return Defines the maximum length of a single Number value (in characters). */
+  @Positive
+  @WithDefault("50")
+  int maxNumberLength();
 
   /** @return Defines the maximum length of a single String value. */
   @Positive
