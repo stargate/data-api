@@ -364,11 +364,12 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.upsertedId", is(nullValue()))
           .body("data.document._id", is(newId))
-          .body("errors", is(nullValue()));
+          // Should we return id of new document as upsertedId?
+          .body("status.upsertedId", is(newId));
 
       // assert state after update
       json =

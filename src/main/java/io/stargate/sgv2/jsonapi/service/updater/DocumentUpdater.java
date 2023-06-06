@@ -93,9 +93,13 @@ public record DocumentUpdater(
     if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
       return false;
     }
-    // remove all data and add _id as first field
+    // remove all data and add _id as first field; either from original document or from replacement
     docToUpdate.removeAll();
-    if (idNode != null) docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
+    if (idNode != null) {
+      docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
+    } else if (replaceDocumentId != null) {
+      docToUpdate.set(DocumentConstants.Fields.DOC_ID, replaceDocumentId);
+    }
     docToUpdate.setAll(replaceDocument());
     // return modified flag as true
     return true;
