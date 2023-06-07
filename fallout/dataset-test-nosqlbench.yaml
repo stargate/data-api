@@ -287,7 +287,6 @@ blocks:
                 "_id": "{random_key}"
               },
               "replacement": {
-                "_id" : "{seq_key}",
                 "full_name" : "{full_name}",
                 "data" : {document_json_without_id}
               },
