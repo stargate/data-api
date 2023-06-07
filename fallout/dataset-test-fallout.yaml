@@ -18,7 +18,15 @@ keyspace: jsonapi_dataset_test
 # 100K documents and 25 groups, so that sort and count target ~4K docs
 # adapt if needed, but keep in mind that sort supports max 10K docs per operation
 docs_count: 100000
-sort_groups: 25
+
+# dataset to use, have to use main branch as fallout doesn't do recursive arg replacement
+dataset: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/sample-dataset.txt
+
+# Field name used for sorting in the tests
+sort_key: data.size
+
+# field name to be used to check the $exists filter
+exists_key: data
 
 # load setup:
 # - total of 1M ops split between 10 operations equally
@@ -105,11 +113,11 @@ workload:
             - path_prefix=/api/json
             - connections=30
             - docscount={{docs_count}}
-            - dataset=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/sample-dataset.txt
+            - dataset={{dataset}}
 
     -
       {{#ops}}
-        main_{{op}}:
+      main_{{op}}:
         module: nosqlbench
         properties:
           alias: main_{{op}}
@@ -127,9 +135,11 @@ workload:
             - path_prefix=/api/json
             - connections={{op_connections}}
             - docscount={{docs_count}}
-            - dataset=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/sample-dataset.txt
+            - sort_key={{sort_key}}
+            - exists_key={{exists_key}}
+            - dataset={{dataset}}
             - rate={{op_rate}}
-        {{/ops}}
+      {{/ops}}
 
   checkers:
     verify_success:
