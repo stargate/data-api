@@ -67,7 +67,6 @@ ensemble:
 
 workload:
   phases:
-
     # set schema phase, ensures collection table is created from scratch
     - nb_set_schema:
         module: nosqlbench
@@ -96,7 +95,7 @@ workload:
           cycles: {{docs_count}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:write
             - threads=30
             - errors=stop
@@ -118,7 +117,7 @@ workload:
           cycles: {{op_cycles}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
             - threads=1x
             - errors=histogram
@@ -128,7 +127,7 @@ workload:
             - path_prefix=/api/json
             - connections={{op_connections}}
             - docscount={{docs_count}}
-            - sort_groups={{sort_groups}}
+            - dataset=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/sample-dataset.txt
             - rate={{op_rate}}
         {{/ops}}
 
