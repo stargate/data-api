@@ -82,7 +82,7 @@ public record DocumentUpdater(
     ObjectNode compareDoc = docToUpdate.deepCopy();
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
     // The replace document cannot specify an _id value that differs from the replaced document.
-    if (replaceDocumentId != null) {
+    if (replaceDocumentId != null && idNode != null) {
       if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
         throw new JsonApiException(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
@@ -93,9 +93,13 @@ public record DocumentUpdater(
     if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
       return false;
     }
-    // remove all data and add _id as first field
+    // remove all data and add _id as first field; either from original document or from replacement
     docToUpdate.removeAll();
-    if (idNode != null) docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
+    if (idNode != null) {
+      docToUpdate.set(DocumentConstants.Fields.DOC_ID, idNode);
+    } else if (replaceDocumentId != null) {
+      docToUpdate.set(DocumentConstants.Fields.DOC_ID, replaceDocumentId);
+    }
     docToUpdate.setAll(replaceDocument());
     // return modified flag as true
     return true;
