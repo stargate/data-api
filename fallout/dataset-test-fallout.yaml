@@ -28,6 +28,8 @@ sort_key: data.size
 # field name to be used to check the $exists filter
 exists_key: data
 
+sort_groups: 25
+
 # load setup:
 # - total of 1M ops split between 10 operations equally
 # - each operation limited to 25ops/s, totals to 250ops/s
@@ -116,6 +118,7 @@ workload:
             - connections=30
             - docscount={{docs_count}}
             - dataset={{dataset}}
+            - sort_groups={{sort_groups}}
 
     -
       {{#ops}}
@@ -139,6 +142,7 @@ workload:
             - docscount={{docs_count}}
             - sort_key={{sort_key}}
             - exists_key={{exists_key}}
+            - sort_groups={{sort_groups}}
             - dataset={{dataset}}
             - rate={{op_rate}}
       {{/ops}}
