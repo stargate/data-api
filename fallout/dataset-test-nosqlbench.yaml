@@ -288,6 +288,7 @@ blocks:
                 "_id": "{random_key}"
               },
               "replacement": {
+                "_id": "{random_key}",
                 "full_name" : "{full_name}",
                 "group" : "{group}",
                 "data" : {document_json_without_id}
