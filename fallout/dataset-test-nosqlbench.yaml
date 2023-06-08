@@ -43,7 +43,7 @@ bindings:
   document_json_without_id: HashedLineToString('<<dataset:sample-dataset.txt>>');
 
   #Adding some data to verify different types of filters
-  full_name: FullNames()
+  full_name: FullNames();
   group: HashRange(1,<<sort_groups:20>>); ToString();
 
 
