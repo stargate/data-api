@@ -35,14 +35,16 @@ exists_key: data
 op_cycles: 100000
 op_rate: 25
 op_connections: 3
+threads: 1x
+
 
 # ops from main block of smoke-test-nosqlbench.yaml
 ops:
   - op: find-one-id
   - op: find-one-by-full-name
   - op: find-multi-by-exists
-  - op: find-multi-by-name-with-projection
-  - op: find-multi-find-by-group-sort-by-sort-key
+  - op: find-multi-by-exists-key-with-projection
+  - op: find-multi-by-group-sort-by-sort-key
   - op: update-one-document
   - op: delete-one-document
   - op: find-one-id-and-replace-upsert
@@ -127,7 +129,7 @@ workload:
             - driver=http
             - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
-            - threads=1x
+            - threads={{threads}}
             - errors=histogram
             - namespace={{keyspace}}
             - protocol=https

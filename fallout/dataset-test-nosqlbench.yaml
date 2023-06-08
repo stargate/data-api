@@ -39,12 +39,12 @@ bindings:
   token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
   seq_key: Mod(<<docscount:10000>>); ToString() -> String
-  update_seq_key: Mod(<<docscount:10000>>); ToString() -> String
   random_key: Uniform(0,<<docscount:10000>>); ToString() -> String
   document_json_without_id: HashedLineToString('<<dataset:sample-dataset.txt>>');
 
   #Adding some data to verify different types of filters
   full_name: FullNames()
+  group: HashRange(1,<<sort_groups:20>>); ToString();
 
 
 blocks:
@@ -114,6 +114,7 @@ blocks:
               "document" : { 
                 "_id" :         "{seq_key}",
                 "full_name" :   "{full_name}",
+                "group" :       "{group}",
                 "data" :      {document_json_without_id}
               }
             }
@@ -154,7 +155,7 @@ blocks:
           {
             "findOne" : {
               "filter" : {
-                "full_name" : "{full_name}"
+                "group" : "{group}"
               }
             }
           }  
@@ -179,7 +180,7 @@ blocks:
           }
 
       # aka find with $eq and $exist and $projection
-      find-multi-by-name-with-projection:
+      find-multi-by-exists-key-with-projection:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
@@ -192,7 +193,7 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "full_name": { "$exists": true }
+                "{exists_key}": { "$exists": true }
               },
               "projection": {
                 "full_name": 1,
@@ -202,7 +203,7 @@ blocks:
           }
 
       # aka find with filter and sort
-      find-multi-find-by-group-sort-by-sort-key:
+      find-multi-by-group-sort-by-sort-key:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
@@ -215,7 +216,7 @@ blocks:
           {
             "find" : {
               "filter" : {
-                "full_name": "{full_name}"
+                "group" : "{group}"
               },
               "sort": {
                 "{sort_key}": 1
@@ -245,7 +246,7 @@ blocks:
               },
               "update": {
                 "$set": {
-                  "update_field": "{update_seq_key}"
+                  "update_field": "{seq_key}"
                 }
               }
             }
@@ -288,6 +289,7 @@ blocks:
               },
               "replacement": {
                 "full_name" : "{full_name}",
+                "group" : "{group}",
                 "data" : {document_json_without_id}
               },
               "options": {

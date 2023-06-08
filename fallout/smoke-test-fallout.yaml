@@ -27,6 +27,7 @@ sort_groups: 25
 op_cycles: 100000
 op_rate: 25
 op_connections: 3
+threads: 1x
 
 # ops from main block of smoke-test-nosqlbench.yaml
 ops:
@@ -121,7 +122,7 @@ workload:
             - driver=http
             - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
-            - threads=1x
+            - threads={{threads}}
             - errors=histogram
             - namespace={{keyspace}}
             - protocol=https
