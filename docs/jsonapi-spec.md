@@ -263,7 +263,7 @@ The `_id` field is a "reserved name" and is always interpreted as the
 document identity field. See **TODO DOC ID LINK** for restrictions on
 its use.
 
-**TODO** add support for allowing "." and "$" in the field names, not
+**TODO** consider adding support for allowing "." and/or "$" in the field names, not
 needed for the initial demo release.
 
 *Sample:*
@@ -393,10 +393,10 @@ The maximum number of fields allowed in a single JSON object is 64.
 
 The maximum size of field values are:
 
-| JSON Type | Maximum Value                                           |
-|-----------|---------------------------------------------------------|
-| `string`  | Maximum length of 16,000 unicode characters             |
-| `number`  | TODO: define max num that is well handled by BigDecimal |
+| JSON Type | Maximum Value                               |
+|-----------|---------------------------------------------|
+| `string`  | Maximum length of 16,000 unicode characters |
+| `number`  | Maximum length of 50 number characters      |
 
 
 #### Document Array Limits
