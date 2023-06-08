@@ -43,7 +43,7 @@ threads: 1x
 # ops from main block of smoke-test-nosqlbench.yaml
 ops:
   - op: find-one-id
-  - op: find-one-by-full-name
+  - op: find-one-by-group
   - op: find-multi-by-exists
   - op: find-multi-by-exists-key-with-projection
   - op: find-multi-by-group-sort-by-sort-key

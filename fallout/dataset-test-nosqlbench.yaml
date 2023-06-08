@@ -142,7 +142,7 @@ blocks:
           } 
 
       # aka findOne with single property as filter
-      find-one-by-full-name:
+      find-one-by-group:
         space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
