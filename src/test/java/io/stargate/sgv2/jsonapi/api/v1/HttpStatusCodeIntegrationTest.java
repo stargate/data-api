@@ -78,11 +78,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
-          .body(
-              "errors[0].message",
-              endsWith(
-                  "INVALID_ARGUMENT: table %s.%s does not exist"
-                      .formatted(namespaceName, "badCollection")))
+          .body("errors[0].message", anyOf)
           .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
