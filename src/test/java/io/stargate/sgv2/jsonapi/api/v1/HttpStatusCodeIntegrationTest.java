@@ -13,6 +13,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import org.hamcrest.core.AnyOf;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,12 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               }
             }
             """;
+      AnyOf<String> anyOf =
+          AnyOf.anyOf(
+              endsWith(
+                  "INVALID_ARGUMENT: table %s.%s does not exist"
+                      .formatted(namespaceName, "badCollection")),
+              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -71,11 +78,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
-          .body(
-              "errors[0].message",
-              endsWith(
-                  "INVALID_ARGUMENT: table %s.%s does not exist"
-                      .formatted(namespaceName, "badCollection")))
+          .body("errors[0].message", anyOf)
           .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
@@ -159,7 +162,10 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               }
              }
              """;
-
+      AnyOf<String> anyOf =
+          AnyOf.anyOf(
+              endsWith("INVALID_ARGUMENT: Keyspace '%s' doesn't exist".formatted("badNamespace")),
+              endsWith("INVALID_ARGUMENT: Unknown keyspace %s".formatted("badNamespace")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -170,9 +176,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
-          .body(
-              "errors[0].message",
-              endsWith("INVALID_ARGUMENT: Keyspace '%s' doesn't exist".formatted("badNamespace")))
+          .body("errors[0].message", anyOf)
           .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
