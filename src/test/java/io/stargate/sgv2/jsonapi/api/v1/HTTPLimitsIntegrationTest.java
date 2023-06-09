@@ -23,8 +23,8 @@ public class HTTPLimitsIntegrationTest extends AbstractNamespaceIntegrationTestB
   @Test
   @SuppressWarnings("deprecation") // CoreProtocolPNames deprecated
   public void tryToSendTooBigInsert() {
-    // try sending 1.01 MB
-    RandomBytesInputStream inputStream = new RandomBytesInputStream(1024 * 1024 + 1024);
+    // try sending 10.01 MB (current limit in "application.yaml" is 10 megs
+    RandomBytesInputStream inputStream = new RandomBytesInputStream(10 * 1024 * 1024 + 1024);
 
     // Fails before getting to business logic no need for real collection (or keyspace fwtw)
     // While documents don't say it, Quarkus tests show 413 as expected fail message:
