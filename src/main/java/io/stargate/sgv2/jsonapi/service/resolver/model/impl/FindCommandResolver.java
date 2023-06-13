@@ -40,17 +40,30 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
-    final FindCommand.Options options = command.options();
-    int limit = options != null && options.limit() != null ? options.limit() : Integer.MAX_VALUE;
-    String pagingState = command.options() != null ? command.options().pagingState() : null;
-    final SortClause sortClause = command.sortClause();
+
+    // limit and paging state defults
+    int limit = Integer.MAX_VALUE;
+    int skip = 0;
+    String pagingState = null;
+
+    // update if options provided
+    FindCommand.Options options = command.options();
+    if (options != null) {
+      if (null != options.limit()) {
+        limit = options.limit();
+      }
+      if (null != options.skip()) {
+        skip = options.skip();
+      }
+      pagingState = options.pagingState();
+    }
+
+    // resolve sort clause
+    SortClause sortClause = command.sortClause();
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
-    // If orderBy present
+
+    // if orderBy present
     if (orderBy != null) {
-      int skip =
-          options != null && options.skip() != null && options.skip().intValue() > 0
-              ? options.skip()
-              : 0;
       return FindOperation.sorted(
           commandContext,
           filters,
@@ -58,6 +71,9 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           pagingState,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
+          // TODO this is an issue, the limit in the command should be used amount of returned
+          // documents
+          //  and not for the amount of rows fetched
           Math.min(limit, operationsConfig.defaultPageSize()),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),

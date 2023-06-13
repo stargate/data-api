@@ -10,8 +10,9 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
   @Override
   public boolean isValid(FindCommand value, ConstraintValidatorContext context) {
     final FindCommand.Options options = value.options();
-    context.disableDefaultConstraintViolation();
     if (options == null) return true;
+
+    context.disableDefaultConstraintViolation();
     if (options.skip() != null && value.sortClause() == null) {
       context
           .buildConstraintViolationWithTemplate("skip options should be used with sort clause")
@@ -19,20 +20,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
           .addConstraintViolation();
       return false;
     }
-    if (options.skip() != null && options.skip() < 0) {
-      context
-          .buildConstraintViolationWithTemplate("skip should be greater than or equal to `0`")
-          .addPropertyNode("options.skip")
-          .addConstraintViolation();
-      return false;
-    }
-    if (options.limit() != null && options.limit() < 0) {
-      context
-          .buildConstraintViolationWithTemplate("limit should be greater than or equal to `0`")
-          .addPropertyNode("options.limit")
-          .addConstraintViolation();
-      return false;
-    }
+
     if (options.pagingState() != null && value.sortClause() != null) {
       context
           .buildConstraintViolationWithTemplate("pagingState is not supported with sort clause")

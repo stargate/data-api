@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -25,20 +26,26 @@ public record FindCommand(
     implements ReadCommand, Filterable, Projectable {
 
   public record Options(
-      @Valid
+
+      // limit of returned documents
+      @PositiveOrZero(message = "limit should be greater than or equal to `0`")
+          // TODO this must have a limit, currently it's not enforced, I can ask for 1000 docs
           @Schema(
               description = "Maximum number of document that can be fetched for the command.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           Integer limit,
-      @Valid
+
+      // amount of documents to skip
+      @PositiveOrZero(message = "skip should be greater than or equal to `0`")
           @Schema(
               description = "Skips provided number of documents before returning sorted documents.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           Integer skip,
-      @Valid
-          @Schema(
+
+      // paging state for pagination
+      @Schema(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)
