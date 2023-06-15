@@ -41,7 +41,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
 
-    // limit and paging state defults
+    // limit and paging state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
     String pagingState = null;
@@ -71,9 +71,6 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           pagingState,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          // TODO this is an issue, the limit in the command should be used amount of returned
-          // documents
-          //  and not for the amount of rows fetched
           Math.min(limit, operationsConfig.defaultPageSize()),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),

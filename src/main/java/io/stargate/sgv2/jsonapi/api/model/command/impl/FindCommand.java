@@ -29,9 +29,9 @@ public record FindCommand(
 
       // limit of returned documents
       @PositiveOrZero(message = "limit should be greater than or equal to `0`")
-          // TODO this must have a limit, currently it's not enforced, I can ask for 1000 docs
           @Schema(
-              description = "Maximum number of document that can be fetched for the command.",
+              description =
+                  "Maximum number of document that can be fetched for the command. If value is higher than the default page size, amount of returned documents will be limited to the default page size and paging state will be returned in the response, so a caller can to continue paging through documents.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           Integer limit,
