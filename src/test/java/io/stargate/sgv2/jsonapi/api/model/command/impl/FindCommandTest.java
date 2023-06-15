@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -31,25 +29,19 @@ public class FindCommandTest {
         {
           "find": {
             "filter" : {"username" : "user1"},
+            "sort" : {"username" : 1},
             "options" : {
-              "limit" : 1
+              "limit" : 1,
+              "skip": 100
             }
           }
         }
         """;
 
-      Command result = objectMapper.readValue(json, Command.class);
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindCommand.class,
-              find -> {
-                FilterClause filterClause = find.filterClause();
-                assertThat(filterClause).isNotNull();
-                final FindCommand.Options options = find.options();
-                assertThat(options).isNotNull();
-                assertThat(options.limit()).isEqualTo(1);
-              });
+      assertThat(result).isEmpty();
     }
 
     @Test
@@ -60,36 +52,61 @@ public class FindCommandTest {
             "find": {
                 "filter" : {"username" : "user1"},
                 "options" : {
-                "limit" : -1
+                  "limit" : -1
                 }
-            }
+              }
             }
             """;
 
       FindCommand command = objectMapper.readValue(json, FindCommand.class);
       Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("limit should be greater than or equal to `0`");
+          .contains("limit should be greater than `0`");
+    }
+
+    @Test
+    public void invalidOptionsZeroLimit() throws Exception {
+      String json =
+          """
+            {
+            "find": {
+                "filter" : {"username" : "user1"},
+                "options" : {
+                  "limit" : 0
+                }
+              }
+            }
+            """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("limit should be greater than `0`");
     }
 
     @Test
     public void invalidOptionsNegativeSkip() throws Exception {
       String json =
           """
-                  {
-                  "find": {
-                      "sort" : {"username" : 1},
-                      "options" : {
-                      "skip" : -1
-                      }
-                  }
-                  }
-                  """;
+          {
+          "find": {
+              "sort" : {"username" : 1},
+              "options" : {
+                "skip" : -1
+              }
+            }
+          }
+          """;
 
       FindCommand command = objectMapper.readValue(json, FindCommand.class);
       Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
@@ -100,18 +117,19 @@ public class FindCommandTest {
     public void invalidOptionsSkipNoSort() throws Exception {
       String json =
           """
-                  {
-                  "find": {
-                      "filter" : {"username" : "user1"},
-                      "options" : {
-                      "skip" : -1
-                      }
-                  }
-                  }
-                  """;
+          {
+          "find": {
+              "filter" : {"username" : "user1"},
+              "options" : {
+                "skip" : 10
+              }
+            }
+          }
+          """;
 
       FindCommand command = objectMapper.readValue(json, FindCommand.class);
       Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
@@ -122,19 +140,20 @@ public class FindCommandTest {
     public void invalidOptionsPagingStateWithSort() throws Exception {
       String json =
           """
-                  {
-                   "find": {
-                      "filter" : {"username" : "user1"},
-                      "sort" : {"username" : 1},
-                      "options" : {
-                          "pagingState" : "someState"
-                      }
-                    }
-                  }
-                  """;
+          {
+           "find": {
+              "filter" : {"username" : "user1"},
+              "sort" : {"username" : 1},
+              "options" : {
+                "pagingState" : "someState"
+              }
+            }
+          }
+          """;
 
       FindCommand command = objectMapper.readValue(json, FindCommand.class);
       Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
