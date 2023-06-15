@@ -64,7 +64,30 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("limit should be greater than or equal to `0`");
+          .contains("limit should be greater than `0`");
+    }
+
+    @Test
+    public void invalidOptionsZeroLimit() throws Exception {
+      String json =
+          """
+            {
+            "find": {
+                "filter" : {"username" : "user1"},
+                "options" : {
+                  "limit" : 0
+                }
+              }
+            }
+            """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("limit should be greater than `0`");
     }
 
     @Test

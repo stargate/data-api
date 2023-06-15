@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -28,7 +29,7 @@ public record FindCommand(
   public record Options(
 
       // limit of returned documents
-      @PositiveOrZero(message = "limit should be greater than or equal to `0`")
+      @Positive(message = "limit should be greater than `0`")
           @Schema(
               description =
                   "Maximum number of document that can be fetched for the command. If value is higher than the default page size, amount of returned documents will be limited to the default page size and paging state will be returned in the response, so a caller can to continue paging through documents.",
