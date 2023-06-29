@@ -1,17 +1,19 @@
 min_version: "5.17.3"
 
+# Example command line (when Stargate is running on localhost):
+# nb5 -v dataset-test-nosqlbench default threads=30
+
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
-  It requires a data set file, where each line is a single JSON document to be used for writes and updates.
+  It requires a data set file (default sample-dataset.txt), where each line is a single JSON document to be used for writes and updates.
   Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
   default:
-    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
-    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
-    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000000)) threads=auto errors=timer,warn
+    schema-namespace: run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+    schema-collection: run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+    write:   run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    main:    run driver=http tags==block:main cycles===TEMPLATE(read-cycles,100000) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -19,10 +21,16 @@ bindings:
   #   single host: jsonapi_host=host1
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
+
+  # field name to be used to check the $exists filter
+  exists_key: WeightedStrings('<<exists_key:data>>'); ToString();
+
+  # field name to be used for sorting
+  sort_key: WeightedStrings('<<sort_key:data.size>>'); ToString();
 
   # http request id
   request_id: ToHashedUUID(); ToString();
@@ -30,11 +38,17 @@ bindings:
   # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
   token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
 
-  seq_key: Mod(<<docscount:10000000>>); ToString() -> String
-  random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
+  seq_key: Mod(<<docscount:10000>>); ToString() -> String
+  random_key: Uniform(0,<<docscount:10000>>); ToString() -> String
+  document_json_without_id: HashedLineToString('<<dataset:sample-dataset.txt>>');
+
+  #Adding some data to verify different types of filters
+  full_name: FullNames();
+  group: HashRange(1,<<sort_groups:20>>); ToString();
+
 
 blocks:
-  schema:
+  schema-namespace:
     ops:
       create-namespace:
         method: POST
@@ -47,13 +61,15 @@ blocks:
         body: >2
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_crud_basic>>"
+              "name": "<<namespace:jsonapi_dataset_test>>"
             }
           }
 
+  schema-collection:
+    ops:
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -68,7 +84,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/namespaces/<<namespace:jsonapi_crud_basic>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -81,47 +97,204 @@ blocks:
             }
           }
 
-  main:
-    bindings:
-      document_json: ModuloLineToString('<<dataset_file>>');
+  write:
     ops:
-      # TODO expect the document have the ID in it?
       write-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8180>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_basic>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: '.*\"insertedIds\":\[.*\].*'
-        body: "{document_json}"
+        body: >2
+          {
+            "insertOne" : {
+              "document" : { 
+                "_id" :         "{seq_key}",
+                "full_name" :   "{full_name}",
+                "group" :       "{group}",
+                "data" :        {document_json_without_id}
+              }
+            }
+          }
 
-      read-document:
+  main:
+    ops:
+      # aka findOne with _id as filter
+      find-one-id:
         space: "{space}"
-        method: GET
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "_id" : "{random_key}"
+              }
+            }
+          } 
 
-      update-document:
+      # aka findOne with single property as filter
+      find-one-by-group:
         space: "{space}"
-        method: PUT
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{random_key}
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
-        body: "{document_json}"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "group" : "{group}"
+              }
+            }
+          }  
 
-      delete-document:
+      # aka find with $exist
+      find-multi-by-exists:
         space: "{space}"
-        method: DELETE
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v2/namespaces/<<namespace:jsonapi_crud_dataset>>/collections/<<table:docs_collection>>/{seq_key}
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "{exists_key}": { "$exists": true }
+              }
+            }
+          }
+
+      # aka find with $eq and $exist and $projection
+      find-multi-by-exists-key-with-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "{exists_key}": { "$exists": true }
+              },
+              "projection": {
+                "full_name": 1,
+                "data": 1
+              }
+            }
+          }
+
+      # aka find with filter and sort
+      find-multi-by-group-sort-by-sort-key:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "group" : "{group}"
+              },
+              "sort": {
+                "{sort_key}": 1
+              }
+            }
+          }
+
+      # aka updateOne
+      # for parity with other tests this only uses set, not unset, no return value
+      update-one-document:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        # because this is not an upsert, modified count could technically be 0 or 1,
+        # but since we are fixing the _ids to be sequential over the docscount range during the write phase,
+        # every update during this phase should update exactly 1 document.
+        ok-body: ".*\"modifiedCount\":[0,1].*"
+        body: >2
+          {
+            "updateOne" : {
+              "filter": {
+                "_id" : "{random_key}"
+              },
+              "update": {
+                "$set": {
+                  "update_field": "{seq_key}"
+                }
+              }
+            }
+          }
+
+      # Delete record by id
+      delete-one-document:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
+        body: >2
+          {
+            "deleteOne" : {
+              "filter" : {
+                "_id" : "{random_key}"
+              }
+            }
+          }
+
+        # find one and replace with upsert
+      find-one-id-and-replace-upsert:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_dataset_test>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOneAndReplace" : {
+              "filter" : {
+                "_id": "{random_key}"
+              },
+              "replacement": {
+                "_id": "{random_key}",
+                "full_name" : "{full_name}",
+                "group" : "{group}",
+                "data" : {document_json_without_id}
+              },
+              "options": {
+                "upsert": true
+              }
+            }
+          }  
