@@ -105,7 +105,7 @@ blocks:
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
         Content-Type: "application/json"
-        ok-body: ".*\"insertedIds\":\"{seq_key}\".*"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2
           {
             "insertOne" : {
