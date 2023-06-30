@@ -337,6 +337,61 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     }
 
     @Test
+    public void withUpsertNewId() {
+      final String newId = "new-id-1234";
+      String json =
+          """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {},
+                    "replacement" : {
+                      "username": "aaronm",
+                      "_id": "%s"
+                    },
+                    "options" : {
+                      "returnDocument": "after",
+                      "upsert": true
+                    }
+                  }
+                }
+                """
+              .formatted(newId);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("data.document._id", is(newId))
+          // Should we return id of new document as upsertedId?
+          .body("status.upsertedId", is(newId));
+
+      // assert state after update
+      json =
+          """
+                {
+                  "find": {
+                    "filter" : {"username" : "aaronm"}
+                  }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is(newId));
+    }
+
+    @Test
     public void withUpsertNoId() {
       String json =
           """

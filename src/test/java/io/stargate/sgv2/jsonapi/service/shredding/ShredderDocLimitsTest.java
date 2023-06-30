@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
+import java.math.BigDecimal;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -255,5 +257,27 @@ public class ShredderDocLimitsTest {
                   + docLimits.maxStringLength()
                   + ")");
     }
+  }
+
+  // Since max-number-len is handled at low-level, it's not strictly speaking
+  // Shredder test -- but since it is logically related, test it here too
+  // (there is separate testing for integration through doc insert)
+  @Test
+  public void catchTooLongNumberValues() throws Exception {
+    final ObjectNode doc = objectMapper.createObjectNode();
+    doc.put("_id", 123);
+    ArrayNode arr = doc.putArray("arr");
+    // Max 50, so 60 should fail
+    String numStr = "1234567890".repeat(6);
+    doc.put("number", new BigDecimal(numStr));
+    arr.add(numStr);
+
+    final String json = objectMapper.writeValueAsString(doc);
+
+    Exception e = catchException(() -> objectMapper.readTree(json));
+    assertThat(e)
+        .isNotNull()
+        .isInstanceOf(StreamConstraintsException.class)
+        .hasMessageStartingWith("Number length (60) exceeds the maximum length (50)");
   }
 }

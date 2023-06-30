@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -27,10 +28,12 @@ import org.junit.jupiter.api.Test;
 public class FindCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
-  @Inject FindCommandResolver findCommandResolver;
+  @Inject FindCommandResolver resolver;
 
   @Nested
   class FindCommandResolveCommand {
+
+    @Mock CommandContext commandContext;
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -44,29 +47,28 @@ public class FindCommandResolverTest {
           """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 
@@ -74,39 +76,38 @@ public class FindCommandResolverTest {
     public void dateFilterCondition() throws Exception {
       String json =
           """
-              {
-                "find": {
-                  "filter" : {"date_field" : {"$date" : 1672531200000}}
-                }
-              }
-              """;
+          {
+            "find": {
+              "filter" : {"date_field" : {"$date" : 1672531200000}}
+            }
+          }
+          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.DateFilter(
-                      "date_field",
-                      DBFilterBase.MapFilterBase.Operator.EQ,
-                      new Date(1672531200000L))),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.DateFilter(
+                        "date_field",
+                        DBFilterBase.MapFilterBase.Operator.EQ,
+                        new Date(1672531200000L));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 
@@ -114,38 +115,37 @@ public class FindCommandResolverTest {
     public void idFilterWithInOperatorCondition() throws Exception {
       String json =
           """
-              {
-                "find": {
-                  "filter" : {"_id" : { "$in" : ["id1", "id2"]}}
-                }
-              }
-              """;
+          {
+            "find": {
+              "filter" : {"_id" : { "$in" : ["id1", "id2"]}}
+            }
+          }
+          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.IN,
-                      List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")))),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.IN,
+                        List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 
@@ -153,35 +153,35 @@ public class FindCommandResolverTest {
     public void idFilterWithInOperatorEmptyArrayCondition() throws Exception {
       String json =
           """
-                  {
-                    "find": {
-                      "filter" : {"_id" : { "$in" : []}}
-                    }
-                  }
-                  """;
+          {
+            "find": {
+              "filter" : {"_id" : { "$in" : []}}
+            }
+          }
+          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of())),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of());
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 
@@ -189,40 +189,40 @@ public class FindCommandResolverTest {
     public void byIdInAndOtherConditionTogether() throws Exception {
       String json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : { "$in" : ["id1", "id2"]}, "field1" : "value1" }
+          {
+            "find": {
+              "filter" : {"_id" : { "$in" : ["id1", "id2"]}, "field1" : "value1" }
+            }
           }
-        }
-        """;
+          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.IN,
-                      List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2"))),
-                  new DBFilterBase.TextFilter(
-                      "field1", DBFilterBase.TextFilter.Operator.EQ, "value1")),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.IN,
+                        List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
+                DBFilterBase filter2 =
+                    new DBFilterBase.TextFilter(
+                        "field1", DBFilterBase.TextFilter.Operator.EQ, "value1");
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter, filter2);
               });
     }
 
@@ -231,34 +231,29 @@ public class FindCommandResolverTest {
       String json = """
           {
             "find": {
-
             }
           }
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).isEmpty();
               });
     }
 
@@ -274,28 +269,27 @@ public class FindCommandResolverTest {
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.identityProjector(),
-              null,
-              operationsConfig.defaultPageSize(),
-              operationsConfig.defaultSortPageSize(),
-              ReadType.SORTED_DOCUMENT,
-              objectMapper,
-              List.of(new FindOperation.OrderBy("username", true)),
-              0,
-              operationsConfig.maxDocumentSortCount(),
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                FindOperation.OrderBy orderBy = new FindOperation.OrderBy("username", true);
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).containsOnly(orderBy);
+                assertThat(find.filters()).isEmpty();
               });
     }
 
@@ -303,36 +297,35 @@ public class FindCommandResolverTest {
     public void sortDesc() throws Exception {
       String json =
           """
-        {
-          "find": {
-            "sort" : {"username" : -1}
+          {
+            "find": {
+              "sort" : {"username" : -1}
+            }
           }
-        }
-        """;
+          """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.identityProjector(),
-              null,
-              operationsConfig.defaultPageSize(),
-              operationsConfig.defaultSortPageSize(),
-              ReadType.SORTED_DOCUMENT,
-              objectMapper,
-              List.of(new FindOperation.OrderBy("username", false)),
-              0,
-              operationsConfig.maxDocumentSortCount(),
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                FindOperation.OrderBy orderBy = new FindOperation.OrderBy("username", false);
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).containsOnly(orderBy);
+                assertThat(find.filters()).isEmpty();
               });
     }
 
@@ -340,37 +333,36 @@ public class FindCommandResolverTest {
     public void noFilterConditionSortAndOptions() throws Exception {
       String json =
           """
-        {
-          "find": {
-            "sort" : {"username" : 1},
-            "options" : {"skip" : 5, "limit" : 10}
+          {
+            "find": {
+              "sort" : {"username" : 1},
+              "options" : {"skip" : 5, "limit" : 10}
+            }
           }
-        }
-        """;
+          """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.identityProjector(),
-              null,
-              10,
-              operationsConfig.defaultSortPageSize(),
-              ReadType.SORTED_DOCUMENT,
-              objectMapper,
-              List.of(new FindOperation.OrderBy("username", true)),
-              5,
-              operationsConfig.maxDocumentSortCount(),
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                FindOperation.OrderBy orderBy = new FindOperation.OrderBy("username", true);
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.limit()).isEqualTo(10);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.skip()).isEqualTo(5);
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).containsOnly(orderBy);
+                assertThat(find.filters()).isEmpty();
               });
     }
 
@@ -381,7 +373,7 @@ public class FindCommandResolverTest {
               {
                 "find": {
                   "options" : {
-                    "limit" : 10,
+                    "limit" : 7,
                     "pagingState" : "dlavjhvbavkjbna"
                   }
                 }
@@ -389,28 +381,24 @@ public class FindCommandResolverTest {
               """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.identityProjector(),
-              "dlavjhvbavkjbna",
-              10,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(7);
+                assertThat(find.pagingState()).isEqualTo("dlavjhvbavkjbna");
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).isEmpty();
               });
     }
 
@@ -426,126 +414,129 @@ public class FindCommandResolverTest {
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "col", DBFilterBase.MapFilterBase.Operator.EQ, "val")),
-              DocumentProjector.identityProjector(),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.TextFilter(
+                        "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
   }
 
   @Nested
   class FindCommandResolveWithProjection {
+
+    @Mock CommandContext commandContext;
+
     @Test
     public void idFilterConditionAndProjection() throws Exception {
-      final JsonNode projectionDef =
-          objectMapper.readTree(
-              """
-              {
+      final String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : "id"},
+              "projection": {
                 "field1" : 1,
                 "field2" : 1
-               }
-               """);
-      String json =
-          """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "id"},
-                          "projection": %s
-                        }
-                      }
-                      """
-              .formatted(projectionDef);
+              }
+            }
+          }
+          """;
+
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation = findCommandResolver.resolveCommand(commandContext, findCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"))),
-              DocumentProjector.createFromDefinition(projectionDef),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      JsonNode projectionDef =
+          objectMapper.readTree(
+              """
+                      {
+                        "field1" : 1,
+                        "field2" : 1
+                      }
+                      """);
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection())
+                    .isEqualTo(DocumentProjector.createFromDefinition(projectionDef));
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 
     @Test
     public void noFilterConditionWithProjection() throws Exception {
-      final JsonNode projectionDef =
+      final String json =
+          """
+              {
+                "find": {
+                  "projection": {
+                    "field1" : 1,
+                    "field2" : 1
+                  }
+                }
+              }
+              """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      JsonNode projectionDef =
           objectMapper.readTree(
               """
-              {
-                "field1" : 1,
-                "field2" : 1
-               }
-               """);
-      String json =
-          """
-            {
-              "find": {
-                "projection" : %s
-              }
-            }
-            """
-              .formatted(projectionDef);
-
-      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      final CommandContext commandContext = new CommandContext("namespace", "collection");
-      final Operation operation =
-          findCommandResolver.resolveCommand(commandContext, findOneCommand);
-      FindOperation expected =
-          new FindOperation(
-              commandContext,
-              List.of(),
-              DocumentProjector.createFromDefinition(projectionDef),
-              null,
-              Integer.MAX_VALUE,
-              operationsConfig.defaultPageSize(),
-              ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+                      {
+                        "field1" : 1,
+                        "field2" : 1
+                      }
+                      """);
       assertThat(operation)
-          .isInstanceOf(FindOperation.class)
-          .satisfies(
-              op -> {
-                assertThat(op).isEqualTo(expected);
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection())
+                    .isEqualTo(DocumentProjector.createFromDefinition(projectionDef));
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).isEmpty();
               });
     }
   }

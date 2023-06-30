@@ -221,6 +221,12 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Generate changelog
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./update_changelog.sh
+
       - name: Update version number
         run: |
           ./mvnw -B -ntp release:update-versions -DautoVersionSubmodules=true versions:commit

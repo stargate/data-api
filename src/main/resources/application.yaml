@@ -49,8 +49,10 @@ quarkus:
           policy: authenticated
 
     limits:
-      # Let's lower maximum HTTP request size from 10 megs to 1
-      max-body-size: 1M
+      # Let's limit low-level maximum HTTP request size to 5 megs: stricter limit (1 meg)
+      # is applied at the JSON API level. Low-level limits may result in EPIPE/413 errors
+      # whereas at higher level we can use regular JSON API error responses
+      max-body-size: 5M
 
     port: 8181
 
