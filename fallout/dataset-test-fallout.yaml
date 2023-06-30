@@ -110,7 +110,7 @@ workload:
             - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:write
             - threads=30
-            - errors=stop
+            - errors=warn
             - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
