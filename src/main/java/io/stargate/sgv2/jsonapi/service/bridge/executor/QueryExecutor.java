@@ -11,10 +11,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Base64;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class QueryExecutor {
-
+  private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final QueriesConfig queriesConfig;
 
   private final StargateRequestInfo stargateRequestInfo;
@@ -96,6 +98,11 @@ public class QueryExecutor {
             response -> {
               QueryOuterClass.ResultSet resultSet = response.getResultSet();
               return resultSet;
+            })
+        .onFailure()
+        .invoke(
+            failure -> {
+              logger.error("Error on bridge ", failure);
             });
   }
 

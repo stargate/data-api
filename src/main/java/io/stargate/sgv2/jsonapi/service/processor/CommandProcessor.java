@@ -12,6 +12,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Processes valid document {@link Command} to read, write, schema change, etc. This is a single
@@ -24,6 +26,8 @@ import java.util.function.Supplier;
  */
 @ApplicationScoped
 public class CommandProcessor {
+
+  private static Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
   private final QueryExecutor queryExecutor;
 
@@ -62,6 +66,8 @@ public class CommandProcessor {
         .onFailure()
         .recoverWithItem(
             t -> {
+              logger.warn(
+                  "The command {} failed with exception", command.getClass().getSimpleName(), t);
               // DocsException is supplier of the CommandResult
               // so simply return
               if (t instanceof JsonApiException jsonApiException) {

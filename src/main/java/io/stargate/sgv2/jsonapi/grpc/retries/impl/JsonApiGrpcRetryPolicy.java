@@ -8,6 +8,8 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.grpc.retries.GrpcRetryPredicate;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default gRPC retry policy used in the project. The policy defines retries when:
@@ -24,7 +26,7 @@ import java.util.Objects;
  */
 @ApplicationScoped
 public class JsonApiGrpcRetryPolicy implements GrpcRetryPredicate {
-
+  private static final Logger logger = LoggerFactory.getLogger(JsonApiGrpcRetryPolicy.class);
   private static final Metadata.Key<QueryOuterClass.WriteTimeout> WRITE_TIMEOUT_KEY =
       ProtoUtils.keyForProto(QueryOuterClass.WriteTimeout.getDefaultInstance());
 
@@ -56,7 +58,10 @@ public class JsonApiGrpcRetryPolicy implements GrpcRetryPredicate {
     // if we have trailers
     if (null != trailers) {
       // read, write and CAS write timeouts will include one of two trailers
-      return trailers.containsKey(READ_TIMEOUT_KEY) || trailers.containsKey(WRITE_TIMEOUT_KEY);
+      if (trailers.containsKey(READ_TIMEOUT_KEY) || trailers.containsKey(WRITE_TIMEOUT_KEY)) {
+        logger.warn("DEADLINE_EXCEEDED with read/write timeout trailers, retrying");
+        return true;
+      }
     }
 
     // otherwise not
