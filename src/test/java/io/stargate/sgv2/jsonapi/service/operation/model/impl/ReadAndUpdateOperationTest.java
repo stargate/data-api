@@ -166,19 +166,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       String updateClause =
           """
                    { "$set" : { "name" : "test", "date_val" : {"$date": 1672531200000 } }}
@@ -270,19 +264,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       String updateClause =
           """
                        { "$set" : { "username" : "user1" }}
@@ -461,7 +449,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.sorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -472,8 +460,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000,
-              false);
+              10000);
+
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -608,19 +596,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -738,19 +720,12 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -935,19 +910,16 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
               100,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000,
-              false);
+              10000);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree(replacement));
       ReadAndUpdateOperation operation =
@@ -1122,19 +1094,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
               100,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              10000,
-              false);
+              10000);
+
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1248,19 +1218,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1332,19 +1296,12 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1538,7 +1495,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -1546,11 +1503,8 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1665,7 +1619,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -1673,11 +1627,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1745,7 +1695,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -1753,11 +1703,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
