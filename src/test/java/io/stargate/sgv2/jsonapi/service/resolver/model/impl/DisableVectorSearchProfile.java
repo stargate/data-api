@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.model.impl;
+package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTestProfile;
