@@ -1,24 +1,16 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+## [v1.0.0-ALPHA-10](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-10) (2023-07-14)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-9...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-9...v1.0.0-ALPHA-10)
 
 **Fixed bugs:**
 
 - Coordinator logs full of warning message about aggregation key [\#413](https://github.com/stargate/jsonapi/issues/413)
 
-**Closed issues:**
-
-- Support '\_id' in '$setOnInsert' [\#433](https://github.com/stargate/jsonapi/issues/433)
-- Rewrite handling of `\_id` to occur before document processed by `Shredder` [\#425](https://github.com/stargate/jsonapi/issues/425)
-- Add command name and errors to the server-side HTTP metrics [\#411](https://github.com/stargate/jsonapi/issues/411)
-
 **Merged pull requests:**
 
 - Use Stargate v2.0.15 [\#440](https://github.com/stargate/jsonapi/pull/440) ([github-actions[bot]](https://github.com/apps/github-actions))
-- Use Stargate v2.0.14, update to Quarkus 3.x [\#439](https://github.com/stargate/jsonapi/pull/439) ([github-actions[bot]](https://github.com/apps/github-actions))
-- Bumping version for next jsonapi release [\#438](https://github.com/stargate/jsonapi/pull/438) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Add command name to count metrics [\#437](https://github.com/stargate/jsonapi/pull/437) ([maheshrajamani](https://github.com/maheshrajamani))
 - Refactor id-handling part of Shredding [\#436](https://github.com/stargate/jsonapi/pull/436) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - add fallout smoke test [\#423](https://github.com/stargate/jsonapi/pull/423) ([ivansenic](https://github.com/ivansenic))
@@ -38,7 +30,6 @@
 
 - Fix \#433: allow \_id with $setOnInsert [\#434](https://github.com/stargate/jsonapi/pull/434) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#408: validate characters of document field names [\#429](https://github.com/stargate/jsonapi/pull/429) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#428](https://github.com/stargate/jsonapi/pull/428) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-ALPHA-8](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-8) (2023-05-12)
 
