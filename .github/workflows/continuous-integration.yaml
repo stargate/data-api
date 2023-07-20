@@ -107,7 +107,7 @@ jobs:
       - name: Integration Test
         env:
           COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-68
-          TEST_REGEX: '!VectorSearchIntegrationTest'
+          TEST_REGEX: '!VectorSearchIntegrationTest*'
         run: |
           ./mvnw -B -ntp clean verify -DskipUnitTests -Dit.test=$TEST_REGEX -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}
 
