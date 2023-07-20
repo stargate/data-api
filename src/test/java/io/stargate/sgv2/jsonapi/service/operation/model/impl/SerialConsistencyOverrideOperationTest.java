@@ -107,21 +107,14 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -334,19 +327,12 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(

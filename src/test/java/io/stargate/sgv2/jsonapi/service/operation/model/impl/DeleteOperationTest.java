@@ -90,21 +90,15 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -168,21 +162,15 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -287,21 +275,19 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
               2,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              3,
-              false);
+              3);
+
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -405,21 +391,19 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
               2,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              3,
-              false);
+              3);
+
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
               COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
@@ -465,21 +449,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of());
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -540,21 +517,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -653,21 +623,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -768,21 +731,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -877,21 +833,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -969,7 +918,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
@@ -979,11 +928,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               2,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1059,7 +1004,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
@@ -1069,11 +1014,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1155,7 +1096,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(true))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
@@ -1165,11 +1106,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1220,21 +1158,15 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of());
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -1348,7 +1280,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
@@ -1358,11 +1290,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1527,7 +1456,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .returning(List.of(List.of(Values.of(false))));
 
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(
                   new DBFilterBase.TextFilter(
@@ -1537,11 +1466,8 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               3,
               3,
               ReadType.KEY,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
+
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =

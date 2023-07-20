@@ -99,7 +99,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(doc2))));
 
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(),
               DocumentProjector.identityProjector(),
@@ -107,11 +107,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               20,
               20,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -215,7 +211,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.IN,
               List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -223,11 +219,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -254,7 +246,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.IDFilter filter =
           new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of());
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -262,11 +254,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -369,7 +357,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.TextFilter textFilter =
           new DBFilterBase.TextFilter("username", DBFilterBase.TextFilter.Operator.EQ, "user1");
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter, textFilter),
               DocumentProjector.identityProjector(),
@@ -377,11 +365,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -485,7 +469,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               DBFilterBase.IDFilter.Operator.IN,
               List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -493,11 +477,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               2,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -564,19 +544,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -630,7 +603,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -638,11 +611,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -706,19 +675,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -786,19 +748,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.BoolFilter(
               "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true);
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -869,19 +824,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.DateFilter(
               "date_field", DBFilterBase.MapFilterBase.Operator.EQ, new Date(1672531200000L));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -945,19 +893,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       DBFilterBase.ExistsFilter filter = new DBFilterBase.ExistsFilter("registration_active", true);
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -1025,19 +966,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"),
               new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               filters,
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -1102,7 +1036,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       DBFilterBase.SizeFilter filter = new DBFilterBase.SizeFilter("tags", 2);
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsorted(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
@@ -1110,11 +1044,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -1181,19 +1111,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.ArrayEqualsFilter filter =
           new DBFilterBase.ArrayEqualsFilter(new DocValueHasher(), "tags", List.of("tag1", "tag2"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -1261,19 +1184,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.SubDocEqualsFilter(
               new DocValueHasher(), "sub_doc", Map.of("col", "val"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Supplier<CommandResult> execute =
           operation
@@ -1332,19 +1248,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation operation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       Throwable failure =
           operation
@@ -1516,7 +1425,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       FindOperation operation =
-          new FindOperation(
+          FindOperation.sorted(
               COMMAND_CONTEXT,
               List.of(),
               DocumentProjector.identityProjector(),
@@ -1527,8 +1436,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              20,
-              false);
+              20);
 
       Supplier<CommandResult> execute =
           operation
@@ -1730,7 +1638,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(1672531600000L))));
 
       FindOperation operation =
-          new FindOperation(
+          FindOperation.sorted(
               COMMAND_CONTEXT,
               List.of(),
               DocumentProjector.identityProjector(),
@@ -1741,8 +1649,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("sort_date", true)),
               0,
-              20,
-              false);
+              20);
 
       Supplier<CommandResult> execute =
           operation
@@ -1925,7 +1832,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       FindOperation operation =
-          new FindOperation(
+          FindOperation.sorted(
               COMMAND_CONTEXT,
               List.of(),
               DocumentProjector.identityProjector(),
@@ -1936,8 +1843,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
-              20,
-              false);
+              20);
 
       Supplier<CommandResult> execute =
           operation
@@ -2118,7 +2024,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       FindOperation operation =
-          new FindOperation(
+          FindOperation.sorted(
               COMMAND_CONTEXT,
               List.of(),
               DocumentProjector.identityProjector(),
@@ -2129,8 +2035,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              20,
-              false);
+              20);
 
       Supplier<CommandResult> execute =
           operation
@@ -2208,19 +2113,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2284,19 +2182,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2358,19 +2249,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       ReadOperation.FindResponse result =
           findOperation
@@ -2434,19 +2318,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.TextFilter filter =
           new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
       FindOperation findOperation =
-          new FindOperation(
+          FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
-              null,
-              1,
-              1,
               ReadType.DOCUMENT,
-              objectMapper,
-              null,
-              0,
-              0,
-              false);
+              objectMapper);
 
       DBFilterBase.IDFilter idFilter =
           new DBFilterBase.IDFilter(
