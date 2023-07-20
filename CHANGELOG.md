@@ -1,3 +1,4 @@
+# Changelog
 
 ## [v1.0.0-ALPHA-10](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-10) (2023-07-14)
 
