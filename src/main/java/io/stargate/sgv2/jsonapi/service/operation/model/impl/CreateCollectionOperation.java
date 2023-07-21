@@ -48,47 +48,47 @@ public record CreateCollectionOperation(
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
-    String createTable =
-        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-            + "    key                 tuple<tinyint,text>,"
-            + "    tx_id               timeuuid, "
-            + "    doc_json            text,"
-            + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      map<text, text>,"
-            + "    array_size          map<text, int>,"
-            + "    array_equals        map<text, text>,"
-            + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, tinyint>,"
-            + "    query_dbl_values    map<text, decimal>,"
-            + "    query_text_values   map<text, text>, "
-            + "    query_timestamp_values map<text, timestamp>, "
-            + "    query_null_values   set<text>, "
-            + "    PRIMARY KEY (key))";
-
-    String createTableWithVector =
-        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-            + "    key                 tuple<tinyint,text>,"
-            + "    tx_id               timeuuid, "
-            + "    doc_json            text,"
-            + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      map<text, text>,"
-            + "    array_size          map<text, int>,"
-            + "    array_equals        map<text, text>,"
-            + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, tinyint>,"
-            + "    query_dbl_values    map<text, decimal>,"
-            + "    query_text_values   map<text, text>, "
-            + "    query_timestamp_values map<text, timestamp>, "
-            + "    query_null_values   set<text>,     "
-            + "    query_vector_value  VECTOR<FLOAT, "
-            + vectorSize
-            + ">, "
-            + "    PRIMARY KEY (key))";
     if (vectorSearch) {
+      String createTableWithVector =
+          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+              + "    key                 tuple<tinyint,text>,"
+              + "    tx_id               timeuuid, "
+              + "    doc_json            text,"
+              + "    exist_keys          set<text>,"
+              + "    sub_doc_equals      map<text, text>,"
+              + "    array_size          map<text, int>,"
+              + "    array_equals        map<text, text>,"
+              + "    array_contains      set<text>,"
+              + "    query_bool_values   map<text, tinyint>,"
+              + "    query_dbl_values    map<text, decimal>,"
+              + "    query_text_values   map<text, text>, "
+              + "    query_timestamp_values map<text, timestamp>, "
+              + "    query_null_values   set<text>,     "
+              + "    query_vector_value  VECTOR<FLOAT, "
+              + vectorSize
+              + ">, "
+              + "    PRIMARY KEY (key))";
       return QueryOuterClass.Query.newBuilder()
           .setCql(String.format(createTableWithVector, keyspace, table))
           .build();
     } else {
+      String createTable =
+          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+              + "    key                 tuple<tinyint,text>,"
+              + "    tx_id               timeuuid, "
+              + "    doc_json            text,"
+              + "    exist_keys          set<text>,"
+              + "    sub_doc_equals      map<text, text>,"
+              + "    array_size          map<text, int>,"
+              + "    array_equals        map<text, text>,"
+              + "    array_contains      set<text>,"
+              + "    query_bool_values   map<text, tinyint>,"
+              + "    query_dbl_values    map<text, decimal>,"
+              + "    query_text_values   map<text, text>, "
+              + "    query_timestamp_values map<text, timestamp>, "
+              + "    query_null_values   set<text>, "
+              + "    PRIMARY KEY (key))";
+
       return QueryOuterClass.Query.newBuilder()
           .setCql(String.format(createTable, keyspace, table))
           .build();
