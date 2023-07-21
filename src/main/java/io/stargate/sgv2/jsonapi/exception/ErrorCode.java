@@ -63,7 +63,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field");
+  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+
+  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend");
 
   private final String message;
 

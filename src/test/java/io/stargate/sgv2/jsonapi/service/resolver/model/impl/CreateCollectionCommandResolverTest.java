@@ -32,12 +32,12 @@ class CreateCollectionCommandResolverTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name" : "my_collection"
-            }
-          }
-          """;
+              {
+                "createCollection": {
+                  "name" : "my_collection"
+                }
+              }
+              """;
 
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
       Operation result = resolver.resolveCommand(commandContext, command);
@@ -48,6 +48,41 @@ class CreateCollectionCommandResolverTest {
               op -> {
                 assertThat(op.name()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.vectorSearch()).isEqualTo(false);
+                assertThat(op.vectorSize()).isEqualTo(0);
+                assertThat(op.vectorFunction()).isNull();
+              });
+    }
+
+    @Test
+    public void happyPathVectorSearch() throws Exception {
+      String json =
+          """
+            {
+              "createCollection": {
+                "name" : "my_collection",
+                "options": {
+                  "vector": {
+                    "size": 4,
+                    "function": "cosine"
+                  }
+                }
+              }
+            }
+            """;
+
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionOperation.class,
+              op -> {
+                assertThat(op.name()).isEqualTo("my_collection");
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.vectorSearch()).isEqualTo(true);
+                assertThat(op.vectorSize()).isEqualTo(4);
+                assertThat(op.vectorFunction()).isEqualTo("cosine");
               });
     }
   }
