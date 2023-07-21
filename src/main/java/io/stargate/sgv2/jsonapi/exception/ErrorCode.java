@@ -73,6 +73,8 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
 
+  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
+
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection ");
 
   private final String message;

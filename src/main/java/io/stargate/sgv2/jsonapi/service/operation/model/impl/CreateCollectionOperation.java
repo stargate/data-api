@@ -10,8 +10,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public record CreateCollectionOperation(CommandContext commandContext, String name)
+public record CreateCollectionOperation(
+    CommandContext commandContext,
+    String name,
+    boolean vectorSearch,
+    int vectorSize,
+    String vectorFunction)
     implements Operation {
+
+  public static CreateCollectionOperation withVectorSearch(
+      CommandContext commandContext, String name, int vectorSize, String vectorFunction) {
+    return new CreateCollectionOperation(commandContext, name, true, vectorSize, vectorFunction);
+  }
+
+  public static CreateCollectionOperation withoutVectorSearch(
+      CommandContext commandContext, String name) {
+    return new CreateCollectionOperation(commandContext, name, false, 0, null);
+  }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
@@ -33,25 +48,51 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
-    String createTable =
-        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-            + "    key                 tuple<tinyint,text>,"
-            + "    tx_id               timeuuid, "
-            + "    doc_json            text,"
-            + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      map<text, text>,"
-            + "    array_size          map<text, int>,"
-            + "    array_equals        map<text, text>,"
-            + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, tinyint>,"
-            + "    query_dbl_values    map<text, decimal>,"
-            + "    query_text_values   map<text, text>, "
-            + "    query_timestamp_values map<text, timestamp>, "
-            + "    query_null_values   set<text>,     "
-            + "    PRIMARY KEY (key))";
-    return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(createTable, keyspace, table))
-        .build();
+    if (vectorSearch) {
+      String createTableWithVector =
+          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+              + "    key                 tuple<tinyint,text>,"
+              + "    tx_id               timeuuid, "
+              + "    doc_json            text,"
+              + "    exist_keys          set<text>,"
+              + "    sub_doc_equals      map<text, text>,"
+              + "    array_size          map<text, int>,"
+              + "    array_equals        map<text, text>,"
+              + "    array_contains      set<text>,"
+              + "    query_bool_values   map<text, tinyint>,"
+              + "    query_dbl_values    map<text, decimal>,"
+              + "    query_text_values   map<text, text>, "
+              + "    query_timestamp_values map<text, timestamp>, "
+              + "    query_null_values   set<text>,     "
+              + "    query_vector_value  VECTOR<FLOAT, "
+              + vectorSize
+              + ">, "
+              + "    PRIMARY KEY (key))";
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(String.format(createTableWithVector, keyspace, table))
+          .build();
+    } else {
+      String createTable =
+          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+              + "    key                 tuple<tinyint,text>,"
+              + "    tx_id               timeuuid, "
+              + "    doc_json            text,"
+              + "    exist_keys          set<text>,"
+              + "    sub_doc_equals      map<text, text>,"
+              + "    array_size          map<text, int>,"
+              + "    array_equals        map<text, text>,"
+              + "    array_contains      set<text>,"
+              + "    query_bool_values   map<text, tinyint>,"
+              + "    query_dbl_values    map<text, decimal>,"
+              + "    query_text_values   map<text, text>, "
+              + "    query_timestamp_values map<text, timestamp>, "
+              + "    query_null_values   set<text>, "
+              + "    PRIMARY KEY (key))";
+
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(String.format(createTable, keyspace, table))
+          .build();
+    }
   }
 
   protected List<QueryOuterClass.Query> getIndexStatements(String keyspace, String table) {
@@ -127,6 +168,16 @@ public record CreateCollectionOperation(CommandContext commandContext, String na
             .setCql(String.format(nullQuery, table, keyspace, table))
             .build());
 
+    if (vectorSearch) {
+      String vectorSearch =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_vector_value ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
+              + vectorFunction()
+              + "'}";
+      statements.add(
+          QueryOuterClass.Query.newBuilder()
+              .setCql(String.format(vectorSearch, table, keyspace, table))
+              .build());
+    }
     return statements;
   }
 }
