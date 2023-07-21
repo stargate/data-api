@@ -9,6 +9,12 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
 
+    /** Primary key for Documents stored; has special handling for many operations. */
+    String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
+
+    /** Primary key for Documents stored; has special handling for many operations. */
+    String VECTOR_EMBEDDING_FIELD = "$vector";
+
     // Current definition of valid JSON API names: note that this only validates
     // characters, not length limits (nor empty nor "too long" allowed but validated
     // separately)

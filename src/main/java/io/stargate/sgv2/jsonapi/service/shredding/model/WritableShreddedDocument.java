@@ -39,7 +39,8 @@ public record WritableShreddedDocument(
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
-    Set<JsonPath> queryNullValues) {
+    Set<JsonPath> queryNullValues,
+    float[] queryVectorValues) {
   public static Builder builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
     return new Builder(id, txID, docJson, docJsonNode);
   }
@@ -75,6 +76,8 @@ public record WritableShreddedDocument(
     private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
 
+    private float[] queryVectorValues;
+
     public Builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
       hasher = new DocValueHasher();
       this.id = id;
@@ -104,7 +107,8 @@ public record WritableShreddedDocument(
           _nonNull(queryNumberValues),
           _nonNull(queryTextValues),
           _nonNull(queryTimestampValues),
-          _nonNull(queryNullValues));
+          _nonNull(queryNullValues),
+          queryVectorValues);
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
@@ -223,6 +227,22 @@ public record WritableShreddedDocument(
       // if (!path.isArrayElement()) {
       addArrayContains(path, hasher.nullValue().hash());
       // }
+    }
+
+    @Override
+    public void shredVector(JsonPath path, ArrayNode vector) {
+      // vector data is added only to queryVectorValues and exists keys index
+      addKey(path);
+      float[] arrayVals = new float[vector.size()];
+      for (int i = 0; i < vector.size(); i++) {
+        JsonNode element = vector.get(i);
+        if (!element.isNumber()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
+        }
+        arrayVals[i] = element.floatValue();
+      }
+      queryVectorValues = arrayVals;
     }
 
     /*

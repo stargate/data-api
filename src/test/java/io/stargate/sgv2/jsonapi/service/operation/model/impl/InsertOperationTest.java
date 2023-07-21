@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -37,6 +40,9 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final CommandContext COMMAND_CONTEXT =
       new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
+  private static final CommandContext COMMAND_CONTEXT_VECTOR =
+      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, true);
+
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
@@ -50,6 +56,12 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
             + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
             + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+
+    static final String INSERT_VECTOR_CQL =
+        "INSERT INTO \"%s\".\"%s\""
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+            + " VALUES"
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insertOne() throws Exception {
@@ -928,6 +940,177 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           .containsExactlyInAnyOrder(
               "Failed to insert document with _id 'doc1': Ivan breaks the test.",
               "Failed to insert document with _id 'doc2': Ivan really breaks the test.");
+    }
+
+    @Test
+    public void insertOneVectorSearch() throws Exception {
+      String document =
+          """
+        {
+          "_id": "doc1",
+          "text": "user1",
+          "number" : 10,
+          "boolean": true,
+          "nullval" : null,
+          "array" : ["a", "b"],
+          "sub_doc" : {"col": "val"},
+          "date_val" : {"$date": 1672531200000 },
+          "$vector" : [0.11,0.22,0.33,0.44]
+        }
+        """;
+
+      JsonNode jsonNode = objectMapper.readTree(document);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      String insertCql = INSERT_VECTOR_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
+                  CustomValueSerializers.getVectorValue(shredDocument.queryVectorValues()))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
+              .returning(List.of(List.of(Values.of(true))));
+
+      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      insertAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void insertOneVectorEnabledNoVectorData() throws Exception {
+      String document =
+          """
+        {
+          "_id": "doc1",
+          "text": "user1",
+          "number" : 10,
+          "boolean": true,
+          "nullval" : null,
+          "array" : ["a", "b"],
+          "sub_doc" : {"col": "val"},
+          "date_val" : {"$date": 1672531200000 }
+        }
+        """;
+
+      JsonNode jsonNode = objectMapper.readTree(document);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      String insertCql = INSERT_VECTOR_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      ValidatingStargateBridge.QueryAssert insertAssert =
+          withQuery(
+                  insertCql,
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
+                  CustomValueSerializers.getVectorValue(shredDocument.queryVectorValues()))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
+              .returning(List.of(List.of(Values.of(true))));
+
+      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument);
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      insertAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void insertOneVectorDisabledWithVectorData() throws Exception {
+      String document =
+          """
+        {
+          "_id": "doc1",
+          "text": "user1",
+          "number" : 10,
+          "boolean": true,
+          "nullval" : null,
+          "array" : ["a", "b"],
+          "sub_doc" : {"col": "val"},
+          "date_val" : {"$date": 1672531200000 },
+          "$vector" : [0.11,0.22,0.33,0.44]
+        }
+        """;
+
+      JsonNode jsonNode = objectMapper.readTree(document);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
+      Throwable failure = catchThrowable(() -> operation.execute(queryExecutor));
+      assertThat(failure)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED);
     }
   }
 }

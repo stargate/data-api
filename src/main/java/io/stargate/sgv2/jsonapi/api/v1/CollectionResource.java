@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -52,6 +53,8 @@ public class CollectionResource {
   public static final String BASE_PATH = "/v1/{namespace}/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
+
+  @Inject private SchemaCache schemaCache;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -139,13 +142,18 @@ public class CollectionResource {
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String collection) {
+    return schemaCache
+        .isVectorEnabled(namespace, collection)
+        .onItem()
+        .transformToUni(
+            vsearchFlag -> {
+              // create context
+              CommandContext commandContext =
+                  new CommandContext(namespace, collection, vsearchFlag);
 
-    // create context
-    CommandContext commandContext = new CommandContext(namespace, collection);
-
-    // call processor
-    return meteredCommandProcessor
-        .processCommand(commandContext, command)
+              // call processor
+              return meteredCommandProcessor.processCommand(commandContext, command);
+            })
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }

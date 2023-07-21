@@ -35,17 +35,25 @@ public record InsertOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    final boolean vectorEnabled = commandContext().isVectorEnabled();
+    if (!vectorEnabled && documents.stream().anyMatch(doc -> doc.queryVectorValues() != null)) {
+      throw new JsonApiException(
+          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
+          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
+    }
     if (ordered) {
-      return insertOrdered(queryExecutor);
+      return insertOrdered(queryExecutor, vectorEnabled);
     } else {
-      return insertUnordered(queryExecutor);
+      return insertUnordered(queryExecutor, vectorEnabled);
     }
   }
 
   // implementation for the ordered insert
-  private Uni<Supplier<CommandResult>> insertOrdered(QueryExecutor queryExecutor) {
+  private Uni<Supplier<CommandResult>> insertOrdered(
+      QueryExecutor queryExecutor, boolean vectorEnabled) {
+
     // build query once
-    QueryOuterClass.Query query = buildInsertQuery();
+    QueryOuterClass.Query query = buildInsertQuery(vectorEnabled);
 
     return Multi.createFrom()
         .iterable(documents)
@@ -54,7 +62,7 @@ public record InsertOperation(
         .onItem()
         .transformToUni(
             doc ->
-                insertDocument(queryExecutor, query, doc)
+                insertDocument(queryExecutor, query, doc, vectorEnabled)
 
                     // wrap item and failure
                     // the collection can decide how to react on failure
@@ -90,9 +98,10 @@ public record InsertOperation(
   }
 
   // implementation for the unordered insert
-  private Uni<Supplier<CommandResult>> insertUnordered(QueryExecutor queryExecutor) {
+  private Uni<Supplier<CommandResult>> insertUnordered(
+      QueryExecutor queryExecutor, boolean vectorEnabled) {
     // build query once
-    QueryOuterClass.Query query = buildInsertQuery();
+    QueryOuterClass.Query query = buildInsertQuery(vectorEnabled);
 
     return Multi.createFrom()
         .iterable(documents)
@@ -101,7 +110,7 @@ public record InsertOperation(
         .onItem()
         .transformToUniAndMerge(
             doc ->
-                insertDocument(queryExecutor, query, doc)
+                insertDocument(queryExecutor, query, doc, vectorEnabled)
 
                     // handle errors fail silent mode
                     .onItemOrFailure()
@@ -117,9 +126,12 @@ public record InsertOperation(
 
   // inserts a single document
   private static Uni<DocumentId> insertDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, WritableShreddedDocument doc) {
+      QueryExecutor queryExecutor,
+      QueryOuterClass.Query query,
+      WritableShreddedDocument doc,
+      boolean vectorEnabled) {
     // bind and execute
-    QueryOuterClass.Query bindedQuery = bindInsertValues(query, doc);
+    QueryOuterClass.Query bindedQuery = bindInsertValues(query, doc, vectorEnabled);
 
     return queryExecutor
         .executeWrite(bindedQuery)
@@ -138,21 +150,36 @@ public record InsertOperation(
   }
 
   // utility for building the insert query
-  private QueryOuterClass.Query buildInsertQuery() {
+  private QueryOuterClass.Query buildInsertQuery(boolean vectorEnabled) {
+
+    String insertWithVector =
+        "INSERT INTO \"%s\".\"%s\""
+            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+            + " VALUES"
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+
     String insert =
         "INSERT INTO \"%s\".\"%s\""
             + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
             + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
-    return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
-        .build();
+    if (vectorEnabled) {
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(
+              String.format(
+                  insertWithVector, commandContext.namespace(), commandContext.collection()))
+          .build();
+    } else {
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
+          .build();
+    }
   }
 
   // utility for query binding
   private static QueryOuterClass.Query bindInsertValues(
-      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc) {
+      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
@@ -171,6 +198,9 @@ public record InsertOperation(
             .addValues(
                 Values.of(
                     CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())));
+    if (vectorEnabled) {
+      values.addValues(CustomValueSerializers.getVectorValue(doc.queryVectorValues()));
+    }
     return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 

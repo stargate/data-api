@@ -24,4 +24,6 @@ public interface ShredListener {
   void shredBoolean(JsonPath path, boolean value);
 
   void shredNull(JsonPath path);
+
+  void shredVector(JsonPath path, ArrayNode vector);
 }
