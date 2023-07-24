@@ -42,7 +42,8 @@ public class NamespaceCache {
                       && sre.getStatus().equals(Status.UNAUTHENTICATED)) {
                     new RuntimeException(error);
                   }
-                  throw new RuntimeException(ErrorCode.INVALID_COLLECTION_NAME + collectionName);
+                  throw new RuntimeException(
+                      ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
                 } else {
                   vectorCache.put(collectionName, result);
                   return result;

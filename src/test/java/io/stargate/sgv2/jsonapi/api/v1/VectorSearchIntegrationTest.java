@@ -62,7 +62,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   @Order(2)
   class InsertOneCollection {
     @Test
-    public void inserVectorSearch() {
+    public void insertVectorSearch() {
       String json =
           """
         {
@@ -120,7 +120,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    public void inserVectorCollectionWithoutVectorData() {
+    public void insertVectorCollectionWithoutVectorData() {
       String json =
           """
         {
@@ -176,7 +176,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    public void inserEmptyVectorData() {
+    public void insertEmptyVectorData() {
       String json =
           """
         {
@@ -209,7 +209,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    public void inserInvalidVectorData() {
+    public void insertInvalidVectorData() {
       String json =
           """
         {
@@ -246,7 +246,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   @Order(3)
   class InsertManyCollection {
     @Test
-    public void inserVectorSearch() {
+    public void insertVectorSearch() {
       String json =
           """
         {
