@@ -106,8 +106,9 @@ jobs:
       # run the int tests
       - name: Integration Test
         env:
-          COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-68
+          COORD_IMAGE: hub.docker.com/r/stargateio/coordinator-dse-68
+          # ^^^ 24-Jul-2023, tatu: Temporary issues wrt ECR, need to use dockerhub instead
+          #COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-68
           TEST_REGEX: '!VectorSearchIntegrationTest*,!JsonApiGrpcRetryPolicyBridgeTest'
         run: |
           ./mvnw -B -ntp clean verify -DskipUnitTests -Dit.test=$TEST_REGEX -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}
-
