@@ -70,6 +70,44 @@ public class InsertManyCommandResolverTest {
     }
 
     @Test
+    public void happyPathVectorSearch() throws Exception {
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": [
+                {
+                  "_id": "1",
+                  "location": "London",
+                  "$vector" : [0.11,0.22]
+                },
+                {
+                  "_id": "2",
+                  "location": "New York",
+                  "$vector" : [0.33,0.44]
+                }
+              ]
+            }
+          }
+          """;
+
+      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              InsertOperation.class,
+              op -> {
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
+
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.ordered()).isTrue();
+                assertThat(op.documents()).containsExactly(first, second);
+              });
+    }
+
+    @Test
     public void optionsEmpty() throws Exception {
       String json =
           """

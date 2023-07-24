@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.ShredListener;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,7 +20,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/** The fully shredded document, everything we need to write the document. */
+/**
+ * The fully shredded document, everything we need to write the document. Override of hashcode and
+ * equals methods is needed to handle queryVectorValues array field.
+ */
 public record WritableShreddedDocument(
     /**
      * Unique id of this document: may be {@code null} when inserting; if so, will be
@@ -41,6 +45,51 @@ public record WritableShreddedDocument(
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues,
     float[] queryVectorValues) {
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    WritableShreddedDocument that = (WritableShreddedDocument) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(txID, that.txID)
+        && Objects.equals(docJson, that.docJson)
+        && Objects.equals(docJsonNode, that.docJsonNode)
+        && Objects.equals(existKeys, that.existKeys)
+        && Objects.equals(subDocEquals, that.subDocEquals)
+        && Objects.equals(arraySize, that.arraySize)
+        && Objects.equals(arrayEquals, that.arrayEquals)
+        && Objects.equals(arrayContains, that.arrayContains)
+        && Objects.equals(queryBoolValues, that.queryBoolValues)
+        && Objects.equals(queryNumberValues, that.queryNumberValues)
+        && Objects.equals(queryTextValues, that.queryTextValues)
+        && Objects.equals(queryTimestampValues, that.queryTimestampValues)
+        && Objects.equals(queryNullValues, that.queryNullValues)
+        && Arrays.equals(queryVectorValues, that.queryVectorValues);
+  }
+
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id,
+            txID,
+            docJson,
+            docJsonNode,
+            existKeys,
+            subDocEquals,
+            arraySize,
+            arrayEquals,
+            arrayContains,
+            queryBoolValues,
+            queryNumberValues,
+            queryTextValues,
+            queryTimestampValues,
+            queryNullValues);
+    result = 31 * result + Arrays.hashCode(queryVectorValues);
+    return result;
+  }
+
   public static Builder builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
     return new Builder(id, txID, docJson, docJsonNode);
   }

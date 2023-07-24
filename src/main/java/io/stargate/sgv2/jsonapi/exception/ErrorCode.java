@@ -45,7 +45,7 @@ public enum ErrorCode {
 
   SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
 
-  SHRED_BAD_VECTOR_VALUE("Vector search needs an array of numbers"),
+  SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
