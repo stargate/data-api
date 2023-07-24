@@ -18,7 +18,7 @@ public class DseTestResource extends StargateTestResource {
     }
 
     if (null == System.getProperty("testing.containers.cluster-version")) {
-      System.setProperty("testing.containers.cluster-version", "6.8");
+      System.setProperty("testing.containers.cluster-version", "next");
     }
 
     if (null == System.getProperty("testing.containers.cluster-dse")) {
