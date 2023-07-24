@@ -106,7 +106,7 @@ jobs:
       # run the int tests
       - name: Integration Test
         env:
-          COORD_IMAGE: index.docker.io/stargateio/coordinator-dse-68
+          COORD_IMAGE: index.docker.io/stargateio/coordinator-dse-next
           # ^^^ 24-Jul-2023, tatu: Temporary issues wrt ECR, need to use dockerhub instead
           #COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-68
         run: |

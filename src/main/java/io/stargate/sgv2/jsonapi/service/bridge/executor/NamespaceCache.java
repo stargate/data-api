@@ -35,18 +35,17 @@ public class NamespaceCache {
     } else {
       return isVectorEnabledInternal(collectionName)
           .onItemOrFailure()
-          .transform(
+          .transformToUni(
               (result, error) -> {
                 if (null != error) {
                   if (error instanceof StatusRuntimeException sre
                       && sre.getStatus().equals(Status.UNAUTHENTICATED)) {
-                    new RuntimeException(error);
+                    throw new RuntimeException(error);
                   }
-                  throw new RuntimeException(
-                      ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
+                  return Uni.createFrom().failure(error);
                 } else {
                   vectorCache.put(collectionName, result);
-                  return result;
+                  return Uni.createFrom().item(result);
                 }
               });
     }
@@ -65,7 +64,8 @@ public class NamespaceCache {
                             c.getName()
                                 .equals(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME));
               } else {
-                throw new RuntimeException(ErrorCode.INVALID_COLLECTION_NAME + collectionName);
+                throw new RuntimeException(
+                    ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
               }
             });
   }
