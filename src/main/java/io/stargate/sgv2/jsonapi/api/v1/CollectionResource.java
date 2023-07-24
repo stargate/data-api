@@ -17,6 +17,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -144,17 +146,26 @@ public class CollectionResource {
           String collection) {
     return schemaCache
         .isVectorEnabled(namespace, collection)
-        .onItem()
+        .onItemOrFailure()
         .transformToUni(
-            vsearchFlag -> {
-              // create context
-              CommandContext commandContext =
-                  new CommandContext(namespace, collection, vsearchFlag);
+            (isVectorEnabled, throwable) -> {
+              if (throwable != null) {
+                Throwable error = throwable;
+                if (throwable instanceof RuntimeException && throwable.getCause() != null)
+                  error = throwable.getCause();
+                if (error instanceof JsonApiException jsonApiException) {
+                  return Uni.createFrom().failure(jsonApiException);
+                }
+                // otherwise use generic for now
+                return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
+              } else {
+                CommandContext commandContext =
+                    new CommandContext(namespace, collection, isVectorEnabled);
 
-              // call processor
-              return meteredCommandProcessor.processCommand(commandContext, command);
+                // call processor
+                return meteredCommandProcessor.processCommand(commandContext, command);
+              }
             })
-        // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }
 }
