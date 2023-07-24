@@ -10,19 +10,19 @@ public class DseTestResource extends StargateTestResource {
     super();
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
-      System.setProperty("testing.containers.cassandra-image", "datastax/dse-server:6.8.36");
+      System.setProperty("testing.containers.cassandra-image", "datastax/dse-next:4.0.7-0acaae364c19");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
-      System.setProperty("testing.containers.stargate-image", "stargateio/coordinator-dse-68:v2");
+      System.setProperty("testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1");
     }
 
-    if (null == System.getProperty("testing.containers.cluster-version")) {
-      System.setProperty("testing.containers.cluster-version", "6.8");
+    if (null == System.getProperty("testing.containers.cluster-persistence")) {
+      System.setProperty("testing.containers.cluster-persistence", "persistence-dse-next");
     }
 
     if (null == System.getProperty("testing.containers.cluster-dse")) {
-      System.setProperty("testing.containers.cluster-dse", "true");
+      System.setProperty("testing.containers.cluster-dse", "false");
     }
   }
 }
