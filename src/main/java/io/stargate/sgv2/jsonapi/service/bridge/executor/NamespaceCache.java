@@ -37,8 +37,15 @@ public class NamespaceCache {
           .transformToUni(
               (result, error) -> {
                 if (null != error) {
-                  if (error instanceof StatusRuntimeException sre) {
-                    throw new RuntimeException(error);
+                  // ignoring the error and return false. This will be handled while trying to
+                  //  execute the query
+                  if ((error instanceof StatusRuntimeException sre
+                          && (sre.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND
+                              || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))
+                      || (error instanceof RuntimeException rte
+                          && rte.getMessage()
+                              .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage()))) {
+                    return Uni.createFrom().item(false);
                   }
                   return Uni.createFrom().failure(error);
                 } else {
