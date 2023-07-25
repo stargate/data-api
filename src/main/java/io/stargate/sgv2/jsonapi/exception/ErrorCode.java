@@ -27,6 +27,8 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
 
+  SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
+
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
@@ -41,7 +43,13 @@ public enum ErrorCode {
 
   SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
 
+  SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
+
+  SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
+
+  INVALID_COLLECTION_NAME("Invalid collection name "),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
@@ -65,7 +73,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
 
-  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend");
+  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
+
+  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection ");
 
   private final String message;
 

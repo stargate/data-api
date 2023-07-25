@@ -44,7 +44,8 @@ public class ShredderTest {
                         "name" : "Bob",
                         "values" : [ 1, 2 ],
                         "extra_stuff" : true,
-                        "nullable" : null
+                        "nullable" : null,
+                        "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
                       }
                       """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
@@ -58,7 +59,8 @@ public class ShredderTest {
               JsonPath.from("values.0", true),
               JsonPath.from("values.1", true),
               JsonPath.from("extra_stuff"),
-              JsonPath.from("nullable"));
+              JsonPath.from("nullable"),
+              JsonPath.from("$vector"));
 
       // First verify paths
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -98,6 +100,8 @@ public class ShredderTest {
       assertThat(doc.queryTextValues())
           .isEqualTo(Map.of(JsonPath.from("_id"), "abc", JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
+      float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
+      assertThat(doc.queryVectorValues()).containsOnly(0.11f, 0.22f, 0.33f, 0.44f);
     }
 
     @Test
@@ -259,6 +263,29 @@ public class ShredderTest {
           .hasMessage(
               "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+
+    @Test
+    public void badEmptyVectorData() {
+      Throwable t =
+          catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"$vector\": [] }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage("$vector field can't be empty")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_SIZE);
+    }
+
+    @Test
+    public void badInvalidVectorData() {
+      Throwable t =
+          catchThrowable(
+              () -> shredder.shred(objectMapper.readTree("{ \"$vector\": [0.11, \"abc\"] }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage("$vector search needs to be array of numbers")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_VALUE);
     }
 
     @Test

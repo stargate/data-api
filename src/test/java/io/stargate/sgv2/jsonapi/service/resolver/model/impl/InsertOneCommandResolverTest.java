@@ -63,6 +63,35 @@ class InsertOneCommandResolverTest {
     }
 
     @Test
+    public void happyPathWithVector() throws Exception {
+      String json =
+          """
+        {
+          "insertOne": {
+            "document" : {
+              "_id": "1",
+              "$vector" : [0.11,0.22,0.33,0.44]
+            }
+          }
+        }
+        """;
+
+      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              InsertOperation.class,
+              op -> {
+                WritableShreddedDocument expected = shredder.shred(command.document());
+
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.ordered()).isTrue();
+                assertThat(op.documents()).singleElement().isEqualTo(expected);
+              });
+    }
+
+    @Test
     public void shredderFailure() throws Exception {
       String json =
           """

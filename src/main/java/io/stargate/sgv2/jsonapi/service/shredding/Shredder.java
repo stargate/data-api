@@ -154,28 +154,48 @@ public class Shredder {
 
   private void traverseValue(JsonNode value, ShredListener callback, JsonPath.Builder pathBuilder) {
     final JsonPath path = pathBuilder.build();
-    if (value.isObject()) {
-      ObjectNode ob = (ObjectNode) value;
-      if (callback.shredObject(path, ob)) {
-        traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+    if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+      if (value.isNull()) {
+        return;
       }
-    } else if (value.isArray()) {
+      if (!value.isArray()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE,
+            String.format(
+                "%s: %s",
+                ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE.getMessage(), value.getNodeType()));
+      }
       ArrayNode arr = (ArrayNode) value;
-      callback.shredArray(path, arr);
-      traverseArray(arr, callback, pathBuilder.nestedArrayBuilder());
-    } else if (value.isTextual()) {
-      callback.shredText(path, value.textValue());
-    } else if (value.isNumber()) {
-      callback.shredNumber(path, value.decimalValue());
-    } else if (value.isBoolean()) {
-      callback.shredBoolean(path, value.booleanValue());
-    } else if (value.isNull()) {
-      callback.shredNull(path);
+      if (arr.size() == 0) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
+      }
+      callback.shredVector(path, arr);
     } else {
-      throw new JsonApiException(
-          ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
-          String.format(
-              "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
+      if (value.isObject()) {
+        ObjectNode ob = (ObjectNode) value;
+        if (callback.shredObject(path, ob)) {
+          traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
+        }
+      } else if (value.isArray()) {
+        ArrayNode arr = (ArrayNode) value;
+        callback.shredArray(path, arr);
+        traverseArray(arr, callback, pathBuilder.nestedArrayBuilder());
+      } else if (value.isTextual()) {
+        callback.shredText(path, value.textValue());
+      } else if (value.isNumber()) {
+        callback.shredNumber(path, value.decimalValue());
+      } else if (value.isBoolean()) {
+        callback.shredBoolean(path, value.booleanValue());
+      } else if (value.isNull()) {
+        callback.shredNull(path);
+      } else {
+        throw new JsonApiException(
+            ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
+            String.format(
+                "%s: %s",
+                ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
+      }
     }
   }
 
@@ -256,7 +276,8 @@ public class Shredder {
               key.length(),
               limits.maxPropertyNameLength()));
     }
-    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
+    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()
+        && !key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
       // Special names are accepted in some cases: for now only one such case for
       // Date values -- if more needed, will refactor. But for now inline:
       if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
