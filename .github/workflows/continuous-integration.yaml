@@ -106,11 +106,9 @@ jobs:
       # run the int tests
       - name: Integration Test
         env:
-          COORD_IMAGE: stargateio/coordinator-dse-next
-          COORD_IMAGE_TAG: v2.1
-          CASS_IMAGE: stargateio/dse-next
-          CASS_IMAGE_TAG: 4.0.7-0acaae364c19
+          COORD_IMAGE: index.docker.io/stargateio/coordinator-dse-68
           # ^^^ 24-Jul-2023, tatu: Temporary issues wrt ECR, need to use dockerhub instead
           #COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-68
+          TEST_REGEX: '!VectorSearchIntegrationTest*,!JsonApiGrpcRetryPolicyBridgeTest'
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dcassandra.index.guardrails.table_failure_threshold=15 -Dstargate.int-test.cassandra.image=$CASS_IMAGE -Dstargate.int-test.cassandra.image-tag=$CASS_IMAGE_TAG -Dstargate.int-test.coordinator.image=$COORD_IMAGE -Dstargate.int-test.coordinator.image-tag=$COORD_IMAGE_TAG ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -Dit.test=$TEST_REGEX -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}

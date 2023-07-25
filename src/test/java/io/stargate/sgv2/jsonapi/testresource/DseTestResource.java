@@ -16,5 +16,13 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.stargate-image")) {
       System.setProperty("testing.containers.stargate-image", "stargateio/coordinator-dse-68:v2");
     }
+
+    if (null == System.getProperty("testing.containers.cluster-version")) {
+      System.setProperty("testing.containers.cluster-version", "6.8");
+    }
+
+    if (null == System.getProperty("testing.containers.cluster-dse")) {
+      System.setProperty("testing.containers.cluster-dse", "true");
+    }
   }
 }
