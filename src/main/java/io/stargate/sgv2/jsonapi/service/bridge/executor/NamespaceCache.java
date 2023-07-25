@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -38,8 +37,7 @@ public class NamespaceCache {
           .transformToUni(
               (result, error) -> {
                 if (null != error) {
-                  if (error instanceof StatusRuntimeException sre
-                      && sre.getStatus().equals(Status.UNAUTHENTICATED)) {
+                  if (error instanceof StatusRuntimeException sre) {
                     throw new RuntimeException(error);
                   }
                   return Uni.createFrom().failure(error);

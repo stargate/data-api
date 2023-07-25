@@ -153,7 +153,7 @@ public class CollectionResource {
                 Throwable error = throwable;
                 if (throwable instanceof RuntimeException && throwable.getCause() != null)
                   error = throwable.getCause();
-                if (error instanceof JsonApiException jsonApiException) {
+                else if (error instanceof JsonApiException jsonApiException) {
                   return Uni.createFrom().failure(jsonApiException);
                 }
                 // otherwise use generic for now
