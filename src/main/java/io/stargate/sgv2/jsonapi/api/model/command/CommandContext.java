@@ -6,9 +6,13 @@ package io.stargate.sgv2.jsonapi.api.model.command;
  * @param namespace The name of the namespace.
  * @param collection The name of the collection.
  */
-public record CommandContext(String namespace, String collection) {
+public record CommandContext(String namespace, String collection, boolean isVectorEnabled) {
 
-  private static final CommandContext EMPTY = new CommandContext(null, null);
+  public CommandContext(String namespace, String collection) {
+    this(namespace, collection, false);
+  }
+
+  private static final CommandContext EMPTY = new CommandContext(null, null, false);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}

@@ -95,5 +95,14 @@ public class CustomValueSerializersTest {
       assertThat(Values.string(next.getKey())).isEqualTo("field1");
       assertThat(Values.bigint(next.getValue())).isEqualTo(10L);
     }
+
+    @Test
+    public void getVectorValue() {
+      float[] from = new float[] {0.11f, 0.22f};
+      final QueryOuterClass.Value to = CustomValueSerializers.getVectorValue(from);
+      assertThat(to.getCollection().getElementsCount()).isEqualTo(2);
+      assertThat(Values.float_(to.getCollection().getElements(0))).isEqualTo(0.11f);
+      assertThat(Values.float_(to.getCollection().getElements(1))).isEqualTo(0.22f);
+    }
   }
 }

@@ -32,7 +32,7 @@ public record CreateCollectionCommand(
           VectorSearchConfig vector) {
 
     public record VectorSearchConfig(
-        @Positive(message = "skip should be greater than or equal to `0`")
+        @Positive(message = "size should be greater than `0`")
             @Schema(
                 description = "Vector field embedding size",
                 type = SchemaType.INTEGER,

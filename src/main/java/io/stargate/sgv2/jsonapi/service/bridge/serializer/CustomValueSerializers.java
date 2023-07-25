@@ -5,6 +5,7 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -76,5 +77,16 @@ public class CustomValueSerializers {
     List<QueryOuterClass.Value> tupleValues =
         List.of(Values.of(documentId.typeId()), Values.of(documentId.asDBKey()));
     return tupleValues;
+  }
+
+  public static QueryOuterClass.Value getVectorValue(float[] vector) {
+    if (vector == null || vector.length == 0) {
+      return Values.NULL;
+    }
+    List<QueryOuterClass.Value> vectorValues = new ArrayList<>();
+    for (float vectorValue : vector) {
+      vectorValues.add(Values.of(vectorValue));
+    }
+    return Values.of(vectorValues);
   }
 }

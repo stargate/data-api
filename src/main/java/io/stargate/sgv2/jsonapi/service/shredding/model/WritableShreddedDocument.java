@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.ShredListener;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,7 +20,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/** The fully shredded document, everything we need to write the document. */
+/**
+ * The fully shredded document, everything we need to write the document. Override of hashcode and
+ * equals methods is needed to handle queryVectorValues array field.
+ */
 public record WritableShreddedDocument(
     /**
      * Unique id of this document: may be {@code null} when inserting; if so, will be
@@ -39,7 +43,53 @@ public record WritableShreddedDocument(
     Map<JsonPath, BigDecimal> queryNumberValues,
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
-    Set<JsonPath> queryNullValues) {
+    Set<JsonPath> queryNullValues,
+    float[] queryVectorValues) {
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    WritableShreddedDocument that = (WritableShreddedDocument) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(txID, that.txID)
+        && Objects.equals(docJson, that.docJson)
+        && Objects.equals(docJsonNode, that.docJsonNode)
+        && Objects.equals(existKeys, that.existKeys)
+        && Objects.equals(subDocEquals, that.subDocEquals)
+        && Objects.equals(arraySize, that.arraySize)
+        && Objects.equals(arrayEquals, that.arrayEquals)
+        && Objects.equals(arrayContains, that.arrayContains)
+        && Objects.equals(queryBoolValues, that.queryBoolValues)
+        && Objects.equals(queryNumberValues, that.queryNumberValues)
+        && Objects.equals(queryTextValues, that.queryTextValues)
+        && Objects.equals(queryTimestampValues, that.queryTimestampValues)
+        && Objects.equals(queryNullValues, that.queryNullValues)
+        && Arrays.equals(queryVectorValues, that.queryVectorValues);
+  }
+
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id,
+            txID,
+            docJson,
+            docJsonNode,
+            existKeys,
+            subDocEquals,
+            arraySize,
+            arrayEquals,
+            arrayContains,
+            queryBoolValues,
+            queryNumberValues,
+            queryTextValues,
+            queryTimestampValues,
+            queryNullValues);
+    result = 31 * result + Arrays.hashCode(queryVectorValues);
+    return result;
+  }
+
   public static Builder builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
     return new Builder(id, txID, docJson, docJsonNode);
   }
@@ -75,6 +125,8 @@ public record WritableShreddedDocument(
     private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
 
+    private float[] queryVectorValues;
+
     public Builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
       hasher = new DocValueHasher();
       this.id = id;
@@ -104,7 +156,8 @@ public record WritableShreddedDocument(
           _nonNull(queryNumberValues),
           _nonNull(queryTextValues),
           _nonNull(queryTimestampValues),
-          _nonNull(queryNullValues));
+          _nonNull(queryNullValues),
+          queryVectorValues);
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
@@ -223,6 +276,22 @@ public record WritableShreddedDocument(
       // if (!path.isArrayElement()) {
       addArrayContains(path, hasher.nullValue().hash());
       // }
+    }
+
+    @Override
+    public void shredVector(JsonPath path, ArrayNode vector) {
+      // vector data is added only to queryVectorValues and exists keys index
+      addKey(path);
+      float[] arrayVals = new float[vector.size()];
+      for (int i = 0; i < vector.size(); i++) {
+        JsonNode element = vector.get(i);
+        if (!element.isNumber()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
+        }
+        arrayVals[i] = element.floatValue();
+      }
+      queryVectorValues = arrayVals;
     }
 
     /*

@@ -5,6 +5,7 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -103,6 +104,29 @@ public class QueryExecutor {
         .invoke(
             failure -> {
               logger.error("Error on bridge ", failure);
+            });
+  }
+
+  /**
+   * Gets the schema for the provided namespace and collection name
+   *
+   * @param namespace
+   * @param collectionName
+   * @return
+   */
+  protected Uni<Optional<Schema.CqlTable>> getSchema(String namespace, String collectionName) {
+    Schema.DescribeKeyspaceQuery describeKeyspaceQuery =
+        Schema.DescribeKeyspaceQuery.newBuilder().setKeyspaceName(namespace).build();
+    final Uni<Schema.CqlKeyspaceDescribe> cqlKeyspaceDescribeUni =
+        stargateRequestInfo.getStargateBridge().describeKeyspace(describeKeyspaceQuery);
+    return cqlKeyspaceDescribeUni
+        .onItem()
+        .transform(
+            cqlKeyspaceDescribe -> {
+              Schema.CqlTable cqlTable = null;
+              return cqlKeyspaceDescribe.getTablesList().stream()
+                  .filter(table -> table.getName().equals(collectionName))
+                  .findFirst();
             });
   }
 
