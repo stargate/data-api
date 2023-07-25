@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
 
+/** Caches the vector enabled status for all the namespace in schema */
 @ApplicationScoped
 public class SchemaCache {
 

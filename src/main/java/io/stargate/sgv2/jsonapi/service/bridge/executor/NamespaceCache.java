@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.time.Duration;
 
+/** Caches the vector enabled status for the namespace */
 public class NamespaceCache {
 
   public final String namespace;

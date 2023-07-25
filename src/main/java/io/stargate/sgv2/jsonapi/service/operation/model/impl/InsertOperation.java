@@ -151,26 +151,23 @@ public record InsertOperation(
 
   // utility for building the insert query
   private QueryOuterClass.Query buildInsertQuery(boolean vectorEnabled) {
-
-    String insertWithVector =
-        "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
-            + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-
-    String insert =
-        "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
-            + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-
     if (vectorEnabled) {
+      String insertWithVector =
+          "INSERT INTO \"%s\".\"%s\""
+              + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+              + " VALUES"
+              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return QueryOuterClass.Query.newBuilder()
           .setCql(
               String.format(
                   insertWithVector, commandContext.namespace(), commandContext.collection()))
           .build();
     } else {
+      String insert =
+          "INSERT INTO \"%s\".\"%s\""
+              + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+              + " VALUES"
+              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return QueryOuterClass.Query.newBuilder()
           .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
           .build();
