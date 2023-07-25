@@ -160,9 +160,9 @@
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
-                <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
-                <testing.containers.cluster-version>${stargate.int-test.cluster.version}</testing.containers.cluster-version>
-                <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
+                <stargate.int-test.cluster.name>cass-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+                <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
+                <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
               </systemPropertyVariables>
