@@ -8,7 +8,7 @@ services:
     mem_limit: 2G
     environment:
       - MAX_HEAP_SIZE=1536M
-      - CLUSTER_NAME=dse-${DSETAG}-cluster
+      - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
       - DC=datacenter1
       - RACK=rack1
       - DS_LICENSE=accept
@@ -29,29 +29,9 @@ services:
     environment:
       - MAX_HEAP_SIZE=1536M
       - SEEDS=dse-1
-      - CLUSTER_NAME=dse-${DSETAG}-cluster
+      - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
       - DC=datacenter1
       - RACK=rack1
-      - DS_LICENSE=accept
-    healthcheck:
-      test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-
-  dse-3:
-    image: stargateio/dse-next:${DSETAG}
-    networks:
-      - stargate
-    mem_limit: 2G
-    depends_on:
-      dse-2:
-        condition: service_healthy
-    environment:
-      - MAX_HEAP_SIZE=1536M
-      - SEEDS=dse-1
-      - CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=datacenter1
       - DS_LICENSE=accept
     healthcheck:
       test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
