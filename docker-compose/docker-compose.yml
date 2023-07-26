@@ -9,9 +9,6 @@ services:
     environment:
       - MAX_HEAP_SIZE=1536M
       - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=datacenter1
-      - RACK=rack1
-      - DS_LICENSE=accept
     healthcheck:
       test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
       interval: 15s
@@ -28,11 +25,8 @@ services:
         condition: service_healthy
     environment:
       - MAX_HEAP_SIZE=1536M
-      - SEEDS=dse-1
+      - CASSANDRA_SEEDS=dse-1
       - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=datacenter1
-      - RACK=rack1
-      - DS_LICENSE=accept
     healthcheck:
       test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
       interval: 15s
