@@ -71,7 +71,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                   "_id": "1",
                   "name": "Coded Cleats",
                   "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
+                  "$vector": [0.12, 0.15, 0.32, 0.12, 0.05]
               }
            }
         }
@@ -103,7 +103,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           "_id": "1",
           "name": "Coded Cleats",
           "description": "ChatGPT integrated sneakers that talk to you",
-          "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
+          "$vector": [0.12, 0.15, 0.32, 0.12, 0.05]
         }
         """;
 
@@ -256,13 +256,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                   "_id": "2",
                   "name": "Logic Layers",
                   "description": "An AI quilt to help you sleep forever",
-                  "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
+                  "$vector": [0.45, 0.09, 0.01, 0.25, 0.11]
                 },
                 {
                   "_id": "3",
                   "name": "Vision Vector Frame",
                   "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                  "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
+                  "$vector": [0.12, 0.05, 0.08, 0.32, 0.6]
                 }
               ]
            }
@@ -296,7 +296,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             "_id": "2",
             "name": "Logic Layers",
             "description": "An AI quilt to help you sleep forever",
-            "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
+            "$vector": [0.45, 0.09, 0.01, 0.25, 0.11]
         }
         """;
 
