@@ -2,14 +2,14 @@ version: '2'
 
 services:
   dse-1:
-    image: datastax/dse-server:${DSETAG}
+    image: stargateio/dse-next:${DSETAG}
     networks:
       - stargate
     mem_limit: 2G
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=dc1
+      - DC=datacenter1
       - RACK=rack1
       - DS_LICENSE=accept
     healthcheck:
@@ -19,7 +19,7 @@ services:
       retries: 10
 
   dse-2:
-    image: datastax/dse-server:${DSETAG}
+    image: stargateio/dse-next:${DSETAG}
     networks:
       - stargate
     mem_limit: 2G
@@ -30,7 +30,7 @@ services:
       - MAX_HEAP_SIZE=1536M
       - SEEDS=dse-1
       - CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=dc1
+      - DC=datacenter1
       - RACK=rack1
       - DS_LICENSE=accept
     healthcheck:
@@ -40,7 +40,7 @@ services:
       retries: 10
 
   dse-3:
-    image: datastax/dse-server:${DSETAG}
+    image: stargateio/dse-next:${DSETAG}
     networks:
       - stargate
     mem_limit: 2G
@@ -51,7 +51,7 @@ services:
       - MAX_HEAP_SIZE=1536M
       - SEEDS=dse-1
       - CLUSTER_NAME=dse-${DSETAG}-cluster
-      - DC=dc1
+      - DC=datacenter1
       - DS_LICENSE=accept
     healthcheck:
       test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
@@ -60,8 +60,8 @@ services:
       retries: 10
 
   coordinator:
-    image: stargateio/coordinator-dse-68:${SGTAG}
-    depends_on: 
+    image: stargateio/coordinator-dse-next:${SGTAG}
+    depends_on:
       dse-1:
         condition: service_healthy
     networks:
@@ -74,10 +74,9 @@ services:
       - JAVA_OPTS="-Xmx1536M"
       - CLUSTER_NAME=dse-${DSETAG}-cluster
       - CLUSTER_VERSION=6.8
-      - DSE=1
       - SEED=dse-1
       - RACK_NAME=rack1
-      - DATACENTER_NAME=dc1
+      - DATACENTER_NAME=datacenter1
       - ENABLE_AUTH=true
     healthcheck:
       test: curl -f http://localhost:8084/checker/readiness || exit 1
