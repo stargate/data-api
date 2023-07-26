@@ -466,7 +466,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
     }
 
@@ -494,8 +495,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
     }
   }
@@ -636,7 +637,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
     }
 
@@ -662,7 +664,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonMappingException"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
     }
   }
