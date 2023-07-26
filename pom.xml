@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-ALPHA-4</version>
+    <version>2.1.0-ALPHA-5</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.0-ALPHA-11-SNAPSHOT</version>
@@ -21,13 +21,13 @@
     <skipITs>false</skipITs>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
-    <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <stargate.int-test.cassandra.image-tag>6.8.36</stargate.int-test.cassandra.image-tag>
-    <stargate.int-test.coordinator.image>stargateio/coordinator-dse-68</stargate.int-test.coordinator.image>
+    <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
+    <stargate.int-test.cassandra.image-tag>4.0.7-336cdd7405ee</stargate.int-test.cassandra.image-tag>
+    <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
-    <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-    <stargate.int-test.cluster.version>6.8</stargate.int-test.cluster.version>
-    <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+    <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+    <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
+    <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
   </properties>
   <dependencyManagement>
