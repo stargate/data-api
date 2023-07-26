@@ -437,7 +437,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[0]._id", is("1"))
           .body("errors", is(nullValue()));
     }
 

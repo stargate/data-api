@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -58,15 +59,18 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         ArrayNode arrayNode = (ArrayNode) inner.getValue();
         float[] arrayVals = new float[arrayNode.size()];
         if (!inner.getValue().isArray()) {
-          throw new JsonMappingException(parser, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
         } else {
           if (arrayNode.size() == 0) {
-            throw new JsonMappingException(parser, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
+            throw new JsonApiException(
+                ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
           }
           for (int i = 0; i < arrayNode.size(); i++) {
             JsonNode element = arrayNode.get(i);
             if (!element.isNumber()) {
-              throw new JsonMappingException(parser, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
+              throw new JsonApiException(
+                  ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
             }
             arrayVals[i] = element.floatValue();
           }

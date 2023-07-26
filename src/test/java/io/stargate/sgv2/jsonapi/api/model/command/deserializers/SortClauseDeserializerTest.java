@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector field can't be empty");
     }
 
@@ -82,7 +83,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
     }
 
@@ -95,7 +96,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
     }
 
