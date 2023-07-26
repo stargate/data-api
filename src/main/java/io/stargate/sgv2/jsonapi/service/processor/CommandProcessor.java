@@ -62,19 +62,21 @@ public class CommandProcessor {
               return operation.execute(queryExecutor);
             })
 
-        // handler failures here
+        // handle failures here
         .onFailure()
         .recoverWithItem(
             t -> {
-              logger.warn(
-                  "The command {} failed with exception", command.getClass().getSimpleName(), t);
               // DocsException is supplier of the CommandResult
               // so simply return
               if (t instanceof JsonApiException jsonApiException) {
+                // Note: JsonApiException means that JSON API itself handled the situation
+                // (created, or wrapped the exception) -- should not be logged (have already
+                // been logged if necessary)
                 return jsonApiException;
               }
-
-              // otherwise use generic for now
+              // But other exception types are unexpected, so log for now
+              logger.warn(
+                  "Command '{}' failed with exception", command.getClass().getSimpleName(), t);
               return new ThrowableCommandResultSupplier(t);
             })
 
