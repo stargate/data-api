@@ -39,7 +39,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             "name" : "my_collection",
             "options": {
               "vector": {
-                "size": 4,
+                "size": 5,
                 "function": "cosine"
               }
             }
