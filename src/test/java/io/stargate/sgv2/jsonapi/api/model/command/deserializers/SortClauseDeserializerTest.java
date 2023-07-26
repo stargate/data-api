@@ -39,7 +39,64 @@ class SortClauseDeserializerTest {
       assertThat(sortClause.sortExpressions())
           .hasSize(2)
           .contains(
-              new SortExpression("some.path", true), new SortExpression("another.path", false));
+              SortExpression.sort("some.path", true), SortExpression.sort("another.path", false));
+    }
+
+    @Test
+    public void happyPathVectorSearch() throws Exception {
+      String json = """
+        {
+         "$vector" : [0.11, 0.22, 0.33]
+        }
+        """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void vectorSearchEmpty() {
+      String json = """
+        {
+         "$vector" : []
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable.getMessage()).contains("$vector field can't be empty");
+    }
+
+    public void vectorSearchNonArray() {
+      String json = """
+        {
+         "$vector" : 0.55
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
+    }
+
+    public void vectorSearchInvalidData() {
+      String json = """
+        {
+         "$vector" : [0.11, "abc", true]
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
     }
 
     @Test
@@ -53,7 +110,7 @@ class SortClauseDeserializerTest {
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
           .hasSize(1)
-          .contains(new SortExpression("some.path", true));
+          .contains(SortExpression.sort("some.path", true));
     }
 
     @Test

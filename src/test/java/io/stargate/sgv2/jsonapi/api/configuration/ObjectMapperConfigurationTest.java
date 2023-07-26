@@ -69,8 +69,8 @@ class ObjectMapperConfigurationTest {
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause.sortExpressions())
                     .contains(
-                        new SortExpression("user.name", true),
-                        new SortExpression("user.age", false));
+                        SortExpression.sort("user.name", true),
+                        SortExpression.sort("user.age", false));
 
                 FilterClause filterClause = findOne.filterClause();
                 assertThat(filterClause).isNotNull();

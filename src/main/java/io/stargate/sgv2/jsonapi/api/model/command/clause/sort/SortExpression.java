@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.validation.constraints.NotBlank;
+import javax.annotation.Nullable;
 
 public record SortExpression(
 
@@ -9,4 +11,14 @@ public record SortExpression(
     @NotBlank String path,
 
     // this can be modeled in different ways, would this be enough for now
-    boolean ascending) {}
+    boolean ascending,
+    @Nullable float[] vector) {
+
+  public static SortExpression sort(String path, boolean ascending) {
+    return new SortExpression(path, ascending, null);
+  }
+
+  public static SortExpression vsearch(float[] vector) {
+    return new SortExpression(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, false, vector);
+  }
+}

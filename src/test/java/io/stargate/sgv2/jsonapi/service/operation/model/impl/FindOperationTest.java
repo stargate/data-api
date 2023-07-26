@@ -40,6 +40,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final CommandContext COMMAND_CONTEXT =
       new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
+  private static final CommandContext VECTOR_COMMAND_CONTEXT =
+      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, true);
+
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
 
@@ -2342,6 +2345,165 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       // then result
       assertThat(result.docs()).isNotNull();
       assertThat(result.docs()).hasSize(1);
+    }
+
+    @Test
+    public void vectorSearch() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+        {
+          "_id": "doc1",
+          "username": "user1",
+          "$vector": [0.25, 0.25, 0.25, 0.25]
+        }
+        """;
+      String doc2 =
+          """
+        {
+          "_id": "doc2",
+          "username": "user1",
+          "$vector": [0.35, 0.35, 0.35, 0.35]
+        }
+        """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1)),
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2))));
+
+      FindOperation operation =
+          FindOperation.vsearch(
+              VECTOR_COMMAND_CONTEXT,
+              List.of(),
+              DocumentProjector.identityProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(2)
+          .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void vectorSearchWithFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? ORDER BY query_vector_value ANN OF ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+            {
+              "_id": "doc1",
+              "username": "user1",
+              "$vector": [0.25, 0.25, 0.25, 0.25]
+            }
+            """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
+                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1))));
+
+      DBFilterBase.TextFilter filter =
+          new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+
+      FindOperation operation =
+          FindOperation.vsearchSingle(
+              VECTOR_COMMAND_CONTEXT,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .contains(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
     }
   }
 }

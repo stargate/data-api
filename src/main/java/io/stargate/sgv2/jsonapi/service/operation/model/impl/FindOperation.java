@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -42,7 +43,8 @@ public record FindOperation(
     List<OrderBy> orderBy,
     int skip,
     int maxSortReadLimit,
-    boolean singleResponse)
+    boolean singleResponse,
+    float[] vector)
     implements ReadOperation {
 
   /**
@@ -63,7 +65,19 @@ public record FindOperation(
       ObjectMapper objectMapper) {
 
     return new FindOperation(
-        commandContext, filters, projection, null, 1, 1, readType, objectMapper, null, 0, 0, true);
+        commandContext,
+        filters,
+        projection,
+        null,
+        1,
+        1,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        true,
+        null);
   }
 
   /**
@@ -100,7 +114,83 @@ public record FindOperation(
         null,
         0,
         0,
-        false);
+        false,
+        null);
+  }
+
+  /**
+   * Constructs find operation for unsorted multi document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param pagingState paging state to use
+   * @param limit limit of rows to fetch
+   * @param pageSize page size
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @return FindOperation for a multi document unsorted find
+   */
+  public static FindOperation vsearchSingle(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      ReadType readType,
+      ObjectMapper objectMapper,
+      float[] vector) {
+    return new FindOperation(
+        commandContext,
+        filters,
+        projection,
+        null,
+        1,
+        1,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        true,
+        vector);
+  }
+
+  /**
+   * Constructs find operation for unsorted multi document find.
+   *
+   * @param commandContext command context
+   * @param filters filters to match a document
+   * @param projection projections, see FindOperation#projection
+   * @param pagingState paging state to use
+   * @param limit limit of rows to fetch
+   * @param pageSize page size
+   * @param readType type of the read
+   * @param objectMapper object mapper to use
+   * @return FindOperation for a multi document unsorted find
+   */
+  public static FindOperation vsearch(
+      CommandContext commandContext,
+      List<DBFilterBase> filters,
+      DocumentProjector projection,
+      String pagingState,
+      int limit,
+      int pageSize,
+      ReadType readType,
+      ObjectMapper objectMapper,
+      float[] vector) {
+    return new FindOperation(
+        commandContext,
+        filters,
+        projection,
+        pagingState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        false,
+        vector);
   }
 
   /**
@@ -139,7 +229,8 @@ public record FindOperation(
         orderBy,
         skip,
         maxSortReadLimit,
-        true);
+        true,
+        null);
   }
 
   /**
@@ -182,11 +273,21 @@ public record FindOperation(
         orderBy,
         skip,
         maxSortReadLimit,
-        false);
+        false,
+        null);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    final boolean vectorEnabled = commandContext().isVectorEnabled();
+    if (vector() != null && !vectorEnabled) {
+      return Uni.createFrom()
+          .failure(
+              new JsonApiException(
+                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
+                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
+                      + commandContext().collection()));
+    }
     // get FindResponse
     return getDocuments(queryExecutor, pagingState(), null)
 
@@ -288,7 +389,8 @@ public record FindOperation(
     }
     List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
     conditions.forEach(
-        condition ->
+        condition -> {
+          if (vector() == null) {
             queries.add(
                 new QueryBuilder()
                     .select()
@@ -296,7 +398,26 @@ public record FindOperation(
                     .from(commandContext.namespace(), commandContext.collection())
                     .where(condition)
                     .limit(limit)
-                    .build()));
+                    .build());
+          } else {
+            QueryOuterClass.Query builtQuery =
+                new QueryBuilder()
+                    .select()
+                    .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                    .from(commandContext.namespace(), commandContext.collection())
+                    .where(condition)
+                    .limit(limit)
+                    .vsearch("query_vector_value")
+                    .build();
+            final List<QueryOuterClass.Value> valuesList =
+                builtQuery.getValuesOrBuilder().getValuesList();
+            final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
+            valuesList.forEach(builder::addValues);
+            builder.addValues(CustomValueSerializers.getVectorValue(vector()));
+            queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
+          }
+        });
+
     return queries;
   }
 
