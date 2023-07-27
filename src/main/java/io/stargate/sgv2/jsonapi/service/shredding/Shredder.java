@@ -261,12 +261,13 @@ public class Shredder {
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      validateObjectKey(limits, entry.getKey(), entry.getValue());
+      validateObjectKey(limits, entry.getKey(), entry.getValue(), depth);
       validateDocValue(limits, entry.getValue(), depth);
     }
   }
 
-  private void validateObjectKey(DocumentLimitsConfig limits, String key, JsonNode value) {
+  private void validateObjectKey(
+      DocumentLimitsConfig limits, String key, JsonNode value, int depth) {
     if (key.length() > documentLimits.maxPropertyNameLength()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -276,11 +277,12 @@ public class Shredder {
               key.length(),
               limits.maxPropertyNameLength()));
     }
-    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()
-        && !key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
       // Special names are accepted in some cases: for now only one such case for
       // Date values -- if more needed, will refactor. But for now inline:
       if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
+        ; // Fine, looks like legit Date value
+      } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
         ; // Fine, looks like legit Date value
       } else {
         throw new JsonApiException(

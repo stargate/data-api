@@ -330,6 +330,78 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void vectorSearch() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]}
+            }
+          }
+          """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).isEmpty();
+              });
+    }
+
+    @Test
+    public void vectorSearchWithFilter() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : "id"},
+              "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]}
+            }
+          }
+          """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).containsOnly(filter);
+              });
+    }
+
+    @Test
     public void noFilterConditionSortAndOptions() throws Exception {
       String json =
           """

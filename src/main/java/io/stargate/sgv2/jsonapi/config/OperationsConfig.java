@@ -87,6 +87,15 @@ public interface OperationsConfig {
   @WithDefault("100")
   int maxInOperatorValueSize();
 
+  /**
+   * @return Maximum size of documents returned with vector search, max value supported in cassandra
+   *     is 1000 <code>1000</code> command.
+   */
+  @Max(1000)
+  @Positive
+  @WithDefault("1000")
+  int maxVectorSearchLimit();
+
   @NotNull
   @Valid
   LwtConfig lwt();

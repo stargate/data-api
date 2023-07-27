@@ -60,8 +60,27 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
     // resolve sort clause
     SortClause sortClause = command.sortClause();
-    List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
 
+    // if vector search
+    float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+
+    if (vector != null) {
+      limit =
+          Math.min(
+              limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
+      return FindOperation.vsearch(
+          commandContext,
+          filters,
+          command.buildProjector(),
+          pagingState,
+          limit,
+          operationsConfig.defaultPageSize(),
+          ReadType.DOCUMENT,
+          objectMapper,
+          vector);
+    }
+
+    List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // if orderBy present
     if (orderBy != null) {
       return FindOperation.sorted(

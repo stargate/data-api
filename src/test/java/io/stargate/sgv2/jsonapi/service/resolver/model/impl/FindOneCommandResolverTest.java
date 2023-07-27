@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -101,6 +102,45 @@ public class FindOneCommandResolverTest {
                             new FindOperation.OrderBy("user.name", true),
                             new FindOperation.OrderBy("user.age", false)));
                 assertThat(op.singleResponse()).isTrue();
+              });
+    }
+
+    @Test
+    public void filterConditionAndVectorSearch() throws Exception {
+      String json =
+          """
+              {
+                "findOne": {
+                  "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+                  "filter" : {"status" : "active"}
+                }
+              }
+              """;
+
+      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase.TextFilter filter =
+                    new DBFilterBase.TextFilter(
+                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(1);
+                assertThat(find.limit()).isEqualTo(1);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isTrue();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).containsOnly(filter);
               });
     }
 

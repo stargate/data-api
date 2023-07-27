@@ -39,6 +39,19 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+
+    float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+
+    if (vector != null) {
+      return FindOperation.vsearchSingle(
+          commandContext,
+          filters,
+          command.buildProjector(),
+          ReadType.DOCUMENT,
+          objectMapper,
+          vector);
+    }
+
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {

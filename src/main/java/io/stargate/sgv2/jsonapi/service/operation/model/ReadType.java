@@ -15,5 +15,5 @@ public enum ReadType {
    * Return only document id and transaction id of documents which satisfies the filter conditions
    * as part of response
    */
-  KEY
+  KEY,
 }
