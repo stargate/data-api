@@ -638,7 +638,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         {
           "findOneAndUpdate": {
             "filter" : {"_id": "2"},
-            "update" : {"$unset" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
+            "update" : {"$set" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
             "options" : {"returnDocument" : "after"}
           }
         }
@@ -711,10 +711,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("UNSUPPORTED_UPDATE_FOR_VECTOR"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_VECTOR"))
           .body(
-              "errors[1].message",
+              "errors[0].message",
               is(ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + "$push"));
     }
   }
