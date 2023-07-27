@@ -100,6 +100,22 @@ class SortClauseDeserializerTest {
       assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
     }
 
+    public void vectorSearchInvalidSortClause() {
+      String json =
+          """
+        {
+         "$vector" : [0.11, 0.22, 0.33],
+         "some.path" : 1
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage())
+          .contains("Vector search can't be used with other sort clause");
+    }
+
     @Test
     public void mustTrimPath() throws Exception {
       String json = """
@@ -142,7 +158,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
 
     @Test
@@ -153,7 +169,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
 
     @Test
@@ -164,7 +180,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
   }
 }

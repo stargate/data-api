@@ -55,6 +55,11 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
+  INVALID_SORT_CLAUSE_PATH("Sort clause path must be represented as not-blank strings."),
+
+  INVALID_SORT_CLAUSE_VALUE(
+      "Sort ordering value can only be `1` for ascending or `-1` for descending."),
+
   UNSUPPORTED_OPERATION("Unsupported operation class"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
@@ -74,6 +79,8 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
+
+  VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection ");
 
