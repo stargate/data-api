@@ -652,7 +652,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
+          .body("data.document._id", is("2"))
           .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
