@@ -50,6 +50,13 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * specifically Document's primary id, {@code _id}.
    */
   protected static String validateUpdatePath(UpdateOperator oper, String path) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
+        && !(oper.operator().equals("$set") || oper.operator().equals("$unset"))) {
+      throw new JsonApiException(
+          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR,
+          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + oper.operator());
+    }
+
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
       throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID,

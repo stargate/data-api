@@ -30,6 +30,14 @@ public class DocumentUpdaterTest {
           "location": "London"
       }
       """;
+  private static String BASE_DOC_JSON_VECTOR =
+      """
+    {
+        "_id": "1",
+        "location": "London",
+        "$vector": [0.11, 0.22, 0.33]
+    }
+    """;
 
   @Nested
   class UpdateDocumentHappy {
@@ -80,6 +88,57 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void setVectorData() throws Exception {
+      String expected =
+          """
+            {
+                "_id": "1",
+                "location": "London",
+                "$vector" : [0.11, 0.22, 0.33]
+            }
+            """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
+      JsonNode expectedData = objectMapper.readTree(expected);
+      String vectorData = """
+              {"$vector" : [0.11, 0.22, 0.33] }
+              """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(vectorData)));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void unsetVectorData() throws Exception {
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(BASE_DOC_JSON);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.UNSET,
+                  objectMapper.getNodeFactory().objectNode().put("$vector", "")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
           documentUpdater.apply(baseData, false);
       assertThat(updatedDocument)
