@@ -56,4 +56,13 @@ public interface DocumentLimitsConfig {
   @Positive
   @WithDefault("100")
   int maxArrayLength();
+
+  /**
+   * @return Maximum length of Vector ($vector) array JSON API allows -- NOTE: backend data store
+   *     likely limits length to a lower value; but we want to prevent handling of huge arrays
+   *     before trying to pass them to DB.
+   */
+  @Positive
+  @WithDefault("8000")
+  int maxVectorEmbeddingLength();
 }
