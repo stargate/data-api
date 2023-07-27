@@ -319,7 +319,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
   }
 
-  public void setUpData() {
+  public void insertVectorDocuments() {
     String json = """
         {
           "deleteMany": {
@@ -386,7 +386,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     @Order(1)
     public void setUp() {
-      setUpData();
+      insertVectorDocuments();
     }
 
     @Test
@@ -513,7 +513,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     @Order(1)
     public void setUp() {
-      setUpData();
+      insertVectorDocuments();
     }
 
     @Test
@@ -627,7 +627,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     @Order(1)
     public void setUp() {
-      setUpData();
+      insertVectorDocuments();
     }
 
     @Test
@@ -667,7 +667,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         {
           "findOneAndUpdate": {
             "filter" : {"name": "Coded Cleats"},
-            "update" : {"$set" : {"$vector" : null}},
+            "update" : {"$unset" : {"$vector" : null}},
             "options" : {"returnDocument" : "after"}
           }
         }
@@ -684,6 +684,35 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.document._id", is("1"))
           .body("data.document.$vector", is(nullValue()))
           .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(3)
+    public void setOnInsertOperation() {
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"_id": "11"},
+            "update" : {"$setOnInsert" : {"$vector": [0.11, 0.22, 0.33, 0.44, 0.55]}},
+            "options" : {"returnDocument" : "after", "upsert": true}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("11"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
     }
