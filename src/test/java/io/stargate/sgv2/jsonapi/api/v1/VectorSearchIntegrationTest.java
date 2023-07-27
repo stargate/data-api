@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -318,6 +319,65 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
   }
 
+  public void setUpData() {
+    String json = """
+        {
+          "deleteMany": {
+          }
+        }
+        """;
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .statusCode(200)
+        .body("errors", is(nullValue()))
+        .extract()
+        .path("status.moreData");
+
+    json =
+        """
+          {
+             "insertMany": {
+                "documents": [
+                  {
+                    "_id": "1",
+                    "name": "Coded Cleats",
+                    "description": "ChatGPT integrated sneakers that talk to you",
+                    "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
+                   },
+                   {
+                     "_id": "2",
+                     "name": "Logic Layers",
+                     "description": "An AI quilt to help you sleep forever",
+                     "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
+                   },
+                   {
+                     "_id": "3",
+                     "name": "Vision Vector Frame",
+                     "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
+                     "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
+                   }
+                ]
+             }
+          }
+          """;
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        // Sanity check: let's look for non-empty inserted id
+        .body("status.insertedIds[0]", not(emptyString()))
+        .statusCode(200);
+  }
+
   @Nested
   @Order(4)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -326,62 +386,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     @Order(1)
     public void setUp() {
-      String json = """
-        {
-          "deleteMany": {
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()))
-          .extract()
-          .path("status.moreData");
-
-      json =
-          """
-        {
-           "insertMany": {
-              "documents": [
-                {
-                  "_id": "1",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
-                 },
-                 {
-                   "_id": "2",
-                   "name": "Logic Layers",
-                   "description": "An AI quilt to help you sleep forever",
-                   "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
-                 },
-                 {
-                   "_id": "3",
-                   "name": "Vision Vector Frame",
-                   "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                   "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
-                 }
-              ]
-           }
-        }
-        """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          // Sanity check: let's look for non-empty inserted id
-          .body("status.insertedIds[0]", not(emptyString()))
-          .statusCode(200);
+      setUpData();
     }
 
     @Test
@@ -508,62 +513,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     @Order(1)
     public void setUp() {
-      String json = """
-        {
-          "deleteMany": {
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()))
-          .extract()
-          .path("status.moreData");
-
-      json =
-          """
-        {
-           "insertMany": {
-              "documents": [
-                {
-                  "_id": "1",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
-                 },
-                 {
-                   "_id": "2",
-                   "name": "Logic Layers",
-                   "description": "An AI quilt to help you sleep forever",
-                   "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
-                 },
-                 {
-                   "_id": "3",
-                   "name": "Vision Vector Frame",
-                   "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                   "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
-                 }
-              ]
-           }
-        }
-        """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          // Sanity check: let's look for non-empty inserted id
-          .body("status.insertedIds[0]", not(emptyString()))
-          .statusCode(200);
+      setUpData();
     }
 
     @Test
@@ -667,6 +617,105 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+    }
+  }
+
+  @Nested
+  @Order(6)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UpdateCollection {
+    @Test
+    @Order(1)
+    public void setUp() {
+      setUpData();
+    }
+
+    @Test
+    @Order(2)
+    public void setOperation() {
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"_id": "2"},
+            "update" : {"$unset" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("1"))
+          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(3)
+    public void unsetOperation() {
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"name": "Coded Cleats"},
+            "update" : {"$set" : {"$vector" : null}},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("1"))
+          .body("data.document.$vector", is(nullValue()))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(4)
+    public void errorOperationForVector() {
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "filter" : {"_id": "3"},
+            "update" : {"$push" : {"$vector" : 0.33}},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("UNSUPPORTED_UPDATE_FOR_VECTOR"))
+          .body(
+              "errors[1].message",
+              is(ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + "$push"));
     }
   }
 }
