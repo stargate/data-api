@@ -913,7 +913,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("data.document._id", is("3"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.username", is("user3"))
+          .body("data.document.name", is("Vision Vector Frame"))
           .body("status.deletedCount", is(1))
           .body("errors", is(nullValue()));
     }
