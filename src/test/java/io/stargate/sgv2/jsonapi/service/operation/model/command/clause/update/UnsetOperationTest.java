@@ -43,6 +43,22 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
+    public void testSimpleUnsetOfExistingVector() {
+      // Remove 2 of 3 properties:
+      UpdateOperation oper =
+          UpdateOperator.UNSET.resolveOperation(
+              objectFromJson("""
+                    { "$vector" : null }
+                    """));
+      assertThat(oper).isInstanceOf(UnsetOperation.class);
+      // Should indicate document being modified
+      ObjectNode doc = defaultTestDocABCVector();
+      assertThat(oper.updateDocument(doc)).isTrue();
+      // and be left with just one property
+      assertThat(doc).isEqualTo(defaultTestDocABC());
+    }
+
+    @Test
     public void testSimpleUnsetOfNonExisting() {
       // Try to remove 2 properties for which no value exist
       UpdateOperation oper =

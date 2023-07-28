@@ -46,6 +46,30 @@ public class SetOperationTest extends UpdateOperationTestBase {
     }
 
     @Test
+    public void testSimpleSetOfVector() {
+      UpdateOperation oper =
+          UpdateOperator.SET.resolveOperation(
+              objectFromJson(
+                  """
+                    { "$vector" : [0.11, 0.22, 0.33] }
+                  """));
+      assertThat(oper).isInstanceOf(SetOperation.class);
+      // Should indicate document being modified
+      ObjectNode doc =
+          objectFromJson(
+              """
+                { "a" : 1, "c" : true, "$vector" : [0.44, 0.44, 0.66] }
+              """);
+      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(doc)
+          .isEqualTo(
+              fromJson(
+                  """
+                    { "a" : 1, "c" : true, "$vector" : [0.11, 0.22, 0.33] }
+                  """));
+    }
+
+    @Test
     public void testSimpleSetOfNonExisting() {
       UpdateOperation oper =
           UpdateOperator.SET.resolveOperation(
