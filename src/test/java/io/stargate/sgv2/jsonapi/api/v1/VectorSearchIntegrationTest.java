@@ -32,6 +32,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   private static final String collectionName = "my_collection";
+  private static final String bigVectorCollectionName = "big_vector_collection";
+
+  // Just has to be bigger than maximum array size
+  private static final int BIG_VECTOR_SIZE = 1000;
 
   @Nested
   @Order(1)
@@ -56,6 +60,33 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void createBigVectorCollection() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+            {
+              "createCollection": {
+                "name" : "%s",
+                "options": {
+                  "vector": {
+                    "size": %d,
+                    "function": "cosine"
+                  }
+                }
+              }
+            }
+            """
+                  .formatted(bigVectorCollectionName, BIG_VECTOR_SIZE))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -122,6 +153,96 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected))
+          .body("errors", is(nullValue()));
+    }
+
+    // Test to verify vector embedding size can exceed general Array length limit
+    @Test
+    public void insertBigVectorThenSearch() {
+      final String vectorStr = buildVectorElements(1, BIG_VECTOR_SIZE);
+
+      // First insert a document with a big vector
+      String json =
+          """
+            {
+               "insertOne": {
+                  "document": {
+                      "_id": "bigVector1",
+                      "name": "Victor",
+                      "description": "Big Vectors Rule ok?",
+                      "$vector": [%s]
+                  }
+               }
+            }
+            """
+              .formatted(vectorStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("bigVector1"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // Then verify it was inserted correctly
+      String expected =
+          """
+            {
+              "_id": "bigVector1",
+              "name": "Victor",
+              "description": "Big Vectors Rule ok?",
+              "$vector": [%s]
+            }
+            """
+              .formatted(vectorStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter" : {"_id" : "bigVector1"}
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected));
+
+      // And finally search for it (with different vector)
+      final String vectorSearchStr = buildVectorElements(3, BIG_VECTOR_SIZE);
+      json =
+          """
+            {
+              "find": {
+                "sort" : {"$vector" : [%s]},
+                "projection" : {"_id" : 1, "$vector" : 1}
+              }
+            }
+            """
+              .formatted(vectorSearchStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVector1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
           .body("errors", is(nullValue()));
     }
 
@@ -972,5 +1093,20 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
+  }
+
+  private static String buildVectorElements(int offset, int count) {
+    StringBuilder sb = new StringBuilder(count * 4);
+    // Generate sequence with floating-point values that are exact in binary (like 0.5, 0.25)
+    // so that conversion won't prevent equality matching
+    final String[] nums = {"0.25", "0.5", "0.75", "0.975", "0.0125", "0.375", "0.625", "0.125"};
+    for (int i = 0; i < count; ++i) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      int ix = (offset + i) % nums.length;
+      sb.append(nums[ix]);
+    }
+    return sb.toString();
   }
 }
