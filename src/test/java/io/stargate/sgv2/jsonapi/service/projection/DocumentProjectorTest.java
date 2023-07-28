@@ -263,7 +263,8 @@ public class DocumentProjectorTest {
                          },
                          "nested2" : {
                             "z": 5
-                         }
+                         },
+                         "$vector" : [0.11, 0.22, 0.33, 0.44]
                       }
                       """);
       DocumentProjector projection =
@@ -275,7 +276,8 @@ public class DocumentProjectorTest {
                            "x": 1
                         },
                         "nested.z": 1,
-                        "nosuchprop": 1
+                        "nosuchprop": 1,
+                        "$vector": 1
                       }
                       """));
       assertThat(projection.isInclusion()).isTrue();
@@ -289,7 +291,8 @@ public class DocumentProjectorTest {
                  "nested" : {
                     "x": 3,
                     "z": -1
-                 }
+                 },
+                 "$vector" : [0.11, 0.22, 0.33, 0.44]
               }
                       """));
     }
@@ -392,7 +395,8 @@ public class DocumentProjectorTest {
                          },
                          "nested2" : {
                             "z": 5
-                         }
+                         },
+                         "$vector" : [0.11, 0.22, 0.33, 0.44]
                       }
                       """);
       DocumentProjector projection =
@@ -406,6 +410,7 @@ public class DocumentProjectorTest {
                                     },
                                     "nested.z": 0,
                                     "nosuchprop": 0
+                                    "$vector": 0
                                   }
                                   """));
       assertThat(projection.isInclusion()).isFalse();

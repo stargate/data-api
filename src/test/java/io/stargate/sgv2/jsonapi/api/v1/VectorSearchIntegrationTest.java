@@ -392,6 +392,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         {
           "find": {
             "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$vector" : 1},
             "options" : {
                 "limit" : 5
             }
@@ -408,8 +409,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$vector", is(notNullValue()))
           .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$vector", is(notNullValue()))
           .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$vector", is(notNullValue()))
           .body("errors", is(nullValue()));
     }
 
@@ -421,6 +425,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         {
           "find": {
             "filter" : {"_id" : "1"},
+            "projection" : {"_id" : 1, "$vector" : 0},
             "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
             "options" : {
                 "limit" : 5
@@ -438,6 +443,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("data.documents[0]._id", is("1"))
+          .body("data.documents[0].$vector", is(nullValue()))
           .body("errors", is(nullValue()));
     }
 
