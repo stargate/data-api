@@ -748,4 +748,194 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               is(ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + "$push"));
     }
   }
+
+  @Nested
+  @Order(1)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class VectorSearchExtendedCommands {
+    @Test
+    @Order(1)
+    public void setUp() {
+      insertVectorDocuments();
+    }
+
+    @Test
+    @Order(2)
+    public void findOneAndUpdate() {
+      String json =
+          """
+        {
+          "findOneAndUpdate": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "update" : {"$set" : {"status" : "active"}},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.status", is("active"))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(3)
+    public void updateOne() {
+      String json =
+          """
+        {
+          "updateOne": {
+            "update" : {"$set" : {"new_col": "new_val"}},
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("status.moreData", is(nullValue()))
+          .body("errors", is(nullValue()));
+      json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : "3"}
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is(3))
+          .body("data.document.new_col", is("new_val"));
+    }
+
+    @Test
+    @Order(3)
+    public void findOneAndReplace() {
+      String json =
+          """
+        {
+          "findOneAndReplace": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("data.document.username", is("user3"))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(4)
+    public void findOneAndDelete() {
+      String json =
+          """
+        {
+          "findOneAndDelete": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
+            "options" : {"returnDocument" : "after"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("data.document.username", is("user3"))
+          .body("status.deletedCount", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(5)
+    public void deleteOne() {
+      String json =
+          """
+        {
+          "deleteOne": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(1))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // ensure find does not find the document
+      json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : "2"}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+  }
 }
