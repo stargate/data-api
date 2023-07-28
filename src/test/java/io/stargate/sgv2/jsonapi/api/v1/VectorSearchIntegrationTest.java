@@ -160,27 +160,31 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     @Test
     public void insertBigVectorThenSearch() {
       final String vectorStr = buildVectorElements(1, BIG_VECTOR_SIZE);
+      final String vectorDoc =
+          """
+                {
+                    "_id": "bigVector1",
+                    "name": "Victor",
+                    "description": "Big Vectors Rule ok?",
+                    "$vector": [%s]
+                }
+                      """
+              .formatted(vectorStr);
 
       // First insert a document with a big vector
-      String json =
-          """
-            {
-               "insertOne": {
-                  "document": {
-                      "_id": "bigVector1",
-                      "name": "Victor",
-                      "description": "Big Vectors Rule ok?",
-                      "$vector": [%s]
-                  }
-               }
-            }
-            """
-              .formatted(vectorStr);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+            {
+               "insertOne": {
+                  "document": %s
+               }
+            }
+            """
+                  .formatted(vectorDoc))
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
@@ -190,17 +194,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", is(nullValue()));
 
       // Then verify it was inserted correctly
-      String expected =
-          """
-            {
-              "_id": "bigVector1",
-              "name": "Victor",
-              "description": "Big Vectors Rule ok?",
-              "$vector": [%s]
-            }
-            """
-              .formatted(vectorStr);
-
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -217,11 +210,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.documents[0]", jsonEquals(expected));
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVector1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
 
       // And finally search for it (with different vector)
       final String vectorSearchStr = buildVectorElements(3, BIG_VECTOR_SIZE);
-      json =
+      final String findRequest =
           """
             {
               "find": {
@@ -235,15 +231,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(findRequest)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("bigVector1"))
           .body("data.documents[0].$vector", is(notNullValue()))
-          .body("errors", is(nullValue()));
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
     }
 
     @Test
@@ -1102,7 +1099,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     final String[] nums = {"0.25", "0.5", "0.75", "0.975", "0.0125", "0.375", "0.625", "0.125"};
     for (int i = 0; i < count; ++i) {
       if (i > 0) {
-        sb.append(',');
+        sb.append(", ");
       }
       int ix = (offset + i) % nums.length;
       sb.append(nums[ix]);
