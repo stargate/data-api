@@ -138,7 +138,8 @@ public class DocumentProjector {
               ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
                   + ": empty paths (and path segments) not allowed");
         }
-        if (path.charAt(0) == '$') {
+        if (path.charAt(0) == '$'
+            && !path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
           // First: no operators allowed at root level
           if (parentPath == null) {
             throw new JsonApiException(
