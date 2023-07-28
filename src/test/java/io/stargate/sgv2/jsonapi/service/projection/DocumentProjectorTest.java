@@ -409,7 +409,7 @@ public class DocumentProjectorTest {
                                        "x": 0
                                     },
                                     "nested.z": 0,
-                                    "nosuchprop": 0
+                                    "nosuchprop": 0,
                                     "$vector": 0
                                   }
                                   """));
