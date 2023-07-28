@@ -71,6 +71,19 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       CommandContext commandContext, FindOneAndReplaceCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+
+    float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+
+    if (vector != null) {
+      return FindOperation.vsearchSingle(
+          commandContext,
+          filters,
+          DocumentProjector.identityProjector(),
+          ReadType.DOCUMENT,
+          objectMapper,
+          vector);
+    }
+
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
