@@ -16,6 +16,13 @@ abstract class UpdateOperationTestBase {
                     """);
   }
 
+  ObjectNode defaultTestDocABCVector() {
+    return objectFromJson(
+        """
+                        { "a" : 1, "c" : true, "b" : 1234, "$vector" : [0.11, 0.22, 0.33] }
+                        """);
+  }
+
   protected ObjectNode objectFromJson(String json) {
     return (ObjectNode) fromJson(json);
   }
