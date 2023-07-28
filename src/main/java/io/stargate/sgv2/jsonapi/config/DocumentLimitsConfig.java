@@ -63,6 +63,6 @@ public interface DocumentLimitsConfig {
    *     before trying to pass them to DB.
    */
   @Positive
-  @WithDefault("8000")
+  @WithDefault("16000")
   int maxVectorEmbeddingLength();
 }
