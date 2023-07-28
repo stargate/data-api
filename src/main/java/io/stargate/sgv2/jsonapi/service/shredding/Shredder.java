@@ -241,7 +241,7 @@ public class Shredder {
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
                 referringPropertyName,
                 arrayValue.size(),
-                limits.maxArrayLength()));
+                limits.maxVectorEmbeddingLength()));
       }
     } else if (arrayValue.size() > limits.maxArrayLength()) {
       throw new JsonApiException(
