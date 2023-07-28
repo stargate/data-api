@@ -824,7 +824,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is(3))
+          .body("data.document._id", is("3"))
           .body("data.document.new_col", is("new_val"));
     }
 
@@ -898,8 +898,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
         {
           "findOneAndDelete": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "options" : {"returnDocument" : "after"}
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
           }
         }
         """;
@@ -927,6 +926,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
         {
           "deleteOne": {
+            "filter" : {"$vector" : {"$exists" : true}},
             "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
           }
         }
