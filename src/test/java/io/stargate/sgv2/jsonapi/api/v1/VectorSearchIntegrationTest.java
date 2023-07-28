@@ -713,7 +713,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.document._id", is("11"))
           .body("data.document.$vector", is(notNullValue()))
           .body("status.matchedCount", is(0))
-          .body("status.modifiedCount", is(1))
+          .body("status.modifiedCount", is(0))
+          .body("status.upsertedId", is("11"))
           .body("errors", is(nullValue()));
     }
 
