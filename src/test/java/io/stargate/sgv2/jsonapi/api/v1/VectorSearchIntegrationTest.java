@@ -67,8 +67,33 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status.ok", is(1));
     }
 
+    public void happyPathVectorSearchDefaultFunction() {
+      String json =
+          """
+            {
+              "createCollection": {
+                "name" : "my_collection_default_function",
+                "options": {
+                  "vector": {
+                    "size": 5
+                  }
+                }
+              }
+            }
+            """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
     @Test
-    public void createBigVectorCollection() {
+    public void happyPathBigVectorCollection() {
       createVectorCollection(namespaceName, bigVectorCollectionName, BIG_VECTOR_SIZE);
     }
 
@@ -79,18 +104,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                      "createCollection": {
-                        "name" : "TooBigVectorCollection",
-                        "options": {
-                          "vector": {
-                            "size": %d,
-                            "function": "cosine"
-                          }
-                        }
-                      }
-                    }
-                    """
+                              {
+                                "createCollection": {
+                                  "name" : "TooBigVectorCollection",
+                                  "options": {
+                                    "vector": {
+                                      "size": %d,
+                                      "function": "cosine"
+                                    }
+                                  }
+                                }
+                              }
+                              """
                   .formatted(99_999))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
