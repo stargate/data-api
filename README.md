@@ -28,7 +28,7 @@ The quickest way to test out the JSON API directly is to start a local copy of t
 
 ```shell
 cd docker-compose
-./start_dse_68_dev_mode.sh
+./start_dse_next_dev_mode.sh
 ```
 
 This starts an instance of the JSON API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
