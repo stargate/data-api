@@ -1044,6 +1044,85 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(5)
+    public void findOneAndReplaceWithBigVector() {
+      // First insert without a vector
+      insertBigVectorDoc("bigVectorForFindReplace", "Alice", "Desc for Alice.", null);
+
+      // and verify we have null for it
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "bigVectorForFindReplace"}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForFindReplace"))
+          .body("data.documents[0].$vector", is(nullValue()));
+
+      // then set the vector
+      final String vectorStr = buildVectorElements(2, BIG_VECTOR_SIZE);
+      String json =
+          """
+                    {
+                      "findOneAndReplace": {
+                        "filter" : {"_id" : "bigVectorForFindReplace"},
+                        "replacement" : {"_id" : "bigVectorForFindReplace", "$vector" : [ %s ]},
+                        "options" : {"returnDocument" : "after"}
+                      }
+                    }
+                    """
+              .formatted(vectorStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("data.document._id", is("bigVectorForFindReplace"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
+          .body("errors", is(nullValue()));
+
+      // and verify it was set to value with expected size
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "bigVectorForFindReplace"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForFindReplace"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
+    }
+
+    @Test
+    @Order(6)
     public void findOneAndDelete() {
       insertVectorDocuments();
       String json =
@@ -1071,7 +1150,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     public void deleteOne() {
       insertVectorDocuments();
       String json =
