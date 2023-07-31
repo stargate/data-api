@@ -67,6 +67,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status.ok", is(1));
     }
 
+    @Test
     public void happyPathVectorSearchDefaultFunction() {
       String json =
           """
