@@ -62,6 +62,32 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("status.ok", is(1));
     }
+
+    @Test
+    public void happyPathVectorSearchDefaultFunction() {
+      String json =
+          """
+        {
+          "createCollection": {
+            "name" : "my_collection_default_function",
+            "options": {
+              "vector": {
+                "size": 5
+              }
+            }
+          }
+        }
+        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
   }
 
   @Nested
