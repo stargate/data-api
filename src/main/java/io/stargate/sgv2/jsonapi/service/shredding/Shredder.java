@@ -212,39 +212,56 @@ public class Shredder {
     }
 
     // Second: traverse to check for other constraints
-    validateObjectValue(limits, doc, 0);
+    validateObjectValue(limits, null, doc, 0);
   }
 
-  private void validateDocValue(DocumentLimitsConfig limits, JsonNode value, int depth) {
+  private void validateDocValue(
+      DocumentLimitsConfig limits, String referringPropertyName, JsonNode value, int depth) {
     if (value.isObject()) {
-      validateObjectValue(limits, value, depth);
+      validateObjectValue(limits, referringPropertyName, value, depth);
     } else if (value.isArray()) {
-      validateArrayValue(limits, value, depth);
+      validateArrayValue(limits, referringPropertyName, value, depth);
     } else if (value.isTextual()) {
       validateStringValue(limits, value);
     }
   }
 
-  private void validateArrayValue(DocumentLimitsConfig limits, JsonNode arrayValue, int depth) {
+  private void validateArrayValue(
+      DocumentLimitsConfig limits, String referringPropertyName, JsonNode arrayValue, int depth) {
     ++depth;
     validateDocDepth(limits, depth);
 
     if (arrayValue.size() > limits.maxArrayLength()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              arrayValue.size(),
-              limits.maxArrayLength()));
+      // One special case: vector embeddings allow larger size
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
+        if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+              String.format(
+                  "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                  ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                  referringPropertyName,
+                  arrayValue.size(),
+                  limits.maxVectorEmbeddingLength()));
+        }
+      } else {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                arrayValue.size(),
+                limits.maxArrayLength()));
+      }
     }
 
     for (JsonNode element : arrayValue) {
-      validateDocValue(limits, element, depth);
+      validateDocValue(limits, null, element, depth);
     }
   }
 
-  private void validateObjectValue(DocumentLimitsConfig limits, JsonNode objectValue, int depth) {
+  private void validateObjectValue(
+      DocumentLimitsConfig limits, String referringPropertyName, JsonNode objectValue, int depth) {
     ++depth;
     validateDocDepth(limits, depth);
 
@@ -262,7 +279,7 @@ public class Shredder {
     while (it.hasNext()) {
       var entry = it.next();
       validateObjectKey(limits, entry.getKey(), entry.getValue(), depth);
-      validateDocValue(limits, entry.getValue(), depth);
+      validateDocValue(limits, entry.getKey(), entry.getValue(), depth);
     }
   }
 

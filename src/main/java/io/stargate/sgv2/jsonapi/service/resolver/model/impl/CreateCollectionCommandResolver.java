@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -15,13 +16,17 @@ import jakarta.inject.Inject;
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
   private final DataStoreConfig dataStoreConfig;
 
+  private final DocumentLimitsConfig documentLimitsConfig;
+
   @Inject
-  public CreateCollectionCommandResolver(DataStoreConfig dataStoreConfig) {
+  public CreateCollectionCommandResolver(
+      DataStoreConfig dataStoreConfig, DocumentLimitsConfig documentLimitsConfig) {
     this.dataStoreConfig = dataStoreConfig;
+    this.documentLimitsConfig = documentLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null);
+    this(null, null);
   }
 
   @Override
@@ -37,11 +42,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
       }
+      final int vectorSize = command.options().vector().size();
+      if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
+        throw new JsonApiException(
+            ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG,
+            String.format(
+                "%s: %d (max %d)",
+                ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG.getMessage(),
+                vectorSize,
+                documentLimitsConfig.maxVectorEmbeddingLength()));
+      }
       return CreateCollectionOperation.withVectorSearch(
-          ctx,
-          command.name(),
-          command.options().vector().size(),
-          command.options().vector().function());
+          ctx, command.name(), vectorSize, command.options().vector().function());
     } else {
       return CreateCollectionOperation.withoutVectorSearch(ctx, command.name());
     }

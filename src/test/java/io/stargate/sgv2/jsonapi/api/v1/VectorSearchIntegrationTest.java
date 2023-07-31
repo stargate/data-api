@@ -32,6 +32,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   private static final String collectionName = "my_collection";
+  private static final String bigVectorCollectionName = "big_vector_collection";
+
+  // Just has to be bigger than maximum array size
+  private static final int BIG_VECTOR_SIZE = 1000;
 
   @Nested
   @Order(1)
@@ -40,18 +44,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathVectorSearch() {
       String json =
           """
-        {
-          "createCollection": {
-            "name" : "my_collection",
-            "options": {
-              "vector": {
-                "size": 5,
-                "function": "cosine"
-              }
-            }
-          }
-        }
-        """;
+                      {
+                        "createCollection": {
+                          "name" : "my_collection",
+                          "options": {
+                            "vector": {
+                              "size": 5,
+                              "function": "cosine"
+                            }
+                          }
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -67,17 +71,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathVectorSearchDefaultFunction() {
       String json =
           """
-        {
-          "createCollection": {
-            "name" : "my_collection_default_function",
-            "options": {
-              "vector": {
-                "size": 5
+            {
+              "createCollection": {
+                "name" : "my_collection_default_function",
+                "options": {
+                  "vector": {
+                    "size": 5
+                  }
+                }
               }
             }
-          }
-        }
-        """;
+            """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -88,6 +92,43 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("status.ok", is(1));
     }
+
+    @Test
+    public void happyPathBigVectorCollection() {
+      createVectorCollection(namespaceName, bigVectorCollectionName, BIG_VECTOR_SIZE);
+    }
+
+    @Test
+    public void failForTooBigVector() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "createCollection": {
+                                  "name" : "TooBigVectorCollection",
+                                  "options": {
+                                    "vector": {
+                                      "size": %d,
+                                      "function": "cosine"
+                                    }
+                                  }
+                                }
+                              }
+                              """
+                  .formatted(99_999))
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_FIELD_TOO_BIG"))
+          .body(
+              "errors[0].message",
+              startsWith("Vector embedding field '$vector' length too big: 99999 (max 16000)"));
+    }
   }
 
   @Nested
@@ -97,17 +138,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertVectorSearch() {
       String json =
           """
-        {
-           "insertOne": {
-              "document": {
-                  "_id": "1",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-              }
-           }
-        }
-        """;
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "1",
+                                "name": "Coded Cleats",
+                                "description": "ChatGPT integrated sneakers that talk to you",
+                                "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                            }
+                         }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -123,21 +164,21 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "1"}
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "1"}
+                        }
+                      }
+                      """;
       String expected =
           """
-        {
-          "_id": "1",
-          "name": "Coded Cleats",
-          "description": "ChatGPT integrated sneakers that talk to you",
-          "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-        }
-        """;
+                      {
+                        "_id": "1",
+                        "name": "Coded Cleats",
+                        "description": "ChatGPT integrated sneakers that talk to you",
+                        "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -151,20 +192,77 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", is(nullValue()));
     }
 
+    // Test to verify vector embedding size can exceed general Array length limit
+    @Test
+    public void insertBigVectorThenSearch() {
+      final String vectorStr = buildVectorElements(1, BIG_VECTOR_SIZE);
+
+      insertBigVectorDoc("bigVector1", "Victor", "Big Vectors Rule ok?", vectorStr);
+
+      // Then verify it was inserted correctly
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "bigVector1"}
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVector1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
+
+      // And finally search for it (with different vector)
+      final String vectorSearchStr = buildVectorElements(3, BIG_VECTOR_SIZE);
+      final String findRequest =
+          """
+                      {
+                        "find": {
+                          "sort" : {"$vector" : [%s]},
+                          "projection" : {"_id" : 1, "$vector" : 1}
+                        }
+                      }
+                      """
+              .formatted(vectorSearchStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(findRequest)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVector1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
+    }
+
     @Test
     public void insertVectorCollectionWithoutVectorData() {
       String json =
           """
-        {
-           "insertOne": {
-              "document": {
-                  "_id": "10",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you"
-              }
-           }
-        }
-        """;
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "10",
+                                "name": "Coded Cleats",
+                                "description": "ChatGPT integrated sneakers that talk to you"
+                            }
+                         }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -180,20 +278,20 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "10"}
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "10"}
+                        }
+                      }
+                      """;
       String expected =
           """
-        {
-          "_id": "10",
-          "name": "Coded Cleats",
-          "description": "ChatGPT integrated sneakers that talk to you"
-        }
-        """;
+                      {
+                        "_id": "10",
+                        "name": "Coded Cleats",
+                        "description": "ChatGPT integrated sneakers that talk to you"
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -211,17 +309,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertEmptyVectorData() {
       String json =
           """
-        {
-           "insertOne": {
-              "document": {
-                  "_id": "Invalid",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": []
-              }
-           }
-        }
-        """;
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "Invalid",
+                                "name": "Coded Cleats",
+                                "description": "ChatGPT integrated sneakers that talk to you",
+                                "$vector": []
+                            }
+                         }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -244,17 +342,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertInvalidVectorData() {
       String json =
           """
-        {
-           "insertOne": {
-              "document": {
-                  "_id": "Invalid",
-                  "name": "Coded Cleats",
-                  "description": "ChatGPT integrated sneakers that talk to you",
-                  "$vector": [0.11, "abc", true, null]
-              }
-           }
-        }
-        """;
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "Invalid",
+                                "name": "Coded Cleats",
+                                "description": "ChatGPT integrated sneakers that talk to you",
+                                "$vector": [0.11, "abc", true, null]
+                            }
+                         }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -281,25 +379,25 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertVectorSearch() {
       String json =
           """
-        {
-           "insertMany": {
-              "documents": [
-                {
-                  "_id": "2",
-                  "name": "Logic Layers",
-                  "description": "An AI quilt to help you sleep forever",
-                  "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-                },
-                {
-                  "_id": "3",
-                  "name": "Vision Vector Frame",
-                  "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                  "$vector": [0.12, 0.05, 0.08, 0.32, 0.6]
-                }
-              ]
-           }
-        }
-        """;
+                      {
+                         "insertMany": {
+                            "documents": [
+                              {
+                                "_id": "2",
+                                "name": "Logic Layers",
+                                "description": "An AI quilt to help you sleep forever",
+                                "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                              },
+                              {
+                                "_id": "3",
+                                "name": "Vision Vector Frame",
+                                "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
+                                "$vector": [0.12, 0.05, 0.08, 0.32, 0.6]
+                              }
+                            ]
+                         }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -316,21 +414,21 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "2"}
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "2"}
+                        }
+                      }
+                      """;
       String expected =
           """
-        {
-            "_id": "2",
-            "name": "Logic Layers",
-            "description": "An AI quilt to help you sleep forever",
-            "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-        }
-        """;
+                      {
+                          "_id": "2",
+                          "name": "Logic Layers",
+                          "description": "An AI quilt to help you sleep forever",
+                          "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -346,12 +444,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   }
 
   public void insertVectorDocuments() {
-    String json = """
-        {
-          "deleteMany": {
-          }
-        }
-        """;
+    String json =
+        """
+            {
+              "deleteMany": {
+              }
+            }
+            """;
 
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -367,31 +466,31 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     json =
         """
-          {
-             "insertMany": {
-                "documents": [
-                  {
-                    "_id": "1",
-                    "name": "Coded Cleats",
-                    "description": "ChatGPT integrated sneakers that talk to you",
-                    "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
-                   },
-                   {
-                     "_id": "2",
-                     "name": "Logic Layers",
-                     "description": "An AI quilt to help you sleep forever",
-                     "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
-                   },
-                   {
-                     "_id": "3",
-                     "name": "Vision Vector Frame",
-                     "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                     "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
-                   }
-                ]
-             }
-          }
-          """;
+                    {
+                       "insertMany": {
+                          "documents": [
+                            {
+                              "_id": "1",
+                              "name": "Coded Cleats",
+                              "description": "ChatGPT integrated sneakers that talk to you",
+                              "$vector": [0.1, 0.15, 0.3, 0.12, 0.05]
+                             },
+                             {
+                               "_id": "2",
+                               "name": "Logic Layers",
+                               "description": "An AI quilt to help you sleep forever",
+                               "$vector": [0.45, 0.09, 0.01, 0.2, 0.11]
+                             },
+                             {
+                               "_id": "3",
+                               "name": "Vision Vector Frame",
+                               "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
+                               "$vector": [0.1, 0.05, 0.08, 0.3, 0.6]
+                             }
+                          ]
+                       }
+                    }
+                    """;
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
@@ -420,16 +519,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPath() {
       String json =
           """
-        {
-          "find": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "projection" : {"_id" : 1, "$vector" : 1},
-            "options" : {
-                "limit" : 5
-            }
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "projection" : {"_id" : 1, "$vector" : 1},
+                          "options" : {
+                              "limit" : 5
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -453,17 +552,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithFilter() {
       String json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "1"},
-            "projection" : {"_id" : 1, "$vector" : 0},
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "options" : {
-                "limit" : 5
-            }
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "1"},
+                          "projection" : {"_id" : 1, "$vector" : 0},
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "options" : {
+                              "limit" : 5
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -483,16 +582,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithEmptyVector() {
       String json =
           """
-        {
-          "find": {
-            "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : []},
-            "options" : {
-                "limit" : 5
-            }
-          }
-        }
-        """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "1"},
+                          "sort" : {"$vector" : []},
+                          "options" : {
+                              "limit" : 5
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -513,16 +612,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithInvalidData() {
       String json =
           """
-            {
-              "find": {
-                "filter" : {"_id" : "1"},
-                "sort" : {"$vector" : [0.11, "abc", true]},
-                "options" : {
-                    "limit" : 5
-                }
-              }
-            }
-            """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "1"},
+                          "sort" : {"$vector" : [0.11, "abc", true]},
+                          "options" : {
+                              "limit" : 5
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -553,12 +652,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPath() {
       String json =
           """
-        {
-          "findOne": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-          }
-        }
-        """;
+                      {
+                        "findOne": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -577,13 +676,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithFilter() {
       String json =
           """
-            {
-              "findOne": {
-                "filter" : {"_id" : "1"},
-                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-              }
-            }
-            """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "1"},
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -602,13 +701,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithEmptyVector() {
       String json =
           """
-        {
-          "findOne": {
-            "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : []}
-          }
-        }
-        """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "1"},
+                          "sort" : {"$vector" : []}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -629,13 +728,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPathWithInvalidData() {
       String json =
           """
-        {
-          "findOne": {
-            "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : [0.11, "abc", true]}
-          }
-        }
-        """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "1"},
+                          "sort" : {"$vector" : [0.11, "abc", true]}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -667,14 +766,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void setOperation() {
       String json =
           """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id": "2"},
-            "update" : {"$set" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id": "2"},
+                          "update" : {"$set" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -696,14 +795,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void unsetOperation() {
       String json =
           """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"name": "Coded Cleats"},
-            "update" : {"$unset" : {"$vector" : null}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"name": "Coded Cleats"},
+                          "update" : {"$unset" : {"$vector" : null}},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -721,18 +820,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     public void setOnInsertOperation() {
       String json =
           """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id": "11"},
-            "update" : {"$setOnInsert" : {"$vector": [0.11, 0.22, 0.33, 0.44, 0.55]}},
-            "options" : {"returnDocument" : "after", "upsert": true}
-          }
-        }
-        """;
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id": "11"},
+                          "update" : {"$setOnInsert" : {"$vector": [0.11, 0.22, 0.33, 0.44, 0.55]}},
+                          "options" : {"returnDocument" : "after", "upsert": true}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -751,18 +850,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void errorOperationForVector() {
       String json =
           """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id": "3"},
-            "update" : {"$push" : {"$vector" : 0.33}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id": "3"},
+                          "update" : {"$push" : {"$vector" : 0.33}},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -779,6 +878,85 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               "errors[0].message",
               is(ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + "$push"));
     }
+
+    @Test
+    @Order(6)
+    public void setBigVectorOperation() {
+      // First insert without a vector
+      insertBigVectorDoc("bigVectorForSet", "Bob", "Desc for Bob.", null);
+
+      // and verify we have null for it
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                      {
+                                        "find": {
+                                          "filter" : {"_id" : "bigVectorForSet"}
+                                        }
+                                      }
+                                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForSet"))
+          .body("data.documents[0].$vector", is(nullValue()));
+
+      // then set the vector
+      final String vectorStr = buildVectorElements(7, BIG_VECTOR_SIZE);
+      String json =
+          """
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id": "bigVectorForSet"},
+                          "update" : {"$set" : {"$vector" : [ %s ]}},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """
+              .formatted(vectorStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("data.document._id", is("bigVectorForSet"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
+          .body("errors", is(nullValue()));
+
+      // and verify it was set to value with expected size
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "bigVectorForSet"}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForSet"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
+    }
   }
 
   @Nested
@@ -791,14 +969,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-        {
-          "findOneAndUpdate": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "update" : {"$set" : {"status" : "active"}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
+                      {
+                        "findOneAndUpdate": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "update" : {"$set" : {"status" : "active"}},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -821,13 +999,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-        {
-          "updateOne": {
-            "update" : {"$set" : {"new_col": "new_val"}},
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-          }
-        }
-        """;
+                      {
+                        "updateOne": {
+                          "update" : {"$set" : {"new_col": "new_val"}},
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -842,12 +1020,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", is(nullValue()));
       json =
           """
-        {
-          "findOne": {
-            "filter" : {"_id" : "3"}
-          }
-        }
-        """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "3"}
+                        }
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -866,14 +1044,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-        {
-          "findOneAndReplace": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
+                      {
+                        "findOneAndReplace": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -897,14 +1075,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-            {
-              "findOneAndReplace": {
-                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-                "replacement" : {"_id" : "3", "username": "user3", "status" : false},
-                "options" : {"returnDocument" : "after"}
-              }
-            }
-            """;
+                      {
+                        "findOneAndReplace": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "replacement" : {"_id" : "3", "username": "user3", "status" : false},
+                          "options" : {"returnDocument" : "after"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -924,16 +1102,95 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(5)
+    public void findOneAndReplaceWithBigVector() {
+      // First insert without a vector
+      insertBigVectorDoc("bigVectorForFindReplace", "Alice", "Desc for Alice.", null);
+
+      // and verify we have null for it
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "bigVectorForFindReplace"}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForFindReplace"))
+          .body("data.documents[0].$vector", is(nullValue()));
+
+      // then set the vector
+      final String vectorStr = buildVectorElements(2, BIG_VECTOR_SIZE);
+      String json =
+          """
+                    {
+                      "findOneAndReplace": {
+                        "filter" : {"_id" : "bigVectorForFindReplace"},
+                        "replacement" : {"_id" : "bigVectorForFindReplace", "$vector" : [ %s ]},
+                        "options" : {"returnDocument" : "after"}
+                      }
+                    }
+                    """
+              .formatted(vectorStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("data.document._id", is("bigVectorForFindReplace"))
+          .body("data.document.$vector", is(notNullValue()))
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
+          .body("errors", is(nullValue()));
+
+      // and verify it was set to value with expected size
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "bigVectorForFindReplace"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("bigVectorForFindReplace"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", hasSize(BIG_VECTOR_SIZE));
+    }
+
+    @Test
+    @Order(6)
     public void findOneAndDelete() {
       insertVectorDocuments();
       String json =
           """
-        {
-          "findOneAndDelete": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-          }
-        }
-        """;
+                      {
+                        "findOneAndDelete": {
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -951,18 +1208,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     public void deleteOne() {
       insertVectorDocuments();
       String json =
           """
-        {
-          "deleteOne": {
-            "filter" : {"$vector" : {"$exists" : true}},
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-          }
-        }
-        """;
+                      {
+                        "deleteOne": {
+                          "filter" : {"$vector" : {"$exists" : true}},
+                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -979,12 +1236,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // ensure find does not find the document
       json =
           """
-        {
-          "findOne": {
-            "filter" : {"_id" : "3"}
-          }
-        }
-        """;
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "3"}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -998,5 +1255,83 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
+  }
+
+  private static void createVectorCollection(
+      String namespaceName, String collectionName, int vectorSize) {
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                            {
+                              "createCollection": {
+                                "name" : "%s",
+                                "options": {
+                                  "vector": {
+                                    "size": %d,
+                                    "function": "cosine"
+                                  }
+                                }
+                              }
+                            }
+                            """
+                .formatted(collectionName, vectorSize))
+        .when()
+        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .then()
+        .statusCode(200)
+        .body("status.ok", is(1));
+  }
+
+  private void insertBigVectorDoc(String id, String name, String description, String vectorStr) {
+    final String vectorDoc =
+        """
+                    {
+                        "_id": "%s",
+                        "name": "%s",
+                        "description": "%s",
+                        "$vector": %s
+                    }
+            """
+            .formatted(
+                id, name, description, (vectorStr == null) ? "null" : "[%s]".formatted(vectorStr));
+
+    // First insert a document with a big vector
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                            {
+                               "insertOne": {
+                                  "document": %s
+                               }
+                            }
+                            """
+                .formatted(vectorDoc))
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
+        .then()
+        .statusCode(200)
+        .body("status.insertedIds[0]", is(id))
+        .body("data", is(nullValue()))
+        .body("errors", is(nullValue()));
+  }
+
+  private static String buildVectorElements(int offset, int count) {
+    StringBuilder sb = new StringBuilder(count * 4);
+    // Generate sequence with floating-point values that are exact in binary (like 0.5, 0.25)
+    // so that conversion won't prevent equality matching
+    final String[] nums = {"0.25", "0.5", "0.75", "0.975", "0.0125", "0.375", "0.625", "0.125"};
+    for (int i = 0; i < count; ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      int ix = (offset + i) % nums.length;
+      sb.append(nums[ix]);
+    }
+    return sb.toString();
   }
 }
