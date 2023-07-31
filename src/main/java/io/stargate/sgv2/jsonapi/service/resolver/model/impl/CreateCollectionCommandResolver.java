@@ -41,9 +41,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           ctx,
           command.name(),
           command.options().vector().size(),
-          command.options().vector().function() == null
-              ? "cosine"
-              : command.options().vector().function());
+          command.options().vector().function());
     } else {
       return CreateCollectionOperation.withoutVectorSearch(ctx, command.name());
     }
