@@ -71,6 +71,38 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void createBigVectorCollection() {
       createVectorCollection(namespaceName, bigVectorCollectionName, BIG_VECTOR_SIZE);
     }
+
+    @Test
+    public void failForTooBigVector() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                      "createCollection": {
+                        "name" : "TooBigVectorCollection",
+                        "options": {
+                          "vector": {
+                            "size": %d,
+                            "function": "cosine"
+                          }
+                        }
+                      }
+                    }
+                    """
+                  .formatted(99_999))
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_FIELD_TOO_BIG"))
+          .body(
+              "errors[0].message",
+              startsWith("Vector embedding field '$vector' length too big: 99999 (max 16000)"));
+    }
   }
 
   @Nested

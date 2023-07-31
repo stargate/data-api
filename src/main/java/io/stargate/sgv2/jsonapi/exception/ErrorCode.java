@@ -84,7 +84,9 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
-  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection ");
+  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
+
+  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big");
 
   private final String message;
 
