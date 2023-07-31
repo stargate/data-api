@@ -231,26 +231,28 @@ public class Shredder {
     ++depth;
     validateDocDepth(limits, depth);
 
-    // One special case: vector embeddings
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
-      if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
+    if (arrayValue.size() > limits.maxArrayLength()) {
+      // One special case: vector embeddings allow larger size
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
+        if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+              String.format(
+                  "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                  ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                  referringPropertyName,
+                  arrayValue.size(),
+                  limits.maxVectorEmbeddingLength()));
+        }
+      } else {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
             String.format(
-                "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                referringPropertyName,
                 arrayValue.size(),
-                limits.maxVectorEmbeddingLength()));
+                limits.maxArrayLength()));
       }
-    } else if (arrayValue.size() > limits.maxArrayLength()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              arrayValue.size(),
-              limits.maxArrayLength()));
     }
 
     for (JsonNode element : arrayValue) {
