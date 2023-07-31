@@ -69,29 +69,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     public void createBigVectorCollection() {
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-            {
-              "createCollection": {
-                "name" : "%s",
-                "options": {
-                  "vector": {
-                    "size": %d,
-                    "function": "cosine"
-                  }
-                }
-              }
-            }
-            """
-                  .formatted(bigVectorCollectionName, BIG_VECTOR_SIZE))
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
+      createVectorCollection(namespaceName, bigVectorCollectionName, BIG_VECTOR_SIZE);
     }
   }
 
@@ -1090,6 +1068,33 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
+  }
+
+  private static void createVectorCollection(
+      String namespaceName, String collectionName, int vectorSize) {
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                  {
+                    "createCollection": {
+                      "name" : "%s",
+                      "options": {
+                        "vector": {
+                          "size": %d,
+                          "function": "cosine"
+                        }
+                      }
+                    }
+                  }
+                  """
+                .formatted(collectionName, vectorSize))
+        .when()
+        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .then()
+        .statusCode(200)
+        .body("status.ok", is(1));
   }
 
   private static String buildVectorElements(int offset, int count) {
