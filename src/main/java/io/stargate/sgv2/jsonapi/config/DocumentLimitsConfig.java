@@ -59,8 +59,9 @@ public interface DocumentLimitsConfig {
 
   /**
    * @return Maximum length of Vector ($vector) array JSON API allows -- NOTE: backend data store
-   *     likely limits length to a lower value; but we want to prevent handling of huge arrays
-   *     before trying to pass them to DB.
+   *     may limit length to a lower value; but we want to prevent handling of huge arrays before
+   *     trying to pass them to DB. Or, conversely, if data store does not limit length, to impose
+   *     something reasonable from JSON API perspective (for service-protection reasons).
    */
   @Positive
   @WithDefault("16000")
