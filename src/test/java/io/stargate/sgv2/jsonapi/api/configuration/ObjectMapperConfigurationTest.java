@@ -346,6 +346,37 @@ class ObjectMapperConfigurationTest {
                 assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
               });
     }
+
+    @Test
+    public void happyPathVectorSearchDefaultFunction() throws Exception {
+      String json =
+          """
+          {
+            "createCollection": {
+              "name": "some_name",
+              "options": {
+                "vector": {
+                  "size": 5
+                }
+              }
+            }
+          }
+          """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                String name = createCollection.name();
+                assertThat(name).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().vector()).isNotNull();
+                assertThat(createCollection.options().vector().size()).isEqualTo(5);
+                assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+              });
+    }
   }
 
   @Nested
