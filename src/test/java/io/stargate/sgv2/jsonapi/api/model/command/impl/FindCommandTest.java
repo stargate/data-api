@@ -159,5 +159,51 @@ public class FindCommandTest {
           .extracting(ConstraintViolation::getMessage)
           .contains("pagingState is not supported with sort clause");
     }
+
+    @Test
+    public void invalidOptionsSkipVectorSearch() throws Exception {
+      String json =
+          """
+        {
+        "find": {
+            "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+            "options" : {
+              "skip" : 10
+            }
+          }
+        }
+        """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("skip options should not be used with vector search");
+    }
+
+    @Test
+    public void invalidOptionsLimitVectorSearch() throws Exception {
+      String json =
+          """
+              {
+              "find": {
+                  "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+                  "options" : {
+                    "limit" : 1001
+                  }
+                }
+              }
+              """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("limit options should not be greater than 1000 for vector search");
+    }
   }
 }

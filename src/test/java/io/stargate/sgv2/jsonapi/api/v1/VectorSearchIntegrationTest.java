@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -105,18 +106,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(
               """
-                              {
-                                "createCollection": {
-                                  "name" : "TooBigVectorCollection",
-                                  "options": {
-                                    "vector": {
-                                      "size": %d,
-                                      "function": "cosine"
-                                    }
-                                  }
-                                }
-                              }
-                              """
+            {
+              "createCollection": {
+                "name" : "TooBigVectorCollection",
+                "options": {
+                  "vector": {
+                    "size": %d,
+                    "function": "cosine"
+                  }
+                }
+              }
+            }
+            """
                   .formatted(99_999))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
@@ -138,17 +139,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertVectorSearch() {
       String json =
           """
-                      {
-                         "insertOne": {
-                            "document": {
-                                "_id": "1",
-                                "name": "Coded Cleats",
-                                "description": "ChatGPT integrated sneakers that talk to you",
-                                "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-                            }
-                         }
-                      }
-                      """;
+        {
+           "insertOne": {
+              "document": {
+                  "_id": "1",
+                  "name": "Coded Cleats",
+                  "description": "ChatGPT integrated sneakers that talk to you",
+                  "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+              }
+           }
+        }
+        """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -164,21 +165,21 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       json =
           """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "1"}
-                        }
-                      }
-                      """;
+        {
+          "find": {
+            "filter" : {"_id" : "1"}
+          }
+        }
+        """;
       String expected =
           """
-                      {
-                        "_id": "1",
-                        "name": "Coded Cleats",
-                        "description": "ChatGPT integrated sneakers that talk to you",
-                        "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
-                      }
-                      """;
+        {
+          "_id": "1",
+          "name": "Coded Cleats",
+          "description": "ChatGPT integrated sneakers that talk to you",
+          "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+        }
+        """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -205,12 +206,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(
               """
-                              {
-                                "find": {
-                                  "filter" : {"_id" : "bigVector1"}
-                                }
-                              }
-                              """)
+            {
+              "find": {
+                "filter" : {"_id" : "bigVector1"}
+              }
+            }
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
@@ -253,16 +254,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void insertVectorCollectionWithoutVectorData() {
       String json =
           """
-                      {
-                         "insertOne": {
-                            "document": {
-                                "_id": "10",
-                                "name": "Coded Cleats",
-                                "description": "ChatGPT integrated sneakers that talk to you"
-                            }
-                         }
-                      }
-                      """;
+        {
+           "insertOne": {
+              "document": {
+                  "_id": "10",
+                  "name": "Coded Cleats",
+                  "description": "ChatGPT integrated sneakers that talk to you"
+              }
+           }
+        }
+        """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -634,6 +635,65 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+    }
+
+    @Test
+    @Order(6)
+    public void limitError() {
+      String json =
+          """
+        {
+          "find": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$vector" : 1},
+            "options" : {
+                "limit" : 5000
+            }
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body(
+              "errors[0].message",
+              endsWith("limit options should not be greater than 1000 for vector search."));
+    }
+
+    @Test
+    @Order(7)
+    public void skipError() {
+      String json =
+          """
+        {
+          "find": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$vector" : 1},
+            "options" : {
+                "skip" : 10
+            }
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body(
+              "errors[0].message", endsWith("skip options should not be used with vector search."));
     }
   }
 
