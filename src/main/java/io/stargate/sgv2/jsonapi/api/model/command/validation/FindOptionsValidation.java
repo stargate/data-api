@@ -31,7 +31,9 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (options.skip() != null && value.sortClause().hasVsearchClause()) {
+    if (options.skip() != null
+        && value.sortClause() != null
+        && value.sortClause().hasVsearchClause()) {
       context
           .buildConstraintViolationWithTemplate(
               "skip options should not be used with vector search")
@@ -40,7 +42,8 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (value.sortClause().hasVsearchClause()
+    if (value.sortClause() != null
+        && value.sortClause().hasVsearchClause()
         && options.limit() != null
         && options.limit() > config.get().maxVectorSearchLimit()) {
       context
