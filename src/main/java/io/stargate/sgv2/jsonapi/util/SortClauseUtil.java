@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 public class SortClauseUtil {
   public static List<FindOperation.OrderBy> resolveOrderBy(SortClause sortClause) {
     if (sortClause == null || sortClause.sortExpressions().isEmpty()) return null;
-    if (hasSortClause(sortClause)) return null;
+    if (isVectorSearch(sortClause)) return null;
     return sortClause.sortExpressions().stream()
         .map(
             sortExpression ->
@@ -19,13 +19,13 @@ public class SortClauseUtil {
 
   public static float[] resolveVsearch(SortClause sortClause) {
     if (sortClause == null || sortClause.sortExpressions().isEmpty()) return null;
-    if (hasSortClause(sortClause)) {
+    if (isVectorSearch(sortClause)) {
       return sortClause.sortExpressions().stream().findFirst().get().vector();
     }
     return null;
   }
 
-  private static boolean hasSortClause(SortClause sortClause) {
+  public static boolean isVectorSearch(SortClause sortClause) {
     return sortClause.sortExpressions().stream()
         .findFirst()
         .get()

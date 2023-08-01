@@ -1,10 +1,21 @@
 package io.stargate.sgv2.jsonapi.api.model.command.validation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+@ApplicationScoped
 public class FindOptionsValidation implements ConstraintValidator<CheckFindOption, FindCommand> {
+
+  private final Instance<OperationsConfig> config;
+
+  public FindOptionsValidation(Instance<OperationsConfig> config) {
+    this.config = config;
+  }
 
   /** {@inheritDoc} */
   @Override
@@ -16,6 +27,31 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
     if (options.skip() != null && value.sortClause() == null) {
       context
           .buildConstraintViolationWithTemplate("skip options should be used with sort clause")
+          .addPropertyNode("options.skip")
+          .addConstraintViolation();
+      return false;
+    }
+
+    if (options.skip() != null
+        && value.sortClause() != null
+        && SortClauseUtil.isVectorSearch(value.sortClause())) {
+      context
+          .buildConstraintViolationWithTemplate(
+              "skip options should not be used with vector search")
+          .addPropertyNode("options.skip")
+          .addConstraintViolation();
+      return false;
+    }
+
+    if (value.sortClause() != null
+        && SortClauseUtil.isVectorSearch(value.sortClause())
+        && options.limit() != null
+        && options.limit() > config.get().maxVectorSearchLimit()) {
+      context
+          .buildConstraintViolationWithTemplate(
+              "limit options should not be greater than "
+                  + config.get().maxVectorSearchLimit()
+                  + " for vector search")
           .addPropertyNode("options.skip")
           .addConstraintViolation();
       return false;
