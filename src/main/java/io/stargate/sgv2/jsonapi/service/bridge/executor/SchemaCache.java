@@ -5,7 +5,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.time.Duration;
 import java.util.Optional;
 
 /** Caches the vector enabled status for all the namespace in schema */
@@ -15,7 +14,7 @@ public class SchemaCache {
   @Inject private QueryExecutor queryExecutor;
 
   private final Cache<CacheKey, NamespaceCache> schemaCache =
-      Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(600)).maximumSize(100).build();
+      Caffeine.newBuilder().maximumSize(1000).build();
 
   public Uni<Boolean> isVectorEnabled(
       Optional<String> tenant, String namespace, String collectionName) {
