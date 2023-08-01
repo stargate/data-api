@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.validation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.validation.ConstraintValidator;
@@ -32,7 +31,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (options.skip() != null && SortClauseUtil.resolveVsearch(value.sortClause()) != null) {
+    if (options.skip() != null && value.sortClause().hasVsearchClause()) {
       context
           .buildConstraintViolationWithTemplate(
               "skip options should not be used with vector search")
@@ -41,7 +40,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (SortClauseUtil.resolveVsearch(value.sortClause()) != null
+    if (value.sortClause().hasVsearchClause()
         && options.limit() != null
         && options.limit() > config.get().maxVectorSearchLimit()) {
       context
