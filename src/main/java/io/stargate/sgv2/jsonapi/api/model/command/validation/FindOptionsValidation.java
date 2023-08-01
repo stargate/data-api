@@ -49,7 +49,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
               "limit options should not be greater than "
                   + config.get().maxVectorSearchLimit()
                   + " for vector search")
-          .addPropertyNode("options.skip")
+          .addPropertyNode("options.limit")
           .addConstraintViolation();
       return false;
     }
