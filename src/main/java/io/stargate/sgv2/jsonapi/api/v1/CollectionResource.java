@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -57,6 +58,8 @@ public class CollectionResource {
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private SchemaCache schemaCache;
+
+  @Inject private StargateRequestInfo stargateRequestInfo;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -145,7 +148,7 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .isVectorEnabled(namespace, collection)
+        .isVectorEnabled(stargateRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
             (isVectorEnabled, throwable) -> {

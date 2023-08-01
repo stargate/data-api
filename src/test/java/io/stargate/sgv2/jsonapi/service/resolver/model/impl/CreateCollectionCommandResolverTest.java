@@ -85,5 +85,36 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
               });
     }
+
+    @Test
+    public void happyPathVectorSearchDefaultFunction() throws Exception {
+      String json =
+          """
+        {
+          "createCollection": {
+            "name" : "my_collection",
+            "options": {
+              "vector": {
+                "size": 4
+              }
+            }
+          }
+        }
+        """;
+
+      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionOperation.class,
+              op -> {
+                assertThat(op.name()).isEqualTo("my_collection");
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.vectorSearch()).isEqualTo(true);
+                assertThat(op.vectorSize()).isEqualTo(4);
+                assertThat(op.vectorFunction()).isEqualTo("cosine");
+              });
+    }
   }
 }

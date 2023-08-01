@@ -48,6 +48,11 @@ public record CreateCollectionCommand(
                 defaultValue = "cosine",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            String function) {}
+            String function) {
+      public VectorSearchConfig(Integer size, String function) {
+        this.size = size;
+        this.function = function == null ? "cosine" : function;
+      }
+    }
   }
 }

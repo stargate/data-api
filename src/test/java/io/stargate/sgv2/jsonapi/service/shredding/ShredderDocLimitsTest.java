@@ -11,6 +11,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
@@ -144,14 +145,14 @@ public class ShredderDocLimitsTest {
     @Test
     public void allowDocWithManyArrayElements() {
       // Max allowed 100, add 90
-      final ObjectNode doc = docWithNArrayElems(90);
+      final ObjectNode doc = docWithNArrayElems("arr", 90);
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyArrayElements() {
       // Let's add 120 elements (max allowed: 100)
-      final ObjectNode doc = docWithNArrayElems(120);
+      final ObjectNode doc = docWithNArrayElems("arr", 120);
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
           .isNotNull()
@@ -164,14 +165,12 @@ public class ShredderDocLimitsTest {
                   + ")");
     }
 
-    private ObjectNode docWithNArrayElems(int count) {
-      final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("_id", 123);
-      ArrayNode arr = doc.putArray("arr");
-      for (int i = 0; i < count; ++i) {
-        arr.add(i);
-      }
-      return doc;
+    @Test
+    public void allowMoreArrayElementsForVectors() {
+      // Let's add 120 elements (max allowed normally: 100)
+      final ObjectNode doc =
+          docWithNArrayElems(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, 120);
+      assertThat(shredder.shred(doc)).isNotNull();
     }
   }
 
@@ -257,27 +256,37 @@ public class ShredderDocLimitsTest {
                   + docLimits.maxStringLength()
                   + ")");
     }
+
+    // Since max-number-len is handled at low-level, it's not strictly speaking
+    // Shredder test -- but since it is logically related, test it here too
+    // (there is separate testing for integration through doc insert)
+    @Test
+    public void catchTooLongNumberValues() throws Exception {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      ArrayNode arr = doc.putArray("arr");
+      // Max 50, so 60 should fail
+      String numStr = "1234567890".repeat(6);
+      doc.put("number", new BigDecimal(numStr));
+      arr.add(numStr);
+
+      final String json = objectMapper.writeValueAsString(doc);
+
+      Exception e = catchException(() -> objectMapper.readTree(json));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(StreamConstraintsException.class)
+          .hasMessageStartingWith("Number length (60) exceeds the maximum length (50)");
+    }
   }
 
-  // Since max-number-len is handled at low-level, it's not strictly speaking
-  // Shredder test -- but since it is logically related, test it here too
-  // (there is separate testing for integration through doc insert)
-  @Test
-  public void catchTooLongNumberValues() throws Exception {
+  private ObjectNode docWithNArrayElems(String propName, int count) {
     final ObjectNode doc = objectMapper.createObjectNode();
     doc.put("_id", 123);
-    ArrayNode arr = doc.putArray("arr");
-    // Max 50, so 60 should fail
-    String numStr = "1234567890".repeat(6);
-    doc.put("number", new BigDecimal(numStr));
-    arr.add(numStr);
-
-    final String json = objectMapper.writeValueAsString(doc);
-
-    Exception e = catchException(() -> objectMapper.readTree(json));
-    assertThat(e)
-        .isNotNull()
-        .isInstanceOf(StreamConstraintsException.class)
-        .hasMessageStartingWith("Number length (60) exceeds the maximum length (50)");
+    ArrayNode arr = doc.putArray(propName);
+    for (int i = 0; i < count; ++i) {
+      arr.add(i);
+    }
+    return doc;
   }
 }
