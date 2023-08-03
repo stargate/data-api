@@ -106,8 +106,6 @@ jobs:
       # run the int tests
       - name: Integration Test
         env:
-          COORD_IMAGE: index.docker.io/stargateio/coordinator-dse-next
-          # ^^^ 24-Jul-2023, tatu: Temporary issues wrt ECR, need to use dockerhub instead
-          #COORD_IMAGE: 237073351946.dkr.ecr.us-east-1.amazonaws.com/stargateio/coordinator-dse-next
+          COORD_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-next
         run: |
           ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}
