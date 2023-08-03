@@ -57,13 +57,15 @@ docker-compose -f docker-compose-dev-mode.yml down
 
 Both convenience scripts support the following options:
 
-* You can specify an image tag (version) of the JSON API using `-t [VERSION]`, or use the `-l` tag to use a locally built image with the latest snapshot version. 
+* You can specify an image tag (version) of the JSON API using `-j [VERSION]`, or use the `-l` tag to use a locally built image with the latest snapshot version. 
 
 * The scripts default to using the Java-based image for JSON API, you can specify to use the native GraalVM based variant using `-n`.
 
 * You can change the default root log level for the JSON API using `-r [LEVEL]` (default `INFO`). Valid values: `ERROR`, `WARN`, `INFO`, `DEBUG`
 
 * You can enable reguest logging for the JSON API using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`
+
+* You can specify an image tag (version) of the Stargate coordinator using `-t [VERSION]`.
 
 ## Notes
 
