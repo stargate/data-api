@@ -1,5 +1,46 @@
 # Changelog
 
+## [v1.0.0-ALPHA-11](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-11) (2023-08-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-10...v1.0.0-ALPHA-11)
+
+**Closed issues:**
+
+- Vector search schema cache by tenant [\#486](https://github.com/stargate/jsonapi/issues/486)
+- Cannot `createCollection\(\)` with vector option without sending similarity function [\#483](https://github.com/stargate/jsonapi/issues/483)
+- Projection handling of $vector [\#480](https://github.com/stargate/jsonapi/issues/480)
+- Extend JSON API vector search functionality support [\#478](https://github.com/stargate/jsonapi/issues/478)
+- Relax array size validation for $vector field [\#475](https://github.com/stargate/jsonapi/issues/475)
+- Validation for vector search [\#460](https://github.com/stargate/jsonapi/issues/460)
+- Find\* command changes for vector search [\#459](https://github.com/stargate/jsonapi/issues/459)
+- Document shredder changes for vector search [\#458](https://github.com/stargate/jsonapi/issues/458)
+- Update command changes for vector search [\#457](https://github.com/stargate/jsonapi/issues/457)
+- Insert command changes to support vector search [\#456](https://github.com/stargate/jsonapi/issues/456)
+- Create collection enhancement to support vector search configuration [\#455](https://github.com/stargate/jsonapi/issues/455)
+- JSON API Logging [\#404](https://github.com/stargate/jsonapi/issues/404)
+
+**Merged pull requests:**
+
+- update workflows to reference coordinator-dse-next image [\#488](https://github.com/stargate/jsonapi/pull/488) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Find command options validation and tenant based cache [\#487](https://github.com/stargate/jsonapi/pull/487) ([maheshrajamani](https://github.com/maheshrajamani))
+- Default vector search function name to cosine. [\#485](https://github.com/stargate/jsonapi/pull/485) ([maheshrajamani](https://github.com/maheshrajamani))
+- update workflows to reference dse-next backend [\#484](https://github.com/stargate/jsonapi/pull/484) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Extended the commands that supports sort clause to also support vector search [\#482](https://github.com/stargate/jsonapi/pull/482) ([maheshrajamani](https://github.com/maheshrajamani))
+- Support vector field in projection clause [\#481](https://github.com/stargate/jsonapi/pull/481) ([maheshrajamani](https://github.com/maheshrajamani))
+- Allow bigger arrays for vector embeddings [\#479](https://github.com/stargate/jsonapi/pull/479) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- $set and $unset operation support for vector data field [\#477](https://github.com/stargate/jsonapi/pull/477) ([maheshrajamani](https://github.com/maheshrajamani))
+- Convert non-dev docker-compose too; rename [\#476](https://github.com/stargate/jsonapi/pull/476) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Find and findOne command changes to support vector search [\#474](https://github.com/stargate/jsonapi/pull/474) ([maheshrajamani](https://github.com/maheshrajamani))
+- docker compose change [\#473](https://github.com/stargate/jsonapi/pull/473) ([maheshrajamani](https://github.com/maheshrajamani))
+- Reduce logging of known+handled cases [\#472](https://github.com/stargate/jsonapi/pull/472) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Change backend for ITs from `persistence-dse-6.8` to `persistence-dse-next` \(pre-7.0\) [\#471](https://github.com/stargate/jsonapi/pull/471) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update Stargate dep to 2.1.0-ALPHA-4 [\#470](https://github.com/stargate/jsonapi/pull/470) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Vector search changes for shredder and Insert command [\#469](https://github.com/stargate/jsonapi/pull/469) ([maheshrajamani](https://github.com/maheshrajamani))
+- Update SG dependency to 2.1.0-ALPHA-3 [\#468](https://github.com/stargate/jsonapi/pull/468) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactored FindOperation constructor usage [\#467](https://github.com/stargate/jsonapi/pull/467) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next jsonapi release [\#464](https://github.com/stargate/jsonapi/pull/464) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Use Stargate v2.0.16 [\#453](https://github.com/stargate/jsonapi/pull/453) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.0-ALPHA-10](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-10) (2023-07-14)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-9...v1.0.0-ALPHA-10)
