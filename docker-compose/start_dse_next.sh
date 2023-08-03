@@ -12,11 +12,16 @@ LOGLEVEL=INFO
 # Default to images used in project integration tests
 DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
 SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
-JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
+
+# Default to latest released version
+JSONTAG="v1"
 JSONIMAGE="stargateio/jsonapi"
 
-while getopts "qnr:t:j:" opt; do
+while getopts "lqnr:t:j:" opt; do
   case $opt in
+    l)
+      JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
+      ;;
     j)
       JSONTAG=$OPTARG
       ;;
@@ -34,6 +39,7 @@ while getopts "qnr:t:j:" opt; do
       ;;
     \?)
       echo "Valid options:"
+      echo "  -l - use JSON API Docker image from local build (see project README for build instructions)"
       echo "  -j <tag> - use JSON API Docker image tagged with specified JSON API version (will pull images from Docker Hub if needed)"
       echo "  -n <tag> - use JSON API native image instead of default Java-based image"
       echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
