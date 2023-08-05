@@ -31,7 +31,7 @@ services:
       - stargate
     ports:
       - "8181:8181"
-    mem_limit: 2G
+    mem_limit: 1G
     environment:
       - JAVA_MAX_MEM_RATIO=75
       - JAVA_INITIAL_MEM_RATIO=50

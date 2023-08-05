@@ -9,23 +9,32 @@ This directory provides two ways to start the JSON API and Stargate coordinator 
 Make sure that you have Docker engine 20.x installed, which should include Docker compose 2.x. Our compose files rely on features only available in the Docker compose v2 file format.
 
 ### Building the local Docker image
+
 If you want to use a locally built version of the JSON API Docker image rather than pulling a released version from Docker Hub, run the following command at the root of the repository to build the image:
 
-```bash
-./mvnw clean package -Dquarkus.container-image.build=true -DskipTests
-```
+> build a local native image
+>
+> ```bash
+> /mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.native.additional-build-args=-march=compatibility
+> ```
+>
+> build a local image
+>
+> ```bash
+> ./mvnw clean package -Dquarkus.container-image.build=true -DskipTests
+> ```
 
 You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64` property.
 
 Follow instructions under the [Script options](#script-options) section to use the locally built image.
 
-## Stargate JSON API with 3-node DSE-next cluster
+## Stargate JSON API with 2-node DSE-next cluster
 
 You can start a simple Stargate configuration with the following command:
 
 ```
 ./start_dse_next.sh
-``` 
+```
 
 This convenience script verifies your Docker installation meets minimum requirements and brings up the configuration described in the `docker-compose.yml` file. The configuration includes health criteria for each container that is used to ensure the containers come up in the correct order.
 
@@ -43,7 +52,7 @@ This configuration is useful for development and testing since it initializes mo
 
 ```
 ./start_dse_next_dev_mode.sh
-``` 
+```
 
 This script supports the same [options](#script-options) as the `start_dse_next.sh` script. 
 
@@ -51,7 +60,7 @@ To stop the configuration, use the command:
 
 ```
 docker-compose -f docker-compose-dev-mode.yml down
-``` 
+```
 
 ## Script options
 
@@ -60,6 +69,8 @@ Both convenience scripts support the following options:
 * You can specify an image tag (version) of the JSON API using `-j [VERSION]`, or use the `-l` tag to use a locally built image with the latest snapshot version. 
 
 * The scripts default to using the Java-based image for JSON API, you can specify to use the native GraalVM based variant using `-n`.
+
+* The scripts default to using the native GraalVM image for JSON API, you can specify to use the Java-based image using `-i`. 
 
 * You can change the default root log level for the JSON API using `-r [LEVEL]` (default `INFO`). Valid values: `ERROR`, `WARN`, `INFO`, `DEBUG`
 

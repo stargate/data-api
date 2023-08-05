@@ -5,9 +5,9 @@ services:
     image: stargateio/dse-next:${DSETAG}
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 2.5G
     environment:
-      - MAX_HEAP_SIZE=1536M
+      - MAX_HEAP_SIZE=2048M
       - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
     healthcheck:
       test: [ "CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
@@ -19,12 +19,12 @@ services:
     image: stargateio/dse-next:${DSETAG}
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 2.5G
     depends_on:
       dse-1:
         condition: service_healthy
     environment:
-      - MAX_HEAP_SIZE=1536M
+      - MAX_HEAP_SIZE=2048M
       - CASSANDRA_SEEDS=dse-1
       - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
     healthcheck:
@@ -66,7 +66,7 @@ services:
       - stargate
     ports:
       - "8181:8181"
-    mem_limit: 2G
+    mem_limit: 1G
     environment:
       - JAVA_MAX_MEM_RATIO=75
       - JAVA_INITIAL_MEM_RATIO=50

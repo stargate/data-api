@@ -15,9 +15,9 @@ SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.
 
 # Default to latest released version
 JSONTAG="v1"
-JSONIMAGE="stargateio/jsonapi"
+JSONIMAGE="stargateio/jsonapi-native"
 
-while getopts "lqnr:t:j:" opt; do
+while getopts "lqir:t:j:" opt; do
   case $opt in
     l)
       JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -25,8 +25,8 @@ while getopts "lqnr:t:j:" opt; do
     j)
       JSONTAG=$OPTARG
       ;;
-    n)
-      JSONIMAGE="stargateio/jsonapi-native"
+    i)
+      JSONIMAGE="stargateio/jsonapi"
       ;;
     q)
       REQUESTLOG=true
@@ -41,10 +41,10 @@ while getopts "lqnr:t:j:" opt; do
       echo "Valid options:"
       echo "  -l - use JSON API Docker image from local build (see project README for build instructions)"
       echo "  -j <tag> - use JSON API Docker image tagged with specified JSON API version (will pull images from Docker Hub if needed)"
-      echo "  -n <tag> - use JSON API native image instead of default Java-based image"
+      echo "  -i - use Java-based image instead of default JSON API native image"
       echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
-      echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
+      echo "  -r <log level> - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
       exit 1
       ;;
   esac
