@@ -7,8 +7,9 @@ name: Release Workflow
 # * manual trigger
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ "main" ]
+#    tags:
+#      - 'v*'
 
   workflow_dispatch:
     inputs:
@@ -49,22 +50,22 @@ jobs:
 
   # creates a new release if it's not existing
   # outputs the upload URL in the release-upload-url output var
-  create-release:
-    name: Create release
-    needs: resolve-tag
-    runs-on: ubuntu-latest
-    outputs:
-      release-upload-url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{needs.resolve-tag.outputs.release-tag}}
-          release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
-          draft: false
-          prerelease: false
+#  create-release:
+#    name: Create release
+#    needs: resolve-tag
+#    runs-on: ubuntu-latest
+#    outputs:
+#      release-upload-url: ${{ steps.create_release.outputs.upload_url }}
+#    steps:
+#      - name: Create release
+#        id: create_release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          tag_name: ${{needs.resolve-tag.outputs.release-tag}}
+#          release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
+#          draft: false
+#          prerelease: false
 
   # publishes the docker image
   publish-docker:
@@ -114,131 +115,132 @@ jobs:
       - name: Build and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64  ${{ matrix.profile }} -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/arm64  ${{ matrix.profile }} -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
 
-      #
-      # build and push Astra image to Amazon ECR
-      #
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      # downloads and prepares datastax assets
-      - name: Download branding assets
-        if: ${{ !inputs.skipPublish }}
-        run : |
-          curl https://www.datastax.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
-          curl https://cdn.sanity.io/files/bbnkhnhl/production/cf8b48832cfd43cdb24aec0e0d1c656e9234b620.zip -o icons.zip
-          unzip -j icons.zip 'Brand\ Icons/astra-square.png' -d ./src/main/resources/META-INF/branding/
-          mv ./src/main/resources/META-INF/branding/astra-square.png ./src/main/resources/META-INF/branding/logo.png
-
-      # builds image, overwrite the build time props
-      - name: Build and push (Amazon ECR)
-        if: ${{ !inputs.skipPublish }}
-        env:
-          QUARKUS_APPLICATION_NAME: 'Astra DB JSON API'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB JSON API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra-serverless/docs/develop/dev-with-doc.html) for additional information.'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
-          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
-        run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} ${{ matrix.profile }}
-
-  # signs all docker images with cosign
-  # skip whole job if we did not push images
-  sign-images:
-    name: Sign container images
-    needs: [resolve-tag, publish-docker]
-    if: ${{ !inputs.skipPublish }}
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        image: [jsonapi, jsonapi-native]
-
-    env:
-      # not a newest version, this reflects riptano action target version
-      COSIGN_VERSION: v1.9.0
-
-    steps:
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: ${COSIGN_VERSION}
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Sign a docker image
-        shell: bash
-        env:
-          # we want to sign both v1 (as quarkus.container-image.additional-tags) and current release
-          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:${{ needs.resolve-tag.outputs.release-tag }}
-          COSIGN_IMAGE_V1: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:v1
-          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64}}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD}}
-          COSIGN_KEY_FILE: _cosign_key_
-          AUX_KEY: signedby
-          AUX_VALUE: stargate
-        run: |
-          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
-          echo "=== signing image [$COSIGN_IMAGE] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
-          echo "=== signing image [$COSIGN_IMAGE_V1] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE_V1
-
-  # creates a PR for bumping the versions to the next snapshot
-  # only executed if we have created the new release
-  create-pr:
-    name: Version upgrade PR
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: maven
-
-      - name: Generate changelog
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./update_changelog.sh
-
-      - name: Update version number
-        run: |
-          ./mvnw -B -ntp release:update-versions -DautoVersionSubmodules=true versions:commit
-          ./mvnw -B -ntp xml-format:xml-format fmt:format
-
-      - name: Version bump PR
-        uses: peter-evans/create-pull-request@v4
-        env:
-          GITHUB_TOKEN:
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bumping version for the next jsonapi release"
-          title: "Bumping version for next jsonapi release"
-          branch-suffix: "short-commit-hash"
-          base: "main"
+#      #
+#      # build and push Astra image to Amazon ECR
+#      #
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1-node16
+#        with:
+#          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+#          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+#          aws-region: us-east-1
+#
+#      - name: Login to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      # downloads and prepares datastax assets
+#      - name: Download branding assets
+#        if: ${{ !inputs.skipPublish }}
+#        run : |
+#          curl https://www.datastax.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
+#          curl https://cdn.sanity.io/files/bbnkhnhl/production/cf8b48832cfd43cdb24aec0e0d1c656e9234b620.zip -o icons.zip
+#          unzip -j icons.zip 'Brand\ Icons/astra-square.png' -d ./src/main/resources/META-INF/branding/
+#          mv ./src/main/resources/META-INF/branding/astra-square.png ./src/main/resources/META-INF/branding/logo.png
+#
+#      # builds image, overwrite the build time props
+#      - name: Build and push (Amazon ECR)
+#        if: ${{ !inputs.skipPublish }}
+#        env:
+#          QUARKUS_APPLICATION_NAME: 'Astra DB JSON API'
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB JSON API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra-serverless/docs/develop/dev-with-doc.html) for additional information.'
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
+#          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
+#        run: |
+#          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} ${{ matrix.profile }}
+#
+#  # signs all docker images with cosign
+#  # skip whole job if we did not push images
+#  sign-images:
+#    name: Sign container images
+#    needs: [resolve-tag, publish-docker]
+#    if: ${{ !inputs.skipPublish }}
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      matrix:
+#        image: [jsonapi, jsonapi-native]
+#
+#    env:
+#      # not a newest version, this reflects riptano action target version
+#      COSIGN_VERSION: v1.9.0
+#
+#    steps:
+#      - name: Install Cosign
+#        uses: sigstore/cosign-installer@main
+#        with:
+#          cosign-release: ${COSIGN_VERSION}
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1-node16
+#        with:
+#          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
+#          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+#          aws-region: us-east-1
+#
+#      - name: Login to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      - name: Sign a docker image
+#        shell: bash
+#        env:
+#          # we want to sign both v1 (as quarkus.container-image.additional-tags) and current release
+#          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:${{ needs.resolve-tag.outputs.release-tag }}
+#          COSIGN_IMAGE_V1: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:v1
+#          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64}}
+#          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD}}
+#          COSIGN_KEY_FILE: _cosign_key_
+#          AUX_KEY: signedby
+#          AUX_VALUE: stargate
+#        run: |
+#          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+#          echo "=== signing image [$COSIGN_IMAGE] ..."
+#          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+#          echo "=== signing image [$COSIGN_IMAGE_V1] ..."
+#          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE_V1
+#
+#  # creates a PR for bumping the versions to the next snapshot
+#  # only executed if we have created the new release
+#  create-pr:
+#    name: Version upgrade PR
+#    needs: create-release
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v3
+#        with:
+#          distribution: 'temurin'
+#          java-version: '17'
+#          cache: maven
+#
+#      - name: Generate changelog
+#        continue-on-error: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: ./update_changelog.sh
+#
+#      - name: Update version number
+#        run: |
+#          ./mvnw -B -ntp release:update-versions -DautoVersionSubmodules=true versions:commit
+#          ./mvnw -B -ntp xml-format:xml-format fmt:format
+#
+#      - name: Version bump PR
+#        uses: peter-evans/create-pull-request@v4
+#        env:
+#          GITHUB_TOKEN:
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          commit-message: "Bumping version for the next jsonapi release"
+#          title: "Bumping version for next jsonapi release"
+#          branch-suffix: "short-commit-hash"
+#          base: "main"

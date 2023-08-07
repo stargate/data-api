@@ -16,6 +16,7 @@ SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.
 # Default to latest released version
 JSONTAG="v1"
 JSONIMAGE="stargateio/jsonapi-native"
+JSONIMAGE_MEM="0.5G"
 
 while getopts "lqir:t:j:" opt; do
   case $opt in
@@ -27,6 +28,7 @@ while getopts "lqir:t:j:" opt; do
       ;;
     i)
       JSONIMAGE="stargateio/jsonapi"
+      JSONIMAGE_MEM="1.5G"
       ;;
     q)
       REQUESTLOG=true
@@ -56,6 +58,7 @@ export DSETAG
 export SGTAG
 export JSONTAG
 export JSONIMAGE
+export JSONIMAGE_MEM
 
 echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
 

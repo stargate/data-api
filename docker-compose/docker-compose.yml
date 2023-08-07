@@ -66,7 +66,7 @@ services:
       - stargate
     ports:
       - "8181:8181"
-    mem_limit: 1G
+    mem_limit: ${JSONIMAGE_MEM}
     environment:
       - JAVA_MAX_MEM_RATIO=75
       - JAVA_INITIAL_MEM_RATIO=50
