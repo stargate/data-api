@@ -7,7 +7,7 @@ name: Release Workflow
 # * manual trigger
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "revisit-docker-mem-allocation" ]
 #    tags:
 #      - 'v*'
 
