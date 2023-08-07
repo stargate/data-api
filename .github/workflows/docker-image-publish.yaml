@@ -36,7 +36,7 @@ jobs:
             profile: ''
 
           - type: native
-            profile: '-Pnative'
+            profile: '-Pnative -Dquarkus.native.container-build=true'
 
     steps:
       - uses: actions/checkout@v3

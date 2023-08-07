@@ -7,7 +7,7 @@ name: Release Workflow
 # * manual trigger
 on:
   push:
-    branches: [ "revisit-docker-mem-allocation" ]
+    branches: [ "revisit-docker-mem-allocation11" ]
 #    tags:
 #      - 'v*'
 
@@ -82,7 +82,7 @@ jobs:
             profile: ''
 
           - type: native
-            profile: '-Pnative'
+            profile: '-Pnative -Dquarkus.native.container-build=true'
 
     steps:
       - uses: actions/checkout@v3
@@ -115,8 +115,8 @@ jobs:
       - name: Build and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64  ${{ matrix.profile }} -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/arm64  ${{ matrix.profile }} -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64  ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/arm64  ${{ matrix.profile }} 
 
 #      #
 #      # build and push Astra image to Amazon ECR
