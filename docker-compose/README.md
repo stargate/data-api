@@ -18,7 +18,7 @@ If you want to use a locally built version of the JSON API Docker image rather t
 > ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.native.additional-build-args=-march=compatibility
 > ```
 >
-> build a local image
+> build a local java-based image
 >
 > ```bash
 > ./mvnw clean package -Dquarkus.container-image.build=true -DskipTests
