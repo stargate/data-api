@@ -15,7 +15,7 @@ If you want to use a locally built version of the JSON API Docker image rather t
 > build a local native image
 >
 > ```bash
-> ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.native.additional-build-args=-march=compatibility
+> ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
 > ```
 >
 > build a local java-based image
@@ -67,8 +67,6 @@ docker-compose -f docker-compose-dev-mode.yml down
 Both convenience scripts support the following options:
 
 * You can specify an image tag (version) of the JSON API using `-j [VERSION]`, or use the `-l` tag to use a locally built image with the latest snapshot version. 
-
-* The scripts default to using the Java-based image for JSON API, you can specify to use the native GraalVM based variant using `-n`.
 
 * The scripts default to using the native GraalVM image for JSON API, you can specify to use the Java-based image using `-i`. 
 
