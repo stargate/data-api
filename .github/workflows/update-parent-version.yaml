@@ -2,15 +2,15 @@
 name: Update Parent Version
 
 # runs on
-# * stargate v2 release event
+# * stargate v2.1 release event
 # * manual trigger
 on:
   repository_dispatch:
-    types: [ stargate-v2-release ]
+    types: [ stargate-v21-release ]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Stargate version to update, for example `v2.0.9`.'
+        description: 'Stargate version to update, for example `v2.1.0`.'
         required: true
         type: string
 
