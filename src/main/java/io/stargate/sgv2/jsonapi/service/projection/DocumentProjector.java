@@ -73,9 +73,7 @@ public class DocumentProjector {
     }
     if (includeSimilarityScore) {
       ((ObjectNode) document)
-          .put(
-              DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD,
-              new BigDecimal(similarityScore));
+          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
     }
     if (inclusion) {
       rootLayer.applyInclusions(document);

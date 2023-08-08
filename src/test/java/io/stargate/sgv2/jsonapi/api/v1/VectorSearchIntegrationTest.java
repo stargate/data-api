@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -1172,12 +1173,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(
               """
-                        {
-                          "find": {
-                            "filter" : {"_id" : "bigVectorForFindReplace"}
-                          }
-                        }
-                        """)
+          {
+            "find": {
+              "filter" : {"_id" : "bigVectorForFindReplace"}
+            }
+          }
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
@@ -1245,12 +1246,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-                      {
-                        "findOneAndDelete": {
-                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-                        }
-                      }
-                      """;
+            {
+              "findOneAndDelete": {
+                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+              }
+            }
+            """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -1273,13 +1274,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       insertVectorDocuments();
       String json =
           """
-                      {
-                        "deleteOne": {
-                          "filter" : {"$vector" : {"$exists" : true}},
-                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
-                        }
-                      }
-                      """;
+            {
+              "deleteOne": {
+                "filter" : {"$vector" : {"$exists" : true}},
+                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+              }
+            }
+            """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -1296,12 +1297,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // ensure find does not find the document
       json =
           """
-                      {
-                        "findOne": {
-                          "filter" : {"_id" : "3"}
-                        }
-                      }
-                      """;
+        {
+          "findOne": {
+            "filter" : {"_id" : "3"}
+          }
+        }
+        """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -1314,6 +1315,160 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(7)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class VectorSearchSimilarityProjection {
+    @Test
+    @Order(1)
+    public void findOne() {
+      insertVectorDocuments();
+      String json =
+          """
+        {
+          "findOne": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$similarity" : 1}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.$similarity", notNullValue())
+          .body("data.document.$similarity", lessThan(1.0))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(2)
+    public void find() {
+      insertVectorDocuments();
+      String json =
+          """
+        {
+          "find": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$similarity" : 1}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(3))
+          .body("data.documents[0].$similarity", lessThan(1.0))
+          .body("data.documents[1].$similarity", lessThan(1.0))
+          .body("data.documents[2].$similarity", lessThan(1.0));
+    }
+
+    @Test
+    @Order(3)
+    public void findOneAndUpdate() {
+      String json =
+          """
+      {
+        "findOneAndUpdate": {
+          "filter" : {"_id" : "1"},
+          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+          "update" : {"$set" : {"name" : "Vision Vector Frame"}},
+          "projection" : {"_id" : 1, "$similarity" : 1}
+        }
+      }
+      """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
+          .body(
+              "errors[0].message",
+              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
+    }
+
+    @Test
+    @Order(4)
+    public void findOneAndDelete() {
+      String json =
+          """
+        {
+          "findOneAndDelete": {
+            "filter" : {"_id" : "1"},
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$similarity" : 1}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
+          .body(
+              "errors[0].message",
+              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
+    }
+
+    @Test
+    @Order(5)
+    public void findOneAndReplace() {
+      String json =
+          """
+        {
+          "findOneAndReplace": {
+            "filter" : {"_id" : "1"},
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "replacement" : {"_id" : "1", "name" : "Vision Vector Frame"},
+            "projection" : {"_id" : 1, "$similarity" : 1}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
+          .body(
+              "errors[0].message",
+              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
     }
   }
 

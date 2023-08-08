@@ -298,6 +298,41 @@ public class DocumentProjectorTest {
     }
 
     @Test
+    public void testSimpleIncludeWithSimilarity() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+            { "_id" : 1,
+               "value1" : true,
+               "value2" : false,
+               "nested" : {
+                  "x": 3,
+                  "y": 4,
+                  "z": -1
+               },
+               "nested2" : {
+                  "z": 5
+               },
+               "$vector" : [0.11, 0.22, 0.33, 0.44]
+            }
+            """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                { "value2" : 1,
+                  "$vector": 1,
+                  "$similarity": 1
+                }
+                """));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc, 0.25f);
+      assertThat(doc.get("value2")).isNotNull();
+      assertThat(doc.get("$vector")).isNotNull();
+      assertThat(doc.get("$similarity").floatValue()).isEqualTo(0.25f);
+    }
+
+    @Test
     public void testSimpleIncludeWithoutId() throws Exception {
       final JsonNode doc =
           objectMapper.readTree(
