@@ -62,12 +62,12 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               ErrorCode.VECTOR_SEARCH_USAGE_ERROR,
               ErrorCode.VECTOR_SEARCH_USAGE_ERROR.getMessage());
         }
-        ArrayNode arrayNode = (ArrayNode) inner.getValue();
-        float[] arrayVals = new float[arrayNode.size()];
         if (!inner.getValue().isArray()) {
           throw new JsonApiException(
               ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
         } else {
+          ArrayNode arrayNode = (ArrayNode) inner.getValue();
+          float[] arrayVals = new float[arrayNode.size()];
           if (arrayNode.size() == 0) {
             throw new JsonApiException(
                 ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
@@ -80,11 +80,11 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
             }
             arrayVals[i] = element.floatValue();
           }
+          SortExpression exp = SortExpression.vsearch(arrayVals);
+          sortExpressions.clear();
+          sortExpressions.add(exp);
+          break;
         }
-        SortExpression exp = SortExpression.vsearch(arrayVals);
-        sortExpressions.clear();
-        sortExpressions.add(exp);
-        break;
       } else {
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {

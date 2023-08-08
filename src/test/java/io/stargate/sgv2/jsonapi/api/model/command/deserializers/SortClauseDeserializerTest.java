@@ -74,10 +74,25 @@ class SortClauseDeserializerTest {
       assertThat(throwable.getMessage()).contains("$vector field can't be empty");
     }
 
+    @Test
     public void vectorSearchNonArray() {
       String json = """
         {
          "$vector" : 0.55
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
+    }
+
+    @Test
+    public void vectorSearchNonArrayObject() {
+      String json = """
+        {
+         "$vector" : {}
         }
         """;
 
