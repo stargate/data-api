@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -41,7 +42,11 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
   private static final CommandContext COMMAND_CONTEXT_VECTOR =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, true);
+      new CommandContext(
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          true,
+          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;

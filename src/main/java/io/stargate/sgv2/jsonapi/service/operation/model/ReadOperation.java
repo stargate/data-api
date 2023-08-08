@@ -86,7 +86,12 @@ public interface ReadOperation extends Operation {
                   JsonNode root =
                       readDocument ? objectMapper.readTree(Values.string(row.getValues(2))) : null;
                   if (root != null) {
-                    projection.applyProjection(root);
+                    if (projection.doIncludeSimilarityScore()) {
+                      float score = Values.float_(row.getValues(3)); // similarity_score
+                      projection.applyProjection(root, score);
+                    } else {
+                      projection.applyProjection(root, 0);
+                    }
                   }
                   document =
                       ReadDocument.from(
@@ -279,7 +284,7 @@ public interface ReadOperation extends Operation {
                       .map(
                           readDoc -> {
                             JsonNode data = readDoc.docJsonValue().get();
-                            projection.applyProjection(data);
+                            projection.applyProjection(data, 0);
                             return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
                           })
                       .collect(Collectors.toList());

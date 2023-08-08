@@ -11,6 +11,7 @@ import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
@@ -124,9 +125,6 @@ public record FindOperation(
    * @param commandContext command context
    * @param filters filters to match a document
    * @param projection projections, see FindOperation#projection
-   * @param pagingState paging state to use
-   * @param limit limit of rows to fetch
-   * @param pageSize page size
    * @param readType type of the read
    * @param objectMapper object mapper to use
    * @return FindOperation for a multi document unsorted find
@@ -400,15 +398,7 @@ public record FindOperation(
                     .limit(limit)
                     .build());
           } else {
-            QueryOuterClass.Query builtQuery =
-                new QueryBuilder()
-                    .select()
-                    .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(condition)
-                    .limit(limit)
-                    .vsearch("query_vector_value")
-                    .build();
+            QueryOuterClass.Query builtQuery = getVectorSearchQuery(condition);
             final List<QueryOuterClass.Value> valuesList =
                 builtQuery.getValuesOrBuilder().getValuesList();
             final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
@@ -419,6 +409,68 @@ public record FindOperation(
         });
 
     return queries;
+  }
+
+  /** Making it a separate method to build vector search query as there are many options */
+  private QueryOuterClass.Query getVectorSearchQuery(List<BuiltCondition> conditions) {
+    QueryOuterClass.Query builtQuery = null;
+    if (projection().doIncludeSimilarityScore()) {
+      switch (commandContext().similarityFunction()) {
+        case COSINE, UNDEFINED -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityCosine(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(conditions)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        case EUCLIDEAN -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityEuclidean(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(conditions)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        case DOT_PRODUCT -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityDotProduct(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(conditions)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        default -> {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+        }
+      }
+    } else {
+      return new QueryBuilder()
+          .select()
+          .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+          .from(commandContext.namespace(), commandContext.collection())
+          .where(conditions)
+          .limit(limit)
+          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+          .build();
+    }
   }
 
   /**

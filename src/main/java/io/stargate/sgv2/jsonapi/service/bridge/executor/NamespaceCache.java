@@ -4,9 +4,12 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
+import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.time.Duration;
+import java.util.Optional;
 
 /** Caches the vector enabled status for the namespace */
 public class NamespaceCache {
@@ -17,7 +20,7 @@ public class NamespaceCache {
 
   private static final long CACHE_TTL_SECONDS = 300;
   private static final long CACHE_MAX_SIZE = 1000;
-  private final Cache<String, Boolean> vectorCache =
+  private final Cache<String, CollectionProperty> vectorCache =
       Caffeine.newBuilder()
           .expireAfterWrite(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
@@ -28,12 +31,12 @@ public class NamespaceCache {
     this.queryExecutor = queryExecutor;
   }
 
-  protected Uni<Boolean> isVectorEnabled(String collectionName) {
-    Boolean vectorEnabled = vectorCache.getIfPresent(collectionName);
-    if (null != vectorEnabled) {
-      return Uni.createFrom().item(vectorEnabled);
+  protected Uni<CollectionProperty> getCollectionProperties(String collectionName) {
+    CollectionProperty collectionProperty = vectorCache.getIfPresent(collectionName);
+    if (null != collectionProperty) {
+      return Uni.createFrom().item(collectionProperty);
     } else {
-      return isVectorEnabledInternal(collectionName)
+      return getVectorProperties(collectionName)
           .onItemOrFailure()
           .transformToUni(
               (result, error) -> {
@@ -46,7 +49,7 @@ public class NamespaceCache {
                       || (error instanceof RuntimeException rte
                           && rte.getMessage()
                               .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage()))) {
-                    return Uni.createFrom().item(false);
+                    return Uni.createFrom().item(new CollectionProperty(false, null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -57,22 +60,80 @@ public class NamespaceCache {
     }
   }
 
-  private Uni<Boolean> isVectorEnabledInternal(String collectionName) {
+  private Uni<CollectionProperty> getVectorProperties(String collectionName) {
     return queryExecutor
         .getSchema(namespace, collectionName)
-        .onItem()
+        .onItemOrFailure()
         .transform(
-            table -> {
+            (table, error) -> {
               if (table.isPresent()) {
-                return table.get().getColumnsList().stream()
-                    .anyMatch(
-                        c ->
-                            c.getName()
-                                .equals(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME));
+                Boolean vectorEnabled =
+                    table.get().getColumnsList().stream()
+                        .anyMatch(
+                            c ->
+                                c.getName()
+                                    .equals(
+                                        DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME));
+                if (vectorEnabled) {
+                  final Optional<Schema.CqlIndex> vectorIndex =
+                      table.get().getIndexesList().stream()
+                          .filter(
+                              i ->
+                                  i.getColumnName()
+                                      .equals(
+                                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME))
+                          .findFirst();
+                  CollectionProperty.SimilarityFunction function =
+                      CollectionProperty.SimilarityFunction.COSINE;
+                  if (vectorIndex.isPresent()) {
+
+                    if (vectorIndex
+                        .get()
+                        .getOptions()
+                        .containsKey(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME)) {
+                      function =
+                          CollectionProperty.SimilarityFunction.fromString(
+                              vectorIndex
+                                  .get()
+                                  .getOptions()
+                                  .get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME));
+                    }
+                  }
+                  return new CollectionProperty(vectorEnabled, function);
+                } else {
+                  return new CollectionProperty(
+                      vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED);
+                }
               } else {
                 throw new RuntimeException(
                     ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
               }
             });
+  }
+
+  public record CollectionProperty(Boolean vectorEnabled, SimilarityFunction similarityFunction) {
+
+    /**
+     * The similarity function used for the vector index. This is only applicable if the vector
+     * index is enabled.
+     */
+    public enum SimilarityFunction {
+      COSINE,
+      EUCLIDEAN,
+      DOT_PRODUCT,
+      UNDEFINED;
+
+      public static SimilarityFunction fromString(String similarityFunction) {
+        if (similarityFunction == null) return UNDEFINED;
+        return switch (similarityFunction) {
+          case "cosine" -> COSINE;
+          case "euclidean" -> EUCLIDEAN;
+          case "dot_product" -> DOT_PRODUCT;
+          default -> throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage() + similarityFunction);
+        };
+      }
+    }
   }
 }
