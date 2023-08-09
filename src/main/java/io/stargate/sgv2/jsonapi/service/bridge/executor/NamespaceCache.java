@@ -125,7 +125,7 @@ public class NamespaceCache {
 
       public static SimilarityFunction fromString(String similarityFunction) {
         if (similarityFunction == null) return UNDEFINED;
-        return switch (similarityFunction) {
+        return switch (similarityFunction.toLowerCase()) {
           case "cosine" -> COSINE;
           case "euclidean" -> EUCLIDEAN;
           case "dot_product" -> DOT_PRODUCT;
