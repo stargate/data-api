@@ -86,6 +86,11 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
 
+  VECTOR_SEARCH_INVALID_FUCTION_NAME("Invalid vector search function name "),
+
+  VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED(
+      "$similarity projection is not supported for this command"),
+
   VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big");
 
   private final String message;

@@ -10,6 +10,10 @@ public interface Projectable {
   JsonNode projectionDefinition();
 
   default DocumentProjector buildProjector() {
-    return DocumentProjector.createFromDefinition(projectionDefinition());
+    return buildProjector(false);
+  }
+
+  default DocumentProjector buildProjector(boolean includeSimilarity) {
+    return DocumentProjector.createFromDefinition(projectionDefinition(), includeSimilarity);
   }
 }

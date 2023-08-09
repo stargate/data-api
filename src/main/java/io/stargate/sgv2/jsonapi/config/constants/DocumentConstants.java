@@ -15,6 +15,12 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String VECTOR_EMBEDDING_FIELD = "$vector";
 
+    /** Key for vector function name definition in cql index. */
+    String VECTOR_INDEX_FUNCTION_NAME = "similarity_function";
+
+    /** Field name used in projection clause to get similarity score in response. */
+    String VECTOR_FUNCTION_PROJECTION_FIELD = "$similarity";
+
     // Current definition of valid JSON API names: note that this only validates
     // characters, not length limits (nor empty nor "too long" allowed but validated
     // separately)

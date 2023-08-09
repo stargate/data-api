@@ -5,6 +5,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -44,9 +46,15 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindOneAndDeleteCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
+    final DocumentProjector documentProjector = command.buildProjector();
+    if (documentProjector.doIncludeSimilarityScore()) {
+      throw new JsonApiException(
+          ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED,
+          ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage());
+    }
     // return
     return DeleteOperation.deleteOneAndReturn(
-        commandContext, findOperation, operationsConfig.lwt().retries(), command.buildProjector());
+        commandContext, findOperation, operationsConfig.lwt().retries(), documentProjector);
   }
 
   private FindOperation getFindOperation(

@@ -16,11 +16,11 @@ public class SchemaCache {
   private final Cache<CacheKey, NamespaceCache> schemaCache =
       Caffeine.newBuilder().maximumSize(1000).build();
 
-  public Uni<Boolean> isVectorEnabled(
+  public Uni<NamespaceCache.CollectionProperty> getCollectionProperties(
       Optional<String> tenant, String namespace, String collectionName) {
     final NamespaceCache namespaceCache =
         schemaCache.get(new CacheKey(tenant, namespace), this::addNamespaceCache);
-    return namespaceCache.isVectorEnabled(collectionName);
+    return namespaceCache.getCollectionProperties(collectionName);
   }
 
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {

@@ -86,7 +86,12 @@ public interface ReadOperation extends Operation {
                   JsonNode root =
                       readDocument ? objectMapper.readTree(Values.string(row.getValues(2))) : null;
                   if (root != null) {
-                    projection.applyProjection(root);
+                    if (projection.doIncludeSimilarityScore()) {
+                      float score = Values.float_(row.getValues(3)); // similarity_score
+                      projection.applyProjection(root, score);
+                    } else {
+                      projection.applyProjection(root);
+                    }
                   }
                   document =
                       ReadDocument.from(

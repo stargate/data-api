@@ -128,23 +128,27 @@ class ObjectMapperConfigurationTest {
 
     // Only "empty" Options allowed, nothing else
     @Test
-    public void failForNonEmptyOptions() throws Exception {
+    public void findOneWithIncludeSimilarity() throws Exception {
       String json =
           """
-                  {
-                    "findOne": {
-                        "options": {
-                            "noSuchOption": "value"
-                        }
-                    }
-                  }
-                """;
+        {
+          "findOne": {
+              "options": {
+                  "includeSimilarity": true
+              }
+          }
+        }
+        """;
 
-      Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
-      assertThat(e)
-          .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith(
-              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": FindOneCommand");
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              FindOneCommand.class,
+              findOne -> {
+                assertThat(findOne.options()).isNotNull();
+                assertThat(findOne.options().includeSimilarity()).isTrue();
+              });
     }
   }
 

@@ -148,10 +148,10 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .isVectorEnabled(stargateRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionProperties(stargateRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
-            (isVectorEnabled, throwable) -> {
+            (collectionProperty, throwable) -> {
               if (throwable != null) {
                 Throwable error = throwable;
                 if (throwable instanceof RuntimeException && throwable.getCause() != null)
@@ -163,7 +163,11 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 CommandContext commandContext =
-                    new CommandContext(namespace, collection, isVectorEnabled);
+                    new CommandContext(
+                        namespace,
+                        collection,
+                        collectionProperty.vectorEnabled(),
+                        collectionProperty.similarityFunction());
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

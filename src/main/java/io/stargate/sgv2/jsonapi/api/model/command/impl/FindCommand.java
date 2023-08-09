@@ -50,5 +50,12 @@ public record FindCommand(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)
-          String pagingState) {}
+          String pagingState,
+
+      // include similarity function score
+      @Schema(
+              description = "Include similarity function score in response.",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          boolean includeSimilarity) {}
 }
