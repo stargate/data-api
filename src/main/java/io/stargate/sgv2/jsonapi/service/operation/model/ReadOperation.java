@@ -90,7 +90,7 @@ public interface ReadOperation extends Operation {
                       float score = Values.float_(row.getValues(3)); // similarity_score
                       projection.applyProjection(root, score);
                     } else {
-                      projection.applyProjection(root, 0);
+                      projection.applyProjection(root);
                     }
                   }
                   document =
@@ -284,7 +284,7 @@ public interface ReadOperation extends Operation {
                       .map(
                           readDoc -> {
                             JsonNode data = readDoc.docJsonValue().get();
-                            projection.applyProjection(data, 0);
+                            projection.applyProjection(data);
                             return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
                           })
                       .collect(Collectors.toList());

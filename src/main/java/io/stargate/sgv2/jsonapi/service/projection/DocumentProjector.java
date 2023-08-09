@@ -64,14 +64,14 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document) {
-    applyProjection(document, 0.0f);
+    applyProjection(document, null);
   }
 
-  public void applyProjection(JsonNode document, float similarityScore) {
+  public void applyProjection(JsonNode document, Float similarityScore) {
     if (rootLayer == null) { // null -> identity projection (no-op)
       return;
     }
-    if (includeSimilarityScore) {
+    if (includeSimilarityScore && similarityScore != null) {
       ((ObjectNode) document)
           .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
     }
