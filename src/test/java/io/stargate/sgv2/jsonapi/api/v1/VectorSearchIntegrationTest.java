@@ -1448,7 +1448,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               {
                 "find": {
                   "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-                  "projection" : {"_id" : 1, $similarity : 0},
+                  "projection" : {"_id" : 1, "$similarity" : 0},
                   "options" : {"includeSimilarity" : true}
                 }
               }
