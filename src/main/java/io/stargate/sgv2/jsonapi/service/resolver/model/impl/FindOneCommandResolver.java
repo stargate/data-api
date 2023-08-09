@@ -43,10 +43,15 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {
+      FindOneCommand.Options options = command.options();
+      boolean includeSimilarity = false;
+      if (options != null) {
+        includeSimilarity = options.includeSimilarity();
+      }
       return FindOperation.vsearchSingle(
           commandContext,
           filters,
-          command.buildProjector(),
+          command.buildProjector(includeSimilarity),
           ReadType.DOCUMENT,
           objectMapper,
           vector);

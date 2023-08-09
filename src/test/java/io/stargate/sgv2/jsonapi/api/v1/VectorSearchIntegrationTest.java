@@ -1350,6 +1350,33 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(2)
+    public void findOneSimilarityOption() {
+      insertVectorDocuments();
+      String json =
+          """
+            {
+              "findOne": {
+                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                "options" : {"includeSimilarity" : true}
+              }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.$similarity", notNullValue())
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(3)
     public void find() {
       insertVectorDocuments();
       String json =
@@ -1381,7 +1408,73 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(3)
+    @Order(4)
+    public void findSimilarityOption() {
+      insertVectorDocuments();
+      String json =
+          """
+        {
+          "find": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "options" : {"includeSimilarity" : true}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(3))
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$similarity", notNullValue())
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$similarity", notNullValue())
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$similarity", notNullValue());
+    }
+
+    @Test
+    @Order(5)
+    public void findSimilarityInvalidProjection() {
+      insertVectorDocuments();
+      String json =
+          """
+              {
+                "find": {
+                  "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                  "projection" : {"_id" : 1, $similarity : 0},
+                  "options" : {"includeSimilarity" : true}
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body(
+              "errors[0].message",
+              is(
+                  ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                      + ": Cannot exclude $similarity when `includeSimilarity` option is set `true`"));
+    }
+
+    @Test
+    @Order(6)
     public void findOneAndUpdate() {
       String json =
           """
@@ -1412,7 +1505,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(4)
+    @Order(7)
     public void findOneAndDelete() {
       String json =
           """
@@ -1442,7 +1535,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(5)
+    @Order(8)
     public void findOneAndReplace() {
       String json =
           """

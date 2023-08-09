@@ -189,6 +189,48 @@ public class FindOneCommandResolverTest {
     }
 
     @Test
+    public void filterConditionAndVectorSearchWithOptionSimilarity() throws Exception {
+      String json =
+          """
+                      {
+                        "findOne": {
+                          "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+                          "filter" : {"status" : "active"},
+                          "options" : {"includeSimilarity" : true}
+                        }
+                      }
+                      """;
+
+      final DocumentProjector projector = DocumentProjector.createFromDefinition(null, true);
+
+      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase.TextFilter filter =
+                    new DBFilterBase.TextFilter(
+                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(projector);
+                assertThat(find.pageSize()).isEqualTo(1);
+                assertThat(find.limit()).isEqualTo(1);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isTrue();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).containsOnly(filter);
+              });
+    }
+
+    @Test
     public void noFilterCondition() throws Exception {
       String json =
           """

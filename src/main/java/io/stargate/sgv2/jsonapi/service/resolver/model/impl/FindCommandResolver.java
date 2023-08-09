@@ -45,6 +45,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     int limit = Integer.MAX_VALUE;
     int skip = 0;
     String pagingState = null;
+    boolean includeSimilarity = false;
 
     // update if options provided
     FindCommand.Options options = command.options();
@@ -56,6 +57,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
         skip = options.skip();
       }
       pagingState = options.pagingState();
+      includeSimilarity = options.includeSimilarity();
     }
 
     // resolve sort clause
@@ -71,7 +73,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
       return FindOperation.vsearch(
           commandContext,
           filters,
-          command.buildProjector(),
+          command.buildProjector(includeSimilarity),
           pagingState,
           limit,
           operationsConfig.defaultPageSize(),

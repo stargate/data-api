@@ -22,6 +22,9 @@ public class DocumentProjector {
   private static final DocumentProjector IDENTITY_PROJECTOR =
       new DocumentProjector(null, false, false);
 
+  private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
+      new DocumentProjector(null, false, true);
+
   private final ProjectionLayer rootLayer;
 
   /** Whether this projector is inclusion- ({@code true}) or exclusion ({@code false}) based. */
@@ -38,8 +41,17 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
+    return createFromDefinition(projectionDefinition, false);
+  }
+
+  public static DocumentProjector createFromDefinition(
+      JsonNode projectionDefinition, boolean includeSimilarity) {
     if (projectionDefinition == null) {
-      return identityProjector();
+      if (includeSimilarity) {
+        return IDENTITY_PROJECTOR_WITH_SIMILARITY;
+      } else {
+        return identityProjector();
+      }
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -48,10 +60,14 @@ public class DocumentProjector {
               + ": definition must be OBJECT, was "
               + projectionDefinition.getNodeType());
     }
-    return PathCollector.collectPaths(projectionDefinition).buildProjector();
+    return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
   public static DocumentProjector identityProjector() {
+    return IDENTITY_PROJECTOR;
+  }
+
+  public static DocumentProjector getIdentityProjectorWithSimilarity() {
     return IDENTITY_PROJECTOR;
   }
 
@@ -69,16 +85,20 @@ public class DocumentProjector {
 
   public void applyProjection(JsonNode document, Float similarityScore) {
     if (rootLayer == null) { // null -> identity projection (no-op)
+      if (includeSimilarityScore && similarityScore != null) {
+        ((ObjectNode) document)
+            .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+      }
       return;
-    }
-    if (includeSimilarityScore && similarityScore != null) {
-      ((ObjectNode) document)
-          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
     }
     if (inclusion) {
       rootLayer.applyInclusions(document);
     } else {
       rootLayer.applyExclusions(document);
+    }
+    if (includeSimilarityScore && similarityScore != null) {
+      ((ObjectNode) document)
+          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
     }
   }
 
@@ -116,8 +136,8 @@ public class DocumentProjector {
 
     private PathCollector() {}
 
-    static PathCollector collectPaths(JsonNode def) {
-      return new PathCollector().collectFromObject(def, null);
+    static PathCollector collectPaths(JsonNode def, boolean includeSimilarity) {
+      return new PathCollector().collectFromObject(def, null, includeSimilarity);
     }
 
     public DocumentProjector buildProjector() {
@@ -151,7 +171,7 @@ public class DocumentProjector {
       return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
     }
 
-    PathCollector collectFromObject(JsonNode ob, String parentPath) {
+    PathCollector collectFromObject(JsonNode ob, String parentPath, boolean includeSimilarity) {
       var it = ob.fields();
       while (it.hasNext()) {
         var entry = it.next();
@@ -187,9 +207,19 @@ public class DocumentProjector {
           addSlice(parentPath, entry.getValue());
           continue;
         }
+        // This `or` is needed because the method is called in loop
+        includeSimilarityScore = includeSimilarityScore || includeSimilarity;
         if (parentPath == null
             && DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD.equals(path)) {
-          includeSimilarityScore = true;
+          JsonNode value = entry.getValue();
+          if (BigDecimal.ZERO.equals(value.decimalValue()) && includeSimilarity) {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                    + ": Cannot exclude $similarity when `includeSimilarity` option is set `true`");
+          } else {
+            includeSimilarityScore = true;
+          }
         }
 
         if (parentPath != null) {
@@ -211,7 +241,7 @@ public class DocumentProjector {
           }
         } else if (value.isObject()) {
           // Nested definitions allowed, too
-          collectFromObject(value, path);
+          collectFromObject(value, path, includeSimilarity);
         } else {
           // Unknown JSON node type; error
           throw new JsonApiException(

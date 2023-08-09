@@ -45,6 +45,32 @@ public class FindCommandTest {
     }
 
     @Test
+    public void includeSimilarityOptionsVectorSearch() throws Exception {
+      String json =
+          """
+        {
+        "find": {
+            "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+            "options" : {
+              "includeSimilarity" : true
+            }
+          }
+        }
+        """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      assertThat(command)
+          .isInstanceOfSatisfying(
+              FindCommand.class,
+              findCommand -> {
+                assertThat(findCommand.options().includeSimilarity()).isTrue();
+              });
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
     public void invalidOptionsNegativeLimit() throws Exception {
       String json =
           """
