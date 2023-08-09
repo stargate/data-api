@@ -63,9 +63,9 @@ public class NamespaceCache {
   private Uni<CollectionProperty> getVectorProperties(String collectionName) {
     return queryExecutor
         .getSchema(namespace, collectionName)
-        .onItemOrFailure()
+        .onItem()
         .transform(
-            (table, error) -> {
+            table -> {
               if (table.isPresent()) {
                 Boolean vectorEnabled =
                     table.get().getColumnsList().stream()

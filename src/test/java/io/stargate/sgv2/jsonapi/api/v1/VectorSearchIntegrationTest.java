@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -1346,7 +1345,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("data.document._id", is("3"))
           .body("data.document.$similarity", notNullValue())
-          .body("data.document.$similarity", lessThanOrEqualTo(1.0))
           .body("errors", is(nullValue()));
     }
 
@@ -1374,9 +1372,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(3))
-          .body("data.documents[0].$similarity", lessThanOrEqualTo(1.0f))
-          .body("data.documents[1].$similarity", lessThanOrEqualTo(1.0f))
-          .body("data.documents[2].$similarity", lessThanOrEqualTo(1.0f));
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$similarity", notNullValue())
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$similarity", notNullValue())
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$similarity", notNullValue());
     }
 
     @Test

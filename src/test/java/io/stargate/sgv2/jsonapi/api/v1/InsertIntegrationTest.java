@@ -702,7 +702,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("status.insertedIds", is(empty()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("NOT_FOUND: Keyspace not found"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Failed to insert document with _id 'doc4': INVALID_ARGUMENT: keyspace something_else does not exist"))
           .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
