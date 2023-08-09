@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
  *
  * @param namespace The name of the namespace.
  * @param collection The name of the collection.
+ * @param isVectorEnabled Whether the vector is enabled for the collection
+ * @param similarityFunction The similarity function used for indexing the vector
  */
 public record CommandContext(
     String namespace,
