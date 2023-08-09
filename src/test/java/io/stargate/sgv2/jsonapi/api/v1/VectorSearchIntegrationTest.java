@@ -1462,7 +1462,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
