@@ -34,6 +34,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
   private static final String collectionName = "my_collection";
   private static final String bigVectorCollectionName = "big_vector_collection";
+  private static final String vectorSizeTestCollectionName = "vector_size_test_collection";
 
   // Just has to be bigger than maximum array size
   private static final int BIG_VECTOR_SIZE = 1000;
@@ -1314,6 +1315,123 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(8)
+    public void insertVectorWithUnmatchedSize() {
+      createVectorCollection(namespaceName, vectorSizeTestCollectionName, 5);
+      // Insert data with $vector array size less than vector index defined size.
+      final String vectorStrCount3 = buildVectorElements(0, 3);
+      String jsonVectorStrCount3 =
+          """
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "shortHandedVectorElements",
+                                "name": "shortHandedVectorElements",
+                                "description": "this document should have vector size as 5",
+                                "$vector": [ %s ]
+                            }
+                         }
+                      }
+                      """
+              .formatted(vectorStrCount3);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(jsonVectorStrCount3)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("Expected vector of 5 size, but received 3"));
+
+      // Insert data with $vector array size greater than vector index defined size.
+      final String vectorStrCount7 = buildVectorElements(0, 7);
+      String jsonVectorStrCount7 =
+          """
+                      {
+                         "insertOne": {
+                            "document": {
+                                "_id": "excessVectorElements",
+                                "name": "excessVectorElements",
+                                "description": "this document should have vector size as 5",
+                                "$vector": [ %s ]
+                            }
+                         }
+                      }
+                      """
+              .formatted(vectorStrCount7);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(jsonVectorStrCount7)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("Expected vector of 5 size, but received 7"));
+    }
+
+    @Test
+    @Order(9)
+    public void findVectorWithUnmatchedSize() {
+      // Sort clause with $vector array size greater than vector index defined size.
+      final String vectorStrCount3 = buildVectorElements(0, 3);
+      String jsonVectorStrCount3 =
+          """
+                       {
+                          "find": {
+                            "sort" : {"$vector" : [ %s ]},
+                            "options" : {
+                                "limit" : 5
+                            }
+                          }
+                        }
+                        """
+              .formatted(vectorStrCount3);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(jsonVectorStrCount3)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("Expected vector of 5 size, but received 3"));
+
+      // Insert data with $vector array size greater than vector index defined size.
+      final String vectorStrCount7 = buildVectorElements(0, 7);
+      String jsonVectorStrCount7 =
+          """
+                       {
+                          "find": {
+                            "sort" : {"$vector" : [ %s ]},
+                            "options" : {
+                                "limit" : 5
+                            }
+                          }
+                        }
+                        """
+              .formatted(vectorStrCount7);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(jsonVectorStrCount7)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("Expected vector of 5 size, but received 7"));
     }
   }
 
