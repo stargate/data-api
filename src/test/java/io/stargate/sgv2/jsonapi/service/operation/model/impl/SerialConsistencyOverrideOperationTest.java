@@ -138,9 +138,9 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
   class Insert {
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insert() throws Exception {
@@ -167,10 +167,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -273,9 +270,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               + "        SET"
               + "            tx_id = now(),"
               + "            exist_keys = ?,"
-              + "            sub_doc_equals = ?,"
               + "            array_size = ?,"
-              + "            array_equals = ?,"
               + "            array_contains = ?,"
               + "            query_bool_values = ?,"
               + "            query_dbl_values = ?,"
@@ -295,10 +290,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(

@@ -421,7 +421,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final List<Object> arrayValue;
 
     public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
-      super("array_equals", path, Operator.MAP_EQUALS, getHash(hasher, arrayData));
+      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, arrayData));
       this.arrayValue = arrayData;
     }
 
@@ -444,7 +444,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final Map<String, Object> subDocValue;
 
     public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
-      super("sub_doc_equals", path, Operator.MAP_EQUALS, getHash(hasher, subDocData));
+      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, subDocData));
       this.subDocValue = subDocData;
     }
 

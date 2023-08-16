@@ -55,9 +55,7 @@ public record CreateCollectionOperation(
               + "    tx_id               timeuuid, "
               + "    doc_json            text,"
               + "    exist_keys          set<text>,"
-              + "    sub_doc_equals      map<text, text>,"
               + "    array_size          map<text, int>,"
-              + "    array_equals        map<text, text>,"
               + "    array_contains      set<text>,"
               + "    query_bool_values   map<text, tinyint>,"
               + "    query_dbl_values    map<text, decimal>,"
@@ -78,9 +76,7 @@ public record CreateCollectionOperation(
               + "    tx_id               timeuuid, "
               + "    doc_json            text,"
               + "    exist_keys          set<text>,"
-              + "    sub_doc_equals      map<text, text>,"
               + "    array_size          map<text, int>,"
-              + "    array_equals        map<text, text>,"
               + "    array_contains      set<text>,"
               + "    query_bool_values   map<text, tinyint>,"
               + "    query_dbl_values    map<text, decimal>,"
@@ -105,25 +101,11 @@ public record CreateCollectionOperation(
             .setCql(String.format(existKeys, table, keyspace, table))
             .build());
 
-    String subDocEquals =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON \"%s\".\"%s\" (entries(sub_doc_equals)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(subDocEquals, table, keyspace, table))
-            .build());
-
     String arraySize =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
     statements.add(
         QueryOuterClass.Query.newBuilder()
             .setCql(String.format(arraySize, table, keyspace, table))
-            .build());
-
-    String arrayEquals =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_equals ON \"%s\".\"%s\" (entries(array_equals)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(arrayEquals, table, keyspace, table))
             .build());
 
     String arrayContains =
