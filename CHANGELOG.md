@@ -1,5 +1,25 @@
 # Changelog
 
+## [v1.0.0-ALPHA-12](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-12) (2023-08-10)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-11...v1.0.0-ALPHA-12)
+
+**Closed issues:**
+
+- Sort with `$vector: {}` throws an unreadable error [\#493](https://github.com/stargate/jsonapi/issues/493)
+- Default docker-compose config shouldn't require build [\#489](https://github.com/stargate/jsonapi/issues/489)
+- Include vector similarity in vector search result [\#463](https://github.com/stargate/jsonapi/issues/463)
+
+**Merged pull requests:**
+
+- Projection clause support for similarity function score [\#500](https://github.com/stargate/jsonapi/pull/500) ([maheshrajamani](https://github.com/maheshrajamani))
+- Use Stargate v2.1.0-ALPHA-6 [\#499](https://github.com/stargate/jsonapi/pull/499) ([github-actions[bot]](https://github.com/apps/github-actions))
+- update parent workflow for 2.1.x event [\#498](https://github.com/stargate/jsonapi/pull/498) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fixed sort clause deserialization for non array values [\#495](https://github.com/stargate/jsonapi/pull/495) ([maheshrajamani](https://github.com/maheshrajamani))
+- pull docker image for coordinator from ECR [\#492](https://github.com/stargate/jsonapi/pull/492) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Bumping version for next jsonapi release [\#491](https://github.com/stargate/jsonapi/pull/491) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Docker compose defaults [\#490](https://github.com/stargate/jsonapi/pull/490) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+
 ## [v1.0.0-ALPHA-11](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-11) (2023-08-02)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-10...v1.0.0-ALPHA-11)
