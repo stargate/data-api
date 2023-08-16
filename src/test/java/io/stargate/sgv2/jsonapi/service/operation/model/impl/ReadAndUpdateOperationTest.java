@@ -56,9 +56,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           + "        SET"
           + "            tx_id = now(),"
           + "            exist_keys = ?,"
-          + "            sub_doc_equals = ?,"
           + "            array_size = ?,"
-          + "            array_equals = ?,"
           + "            array_contains = ?,"
           + "            query_bool_values = ?,"
           + "            query_dbl_values = ?,"
@@ -134,10 +132,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -418,10 +413,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -564,10 +556,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -688,10 +677,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -879,10 +865,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -1063,10 +1046,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -1186,10 +1166,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -1429,10 +1406,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -1464,10 +1438,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(
@@ -1587,10 +1558,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           withQuery(
                   collectionUpdateCql,
                   Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.subDocEquals())),
                   Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(CustomValueSerializers.getStringMapValues(shredDocument.arrayEquals())),
                   Values.of(
                       CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
                   Values.of(

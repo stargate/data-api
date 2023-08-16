@@ -13,21 +13,34 @@ public class JsonapiTableMatcher implements Predicate<Schema.CqlTable> {
 
   private final Predicate<QueryOuterClass.ColumnSpec> columnsPredicate;
 
+  private final Predicate<QueryOuterClass.ColumnSpec> columnsPredicateVector;
+
   public JsonapiTableMatcher() {
     primaryKeyPredicate = new CqlColumnMatcher.Tuple("key", Basic.TINYINT, Basic.VARCHAR);
     columnsPredicate =
         new CqlColumnMatcher.BasicType("tx_id", Basic.TIMEUUID)
             .or(new CqlColumnMatcher.BasicType("doc_json", Basic.VARCHAR))
             .or(new CqlColumnMatcher.Set("exist_keys", Basic.VARCHAR))
-            .or(new CqlColumnMatcher.Map("sub_doc_equals", Basic.VARCHAR, Basic.VARCHAR))
             .or(new CqlColumnMatcher.Map("array_size", Basic.VARCHAR, Basic.INT))
-            .or(new CqlColumnMatcher.Map("array_equals", Basic.VARCHAR, Basic.VARCHAR))
             .or(new CqlColumnMatcher.Set("array_contains", Basic.VARCHAR))
             .or(new CqlColumnMatcher.Map("query_bool_values", Basic.VARCHAR, Basic.TINYINT))
             .or(new CqlColumnMatcher.Map("query_dbl_values", Basic.VARCHAR, Basic.DECIMAL))
             .or(new CqlColumnMatcher.Map("query_text_values", Basic.VARCHAR, Basic.VARCHAR))
             .or(new CqlColumnMatcher.Map("query_timestamp_values", Basic.VARCHAR, Basic.TIMESTAMP))
             .or(new CqlColumnMatcher.Set("query_null_values", Basic.VARCHAR));
+
+    columnsPredicateVector =
+        new CqlColumnMatcher.BasicType("tx_id", Basic.TIMEUUID)
+            .or(new CqlColumnMatcher.BasicType("doc_json", Basic.VARCHAR))
+            .or(new CqlColumnMatcher.Set("exist_keys", Basic.VARCHAR))
+            .or(new CqlColumnMatcher.Map("array_size", Basic.VARCHAR, Basic.INT))
+            .or(new CqlColumnMatcher.Set("array_contains", Basic.VARCHAR))
+            .or(new CqlColumnMatcher.Map("query_bool_values", Basic.VARCHAR, Basic.TINYINT))
+            .or(new CqlColumnMatcher.Map("query_dbl_values", Basic.VARCHAR, Basic.DECIMAL))
+            .or(new CqlColumnMatcher.Map("query_text_values", Basic.VARCHAR, Basic.VARCHAR))
+            .or(new CqlColumnMatcher.Map("query_timestamp_values", Basic.VARCHAR, Basic.TIMESTAMP))
+            .or(new CqlColumnMatcher.Set("query_null_values", Basic.VARCHAR))
+            .or(new CqlColumnMatcher.BasicType("query_vector_value", Basic.CUSTOM));
   }
 
   /**
@@ -57,7 +70,8 @@ public class JsonapiTableMatcher implements Predicate<Schema.CqlTable> {
     }
 
     List<QueryOuterClass.ColumnSpec> columns = cqlTable.getColumnsList();
-    if (columns.size() != 12 || !columns.stream().allMatch(columnsPredicate)) {
+    if (!(columns.stream().allMatch(columnsPredicate)
+        || columns.stream().allMatch(columnsPredicateVector))) {
       return false;
     }
 

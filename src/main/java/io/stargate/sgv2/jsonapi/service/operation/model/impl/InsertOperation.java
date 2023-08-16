@@ -154,9 +154,9 @@ public record InsertOperation(
     if (vectorEnabled) {
       String insertWithVector =
           "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
               + " VALUES"
-              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return QueryOuterClass.Query.newBuilder()
           .setCql(
               String.format(
@@ -165,9 +165,9 @@ public record InsertOperation(
     } else {
       String insert =
           "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, sub_doc_equals, array_size, array_equals, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
               + " VALUES"
-              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return QueryOuterClass.Query.newBuilder()
           .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
           .build();
@@ -183,9 +183,7 @@ public record InsertOperation(
             .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
             .addValues(Values.of(doc.docJson()))
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayEquals())))
             .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
             .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
             .addValues(

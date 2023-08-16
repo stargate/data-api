@@ -122,9 +122,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
             + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
-            + "    array_equals        map<text, text>,"
             + "    array_contains      set<text>,"
             + "    query_bool_values   map<text, tinyint>,"
             + "    query_dbl_values    map<text, decimal>,"
@@ -139,9 +137,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
             + "    exist_keys          set<text>,"
-            + "    sub_doc_equals      map<text, text>,"
             + "    array_size          map<text, int>,"
-            + "    array_equals        map<text, text>,"
             + "    array_contains      set<text>,"
             + "    query_bool_values   map<text, tinyint>,"
             + "    query_dbl_values    map<text, decimal>,"
@@ -161,13 +157,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_sub_doc_equals ON \"%s\".\"%s\" (entries(sub_doc_equals)) USING 'StorageAttachedIndex'"
-            .formatted(collection, namespace, collection));
-    queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'"
-            .formatted(collection, namespace, collection));
-    queries.add(
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_equals ON \"%s\".\"%s\" (entries(array_equals)) USING 'StorageAttachedIndex'"
             .formatted(collection, namespace, collection));
     queries.add(
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'"

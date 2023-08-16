@@ -35,9 +35,7 @@ public record WritableShreddedDocument(
     String docJson,
     JsonNode docJsonNode,
     Set<JsonPath> existKeys,
-    Map<JsonPath, String> subDocEquals,
     Map<JsonPath, Integer> arraySize,
-    Map<JsonPath, String> arrayEquals,
     Set<String> arrayContains,
     Map<JsonPath, Boolean> queryBoolValues,
     Map<JsonPath, BigDecimal> queryNumberValues,
@@ -56,9 +54,7 @@ public record WritableShreddedDocument(
         && Objects.equals(docJson, that.docJson)
         && Objects.equals(docJsonNode, that.docJsonNode)
         && Objects.equals(existKeys, that.existKeys)
-        && Objects.equals(subDocEquals, that.subDocEquals)
         && Objects.equals(arraySize, that.arraySize)
-        && Objects.equals(arrayEquals, that.arrayEquals)
         && Objects.equals(arrayContains, that.arrayContains)
         && Objects.equals(queryBoolValues, that.queryBoolValues)
         && Objects.equals(queryNumberValues, that.queryNumberValues)
@@ -77,9 +73,7 @@ public record WritableShreddedDocument(
             docJson,
             docJsonNode,
             existKeys,
-            subDocEquals,
             arraySize,
-            arrayEquals,
             arrayContains,
             queryBoolValues,
             queryNumberValues,
@@ -113,10 +107,7 @@ public record WritableShreddedDocument(
 
     private final Set<JsonPath> existKeys;
 
-    private Map<JsonPath, String> subDocEquals;
-
     private Map<JsonPath, Integer> arraySize;
-    private Map<JsonPath, String> arrayEquals;
     private Set<String> arrayContains;
 
     private Map<JsonPath, Boolean> queryBoolValues;
@@ -148,9 +139,7 @@ public record WritableShreddedDocument(
           docJson,
           docJsonNode,
           existKeys,
-          _nonNull(subDocEquals),
           _nonNull(arraySize),
-          _nonNull(arrayEquals),
           _nonNull(arrayContains),
           _nonNull(queryBoolValues),
           _nonNull(queryNumberValues),
@@ -192,10 +181,13 @@ public record WritableShreddedDocument(
       }
 
       addKey(path);
-      if (subDocEquals == null) {
-        subDocEquals = new HashMap<>();
+
+      // User text column
+      if (queryTextValues == null) {
+        queryTextValues = new HashMap<>();
       }
-      subDocEquals.put(path, hasher.hash(obj).hash());
+      queryTextValues.put(path, hasher.hash(obj).hash());
+
       return true; // proceed to shred individual entries too
     }
 
@@ -213,11 +205,15 @@ public record WritableShreddedDocument(
       addKey(path);
       if (arraySize == null) { // all initialized the first time one needed
         arraySize = new HashMap<>();
-        arrayEquals = new HashMap<>();
+      }
+      if (queryTextValues == null) {
+        queryTextValues = new HashMap<>();
       }
       // arrayEquals (full array contents hash) and arraySize are simple to generate
       arraySize.put(path, arr.size());
-      arrayEquals.put(path, hasher.hash(arr).hash());
+
+      DocValueHash arrHasher = hasher.hash(arr);
+      queryTextValues.put(path, arrHasher.hash());
 
       // But arrayContains is bit different: must use path to array (not elements);
       // and for atomics need to avoid generating twice

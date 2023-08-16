@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import jakarta.inject.Inject;
@@ -69,7 +70,6 @@ public class ShredderTest {
       assertThat(doc.arraySize())
           .hasSize(1)
           .containsEntry(JsonPath.from("values"), Integer.valueOf(2));
-      assertThat(doc.arrayEquals()).hasSize(1);
 
       // We have 2 from array, plus 3 main level properties (_id excluded)
       assertThat(doc.arrayContains()).hasSize(7);
@@ -87,9 +87,6 @@ public class ShredderTest {
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
-      // Sub-documents (Object values): none in this example
-      assertThat(doc.subDocEquals()).hasSize(0);
-
       // Then atomic value containers
       assertThat(doc.queryBoolValues())
           .isEqualTo(Collections.singletonMap(JsonPath.from("extra_stuff"), Boolean.TRUE));
@@ -98,7 +95,16 @@ public class ShredderTest {
       expNums.put(JsonPath.from("values.1", true), BigDecimal.valueOf(2));
       assertThat(doc.queryNumberValues()).isEqualTo(expNums);
       assertThat(doc.queryTextValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), "abc", JsonPath.from("name"), "Bob"));
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("_id"),
+                  "abc",
+                  JsonPath.from("name"),
+                  "Bob",
+                  JsonPath.from("values"),
+                  new DocValueHasher()
+                      .getHash(List.of(new BigDecimal(1), new BigDecimal(2)))
+                      .hash()));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
       float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
       assertThat(doc.queryVectorValues()).containsOnly(0.11f, 0.22f, 0.33f, 0.44f);
@@ -124,10 +130,8 @@ public class ShredderTest {
 
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
       assertThat(doc.arraySize()).isEmpty();
-      assertThat(doc.arrayEquals()).isEmpty();
       // 2 non-doc-id main-level properties with hashes:
       assertThat(doc.arrayContains()).containsExactlyInAnyOrder("age N39", "name SChuck");
-      assertThat(doc.subDocEquals()).hasSize(0);
 
       // Also, the document should be the same, including _id added:
       ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
@@ -163,10 +167,8 @@ public class ShredderTest {
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       assertThat(doc.arraySize()).isEmpty();
-      assertThat(doc.arrayEquals()).isEmpty();
       // 1 non-doc-id main-level property
       assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
-      assertThat(doc.subDocEquals()).hasSize(0);
 
       assertThat(doc.queryBoolValues()).isEqualTo(Map.of(JsonPath.from("_id"), Boolean.TRUE));
       assertThat(doc.queryNullValues()).isEmpty();
@@ -190,10 +192,8 @@ public class ShredderTest {
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       assertThat(doc.arraySize()).isEmpty();
-      assertThat(doc.arrayEquals()).isEmpty();
       // 1 non-doc-id main-level property
       assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
-      assertThat(doc.subDocEquals()).hasSize(0);
 
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNullValues()).isEmpty();
@@ -237,11 +237,9 @@ public class ShredderTest {
       assertThat(jsonFromShredded).isEqualTo(inputDoc);
 
       assertThat(doc.arraySize()).isEmpty();
-      assertThat(doc.arrayEquals()).isEmpty();
       // 2 non-doc-id main-level properties
       assertThat(doc.arrayContains())
           .containsExactlyInAnyOrder("name SBob", "datetime T" + testTimestamp);
-      assertThat(doc.subDocEquals()).hasSize(0);
 
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNullValues()).isEmpty();

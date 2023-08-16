@@ -230,9 +230,7 @@ public record ReadAndUpdateOperation(
             + "        SET"
             + "            tx_id = now(),"
             + "            exist_keys = ?,"
-            + "            sub_doc_equals = ?,"
             + "            array_size = ?,"
-            + "            array_equals = ?,"
             + "            array_contains = ?,"
             + "            query_bool_values = ?,"
             + "            query_dbl_values = ?,"
@@ -255,9 +253,7 @@ public record ReadAndUpdateOperation(
     QueryOuterClass.Values.Builder values =
         QueryOuterClass.Values.newBuilder()
             .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.subDocEquals())))
             .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.arrayEquals())))
             .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
             .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
             .addValues(

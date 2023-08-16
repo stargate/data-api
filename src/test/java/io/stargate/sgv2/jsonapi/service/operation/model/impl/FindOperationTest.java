@@ -1085,7 +1085,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithArrayEqualFilter() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_equals[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       String doc1 =
@@ -1157,7 +1157,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithSubDocEqualFilter() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE sub_doc_equals[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       String doc1 =
