@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import io.stargate.sgv2.api.common.config.DataStoreConfig;
+import io.stargate.sgv2.api.common.properties.datastore.DataStoreProperties;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -14,14 +14,13 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
-  private final DataStoreConfig dataStoreConfig;
-
+  private final DataStoreProperties dataStoreProperties;
   private final DocumentLimitsConfig documentLimitsConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
-      DataStoreConfig dataStoreConfig, DocumentLimitsConfig documentLimitsConfig) {
-    this.dataStoreConfig = dataStoreConfig;
+      DataStoreProperties dataStoreProperties, DocumentLimitsConfig documentLimitsConfig) {
+    this.dataStoreProperties = dataStoreProperties;
     this.documentLimitsConfig = documentLimitsConfig;
   }
 
@@ -37,7 +36,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Override
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
     if (command.options() != null && command.options().vector() != null) {
-      if (!dataStoreConfig.vectorSearchEnabled()) {
+      if (!dataStoreProperties.vectorSearchEnabled()) {
         throw new JsonApiException(
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
