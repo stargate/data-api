@@ -35,20 +35,7 @@ public class JsonApiStartUp {
     if (!dataStoreProperties.saiEnabled()) {
       LOGGER.warn(
           "Your Cassandra Persistence does not support Storage Attached Indexing (SAI), fail to start the JSONAPI");
-      new Thread(
-              new Runnable() {
-                @Override
-                public void run() {
-                  try {
-                    Thread.sleep(2000);
-                    Quarkus.asyncExit();
-                  } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                  }
-                }
-              })
-          .start();
-      Quarkus.waitForExit();
+      Quarkus.asyncExit();
     }
   }
 }
