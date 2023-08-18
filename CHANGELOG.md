@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-13...HEAD)
+
+**Closed issues:**
+
+- Reduce index columns [\#505](https://github.com/stargate/jsonapi/issues/505)
+
+## [v1.0.0-ALPHA-13](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-13) (2023-08-16)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-12...v1.0.0-ALPHA-13)
+
+**Closed issues:**
+
+- Create Collection with vector options fail [\#504](https://github.com/stargate/jsonapi/issues/504)
+
+**Merged pull requests:**
+
+- Merge array\_equals and sub\_doc\_equals field into query\_text\_value [\#506](https://github.com/stargate/jsonapi/pull/506) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next jsonapi release [\#501](https://github.com/stargate/jsonapi/pull/501) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.0-ALPHA-12](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-12) (2023-08-10)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-11...v1.0.0-ALPHA-12)
