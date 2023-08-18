@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi;
 
+import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.api.common.properties.datastore.DataStoreProperties;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -38,10 +39,16 @@ public class JsonApiStartUp {
               new Runnable() {
                 @Override
                 public void run() {
-                  System.exit(0);
+                  try {
+                    Thread.sleep(2000);
+                    Quarkus.asyncExit();
+                  } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                  }
                 }
               })
           .start();
+      Quarkus.waitForExit();
     }
   }
 }
