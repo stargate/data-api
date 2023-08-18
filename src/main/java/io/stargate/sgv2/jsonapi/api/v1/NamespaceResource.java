@@ -58,6 +58,7 @@ public class NamespaceResource {
               schema = @Schema(anyOf = {CreateCollectionCommand.class}),
               examples = {
                 @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "createCollectionVectorSearch"),
                 @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),
               }))
