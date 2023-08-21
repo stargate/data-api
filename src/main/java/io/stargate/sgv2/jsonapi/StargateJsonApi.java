@@ -81,6 +81,20 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "findOneVectorSearch",
+                  summary = "`findOne` command with vector search",
+                  value =
+                      """
+                    {
+                      "findOne": {
+                          "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                          "projection": {"_id":0, "location":1, "race.start_date":1, "tags":1},
+                          "sort" : {"$vector" : [0.25,0.25,0.25,0.25,0.25]},
+                          "options": {"includeSimilarity" : true}
+                      }
+                    }
+                    """),
+              @ExampleObject(
                   name = "countDocuments",
                   summary = "`countDocuments` command",
                   value =
@@ -105,6 +119,20 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "findVectorSearch",
+                  summary = "`find` command with vector search",
+                  value =
+                      """
+                      {
+                        "find": {
+                           "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                           "projection": {"tags":0},
+                           "sort" : {"$vector" : [0.25,0.25,0.25,0.25,0.25]},
+                           "options": {"limit" : 1000, "includeSimilarity" : true}
+                        }
+                      }
+                    """),
               @ExampleObject(
                   name = "findOneAndUpdate",
                   summary = "`findOneAndUpdate` command",
@@ -234,7 +262,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "competitors": 100,
                               "start_date": "2022-08-15"
                             },
-                            "tags": [ ]
+                            "tags": [ ],
+                            "$vector" : [0.25,0.25,0.25,0.25,0.25]
                           }
                         }
                       }
@@ -254,7 +283,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     "competitors": 100,
                                     "start_date": "2022-08-15"
                                   },
-                                  "tags" : [ "eu" ]
+                                  "tags" : [ "eu" ],
+                                  "$vector" : [0.35,0.35,0.35,0.35,0.35]
                                 },
                                 {
                                   "_id": "2",
@@ -263,7 +293,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                     "competitors": 150,
                                     "start_date": "2022-09-15"
                                   },
-                                  "tags": [ "us" ]
+                                  "tags": [ "us" ],
+                                  "$vector" : [0.45,0.45,0.45,0.45,0.45]
                                 }
                             ],
                             "options": {
@@ -332,6 +363,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             }
                         }
                       """),
+              @ExampleObject(
+                  name = "createCollectionVectorSearch",
+                  summary = "`CreateCollection` command with vector search",
+                  value =
+                      """
+                        {
+                            "createCollection": {
+                              "name": "events_vector",
+                              "options": {
+                                "vector": {
+                                  "size": 2,
+                                  "function": "cosine"
+                                }
+                              }
+                            }
+                        }
+                     """),
               @ExampleObject(
                   name = "findCollections",
                   summary = "`FindCollections` command",
