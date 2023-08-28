@@ -167,9 +167,7 @@ blocks:
         ok-body: ".*\"deletedCount\":[0,1].*"
         body: >2
           {
-            "deleteOne" : {
-              "filter" : {
-                "_id" : "{random_key}"
+              "findOneAndDelete": {
+                  "sort" : {"$vector" : {vector_json}}
               }
-            }
           }

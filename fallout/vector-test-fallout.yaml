@@ -18,7 +18,7 @@ threads: 20
 #  download_url:  Your zip secure bundle from AstraDB
 #  provider: ec2
 #  zone: us-west-2
-#  instance: m5.2xlarge
+#  instance: desired instance type
 #  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
 #  workload_duration: workload duration time
 #  keyspace: Your existing AstraDB keyspace
