@@ -269,7 +269,7 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo("$size operator must have interger value >= 0");
+                    .isEqualTo("$size operator must have integer value >= 0");
               });
     }
 
