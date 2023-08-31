@@ -3,15 +3,9 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -19,6 +13,8 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -1680,6 +1676,114 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body(
               "errors[0].message",
               is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
+    }
+  }
+
+  @Nested
+  @Order(8)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ConcurrentDelete {
+
+    @Test
+    public void findOneAndDelete() throws Exception {
+      insertVectorDocuments();
+      String json =
+          """
+                                        {
+                                            "findOneAndDelete": {
+                                                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
+                                            }
+                                        }
+                                        """;
+
+      int threads = 5;
+      AtomicReferenceArray<AssertionError> assertionErrors = new AtomicReferenceArray<>(threads);
+      CountDownLatch latch = new CountDownLatch(threads);
+
+      for (int i = 0; i < threads; i++) {
+        int index = i;
+        Thread thread =
+            new Thread(
+                () -> {
+                  try {
+                    given()
+                        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                        .contentType(ContentType.JSON)
+                        .body(json)
+                        .when()
+                        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                        .then()
+                        .statusCode(200)
+                        .body("status.deletedCount", anyOf(is(0), is(1)))
+                        .body("errors", is(nullValue()));
+                  } catch (AssertionError e) {
+                    assertionErrors.set(index, e);
+                  } finally {
+                    latch.countDown();
+                  }
+                });
+        thread.start();
+      }
+      latch.await();
+      int assertionErrorCount = 0;
+      for (int i = 0; i < threads; i++) {
+        AssertionError assertionError = assertionErrors.get(i);
+        if (null != assertionError) {
+          assertionErrorCount++;
+        }
+      }
+      assertThat(assertionErrorCount).isEqualTo(0);
+    }
+
+    @Test
+    public void findOneAndDeleteProjection() throws Exception {
+      insertVectorDocuments();
+      String json =
+          """
+                                        {
+                                            "findOneAndDelete": {
+                                                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                                                "projection" : {"name" : 1}
+                                            }
+                                        }
+                                        """;
+      int threads = 5;
+      AtomicReferenceArray<AssertionError> assertionErrors = new AtomicReferenceArray<>(threads);
+      CountDownLatch latch = new CountDownLatch(threads);
+
+      for (int i = 0; i < threads; i++) {
+        int index = i;
+        Thread thread =
+            new Thread(
+                () -> {
+                  try {
+                    given()
+                        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                        .contentType(ContentType.JSON)
+                        .body(json)
+                        .when()
+                        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                        .then()
+                        .statusCode(200)
+                        .body("status.deletedCount", anyOf(is(0), is(1)))
+                        .body("errors", is(nullValue()));
+                  } catch (AssertionError e) {
+                    assertionErrors.set(index, e);
+                  } finally {
+                    latch.countDown();
+                  }
+                });
+        thread.start();
+      }
+      latch.await();
+      int assertionErrorCount = 0;
+      for (int i = 0; i < threads; i++) {
+        AssertionError assertionError = assertionErrors.get(i);
+        if (null != assertionError) {
+          assertionErrorCount++;
+        }
+      }
+      assertThat(assertionErrorCount).isEqualTo(0);
     }
   }
 
