@@ -268,8 +268,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage())
-                    .isEqualTo("$size operator must have interger value >= 0");
+                assertThat(t.getMessage()).isEqualTo("$size operator must have integer value >= 0");
               });
     }
 
