@@ -22,7 +22,7 @@
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
     <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
-    <stargate.int-test.cassandra.image-tag>4.0.7-336cdd7405ee</stargate.int-test.cassandra.image-tag>
+    <stargate.int-test.cassandra.image-tag>4.0.7-e47eb8e14b96</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
