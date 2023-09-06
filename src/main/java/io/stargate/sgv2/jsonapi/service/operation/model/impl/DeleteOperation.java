@@ -127,7 +127,10 @@ public record DeleteOperation(
                           Tuple3.of(
                               deleted != null ? deleted.getItem1() : false,
                               error,
-                              error == null && returnDocumentInResponse
+                              error == null
+                                      && deleted != null
+                                      && deleted.getItem2() != null
+                                      && returnDocumentInResponse
                                   ? applyProjection(deleted.getItem2())
                                   : document));
             })

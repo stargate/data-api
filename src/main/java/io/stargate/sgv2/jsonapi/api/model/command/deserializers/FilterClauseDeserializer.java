@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,13 +42,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   /**
-   * {@inheritDoc} Filter clause can follow short cut {"field" : "value"} instead of {"field" :
+   * {@inheritDoc} Filter clause can follow short-cut {"field" : "value"} instead of {"field" :
    * {"$eq" : "value"}}
    */
   @Override
   public FilterClause deserialize(
-      JsonParser jsonParser, DeserializationContext deserializationContext)
-      throws IOException, JacksonException {
+      JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) throw new JsonApiException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
     Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
@@ -79,6 +77,16 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   private void validate(String path, FilterOperation<?> filterOperation) {
+    // First: $vector can only be used with $exists operator
+    if (path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+        && ElementComparisonOperator.EXISTS != filterOperation.operator()) {
+      throw new JsonApiException(
+          ErrorCode.INVALID_FILTER_EXPRESSION,
+          String.format(
+              "Cannot filter on '%s' field using operator '%s': only '$exists' is supported",
+              DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+              filterOperation.operator().getOperator()));
+    }
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
         case IN -> {
@@ -137,7 +145,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             if (i.intValue() < 0) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
-                  "$size operator must have interger value >= 0");
+                  "$size operator must have integer value >= 0");
             }
           } else {
             throw new JsonApiException(

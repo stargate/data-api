@@ -3,15 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -734,7 +726,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(3)
-    public void happyPathWithFilter() {
+    public void happyPathWithIdFilter() {
       String json =
           """
                       {
@@ -759,7 +751,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(4)
-    public void happyPathWithEmptyVector() {
+    public void failWithEmptyVector() {
       String json =
           """
                       {
@@ -786,7 +778,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(5)
-    public void happyPathWithInvalidData() {
+    public void failWithInvalidVectorElements() {
       String json =
           """
                       {
@@ -809,6 +801,36 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+    }
+
+    // Vector columns can only use ANN, not regular filtering
+    @Test
+    @Order(6)
+    public void failWithVectorFilter() {
+      String json =
+          """
+                          {
+                            "findOne": {
+                              "filter" : {"$vector" : [ 1, 1, 1, 1, 1 ]}
+                            }
+                          }
+                          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body(
+              "errors[1].message",
+              is(
+                  "Cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
     }
   }
 
