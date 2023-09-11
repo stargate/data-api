@@ -112,7 +112,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "insertOne": {
                 "document": {
                   "_id": {"$date": 6},
-                  "username": "user6"
+                  "user-name": "user6"
                 }
               }
             }
@@ -227,7 +227,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {
             "_id": {"$date": 6},
-            "username": "user6"
+            "user-name": "user6"
           }
           """;
       given()
@@ -464,6 +464,38 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
+    }
+
+    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
+    @Test
+    public void byColumnWithHyphen() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "find": {
+                      "filter" : {"user-name" : "user6"}
+                    }
+                  }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                  {
+                    "_id": {"$date": 6},
+                    "user-name": "user6"
+                  }
+                """));
     }
 
     @Test

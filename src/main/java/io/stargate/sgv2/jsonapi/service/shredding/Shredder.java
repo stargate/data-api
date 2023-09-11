@@ -294,6 +294,13 @@ public class Shredder {
               key.length(),
               limits.maxPropertyNameLength()));
     }
+    if (key.length() == 0) {
+      // NOTE: validity failure, not size limit
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
+          String.format(
+              "%s: empty names not allowed", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()));
+    }
     if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
       // Special names are accepted in some cases: for now only one such case for
       // Date values -- if more needed, will refactor. But for now inline:
