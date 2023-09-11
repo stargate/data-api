@@ -96,7 +96,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
     @Test
-    public void insertDocumentWithHyphen() {
+    public void insertDocumentWithHyphenatedColumn() {
       String json =
           """
               {
