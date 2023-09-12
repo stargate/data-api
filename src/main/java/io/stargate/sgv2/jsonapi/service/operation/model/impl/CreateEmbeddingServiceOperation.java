@@ -1,0 +1,32 @@
+package io.stargate.sgv2.jsonapi.service.operation.model.impl;
+
+import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+public record CreateEmbeddingServiceOperation(
+    Optional<String> tenant,
+    EmbeddingServiceConfigStore embeddingServiceConfigStore,
+    String serviceName,
+    String providerName,
+    String baseUrl,
+    String apiKey)
+    implements Operation {
+  @Override
+  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    EmbeddingServiceConfigStore.ServiceConfig serviceConfig =
+        new EmbeddingServiceConfigStore.ServiceConfig(serviceName, providerName, apiKey, baseUrl);
+    return Uni.createFrom()
+        .item(serviceConfig)
+        .onItem()
+        .transform(
+            a -> {
+              embeddingServiceConfigStore.saveConfiguration(tenant(), serviceConfig);
+              return new ServiceRegistrationResult();
+            });
+  }
+}

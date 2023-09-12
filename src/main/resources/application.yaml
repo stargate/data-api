@@ -26,6 +26,11 @@ stargate:
     global-tags:
       module: sgv2-jsonapi
 
+  jsonapi:
+    embedding:
+      config:
+        store=in-memory
+
 quarkus:
 
   # general app properties

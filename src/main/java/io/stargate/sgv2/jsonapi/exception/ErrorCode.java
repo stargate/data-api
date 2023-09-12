@@ -98,6 +98,8 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
+
+  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
   VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : ");
 
   private final String message;

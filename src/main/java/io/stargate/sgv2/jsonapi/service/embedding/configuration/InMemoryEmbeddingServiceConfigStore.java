@@ -2,16 +2,15 @@ package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.quarkus.arc.lookup.LookupIfProperty;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 
+@LookupIfProperty(name = "stargate.jsonapi.embedding.config.store", stringValue = "in-memory")
+@ApplicationScoped
 public class InMemoryEmbeddingServiceConfigStore implements EmbeddingServiceConfigStore {
 
-  private InMemoryEmbeddingServiceConfigStore() {}
-
-  public static final InMemoryEmbeddingServiceConfigStore INSTANCE =
-      new InMemoryEmbeddingServiceConfigStore();
-
-  private final Cache<CacheKey, ServiceConfig> serviceConfigStore =
+  private static final Cache<CacheKey, ServiceConfig> serviceConfigStore =
       Caffeine.newBuilder().maximumSize(1000).build();
 
   @Override

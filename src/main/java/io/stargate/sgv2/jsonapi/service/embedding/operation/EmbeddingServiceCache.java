@@ -6,12 +6,13 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingServiceConfigStore;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.Optional;
 
 @ApplicationScoped
 public class EmbeddingServiceCache {
-  @Inject EmbeddingServiceConfigStore embeddingServiceConfigStore;
+  @Inject Instance<EmbeddingServiceConfigStore> embeddingServiceConfigStore;
 
   record CacheKey(Optional<String> tenant, String namespace) {}
 
@@ -24,7 +25,8 @@ public class EmbeddingServiceCache {
         serviceConfigStore.getIfPresent(new CacheKey(tenant, serviceName));
     if (embeddingService == null) {
       embeddingService = addService(tenant, serviceName, modelName);
-      serviceConfigStore.put(new CacheKey(tenant, serviceName), embeddingService);
+      if (embeddingService != null)
+        serviceConfigStore.put(new CacheKey(tenant, serviceName), embeddingService);
     }
     return embeddingService;
   }
@@ -32,7 +34,7 @@ public class EmbeddingServiceCache {
   private synchronized EmbeddingService addService(
       Optional<String> tenant, String serviceName, String modelName) {
     final EmbeddingServiceConfigStore.ServiceConfig configuration =
-        embeddingServiceConfigStore.getConfiguration(tenant, serviceName);
+        embeddingServiceConfigStore.get().getConfiguration(tenant, serviceName);
     if (configuration == null) {
       throw new JsonApiException(
           ErrorCode.VECTORIZE_SERVICE_NOT_REGISTERED,
