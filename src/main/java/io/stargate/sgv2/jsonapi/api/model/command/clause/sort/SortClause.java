@@ -31,4 +31,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .path()
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
   }
+
+  public boolean hasVectorizeSearchClause() {
+    return sortExpressions != null
+        && sortExpressions.stream()
+            .findFirst()
+            .get()
+            .path()
+            .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+  }
 }

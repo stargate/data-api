@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -55,6 +56,11 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage());
     }
 
+    if (commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorizeUpdateClause(command.updateClause());
+    }
+
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve options
@@ -81,6 +87,10 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
       CommandContext commandContext, FindOneAndUpdateCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+    if (sortClause != null && commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorize(sortClause);
+    }
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

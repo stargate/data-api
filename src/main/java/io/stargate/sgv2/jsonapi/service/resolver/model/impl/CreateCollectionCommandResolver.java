@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
@@ -14,19 +16,24 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
+
+  private final ObjectMapper objectMapper;
   private final DataStoreConfig dataStoreConfig;
 
   private final DocumentLimitsConfig documentLimitsConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
-      DataStoreConfig dataStoreConfig, DocumentLimitsConfig documentLimitsConfig) {
+      ObjectMapper objectMapper,
+      DataStoreConfig dataStoreConfig,
+      DocumentLimitsConfig documentLimitsConfig) {
+    this.objectMapper = objectMapper;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null);
+    this(null, null, null);
   }
 
   @Override
@@ -52,8 +59,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                 vectorSize,
                 documentLimitsConfig.maxVectorEmbeddingLength()));
       }
+      String vectorize = null;
+      if (command.options().vectorize() != null) {
+        try {
+          vectorize = objectMapper.writeValueAsString(command.options().vectorize());
+        } catch (JsonProcessingException e) {
+          // This should never happen because the object is extracted from json request
+        }
+      }
+
       return CreateCollectionOperation.withVectorSearch(
-          ctx, command.name(), vectorSize, command.options().vector().function());
+          ctx, command.name(), vectorSize, command.options().vector().function(), vectorize);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(ctx, command.name());
     }

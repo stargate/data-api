@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -40,7 +41,7 @@ public class CommandResolverService {
     // try to get from the map of resolvers
     return Uni.createFrom()
         .item((CommandResolver<T>) resolvers.get(command.getClass()))
-
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
         // if this results to null, fail here with not implemented
         .onItem()
         .ifNull()

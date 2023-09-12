@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -43,7 +44,10 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   @Override
   public Operation resolveCommand(CommandContext commandContext, UpdateManyCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
-
+    if (commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorizeUpdateClause(command.updateClause());
+    }
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert

@@ -33,7 +33,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveCommand {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {

@@ -107,6 +107,10 @@ public class Shredder {
     docWithIdAsFirstField.set(DocumentConstants.Fields.DOC_ID, idNode);
     // Ok to add all fields, possibly including doc id since order won't change
     docWithIdAsFirstField.setAll(doc);
+    // if $vectorize field is present in the document, remove $vector field
+    if (docWithIdAsFirstField.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      docWithIdAsFirstField.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    }
     return docWithIdAsFirstField;
   }
 

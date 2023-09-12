@@ -85,6 +85,21 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           sortExpressions.add(exp);
           break;
         }
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        if (totalFields > 1) {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_USAGE_ERROR,
+              ErrorCode.VECTOR_SEARCH_USAGE_ERROR.getMessage());
+        }
+        if (!inner.getValue().isTextual()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_VECTORIZE_VALUE,
+              ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
+        }
+        SortExpression exp = SortExpression.vectorizeSearch(inner.getValue().textValue());
+        sortExpressions.clear();
+        sortExpressions.add(exp);
+        break;
       } else {
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {

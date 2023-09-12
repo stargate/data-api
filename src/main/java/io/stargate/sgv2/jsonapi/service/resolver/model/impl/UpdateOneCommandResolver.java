@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -45,7 +46,10 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   @Override
   public Operation resolveCommand(CommandContext commandContext, UpdateOneCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
-
+    if (commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorizeUpdateClause(command.updateClause());
+    }
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert
@@ -69,7 +73,10 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
-
+    if (sortClause != null && commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorize(sortClause);
+    }
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

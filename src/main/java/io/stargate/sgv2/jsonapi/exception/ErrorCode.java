@@ -29,6 +29,8 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
 
+  SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
+
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
@@ -46,6 +48,7 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
@@ -79,11 +82,13 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
 
   UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
+  VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
 
   VECTOR_SEARCH_INVALID_FUCTION_NAME("Invalid vector search function name "),
@@ -91,7 +96,9 @@ public enum ErrorCode {
   VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED(
       "$similarity projection is not supported for this command"),
 
-  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big");
+  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
+  VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : ");
 
   private final String message;
 

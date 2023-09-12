@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -50,7 +51,10 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   private FindOperation getFindOperation(CommandContext commandContext, DeleteOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
-
+    if (sortClause != null && commandContext.embeddingService() != null) {
+      new VectorizeData(commandContext.embeddingService(), objectMapper.getNodeFactory())
+          .vectorize(sortClause);
+    }
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

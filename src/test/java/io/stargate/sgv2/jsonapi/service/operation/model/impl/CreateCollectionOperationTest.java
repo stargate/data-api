@@ -76,7 +76,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
-          CreateCollectionOperation.withVectorSearch(commandContext, COLLECTION_NAME, 4, "cosine");
+          CreateCollectionOperation.withVectorSearch(
+              commandContext, COLLECTION_NAME, 4, "cosine", null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -96,7 +97,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "dot_product");
+              commandContext, COLLECTION_NAME, 4, "dot_product", null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
