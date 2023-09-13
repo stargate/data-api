@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -37,7 +36,7 @@ public class UpdateManyCommandResolverTest {
   @Nested
   class Resolve {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {
