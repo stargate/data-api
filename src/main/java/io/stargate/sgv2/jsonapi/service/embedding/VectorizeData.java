@@ -89,7 +89,7 @@ public class VectorizeData {
     final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
     if (unsetNode != null && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       unsetNode.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-      unsetNode.set(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, nodeFactory.nullNode());
+      unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
 
@@ -99,7 +99,7 @@ public class VectorizeData {
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
         node.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-        node.set(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, nodeFactory.nullNode());
+        node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
         final List<float[]> vectors = embeddingService.vectorize(List.of(text));

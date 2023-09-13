@@ -32,7 +32,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
     @Test
     public void createCollection() throws Exception {
-      List<String> queries = getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, false, 0, null);
+      List<String> queries =
+          getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, false, 0, null, null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
@@ -52,7 +53,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
     public void createCollectionCaseSensitive() throws Exception {
       List<String> queries =
           getAllQueryString(
-              KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase(), false, 0, null);
+              KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase(), false, 0, null, null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
       CommandContext commandContextUpper =
           new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
@@ -72,7 +73,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
     @Test
     public void createCollectionVector() throws Exception {
-      List<String> queries = getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "cosine");
+      List<String> queries =
+          getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "cosine", null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
@@ -90,9 +92,39 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
     }
 
     @Test
+    public void createCollectionVectorize() throws Exception {
+      List<String> queries =
+          getAllQueryString(
+              KEYSPACE_NAME,
+              COLLECTION_NAME,
+              true,
+              4,
+              "cosine",
+              "{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}");
+      queries.stream().forEach(query -> withQuery(query).returningNothing());
+
+      CreateCollectionOperation createCollectionOperation =
+          CreateCollectionOperation.withVectorSearch(
+              commandContext,
+              COLLECTION_NAME,
+              4,
+              "cosine",
+              "{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}");
+
+      final Supplier<CommandResult> execute =
+          createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.OK)).isNotNull();
+              });
+    }
+
+    @Test
     public void createCollectionVectorDotProduct() throws Exception {
       List<String> queries =
-          getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "dot_product");
+          getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "dot_product", null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
@@ -115,7 +147,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       String collection,
       boolean vectorSearch,
       int vectorSize,
-      String vectorFunction) {
+      String vectorFunction,
+      String vectorize) {
     List<String> queries = new ArrayList<>();
     String createTable =
         "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -149,6 +182,9 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
             + vectorSize
             + ">, "
             + "    PRIMARY KEY (key))";
+    if (vectorize != null) {
+      createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
+    }
     if (vectorSearch) {
       queries.add(String.format(createTableWithVector, namespace, collection));
     } else {

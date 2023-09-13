@@ -14,7 +14,7 @@ import java.util.Optional;
 public class EmbeddingServiceCache {
   @Inject Instance<EmbeddingServiceConfigStore> embeddingServiceConfigStore;
 
-  record CacheKey(Optional<String> tenant, String namespace) {}
+  record CacheKey(Optional<String> tenant, String namespace, String modelName) {}
 
   private final Cache<CacheKey, EmbeddingService> serviceConfigStore =
       Caffeine.newBuilder().maximumSize(1000).build();
@@ -22,11 +22,11 @@ public class EmbeddingServiceCache {
   public EmbeddingService getConfiguration(
       Optional<String> tenant, String serviceName, String modelName) {
     EmbeddingService embeddingService =
-        serviceConfigStore.getIfPresent(new CacheKey(tenant, serviceName));
+        serviceConfigStore.getIfPresent(new CacheKey(tenant, serviceName, modelName));
     if (embeddingService == null) {
       embeddingService = addService(tenant, serviceName, modelName);
       if (embeddingService != null)
-        serviceConfigStore.put(new CacheKey(tenant, serviceName), embeddingService);
+        serviceConfigStore.put(new CacheKey(tenant, serviceName, modelName), embeddingService);
     }
     return embeddingService;
   }
