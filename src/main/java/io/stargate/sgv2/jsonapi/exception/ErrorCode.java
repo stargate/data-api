@@ -71,6 +71,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
 
+  UNSUPPORTED_COMMAND_EMBEDDING_SERVICE(
+      "Unsupported command createEmbeddingService since application is configured for property based embedding"),
+
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
@@ -88,7 +91,6 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
-  VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
 
   VECTOR_SEARCH_INVALID_FUCTION_NAME("Invalid vector search function name "),
@@ -100,7 +102,8 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
-  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : ");
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : "),
+  VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause");
 
   private final String message;
 

@@ -84,12 +84,11 @@ public class EmbeddingServiceCacheTest {
           .put("stargate.jsonapi.embedding.config.store", "property")
           .put("stargate.jsonapi.embedding.service.openai.enabled", "true")
           .put("stargate.jsonapi.embedding.service.openai.api-key", "openai-api-key")
-          .put("stargate.jsonapi.embedding.service.openai.model-name", "openai-model-name")
           .put("stargate.jsonapi.embedding.service.openai.url", "https://api.openai.com/v1/")
           .put("stargate.jsonapi.embedding.service.hf.enabled", "true")
           .put("stargate.jsonapi.embedding.service.hf.api-key", "hf-api-key")
-          .put("stargate.jsonapi.embedding.service.hf.model-name", "hf-model-name")
           .put("stargate.jsonapi.embedding.service.hf.url", "https://api-inference.huggingface.co")
+          .put("stargate.jsonapi.embedding.service.vertexai.enabled", "false")
           .build();
     }
   }

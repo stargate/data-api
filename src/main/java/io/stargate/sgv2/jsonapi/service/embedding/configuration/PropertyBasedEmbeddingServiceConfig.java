@@ -25,9 +25,6 @@ public interface PropertyBasedEmbeddingServiceConfig {
 
     @WithDefault("Bearer")
     String apiKey();
-
-    @WithDefault("davinci")
-    String modelName();
   }
 
   public interface HuggingFaceConfig {
@@ -39,9 +36,6 @@ public interface PropertyBasedEmbeddingServiceConfig {
 
     @WithDefault("Bearer")
     String apiKey();
-
-    @WithDefault("davinci")
-    String modelName();
   }
 
   public interface VertexAiConfig {
@@ -53,8 +47,5 @@ public interface PropertyBasedEmbeddingServiceConfig {
 
     @WithDefault("Bearer")
     String apiKey();
-
-    @WithDefault("davinci")
-    String modelName();
   }
 }
