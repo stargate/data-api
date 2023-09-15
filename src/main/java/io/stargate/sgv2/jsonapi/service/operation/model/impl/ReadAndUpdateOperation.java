@@ -241,7 +241,7 @@ public record ReadAndUpdateOperation(
               + "            query_text_values = ?,"
               + "            query_null_values = ?,"
               + "            query_timestamp_values = ?,"
-              + "            query_vector_values = ?,"
+              + "            query_vector_value = ?,"
               + "            doc_json  = ?"
               + "        WHERE "
               + "            key = ?"
