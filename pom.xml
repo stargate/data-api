@@ -174,6 +174,8 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
+                <stargate.jsonapi.embedding.service.custom.enabled>true</stargate.jsonapi.embedding.service.custom.enabled>
+                <stargate.jsonapi.embedding.service.custom.enabled>io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService</stargate.jsonapi.embedding.service.custom.enabled>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>

@@ -41,7 +41,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                         "function": "cosine"
                       },
                       "vectorizer": {
-                        "service" : "openai",
+                        "service" : "custom",
                         "options" : {
                           "modelName": "text-embedding-ada-002"
                         }
