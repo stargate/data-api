@@ -45,6 +45,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                         "options" : {
                           "modelName": "text-embedding-ada-002"
                         }
+                      }
                     }
                   }
                 }
