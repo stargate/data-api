@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
-  private static final String collectionName = "my_collection";
+  private static final String collectionName = "my_collection_vectorize";
 
   @Nested
   @Order(1)
@@ -34,7 +34,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """
                 {
                   "createCollection": {
-                    "name" : "my_collection",
+                    "name" : "my_collection_vectorize",
                     "options": {
                       "vector": {
                         "size": 5,
