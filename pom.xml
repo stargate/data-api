@@ -175,7 +175,7 @@
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
                 <stargate.jsonapi.embedding.service.custom.enabled>true</stargate.jsonapi.embedding.service.custom.enabled>
-                <stargate.jsonapi.embedding.service.custom.class-Name>io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService</stargate.jsonapi.embedding.service.custom.class-Name>
+                <stargate.jsonapi.embedding.service.custom.class-name>io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService</stargate.jsonapi.embedding.service.custom.class-name>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
