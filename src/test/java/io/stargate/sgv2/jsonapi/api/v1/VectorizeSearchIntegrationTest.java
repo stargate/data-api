@@ -40,7 +40,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                         "size": 5,
                         "function": "cosine"
                       },
-                      "vectorizer": {
+                      "vectorize": {
                         "service" : "custom",
                         "options" : {
                           "modelName": "text-embedding-ada-002"
