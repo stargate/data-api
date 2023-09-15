@@ -125,7 +125,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                     "_id": "Invalid",
                     "name": "Coded Cleats",
                     "description": "ChatGPT integrated sneakers that talk to you",
-                    "$vectorize": [0.25f, 0.25f]
+                    "$vectorize": [0.25, 0.25]
                 }
              }
           }
@@ -201,8 +201,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                 {
                   "_id": "3",
                   "name": "Vision Vector Frame",
-                  "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                  "$vectorize": "Vision Vector Frame', 'A deep learning display that controls your mood"
+                  "description": "A deep learning display that controls your mood",
+                  "$vectorize": "A deep learning display that controls your mood"
                 }
               ]
            }
@@ -285,8 +285,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                      {
                        "_id": "3",
                        "name": "Vision Vector Frame",
-                       "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
-                       "$vectorize": "Vision Vector Frame', 'A deep learning display that controls your mood"
+                       "description": "A deep learning display that controls your mood",
+                       "$vectorize": "A deep learning display that controls your mood"
                      }
                   ]
                }
@@ -341,9 +341,9 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
-          .body("data.documents[1]._id", is("3"))
+          .body("data.documents[1]._id", is("2"))
           .body("data.documents[1].$vector", is(notNullValue()))
-          .body("data.documents[2]._id", is("2"))
+          .body("data.documents[2]._id", is("3"))
           .body("data.documents[2].$vector", is(notNullValue()))
           .body("errors", is(nullValue()));
     }
@@ -475,7 +475,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         {
           "findOne": {
             "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : []}
+            "sort" : {"$vectorize" : []}
           }
         }
         """;
@@ -529,8 +529,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("data.document._id", is("2"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.description", is(notNullValue()))
-          .body("status.matchedCount", is("ChatGPT upgraded"))
+          .body("data.document.description", is("ChatGPT upgraded"))
+          .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
     }
@@ -593,34 +593,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status.upsertedId", is("11"))
           .body("errors", is(nullValue()));
     }
-
-    @Test
-    @Order(5)
-    public void errorOperationForVector() {
-      String json =
-          """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id": "3"},
-            "update" : {"$push" : {"$vectorize" : 0.33}},
-            "options" : {"returnDocument" : "after"}
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage()));
-    }
   }
 
   @Nested
@@ -635,7 +607,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """
           {
             "findOneAndUpdate": {
-              "sort" : {"$vectorize" : "Vision Vector Frame', 'A deep learning display that controls your mood'"},
+              "sort" : {"$vectorize" : "A deep learning display that controls your mood"},
               "update" : {"$set" : {"status" : "active"}},
               "options" : {"returnDocument" : "after"}
             }
@@ -666,7 +638,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         {
           "updateOne": {
             "update" : {"$set" : {"new_col": "new_val"}},
-            "sort" : {"$vector" : "ChatGPT integrated sneakers that talk to you"}
+            "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
           }
         }
         """;

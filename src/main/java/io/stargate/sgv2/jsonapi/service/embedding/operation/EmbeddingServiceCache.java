@@ -64,6 +64,7 @@ public class EmbeddingServiceCache {
             | IllegalAccessException
             | InvocationTargetException
             | ClassCastException e) {
+          e.printStackTrace();
           throw new JsonApiException(
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
