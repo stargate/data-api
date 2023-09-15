@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingService
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -51,6 +52,23 @@ public class EmbeddingServiceCache {
       case "vertexai":
         return new VertexAIEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
+      case "custom":
+        try {
+          Class<?> clazz = Class.forName(configuration.className());
+          final EmbeddingService customEmbeddingClient =
+              (EmbeddingService) clazz.getConstructor().newInstance();
+          return customEmbeddingClient;
+        } catch (NoSuchMethodException
+            | ClassNotFoundException
+            | InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException
+            | ClassCastException e) {
+          throw new JsonApiException(
+              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
+              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
+                  + configuration.className());
+        }
       default:
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED,

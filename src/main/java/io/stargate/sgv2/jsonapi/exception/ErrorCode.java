@@ -103,6 +103,8 @@ public enum ErrorCode {
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
   VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : "),
+
+  VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause");
 
   private final String message;

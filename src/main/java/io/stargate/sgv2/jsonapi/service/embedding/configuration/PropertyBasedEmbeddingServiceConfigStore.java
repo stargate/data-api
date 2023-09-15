@@ -23,7 +23,7 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
     switch (serviceName) {
       case "openai":
         if (config.openai().enabled()) {
-          return new ServiceConfig(
+          return ServiceConfig.provider(
               serviceName, serviceName, config.openai().apiKey(), config.openai().url());
         }
         throw new JsonApiException(
@@ -31,7 +31,7 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
       case "huggingface":
         if (config.hf().enabled()) {
-          return new ServiceConfig(
+          return ServiceConfig.provider(
               serviceName, serviceName, config.hf().apiKey(), config.hf().url());
         }
         throw new JsonApiException(
@@ -39,8 +39,15 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
       case "vertexai":
         if (config.vertexai().enabled()) {
-          return new ServiceConfig(
+          return ServiceConfig.provider(
               serviceName, serviceName, config.vertexai().apiKey(), config.vertexai().url());
+        }
+        throw new JsonApiException(
+            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
+            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+      case "custom":
+        if (config.custom().enabled()) {
+          return ServiceConfig.custom(config.custom().className());
         }
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,

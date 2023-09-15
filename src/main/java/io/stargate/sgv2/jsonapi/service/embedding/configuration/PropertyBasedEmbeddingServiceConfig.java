@@ -16,6 +16,9 @@ public interface PropertyBasedEmbeddingServiceConfig {
   @Nullable
   VertexAiConfig vertexai();
 
+  @Nullable
+  CustomConfig custom();
+
   public interface OpenaiConfig {
     @WithDefault("false")
     boolean enabled();
@@ -47,5 +50,13 @@ public interface PropertyBasedEmbeddingServiceConfig {
 
     @WithDefault("Bearer")
     String apiKey();
+  }
+
+  public interface CustomConfig {
+    @WithDefault("false")
+    boolean enabled();
+
+    @WithDefault("Class not defined")
+    String className();
   }
 }

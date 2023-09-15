@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -46,6 +47,14 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
   private static final CommandContext COMMAND_CONTEXT =
       new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
+  private static final CommandContext COMMAND_CONTEXT_VECTOR =
+      new CommandContext(
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          true,
+          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE,
+          null);
+
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
@@ -63,6 +72,25 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           + "            query_text_values = ?,"
           + "            query_null_values = ?,"
           + "            query_timestamp_values = ?,"
+          + "            doc_json  = ?"
+          + "        WHERE "
+          + "            key = ?"
+          + "        IF "
+          + "            tx_id = ?";
+
+  private static String UPDATE_WITH_VECTOR =
+      "UPDATE \"%s\".\"%s\" "
+          + "        SET"
+          + "            tx_id = now(),"
+          + "            exist_keys = ?,"
+          + "            array_size = ?,"
+          + "            array_contains = ?,"
+          + "            query_bool_values = ?,"
+          + "            query_dbl_values = ?,"
+          + "            query_text_values = ?,"
+          + "            query_null_values = ?,"
+          + "            query_timestamp_values = ?,"
+          + "            query_vector_values = ?,"
           + "            doc_json  = ?"
           + "        WHERE "
           + "            key = ?"
@@ -177,6 +205,281 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
               COMMAND_CONTEXT,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      selectQueryAssert.assertExecuteCount().isOne();
+      updateQueryAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(2)
+          .containsEntry(CommandStatus.MATCHED_COUNT, 1)
+          .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void setVector() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      UUID tx_id = UUID.randomUUID();
+      String doc1 =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
+
+      String doc1Updated =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1",
+                  "date_val" : {"$date": 1672531200000 },
+                  "name" : "test",
+                  "vector" : [0.25,0.25]
+                }
+                """;
+      ValidatingStargateBridge.QueryAssert selectQueryAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id),
+                          Values.of(doc1))));
+
+      String collectionUpdateCql = UPDATE_WITH_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      JsonNode jsonNode = objectMapper.readTree(doc1Updated);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      ValidatingStargateBridge.QueryAssert updateQueryAssert =
+          withQuery(
+                  collectionUpdateCql,
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
+                  CustomValueSerializers.getVectorValue(shredDocument.queryVectorValues()),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.of(tx_id))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
+              .returning(List.of(List.of(Values.of(true))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      FindOperation findOperation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT_VECTOR,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      String updateClause =
+          """
+                       { "$set" : { "name" : "test", "date_val" : {"$date": 1672531200000 } , "vector" : [0.25,0.25]}}
+                  """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+      ReadAndUpdateOperation operation =
+          new ReadAndUpdateOperation(
+              COMMAND_CONTEXT_VECTOR,
+              findOperation,
+              documentUpdater,
+              true,
+              false,
+              false,
+              shredder,
+              DocumentProjector.identityProjector(),
+              1,
+              3);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      selectQueryAssert.assertExecuteCount().isOne();
+      updateQueryAssert.assertExecuteCount().isOne();
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(2)
+          .containsEntry(CommandStatus.MATCHED_COUNT, 1)
+          .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void unsetVector() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      UUID tx_id = UUID.randomUUID();
+      String doc1 =
+          """
+                    {
+                      "_id": "doc1",
+                      "username": "user1",
+                      "vector" : [0.25,0.25]
+                    }
+                    """;
+
+      String doc1Updated =
+          """
+                    {
+                      "_id": "doc1",
+                      "username": "user1"
+                    }
+                    """;
+      ValidatingStargateBridge.QueryAssert selectQueryAssert =
+          withQuery(
+                  collectionReadCql,
+                  Values.of(
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+              .withPageSize(1)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(tx_id),
+                          Values.of(doc1))));
+
+      String collectionUpdateCql = UPDATE_WITH_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      JsonNode jsonNode = objectMapper.readTree(doc1Updated);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      ValidatingStargateBridge.QueryAssert updateQueryAssert =
+          withQuery(
+                  collectionUpdateCql,
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
+                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
+                  Values.of(
+                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
+                  Values.of(
+                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
+                  Values.of(
+                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
+                  Values.of(
+                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
+                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(
+                          shredDocument.queryTimestampValues())),
+                  CustomValueSerializers.getVectorValue(shredDocument.queryVectorValues()),
+                  Values.of(shredDocument.docJson()),
+                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
+                  Values.of(tx_id))
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("applied")
+                          .setType(TypeSpecs.BOOLEAN)
+                          .build()))
+              .withSerialConsistency(queriesConfig.serialConsistency())
+              .returning(List.of(List.of(Values.of(true))));
+
+      DBFilterBase.IDFilter filter =
+          new DBFilterBase.IDFilter(
+              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      FindOperation findOperation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT_VECTOR,
+              List.of(filter),
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      String updateClause = """
+           { "$unset" : { "vector" : [0.25,0.25]}}
+         """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+      ReadAndUpdateOperation operation =
+          new ReadAndUpdateOperation(
+              COMMAND_CONTEXT_VECTOR,
               findOperation,
               documentUpdater,
               true,
