@@ -19,7 +19,8 @@ public record CreateEmbeddingServiceOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     EmbeddingServiceConfigStore.ServiceConfig serviceConfig =
-        new EmbeddingServiceConfigStore.ServiceConfig(serviceName, providerName, apiKey, baseUrl);
+        EmbeddingServiceConfigStore.ServiceConfig.provider(
+            serviceName, providerName, apiKey, baseUrl);
     return Uni.createFrom()
         .item(serviceConfig)
         .onItem()
