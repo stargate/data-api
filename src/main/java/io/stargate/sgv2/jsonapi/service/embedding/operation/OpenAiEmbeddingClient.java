@@ -43,6 +43,7 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
 
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
     private record Data(String object, int index, float[] embedding) {}
+
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 
