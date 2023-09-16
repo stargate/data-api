@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
  * This is a test implementation of the EmbeddingService interface. It is used for
  * VectorizeSearchIntegrationTest
  */
+@RegisterForReflection
 public class TestEmbeddingService implements EmbeddingService {
 
   public static HashMap<String, float[]> TEST_DATA = new HashMap<>();
