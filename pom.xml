@@ -76,12 +76,6 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/dev.ai4j/openai4j -->
-    <dependency>
-      <groupId>dev.ai4j</groupId>
-      <artifactId>openai4j</artifactId>
-      <version>0.9.0</version>
-    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
