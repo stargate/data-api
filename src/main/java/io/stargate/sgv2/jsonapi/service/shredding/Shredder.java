@@ -107,10 +107,6 @@ public class Shredder {
     docWithIdAsFirstField.set(DocumentConstants.Fields.DOC_ID, idNode);
     // Ok to add all fields, possibly including doc id since order won't change
     docWithIdAsFirstField.setAll(doc);
-    // if $vectorize field is present in the document, remove $vector field
-    if (docWithIdAsFirstField.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      docWithIdAsFirstField.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-    }
     return docWithIdAsFirstField;
   }
 
@@ -175,6 +171,8 @@ public class Shredder {
             ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
       }
       callback.shredVector(path, arr);
+    } else if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      // Do nothing, vectorize field will just sit in doc json
     } else {
       if (value.isObject()) {
         ObjectNode ob = (ObjectNode) value;
@@ -304,7 +302,9 @@ public class Shredder {
       if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
         ; // Fine, looks like legit Date value
       } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
-        ; // Fine, looks like legit Date value
+        ; // Fine, looks like legit vector field
+      } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
+        ; // Fine, looks like legit vectorize field
       } else {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,

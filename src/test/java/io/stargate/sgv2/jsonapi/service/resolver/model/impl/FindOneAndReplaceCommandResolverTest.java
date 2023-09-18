@@ -316,7 +316,8 @@ public class FindOneAndReplaceCommandResolverTest {
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
       Operation operation =
           resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\",\"$vector\":[0.25,0.25,0.25]}";
+      String expected =
+          "{\"col1\":\"val1\",\"col2\":\"val2\",\"$vectorize\":\"test data\",\"$vector\":[0.25,0.25,0.25]}";
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,

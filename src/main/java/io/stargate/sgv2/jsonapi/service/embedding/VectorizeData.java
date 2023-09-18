@@ -36,8 +36,8 @@ public class VectorizeData {
         final JsonNode jsonNode =
             document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         if (jsonNode.isNull()) {
-          ((ObjectNode) document).remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-          ((ObjectNode) document).remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+          ((ObjectNode) document)
+              .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
           continue;
         }
         if (!jsonNode.isTextual()) {
@@ -63,7 +63,6 @@ public class VectorizeData {
           arrayNode.add(nodeFactory.numberNode(listValue));
         }
         ((ObjectNode) document).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
-        ((ObjectNode) document).remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       }
     }
   }
@@ -88,7 +87,6 @@ public class VectorizeData {
     updateVectorize(setOnInsertNode);
     final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
     if (unsetNode != null && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      unsetNode.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
@@ -98,7 +96,6 @@ public class VectorizeData {
     if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
-        node.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
@@ -108,7 +105,6 @@ public class VectorizeData {
           arrayNode.add(nodeFactory.numberNode(listValue));
         }
         node.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
-        node.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       } else {
         throw new JsonApiException(
             ErrorCode.SHRED_BAD_VECTORIZE_VALUE, ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());

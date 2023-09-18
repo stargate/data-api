@@ -323,7 +323,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           {
             "find": {
               "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
-              "projection" : {"_id" : 1, "$vector" : 1},
+              "projection" : {"_id" : 1, "$vector" : 1, "$vectorize" : 1},
               "options" : {
                   "limit" : 5
               }
@@ -341,10 +341,13 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vectorize", is(notNullValue()))
           .body("data.documents[1]._id", is("2"))
           .body("data.documents[1].$vector", is(notNullValue()))
+          .body("data.documents[1].$vectorize", is(notNullValue()))
           .body("data.documents[2]._id", is("3"))
           .body("data.documents[2].$vector", is(notNullValue()))
+          .body("data.documents[2].$vectorize", is(notNullValue()))
           .body("errors", is(nullValue()));
     }
 

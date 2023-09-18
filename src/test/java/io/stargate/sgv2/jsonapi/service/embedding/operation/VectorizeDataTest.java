@@ -43,7 +43,7 @@ public class VectorizeDataTest {
       VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
       vectorizeData.vectorize(documents);
       for (JsonNode document : documents) {
-        assertThat(document.has("$vectorize")).isFalse();
+        assertThat(document.has("$vectorize")).isTrue();
         assertThat(document.has("$vector")).isTrue();
         assertThat(document.get("$vector").isArray()).isTrue();
         assertThat(document.get("$vector").size()).isEqualTo(3);
@@ -75,8 +75,8 @@ public class VectorizeDataTest {
       VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
       vectorizeData.vectorize(documents);
       for (JsonNode document : documents) {
-        assertThat(document.has("$vectorize")).isFalse();
-        assertThat(document.has("$vector")).isFalse();
+        assertThat(document.has("$vectorize")).isTrue();
+        assertThat(document.has("$vector")).isTrue();
       }
     }
   }
@@ -116,7 +116,7 @@ public class VectorizeDataTest {
       VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
       vectorizeData.vectorizeUpdateClause(updateClause);
       final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
-      assertThat(setNode.has("$vectorize")).isFalse();
+      assertThat(setNode.has("$vectorize")).isTrue();
       assertThat(setNode.has("$vector")).isTrue();
       assertThat(setNode.get("$vector").isArray()).isTrue();
       assertThat(setNode.get("$vector").size()).isEqualTo(3);
@@ -139,7 +139,7 @@ public class VectorizeDataTest {
       vectorizeData.vectorizeUpdateClause(updateClause);
       final ObjectNode setNode =
           updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
-      assertThat(setNode.has("$vectorize")).isFalse();
+      assertThat(setNode.has("$vectorize")).isTrue();
       assertThat(setNode.has("$vector")).isTrue();
       assertThat(setNode.get("$vector").isArray()).isTrue();
       assertThat(setNode.get("$vector").size()).isEqualTo(3);
@@ -161,7 +161,7 @@ public class VectorizeDataTest {
       VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
       vectorizeData.vectorizeUpdateClause(updateClause);
       final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
-      assertThat(unsetNode.has("$vectorize")).isFalse();
+      assertThat(unsetNode.has("$vectorize")).isTrue();
       assertThat(unsetNode.has("$vector")).isTrue();
       assertThat(unsetNode.get("$vector").isNull()).isTrue();
     }
