@@ -38,7 +38,7 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.jsonapi.embedding.service.custom.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.embedding.service.custom.class-name",
-        "io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService");
+        "io.stargate.sgv2.jsonapi.service.embedding.operation.test.TestEmbeddingService");
     return propsBuilder.build();
   }
 }

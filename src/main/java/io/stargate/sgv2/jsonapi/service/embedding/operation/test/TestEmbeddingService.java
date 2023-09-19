@@ -1,6 +1,7 @@
-package io.stargate.sgv2.jsonapi.service.embedding.operation;
+package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
