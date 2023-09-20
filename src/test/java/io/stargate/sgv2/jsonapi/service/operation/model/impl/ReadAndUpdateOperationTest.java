@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -46,6 +47,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
   private static final CommandContext COMMAND_CONTEXT =
       new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
+  private static final CommandContext COMMAND_VECTOR_CONTEXT =
+      new CommandContext(
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          true,
+          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE);
+
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueryExecutor queryExecutor;
@@ -63,6 +71,25 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
           + "            query_text_values = ?,"
           + "            query_null_values = ?,"
           + "            query_timestamp_values = ?,"
+          + "            doc_json  = ?"
+          + "        WHERE "
+          + "            key = ?"
+          + "        IF "
+          + "            tx_id = ?";
+
+  private static String UPDATE_VECTOR =
+      "UPDATE \"%s\".\"%s\" "
+          + "        SET"
+          + "            tx_id = now(),"
+          + "            exist_keys = ?,"
+          + "            array_size = ?,"
+          + "            array_contains = ?,"
+          + "            query_bool_values = ?,"
+          + "            query_dbl_values = ?,"
+          + "            query_text_values = ?,"
+          + "            query_null_values = ?,"
+          + "            query_timestamp_values = ?,"
+          + "            query_vector_value = ?,"
           + "            doc_json  = ?"
           + "        WHERE "
           + "            key = ?"
@@ -91,8 +118,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
             {
               "_id": "doc1",
               "username": "user1",
-              "date_val" : {"$date": 1672531200000 },
-              "name" : "test"
+              "$vector" : [0.11,0.22,0.33,0.44]
             }
             """;
       ValidatingStargateBridge.QueryAssert selectQueryAssert =
@@ -124,7 +150,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           Values.of(tx_id),
                           Values.of(doc1))));
 
-      String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String collectionUpdateCql = UPDATE_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
@@ -145,6 +171,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                   Values.of(
                       CustomValueSerializers.getTimestampMapValues(
                           shredDocument.queryTimestampValues())),
+                  CustomValueSerializers.getVectorValue(shredDocument.queryVectorValues()),
                   Values.of(shredDocument.docJson()),
                   Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
                   Values.of(tx_id))
@@ -162,7 +189,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       FindOperation findOperation =
           FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
+              COMMAND_VECTOR_CONTEXT,
               List.of(filter),
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
@@ -170,13 +197,13 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
       String updateClause =
           """
-                   { "$set" : { "name" : "test", "date_val" : {"$date": 1672531200000 } }}
+                   { "$set" : { "$vector" : [0.11,0.22,0.33,0.44] }}
               """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT,
+              COMMAND_VECTOR_CONTEXT,
               findOperation,
               documentUpdater,
               true,

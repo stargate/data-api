@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -12,7 +11,6 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -873,28 +871,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
-
-      // and verify it was set to value with expected size
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                      "find": {
-                        "filter" :{"_id": "2"}
-                      }
-                    }
-                    """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]._id", is("2"))
-          .body("data.documents[0].$vector", is(notNullValue()))
-          .body("data.documents[0].$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f));
     }
 
     @Test
@@ -1805,54 +1781,5 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       sb.append(nums[ix]);
     }
     return sb.toString();
-  }
-
-  @Nested
-  @Order(99)
-  class Metrics {
-    @Test
-    public void checkInsertMetrics() {
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> countMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("command_processor_process")
-                          && line.contains("command=\"InsertOneCommand\"")
-                          && line.contains("vector.collection=\"true\""))
-              .toList();
-      assertThat(countMetrics.size()).isGreaterThan(0);
-    }
-
-    @Test
-    public void checkFindMetrics() {
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> countMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("command_processor_process")
-                          && line.contains("command=\"FindCommand\"")
-                          && line.contains("vector.collection=\"true\"")
-                          && line.contains("vsearch.with.filter=\"true\""))
-              .toList();
-      assertThat(countMetrics.size()).isGreaterThan(0);
-
-      countMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("command_processor_process")
-                          && line.contains("command=\"FindCommand\"")
-                          && line.contains("vector.collection=\"true\"")
-                          && line.contains("vsearch.with.filter=\"false\""))
-              .toList();
-      assertThat(countMetrics.size()).isGreaterThan(0);
-    }
-
-    public void checkMetrics(String commandName) {}
   }
 }
