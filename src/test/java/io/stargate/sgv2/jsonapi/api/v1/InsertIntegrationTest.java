@@ -67,22 +67,47 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is("doc3"))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id" : "doc3"}
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+              {
+                "_id":"doc3",
+                "username":"user3"
+              }
+              """))
+          .body("errors", is(nullValue()));
+    }
 
-      json =
+    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
+    @Test
+    public void insertDocumentWithHyphenatedColumn() {
+      String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc3"}
-            }
-          }
-          """;
-      String expected =
-          """
-          {
-            "_id":"doc3",
-            "username":"user3"
-          }
-          """;
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc-hyphen",
+                    "user-name": "user #1"
+                  }
+                }
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -92,7 +117,33 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
+          .body("status.insertedIds[0]", is("doc-hyphen"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "find": {
+                  "filter" : {"_id" : "doc-hyphen"}
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+              {
+                "_id": "doc-hyphen",
+                "user-name": "user #1"
+              }
+              """))
           .body("errors", is(nullValue()));
     }
 

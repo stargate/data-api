@@ -256,7 +256,7 @@ the rules for user defined field names.
                 <user-field-name> 
 
 <id-field-name> = _id
-<user-field-name> ::= ["a-zA-Z0-9_"]+
+<user-field-name> ::= ["a-zA-Z0-9_-"]+
 ```
 
 The `_id` field is a "reserved name" and is always interpreted as the

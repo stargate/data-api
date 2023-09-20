@@ -1,0 +1,197 @@
+min_version: "5.17.3"
+
+# Example command line
+# Against AstraDB
+# nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
+# Against local JSON API
+# nb5 -v http-jsonapi-vector-crud jsonapi_host=localhost docscount=1000 threads=20
+
+description: >2
+  This workload emulates vector CRUD operations for Stargate JSON API.
+  It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
+  1536 is a standard vector size that openAI embedding generates, using this size for benchmark
+
+
+scenarios:
+  default:
+    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
+    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: jsonapi_host=host1
+  #   multiple hosts: jsonapi_host=host1,host2,host3
+  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+  seq_key: Mod(<<docscount:500>>); ToString() -> String
+  random_key: Uniform(0,<<docscount:500>>); ToString() -> String
+  vector_json: HashedLineToString('<<dataset:vector-dataset.txt>>');
+
+blocks:
+  schema:
+    ops:
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createNamespace": {
+              "name": "<<namespace:jsonapi_vector_crud_namespace>>"
+            }
+          }
+
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:jsonapi_vector_crud_collection>>"
+            }
+          }
+
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+#        vector mush be enabled when creating collection
+        body: >2
+          {
+            "createCollection": {
+              "name": "<<collection:jsonapi_vector_crud_collection>>",
+              "options": {
+                          "vector": {
+                              "size": 1536
+                          }
+              }
+            }
+          }
+
+  write:
+    ops:
+      write-insert-one-vector:
+        params:
+          ratio: 5
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
+        body: >2
+          {
+            "insertOne" : {
+              "document" : {
+                "_id" :         "{seq_key}",
+                "$vector" :      {vector_json}
+              }
+            }
+          }
+  read:
+    ops:
+      find-one-by-vector-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne": {
+              "sort" : {"$vector" : {vector_json}},
+              "projection" : {"$vector" : 1}
+            }
+          }
+
+      find-by-vector-projection:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find": {
+              "sort" : {"$vector" : {vector_json}},
+              "projection" : {"$vector" : 1, "$similarity" : 1},
+              "options" : {
+                  "limit" : 10
+              }
+            }
+          }
+
+
+  update:
+    ops:
+      find-one-update-vector:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+              "findOneAndUpdate": {
+                  "sort" : {"$vector" : {vector_json}},
+                  "update" : {"$set" : {"status" : "active"}},
+                  "options" : {"returnDocument" : "after"}
+              }
+          }
+
+  delete:
+    ops:
+      delete-document:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
+        body: >2
+          {
+              "findOneAndDelete": {
+                  "sort" : {"$vector" : {vector_json}}
+              }
+          }
+
