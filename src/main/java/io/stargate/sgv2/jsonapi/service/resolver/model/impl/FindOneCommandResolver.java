@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -37,7 +38,19 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
+    Log.info("??????!");
+
     List<DBFilterBase> filters = resolve(commandContext, command);
+    Log.info("filters after resolve !!!" + filters);
+    Log.info("filters after resolve !!!" + filters.size());
+
+    //    for (DBFilterBase filter : filters) {
+    //      Log.info("filter after resolve lhs columnName~~~~ " + filter.get().lhs().columnName());
+    //      Log.info("filter after resolve lhs value ~~~~ " + filter.get().lhs().value());
+    //      Log.info("filter after resolve predicate ~~~~ " + filter.get().predicate());
+    //      Log.info("filter after resolve filter value ~~~~ " + filter.get().value().toString());
+    //
+    //    }
     final SortClause sortClause = command.sortClause();
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
@@ -74,6 +87,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount());
     } else {
+      Log.error("uns 11");
       return FindOperation.unsortedSingle(
           commandContext, filters, command.buildProjector(), ReadType.DOCUMENT, objectMapper);
     }

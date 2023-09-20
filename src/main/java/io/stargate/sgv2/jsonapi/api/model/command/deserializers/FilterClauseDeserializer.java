@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
@@ -65,7 +66,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
       }
     }
-
+    Log.info("deserialize expressionList" + expressionList);
     validate(expressionList);
     return new FilterClause(expressionList);
   }
@@ -90,10 +91,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
         case IN -> {
-          if (!path.equals(DocumentConstants.Fields.DOC_ID)) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION, "Can use $in operator only on _id field");
-          }
+          //          if (!path.equals(DocumentConstants.Fields.DOC_ID)) {
+          //            throw new JsonApiException(
+          //                ErrorCode.INVALID_FILTER_EXPRESSION, "Can use $in operator only on _id
+          // field");
+          //          }
 
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.defaultPageSize()) {

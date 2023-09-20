@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
@@ -37,6 +38,7 @@ public class FilterMatcher<T extends Command & Filterable> {
   }
 
   public Optional<CaptureGroups<T>> apply(T command) {
+    Log.error("onece");
     FilterClause filter = command.filterClause();
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
     CaptureGroups captures = new CaptureGroups(command);

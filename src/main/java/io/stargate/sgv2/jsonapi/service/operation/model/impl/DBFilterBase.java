@@ -16,10 +16,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -288,13 +285,85 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       }
     }
   }
+
+  /**
+   * Filters db documents based on non document id field values if id use "$in" operator, use
+   * IDFilter, since partition key 'or' is not supported besides id, "$in" operator, use INFilter
+   */
+  public static class INFilter extends DBFilterBase {
+    private final Object arrayValue;
+    protected final INFilter.Operator operator;
+
+    @Override
+    JsonNode asJson(JsonNodeFactory nodeFactory) {
+      return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return false;
+    }
+
+    public enum Operator {
+      IN;
+    }
+
+    public INFilter(INFilter.Operator operator, String path, Object arrayValue) {
+      super(path);
+      this.arrayValue = arrayValue;
+      this.operator = operator;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      INFilter inFilter = (INFilter) o;
+      return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(arrayValue, operator);
+    }
+
+    private static final String DATA_CONTAINS = "array_contains";
+
+    @Override
+    public BuiltCondition get() {
+      // For IN filter we always use getALL() method
+      return null;
+    }
+
+    public List<BuiltCondition> getAll() {
+      List<String> values = (List<String>) arrayValue;
+      switch (operator) {
+        case IN:
+          if (values.isEmpty()) return List.of();
+          return values.stream()
+              .map(
+                  v ->
+                      BuiltCondition.of(
+                          DATA_CONTAINS,
+                          Predicate.CONTAINS,
+                          getGrpcValue(getHashValue(new DocValueHasher(), getPath(), v))))
+              .collect(Collectors.toList());
+
+        default:
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_FILTER_OPERATION,
+              String.format("Unsupported %s column operation %s", getPath(), operator));
+      }
+    }
+  }
+
   /**
    * DB filter / condition for testing a set value Note: we can only do CONTAINS until SAI indexes
-   * are updated
+   * are updated Now, cassandra supports or operation, we can add $in
    */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
-      CONTAINS;
+      CONTAINS,
     }
 
     protected final String columnName;

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -58,7 +59,9 @@ public class CommandProcessor {
         .flatMap(
             resolver -> {
               // if we have resolver, resolve operation and execute
+              Log.info("begin to resolve command! ");
               Operation operation = resolver.resolveCommand(commandContext, command);
+              //              Log.info("give me a resolved operation " + operation);
               return operation.execute(queryExecutor);
             })
 

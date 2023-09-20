@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
+import io.quarkus.logging.Log;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -18,6 +19,7 @@ public record AtomicValue(DocValueType type, String typedFullValue, DocValueHash
 
   public static AtomicValue forString(String str) {
     // For Strings no changes needed, use default prefix+full-value
+    Log.info("used here");
     return create(DocValueType.STRING, str);
   }
 

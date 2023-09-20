@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -34,7 +35,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
-
+  private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
@@ -48,6 +49,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   @Inject
   public FilterableResolver() {
+    Log.error("should just once");
     matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
 
     matchRules
@@ -62,6 +64,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
+    //    matchRules
+    //            .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.STRICT)
+    //            .matcher()
+    //            .capture(DYNAMIC_GROUP_IN)
+    //            .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
     // NOTE - can only do eq ops on fields until SAI changes
     matchRules
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
@@ -70,6 +78,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .capture(DYNAMIC_GROUP_IN)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
@@ -93,10 +103,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected List<DBFilterBase> resolve(CommandContext commandContext, T command) {
+    Log.info("FilterableResolver resolve!");
     return matchRules.apply(commandContext, command);
   }
 
   private List<DBFilterBase> findById(CommandContext commandContext, CaptureGroups<T> captures) {
+    Log.info("find id");
     List<DBFilterBase> filters = new ArrayList<>();
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
@@ -122,10 +134,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private List<DBFilterBase> findNoFilter(
       CommandContext commandContext, CaptureGroups<T> captures) {
+    Log.error("wogaoni");
     return List.of();
   }
 
   private List<DBFilterBase> findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
+    Log.info("find Dynamic ");
+
     List<DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<DocumentId> idGroup =
@@ -141,11 +156,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     final CaptureGroup<List<DocumentId>> idsGroup =
         (CaptureGroup<List<DocumentId>>) captures.getGroupIfPresent(ID_GROUP_IN);
     if (idsGroup != null) {
+      Log.error("hit1");
+
       idsGroup.consumeAllCaptures(
           expression ->
               filters.add(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.IN, expression.value())));
+    }
+
+    final CaptureGroup<List<Object>> dynamicGroups =
+        (CaptureGroup<List<Object>>) captures.getGroupIfPresent(DYNAMIC_GROUP_IN);
+    if (dynamicGroups != null) {
+      Log.info("hit");
+      dynamicGroups.consumeAllCaptures(
+          expression -> {
+            Log.info("captured " + expression);
+            final DocValueHasher docValueHasher = new DocValueHasher();
+            filters.add(
+                new DBFilterBase.INFilter(
+                    DBFilterBase.INFilter.Operator.IN, expression.path(), expression.value()));
+          });
     }
 
     final CaptureGroup<String> textGroup =

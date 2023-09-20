@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -36,6 +37,7 @@ public class DocValueHasher {
   final AtomicValues atomics = new AtomicValues();
 
   public DocValueHash hash(JsonNode value) {
+    Log.info("inside !!");
     return switch (value.getNodeType()) {
       case ARRAY -> arrayHash((ArrayNode) value);
       case BOOLEAN -> booleanValue(value.booleanValue()).hash();

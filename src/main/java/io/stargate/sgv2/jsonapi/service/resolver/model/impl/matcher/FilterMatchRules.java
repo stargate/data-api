@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -59,6 +60,26 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public List<DBFilterBase> apply(CommandContext commandContext, T command) {
+    Log.error("begin to apply " + command);
+    Log.error("matchRules " + matchRules);
+    Log.error("matchRules len " + matchRules.size());
+
+    final long count1 =
+        matchRules.stream()
+            .map(e -> e.apply(commandContext, command))
+            .filter(Optional::isPresent)
+            .count();
+    Log.error("dqdw " + count1);
+    final long count =
+        matchRules.stream()
+            .map(e -> e.apply(commandContext, command))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .findFirst()
+            .orElseThrow()
+            .size();
+    Log.error("woLLL " + count);
+
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
