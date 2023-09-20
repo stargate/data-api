@@ -430,7 +430,7 @@ public record FindOperation(
             } else {
               // TODO vector search part , compatible with or operation?
               Log.warn("pre arrive ");
-              QueryOuterClass.Query builtQuery = getVectorSearchQuery(null);
+              QueryOuterClass.Query builtQuery = getVectorSearchQueryByExpression(expression);
               final List<QueryOuterClass.Value> valuesList =
                   builtQuery.getValuesOrBuilder().getValuesList();
               final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
@@ -539,7 +539,67 @@ public record FindOperation(
           .build();
     }
   }
-
+  /** A separate method to build vector search query by using expression, expression can contain logic operations like 'or','and'.. */
+  private QueryOuterClass.Query getVectorSearchQueryByExpression(Expression<BuiltCondition> expression) {
+    QueryOuterClass.Query builtQuery = null;
+    if (projection().doIncludeSimilarityScore()) {
+      switch (commandContext().similarityFunction()) {
+        case COSINE, UNDEFINED -> {
+          return new QueryBuilder()
+                  .select()
+                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                  .similarityCosine(
+                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                          CustomValueSerializers.getVectorValue(vector()))
+                  .from(commandContext.namespace(), commandContext.collection())
+                  .where(expression)
+                  .limit(limit)
+                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+                  .build();
+        }
+        case EUCLIDEAN -> {
+          return new QueryBuilder()
+                  .select()
+                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                  .similarityEuclidean(
+                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                          CustomValueSerializers.getVectorValue(vector()))
+                  .from(commandContext.namespace(), commandContext.collection())
+                  .where(expression)
+                  .limit(limit)
+                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+                  .build();
+        }
+        case DOT_PRODUCT -> {
+          return new QueryBuilder()
+                  .select()
+                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                  .similarityDotProduct(
+                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                          CustomValueSerializers.getVectorValue(vector()))
+                  .from(commandContext.namespace(), commandContext.collection())
+                  .where(expression)
+                  .limit(limit)
+                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+                  .build();
+        }
+        default -> {
+          throw new JsonApiException(
+                  ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
+                  ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+        }
+      }
+    } else {
+      return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+    }
+  }
   /**
    * Builds select query based on filters, sort fields and additionalIdFilter overrides.
    *
