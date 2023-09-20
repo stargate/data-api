@@ -49,7 +49,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   @Inject
   public FilterableResolver() {
-    Log.error("should just once");
     matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
 
     matchRules
@@ -134,7 +133,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private List<DBFilterBase> findNoFilter(
       CommandContext commandContext, CaptureGroups<T> captures) {
-    Log.error("wogaoni");
     return List.of();
   }
 
@@ -146,6 +144,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
     if (idGroup != null) {
+      Log.info("hit");
+
       idGroup.consumeAllCaptures(
           expression ->
               filters.add(
@@ -156,9 +156,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     final CaptureGroup<List<DocumentId>> idsGroup =
         (CaptureGroup<List<DocumentId>>) captures.getGroupIfPresent(ID_GROUP_IN);
     if (idsGroup != null) {
-      Log.error("hit1");
-
-      idsGroup.consumeAllCaptures(
+        idsGroup.consumeAllCaptures(
           expression ->
               filters.add(
                   new DBFilterBase.IDFilter(

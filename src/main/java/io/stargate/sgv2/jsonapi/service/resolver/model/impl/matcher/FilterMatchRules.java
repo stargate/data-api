@@ -60,26 +60,9 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public List<DBFilterBase> apply(CommandContext commandContext, T command) {
-    Log.error("begin to apply " + command);
-    Log.error("matchRules " + matchRules);
-    Log.error("matchRules len " + matchRules.size());
-
-    final long count1 =
-        matchRules.stream()
+    Log.warn("check! " + matchRules.stream()
             .map(e -> e.apply(commandContext, command))
-            .filter(Optional::isPresent)
-            .count();
-    Log.error("dqdw " + count1);
-    final long count =
-        matchRules.stream()
-            .map(e -> e.apply(commandContext, command))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .findFirst()
-            .orElseThrow()
-            .size();
-    Log.error("woLLL " + count);
-
+            .filter(Optional::isPresent).count());
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)

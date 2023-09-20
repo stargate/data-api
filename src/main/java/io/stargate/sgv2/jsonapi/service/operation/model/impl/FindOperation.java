@@ -334,7 +334,6 @@ public record FindOperation(
       }
       case DOCUMENT, KEY -> {
         List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
-        Log.error("getDocuments query before findDocument " + queries);
         return findDocument(
             queryExecutor,
             queries,
@@ -392,11 +391,6 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
-    //    Log.error("filter is " + filters);
-    //    Log.error("filter is " + filters.size());
-    //    Log.error("filter is " + (filters.get(0) instanceof DBFilterBase.INFilter));
-    //    Log.error("filter is " + (filters.get(1) instanceof DBFilterBase.INFilter));
-
     filters.forEach(
         filter -> {
           if (filter instanceof DBFilterBase.INFilter) {
@@ -418,7 +412,6 @@ public record FindOperation(
       expressions.forEach(
           expression -> {
             if (vector() == null) {
-              Log.error("each expression " + expression);
               queries.add(
                   new QueryBuilder()
                       .select()
@@ -443,8 +436,6 @@ public record FindOperation(
       return queries;
 
     } else {
-      Log.error("not has expression");
-
       List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
       if (conditions == null) {
         return List.of();
@@ -653,9 +644,6 @@ public record FindOperation(
       if (!(filter instanceof DBFilterBase.IDFilter idFilter)) {
         conditions.add(filter.get());
       } else {
-        //                final DBFilterBase.IDFilter filter1 = (DBFilterBase.IDFilter) filter;
-        //                                Log.error("jiujiu " + filter1.values);
-
         if (!idFilterOverwrite) {
           idFilterToUse = idFilter;
         }

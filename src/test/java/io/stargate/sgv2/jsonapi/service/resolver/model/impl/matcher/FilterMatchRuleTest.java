@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -65,6 +66,40 @@ public class FilterMatchRuleTest {
       response =
           filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testDynamicIn() throws Exception {
+      String json =
+              """
+                  {
+                    "findOne": {
+                      "filter" : {"name" : {"$in" : ["testname1", "testname2"]}}
+                    }
+                  }
+                  """;
+      FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+      FilterMatcher<FindOneCommand> matcher =
+              new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+
+//      matcher.capture("capture marker")
+//              .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
+      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
+              resolveFunction =
+              (commandContext, captures) -> filters;
+
+      FilterMatchRule<FindOneCommand> filterMatchRule =
+              new FilterMatchRule(matcher, resolveFunction);
+
+      filterMatchRule.matcher()
+              .capture("capture marker")
+              .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
+      Optional<List<DBFilterBase>> response =
+              filterMatchRule.apply(new CommandContext("testNamespace", "testCollection"), findOneCommand);
+      assertThat(response).isPresent();
+
     }
   }
 }
