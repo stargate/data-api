@@ -726,11 +726,10 @@ public class FindCommandResolverTest {
               });
 
       final FindOperation operation1 = (FindOperation) operation;
-      System.out.println("geiwo " + operation1.filters());
     }
 
     @Test
-    public void NonIdIn_IdEq() throws Exception {
+    public void NonIdInIdEq() throws Exception {
       String json =
           """
                     {
@@ -770,7 +769,7 @@ public class FindCommandResolverTest {
     }
 
     @Test
-    public void NonIdIn_IdIn() throws Exception {
+    public void NonIdInIdIn() throws Exception {
       String json =
           """
                     {
@@ -811,7 +810,7 @@ public class FindCommandResolverTest {
     }
 
     @Test
-    public void NonIdIn_VSearch() throws Exception {
+    public void NonIdInVSearch() throws Exception {
       String json =
           """
                     {
@@ -851,7 +850,7 @@ public class FindCommandResolverTest {
     }
 
     @Test
-    public void NonIdIn_IdIn_VSearch() throws Exception {
+    public void NonIdInIdInVSearch() throws Exception {
       String json =
           """
                     {
@@ -896,7 +895,7 @@ public class FindCommandResolverTest {
     }
 
     @Test
-    public void descending_sort_with_NonIdIn() throws Exception {
+    public void descendingSortNonIdIn() throws Exception {
       String json =
           """
                         {
@@ -939,7 +938,7 @@ public class FindCommandResolverTest {
     }
 
     @Test
-    public void ascending_sort_with_NonIdIn_IdIn() throws Exception {
+    public void ascendingSortNonIdInIdIn() throws Exception {
       String json =
           """
                         {

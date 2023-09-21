@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -102,12 +101,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected List<DBFilterBase> resolve(CommandContext commandContext, T command) {
-    Log.info("FilterableResolver resolve!");
     return matchRules.apply(commandContext, command);
   }
 
   private List<DBFilterBase> findById(CommandContext commandContext, CaptureGroups<T> captures) {
-    Log.info("find id");
     List<DBFilterBase> filters = new ArrayList<>();
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
@@ -137,15 +134,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   private List<DBFilterBase> findDynamic(CommandContext commandContext, CaptureGroups<T> captures) {
-    Log.info("find Dynamic ");
-
     List<DBFilterBase> filters = new ArrayList<>();
 
     final CaptureGroup<DocumentId> idGroup =
         (CaptureGroup<DocumentId>) captures.getGroupIfPresent(ID_GROUP);
     if (idGroup != null) {
-      Log.info("hit");
-
       idGroup.consumeAllCaptures(
           expression ->
               filters.add(
@@ -166,10 +159,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     final CaptureGroup<List<Object>> dynamicGroups =
         (CaptureGroup<List<Object>>) captures.getGroupIfPresent(DYNAMIC_GROUP_IN);
     if (dynamicGroups != null) {
-      Log.info("hit");
       dynamicGroups.consumeAllCaptures(
           expression -> {
-            Log.info("captured " + expression);
             final DocValueHasher docValueHasher = new DocValueHasher();
             filters.add(
                 new DBFilterBase.INFilter(

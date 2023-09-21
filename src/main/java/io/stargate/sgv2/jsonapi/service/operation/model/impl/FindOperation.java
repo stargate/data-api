@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -283,9 +282,6 @@ public record FindOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    Log.info("give me a executor " + commandContext);
-    //    Log.info("give me a executor! " + filters.get(0));
-
     final boolean vectorEnabled = commandContext().isVectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
@@ -400,11 +396,7 @@ public record FindOperation(
         });
 
     if (hasInFilterBesidesIdField.get()) {
-      Log.info("laile lao tie");
       List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
-      Log.info(expressions.size());
-      Log.info(expressions);
-
       if (expressions == null) {
         return List.of();
       }
@@ -421,8 +413,6 @@ public record FindOperation(
                       .limit(limit)
                       .build());
             } else {
-              // TODO vector search part , compatible with or operation?
-              Log.warn("pre arrive ");
               QueryOuterClass.Query builtQuery = getVectorSearchQueryByExpression(expression);
               final List<QueryOuterClass.Value> valuesList =
                   builtQuery.getValuesOrBuilder().getValuesList();
@@ -518,8 +508,6 @@ public record FindOperation(
         }
       }
     } else {
-
-      Log.warn("arrive " + conditions);
       return new QueryBuilder()
           .select()
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
@@ -676,7 +664,6 @@ public record FindOperation(
    */
   private List<List<BuiltCondition>> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
     List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-    Log.error("lkk " + filters.size());
     DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
     // if we have id filter overwrite ignore existing IDFilter
     boolean idFilterOverwrite = additionalIdFilter != null;
@@ -731,19 +718,13 @@ public record FindOperation(
     for (DBFilterBase filter : filters) {
       if (filter instanceof DBFilterBase.INFilter inFilter) {
         List<BuiltCondition> conditions = inFilter.getAll();
-        Log.info(" size " + conditions.size());
-        Log.info(" conditions " + conditions);
         if (!conditions.isEmpty()) {
           List<Variable<BuiltCondition>> variableConditions =
               conditions.stream().map(Variable::of).toList();
-          Log.info(" size" + variableConditions.size());
-
           conditionExpression =
               conditionExpression == null
                   ? Or.of(variableConditions)
                   : And.of(Or.of(variableConditions), conditionExpression);
-
-          Log.info(" conditionExpression " + conditionExpression);
         }
       } else if (filter instanceof DBFilterBase.IDFilter idFilter) {
         if (!idFilterOverwrite) {
@@ -757,9 +738,6 @@ public record FindOperation(
       }
     }
 
-    Log.info(filters.size());
-    Log.info(filters);
-    Log.info(conditionExpression);
     if (idFilterToUse != null) {
       final List<BuiltCondition> inSplit = idFilterToUse.getAll();
       if (inSplit.isEmpty()) {
