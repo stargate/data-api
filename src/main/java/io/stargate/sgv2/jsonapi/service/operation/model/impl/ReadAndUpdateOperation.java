@@ -210,7 +210,10 @@ public record ReadAndUpdateOperation(
   private Uni<DocumentId> updatedDocument(
       QueryExecutor queryExecutor, WritableShreddedDocument writableShreddedDocument) {
     final QueryOuterClass.Query updateQuery =
-        bindUpdateValues(buildUpdateQuery(), writableShreddedDocument);
+        bindUpdateValues(
+            buildUpdateQuery(commandContext().isVectorEnabled()),
+            writableShreddedDocument,
+            commandContext().isVectorEnabled());
     return queryExecutor
         .executeWrite(updateQuery)
         .onItem()
@@ -224,48 +227,98 @@ public record ReadAndUpdateOperation(
             });
   }
 
-  private QueryOuterClass.Query buildUpdateQuery() {
-    String update =
-        "UPDATE \"%s\".\"%s\" "
-            + "        SET"
-            + "            tx_id = now(),"
-            + "            exist_keys = ?,"
-            + "            array_size = ?,"
-            + "            array_contains = ?,"
-            + "            query_bool_values = ?,"
-            + "            query_dbl_values = ?,"
-            + "            query_text_values = ?,"
-            + "            query_null_values = ?,"
-            + "            query_timestamp_values = ?,"
-            + "            doc_json  = ?"
-            + "        WHERE "
-            + "            key = ?"
-            + "        IF "
-            + "            tx_id = ?";
-    return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
-        .build();
+  private QueryOuterClass.Query buildUpdateQuery(boolean vectorEnabled) {
+    if (vectorEnabled) {
+      String update =
+          "UPDATE \"%s\".\"%s\" "
+              + "        SET"
+              + "            tx_id = now(),"
+              + "            exist_keys = ?,"
+              + "            array_size = ?,"
+              + "            array_contains = ?,"
+              + "            query_bool_values = ?,"
+              + "            query_dbl_values = ?,"
+              + "            query_text_values = ?,"
+              + "            query_null_values = ?,"
+              + "            query_timestamp_values = ?,"
+              + "            query_vector_value = ?,"
+              + "            doc_json  = ?"
+              + "        WHERE "
+              + "            key = ?"
+              + "        IF "
+              + "            tx_id = ?";
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
+          .build();
+    } else {
+      String update =
+          "UPDATE \"%s\".\"%s\" "
+              + "        SET"
+              + "            tx_id = now(),"
+              + "            exist_keys = ?,"
+              + "            array_size = ?,"
+              + "            array_contains = ?,"
+              + "            query_bool_values = ?,"
+              + "            query_dbl_values = ?,"
+              + "            query_text_values = ?,"
+              + "            query_null_values = ?,"
+              + "            query_timestamp_values = ?,"
+              + "            doc_json  = ?"
+              + "        WHERE "
+              + "            key = ?"
+              + "        IF "
+              + "            tx_id = ?";
+      return QueryOuterClass.Query.newBuilder()
+          .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
+          .build();
+    }
   }
 
   protected static QueryOuterClass.Query bindUpdateValues(
-      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc) {
+      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
-    QueryOuterClass.Values.Builder values =
-        QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-            .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
-            .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
-            .addValues(
-                Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
-            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
-            .addValues(
-                Values.of(CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
-            .addValues(Values.of(doc.docJson()))
-            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-            .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
-    return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+    if (vectorEnabled) {
+      QueryOuterClass.Values.Builder values =
+          QueryOuterClass.Values.newBuilder()
+              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
+              .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
+              .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
+              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
+              .addValues(
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
+              .addValues(CustomValueSerializers.getVectorValue(doc.queryVectorValues()))
+              .addValues(Values.of(doc.docJson()))
+              .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
+              .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
+      return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+    } else {
+      QueryOuterClass.Values.Builder values =
+          QueryOuterClass.Values.newBuilder()
+              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
+              .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
+              .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
+              .addValues(
+                  Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
+              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
+              .addValues(
+                  Values.of(
+                      CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
+              .addValues(Values.of(doc.docJson()))
+              .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
+              .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
+      return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+    }
   }
 
   /**
