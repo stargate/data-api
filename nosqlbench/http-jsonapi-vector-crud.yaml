@@ -3,7 +3,6 @@ min_version: "5.17.3"
 # Example command line
 # Against AstraDB
 # nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
-#  java -jar ~/nb5.jar -v http-jsonapi-vector-crud docscount=10000 threads=100 jsonapi_host=cc6478dd-2d0e-4576-87f1-fa3cbd3e10bb auth_token=AstraCS:OssyPlglELzWhYaIJgdqluCN:c136258f28ab5348f6288d06b0e794c72b8c8d89e163a62b0ab5a3bff61a522b-us-east-2.apps.astra-dev.datastax.com jsonapi_port=443 protocol=https path_prefix=/api/json namespace=photography
 # Against local JSON API
 # nb5 -v http-jsonapi-vector-crud jsonapi_host=localhost docscount=1000 threads=20
 
@@ -17,9 +16,9 @@ scenarios:
   default:
     schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
     write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
-#    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
-#    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
-#    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    update:   run driver=http tags==name:"update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+    delete:   run driver=http tags==name:"delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -45,20 +44,20 @@ bindings:
 blocks:
   schema:
     ops:
-#      create-namespace:
-#        method: POST
-#        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
-#        Accept: "application/json"
-#        X-Cassandra-Request-Id: "{request_id}"
-#        X-Cassandra-Token: "{token}"
-#        Content-Type: "application/json"
-#        ok-body: ".*\"ok\":1.*"
-#        body: >2
-#          {
-#            "createNamespace": {
-#              "name": "<<namespace:jsonapi_vector_crud_namespace>>"
-#            }
-#          }
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createNamespace": {
+              "name": "<<namespace:jsonapi_vector_crud_namespace>>"
+            }
+          }
 
       delete-collection:
         method: POST
