@@ -208,25 +208,6 @@ public class ShredderDocLimitsTest {
                   + ")");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"$function", "dot.ted", "index[1]"})
-    public void catchInvalidFieldName(String invalidName) {
-      final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("_id", 123);
-      doc.put(invalidName, 123456);
-
-      Exception e = catchException(() -> shredder.shred(doc));
-      assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith(
-              "Document key name constraints violated: Property name ('"
-                  + invalidName
-                  + "') contains character(s) not allowed");
-    }
-
     @Test
     public void allowNotTooLongStringValues() {
       final ObjectNode doc = objectMapper.createObjectNode();
@@ -277,6 +258,54 @@ public class ShredderDocLimitsTest {
           .isNotNull()
           .isInstanceOf(StreamConstraintsException.class)
           .hasMessageStartingWith("Number length (60) exceeds the maximum length (50)");
+    }
+  }
+
+  // Tests for size of atomic value / name length violations
+  @Nested
+  class ValidationDocNameViolations {
+    @ParameterizedTest
+    @ValueSource(strings = {"name", "a123", "snake_case", "camelCase", "ab-cd-ef"})
+    public void allowRegularFieldNames(String validName) {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      doc.put(validName, 123456);
+
+      // Enough to verify that shredder does not throw exception
+      assertThat(shredder.shred(doc)).isNotNull();
+    }
+
+    @Test
+    public void catchEmptyFieldName() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("", 123456);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasMessageEndingWith("Document key name constraints violated: empty names not allowed");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a/b", "a\\b"})
+    public void catchInvalidFieldName(String invalidName) {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      doc.put(invalidName, 123456);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              "Document key name constraints violated: Property name ('"
+                  + invalidName
+                  + "') contains character(s) not allowed");
     }
   }
 
