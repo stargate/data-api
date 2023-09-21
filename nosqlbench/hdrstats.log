@@ -1,5 +1,0 @@
-#logging stats for session nFEa4dy
-#[Histogram log format version 1.0]
-#[StartTime: 1695055365.611 (seconds since epoch), Mon Sep 18 09:42:45 PDT 2023]
-#[TimeUnit: NANOSECONDS]
-#Tag,Interval_Start,Interval_Length,count,min,p25,p50,p75,p90,p95,p98,p99,p999,p9999,max
