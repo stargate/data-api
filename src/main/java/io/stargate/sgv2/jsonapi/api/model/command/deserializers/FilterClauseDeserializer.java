@@ -89,7 +89,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
         case IN -> {
-
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.defaultPageSize()) {
               throw new JsonApiException(
