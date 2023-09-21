@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
-import java.util.Optional;
 
 /**
  * Defines the context in which to execute the command.
@@ -20,10 +19,6 @@ public record CommandContext(
     EmbeddingService embeddingService) {
 
   public CommandContext(String namespace, String collection) {
-    this(namespace, collection, false, null, null);
-  }
-
-  public CommandContext(Optional<String> tenant, String namespace, String collection) {
     this(namespace, collection, false, null, null);
   }
 

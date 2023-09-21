@@ -89,8 +89,7 @@ public class NamespaceResource {
           String namespace) {
 
     // create context
-    CommandContext commandContext =
-        new CommandContext(stargateRequestInfo.getTenantId(), namespace, null);
+    CommandContext commandContext = new CommandContext(namespace, null);
 
     // call processor
     return meteredCommandProcessor

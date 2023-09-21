@@ -57,6 +57,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       String path = inner.getKey().trim();
       if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+        // Vector search can't be used with other sort clause
         if (totalFields > 1) {
           throw new JsonApiException(
               ErrorCode.VECTOR_SEARCH_USAGE_ERROR,
@@ -86,6 +87,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           break;
         }
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        // Vector search can't be used with other sort clause
         if (totalFields > 1) {
           throw new JsonApiException(
               ErrorCode.VECTOR_SEARCH_USAGE_ERROR,
