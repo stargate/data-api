@@ -572,6 +572,39 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
+    @Order(3)
+    public void happyPathWithInFilter() {
+      String json =
+          """
+                          {
+                            "find": {
+                              "filter" : {
+                              "_id" : {"$in" : ["1", "2"]},
+                               "name":  {"$in" : ["Logic Layers","???"]},
+                              },
+                              "projection" : {"_id" : 1, "$vector" : 0},
+                              "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                              "options" : {
+                                  "limit" : 5
+                              }
+                            }
+                          }
+                          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is("2"))
+          .body("data.documents[0].$vector", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     @Order(4)
     public void happyPathWithEmptyVector() {
       String json =

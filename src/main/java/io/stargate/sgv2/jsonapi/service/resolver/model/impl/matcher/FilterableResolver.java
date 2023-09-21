@@ -156,7 +156,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     final CaptureGroup<List<DocumentId>> idsGroup =
         (CaptureGroup<List<DocumentId>>) captures.getGroupIfPresent(ID_GROUP_IN);
     if (idsGroup != null) {
-        idsGroup.consumeAllCaptures(
+      idsGroup.consumeAllCaptures(
           expression ->
               filters.add(
                   new DBFilterBase.IDFilter(

@@ -284,7 +284,7 @@ public record FindOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     Log.info("give me a executor " + commandContext);
-//    Log.info("give me a executor! " + filters.get(0));
+    //    Log.info("give me a executor! " + filters.get(0));
 
     final boolean vectorEnabled = commandContext().isVectorEnabled();
     if (vector() != null && !vectorEnabled) {
@@ -530,65 +530,69 @@ public record FindOperation(
           .build();
     }
   }
-  /** A separate method to build vector search query by using expression, expression can contain logic operations like 'or','and'.. */
-  private QueryOuterClass.Query getVectorSearchQueryByExpression(Expression<BuiltCondition> expression) {
+  /**
+   * A separate method to build vector search query by using expression, expression can contain
+   * logic operations like 'or','and'..
+   */
+  private QueryOuterClass.Query getVectorSearchQueryByExpression(
+      Expression<BuiltCondition> expression) {
     QueryOuterClass.Query builtQuery = null;
     if (projection().doIncludeSimilarityScore()) {
       switch (commandContext().similarityFunction()) {
         case COSINE, UNDEFINED -> {
           return new QueryBuilder()
-                  .select()
-                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                  .similarityCosine(
-                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                          CustomValueSerializers.getVectorValue(vector()))
-                  .from(commandContext.namespace(), commandContext.collection())
-                  .where(expression)
-                  .limit(limit)
-                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-                  .build();
-        }
-        case EUCLIDEAN -> {
-          return new QueryBuilder()
-                  .select()
-                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                  .similarityEuclidean(
-                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                          CustomValueSerializers.getVectorValue(vector()))
-                  .from(commandContext.namespace(), commandContext.collection())
-                  .where(expression)
-                  .limit(limit)
-                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-                  .build();
-        }
-        case DOT_PRODUCT -> {
-          return new QueryBuilder()
-                  .select()
-                  .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                  .similarityDotProduct(
-                          DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                          CustomValueSerializers.getVectorValue(vector()))
-                  .from(commandContext.namespace(), commandContext.collection())
-                  .where(expression)
-                  .limit(limit)
-                  .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-                  .build();
-        }
-        default -> {
-          throw new JsonApiException(
-                  ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
-                  ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
-        }
-      }
-    } else {
-      return new QueryBuilder()
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityCosine(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
               .build();
+        }
+        case EUCLIDEAN -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityEuclidean(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        case DOT_PRODUCT -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityDotProduct(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        default -> {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+        }
+      }
+    } else {
+      return new QueryBuilder()
+          .select()
+          .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+          .from(commandContext.namespace(), commandContext.collection())
+          .where(expression)
+          .limit(limit)
+          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+          .build();
     }
   }
   /**
@@ -600,30 +604,66 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
-    List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-    if (conditions == null) {
-      return List.of();
+    AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
+    filters.forEach(
+        filter -> {
+          if (filter instanceof DBFilterBase.INFilter) {
+            hasInFilterBesidesIdField.set(true);
+            return; // need to break
+          }
+        });
+    if (hasInFilterBesidesIdField.get()) {
+      List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
+      if (expressions == null) {
+        return List.of();
+      }
+      String[] columns = sortedDataColumns;
+      if (orderBy() != null) {
+        List<String> sortColumns = Lists.newArrayList(columns);
+        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
+        columns = new String[sortColumns.size()];
+        sortColumns.toArray(columns);
+      }
+      final String[] columnsToAdd = columns;
+      List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+      expressions.forEach(
+          expression ->
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(columnsToAdd)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(expression)
+                      .limit(maxSortReadLimit())
+                      .build()));
+      return queries;
+
+    } else {
+      List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
+      if (conditions == null) {
+        return List.of();
+      }
+      String[] columns = sortedDataColumns;
+      if (orderBy() != null) {
+        List<String> sortColumns = Lists.newArrayList(columns);
+        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
+        columns = new String[sortColumns.size()];
+        sortColumns.toArray(columns);
+      }
+      final String[] columnsToAdd = columns;
+      List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
+      conditions.forEach(
+          condition ->
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(columnsToAdd)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(condition)
+                      .limit(maxSortReadLimit())
+                      .build()));
+      return queries;
     }
-    String[] columns = sortedDataColumns;
-    if (orderBy() != null) {
-      List<String> sortColumns = Lists.newArrayList(columns);
-      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
-      columns = new String[sortColumns.size()];
-      sortColumns.toArray(columns);
-    }
-    final String[] columnsToAdd = columns;
-    List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
-    conditions.forEach(
-        condition ->
-            queries.add(
-                new QueryBuilder()
-                    .select()
-                    .column(columnsToAdd)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(condition)
-                    .limit(maxSortReadLimit())
-                    .build()));
-    return queries;
   }
 
   /**

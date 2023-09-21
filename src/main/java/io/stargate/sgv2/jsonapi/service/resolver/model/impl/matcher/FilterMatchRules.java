@@ -60,9 +60,12 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public List<DBFilterBase> apply(CommandContext commandContext, T command) {
-    Log.warn("check! " + matchRules.stream()
-            .map(e -> e.apply(commandContext, command))
-            .filter(Optional::isPresent).count());
+    Log.warn(
+        "check! "
+            + matchRules.stream()
+                .map(e -> e.apply(commandContext, command))
+                .filter(Optional::isPresent)
+                .count());
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
