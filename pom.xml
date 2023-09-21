@@ -176,21 +176,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <!-- https://github.com/wildfly/jandex-maven-plugin -->
-        <groupId>org.jboss.jandex</groupId>
-        <artifactId>jandex-maven-plugin</artifactId>
-        <version>1.2.1</version>
-        <executions>
-          <execution>
-            <id>make-index</id>
-            <goals>
-              <!-- phase is 'process-classes by default' -->
-              <goal>jandex</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
   <profiles>
