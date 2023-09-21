@@ -388,7 +388,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {
             "find": {
                 "filter" : {
-                     "name" : {"$in" : ["user1", "user10"]}
+                     "username" : {"$in" : ["user1", "user10"]}
                 }
               }
           }
@@ -416,7 +416,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 {
                   "find": {
                       "filter" : {
-                           "name" : {"$in" : ["user1", "user10"]},
+                           "username" : {"$in" : ["user1", "user10"]},
                            "_id" : {"$in" : ["doc1", "???"]}
                       }
                     }
@@ -445,11 +445,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         {
                           "find": {
                               "filter" : {
-                                   "name" : {"$in" : ["user1", "user10"]},
+                                   "username" : {"$in" : ["user1", "user10"]},
                                    "_id" : {"$in" : ["doc1", "???"]}
-                              }
-                                 "sort": {
-                                                  "name": -1 }
+                              },
+                              "sort": { "username": -1 }
                             }
                         }
                       """;

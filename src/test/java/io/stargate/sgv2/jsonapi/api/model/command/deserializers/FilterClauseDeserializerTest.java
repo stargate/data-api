@@ -290,7 +290,7 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
-    public void mustHandleIn() throws Exception {
+    public void mustHandleIdFieldIn() throws Exception {
       String json = """
                {"_id" : {"$in": ["2", "3"]}}
               """;
@@ -308,6 +308,22 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleNonIdFieldIn() throws Exception {
+      String json = """
+               {"name" : {"$in": ["name1", "name2"]}}
+              """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.IN,
+                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))));
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+    }
+
+    @Test
     public void mustHandleInArrayNonEmpty() throws Exception {
       String json = """
                {"_id" : {"$in": []}}
@@ -320,20 +336,6 @@ public class FilterClauseDeserializerTest {
                       ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))));
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
-    }
-
-    @Test
-    public void mustHandleInIdFieldOnly() throws Exception {
-      String json = """
-               {"name" : {"$in": ["aaa"]}}
-              """;
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage()).isEqualTo("Can use $in operator only on _id field");
-              });
     }
 
     @Test
