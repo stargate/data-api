@@ -9,11 +9,14 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
 
-    /** Primary key for Documents stored; has special handling for many operations. */
+    /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
 
-    /** Primary key for Documents stored; has special handling for many operations. */
+    /** Document field name to which vector data is stored. */
     String VECTOR_EMBEDDING_FIELD = "$vector";
+
+    /** Document field name that will have text value for which vectorize method in called */
+    String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
 
     /** Key for vector function name definition in cql index. */
     String VECTOR_INDEX_FUNCTION_NAME = "similarity_function";

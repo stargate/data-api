@@ -40,7 +40,6 @@ public class CommandResolverService {
     // try to get from the map of resolvers
     return Uni.createFrom()
         .item((CommandResolver<T>) resolvers.get(command.getClass()))
-
         // if this results to null, fail here with not implemented
         .onItem()
         .ifNull()

@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
@@ -18,6 +21,8 @@ public class NamespaceCache {
 
   public final QueryExecutor queryExecutor;
 
+  private final ObjectMapper objectMapper;
+
   private static final long CACHE_TTL_SECONDS = 300;
   private static final long CACHE_MAX_SIZE = 1000;
   private final Cache<String, CollectionProperty> vectorCache =
@@ -26,9 +31,10 @@ public class NamespaceCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public NamespaceCache(String namespace, QueryExecutor queryExecutor) {
+  public NamespaceCache(String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
+    this.objectMapper = objectMapper;
   }
 
   protected Uni<CollectionProperty> getCollectionProperties(String collectionName) {
@@ -49,7 +55,7 @@ public class NamespaceCache {
                       || (error instanceof RuntimeException rte
                           && rte.getMessage()
                               .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage()))) {
-                    return Uni.createFrom().item(new CollectionProperty(false, null));
+                    return Uni.createFrom().item(new CollectionProperty(false, null, null, null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -99,10 +105,34 @@ public class NamespaceCache {
                                   .get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME));
                     }
                   }
-                  return new CollectionProperty(vectorEnabled, function);
+                  final String comment = table.get().getOptionsOrDefault("comment", null);
+                  if (comment != null && !comment.isBlank()) {
+                    try {
+                      JsonNode vectorizeConfig = objectMapper.readTree(comment);
+                      String vectorizeServiceName =
+                          vectorizeConfig != null && vectorizeConfig.has("service")
+                              ? vectorizeConfig.get("service").textValue()
+                              : null;
+                      String modelName = null;
+                      final JsonNode optionsNode =
+                          vectorizeConfig != null && vectorizeConfig.has("options")
+                              ? vectorizeConfig.get("options")
+                              : null;
+                      if (optionsNode != null && optionsNode.has("modelName")) {
+                        modelName = optionsNode.get("modelName").textValue();
+                      }
+                      return new CollectionProperty(
+                          vectorEnabled, function, vectorizeServiceName, modelName);
+                    } catch (JsonProcessingException e) {
+                      // This should never happen
+                      throw new RuntimeException(e);
+                    }
+                  } else {
+                    return new CollectionProperty(vectorEnabled, function, null, null);
+                  }
                 } else {
                   return new CollectionProperty(
-                      vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED);
+                      vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED, null, null);
                 }
               } else {
                 throw new RuntimeException(
@@ -111,7 +141,11 @@ public class NamespaceCache {
             });
   }
 
-  public record CollectionProperty(Boolean vectorEnabled, SimilarityFunction similarityFunction) {
+  public record CollectionProperty(
+      Boolean vectorEnabled,
+      SimilarityFunction similarityFunction,
+      String vectorizeServiceName,
+      String modelName) {
 
     /**
      * The similarity function used for the vector index. This is only applicable if the vector

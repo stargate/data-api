@@ -15,17 +15,23 @@ public record CreateCollectionOperation(
     String name,
     boolean vectorSearch,
     int vectorSize,
-    String vectorFunction)
+    String vectorFunction,
+    String vectorize)
     implements Operation {
 
   public static CreateCollectionOperation withVectorSearch(
-      CommandContext commandContext, String name, int vectorSize, String vectorFunction) {
-    return new CreateCollectionOperation(commandContext, name, true, vectorSize, vectorFunction);
+      CommandContext commandContext,
+      String name,
+      int vectorSize,
+      String vectorFunction,
+      String vectorize) {
+    return new CreateCollectionOperation(
+        commandContext, name, true, vectorSize, vectorFunction, vectorize);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
       CommandContext commandContext, String name) {
-    return new CreateCollectionOperation(commandContext, name, false, 0, null);
+    return new CreateCollectionOperation(commandContext, name, false, 0, null, null);
   }
 
   @Override
@@ -66,6 +72,9 @@ public record CreateCollectionOperation(
               + vectorSize
               + ">, "
               + "    PRIMARY KEY (key))";
+      if (vectorize != null) {
+        createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
+      }
       return QueryOuterClass.Query.newBuilder()
           .setCql(String.format(createTableWithVector, keyspace, table))
           .build();

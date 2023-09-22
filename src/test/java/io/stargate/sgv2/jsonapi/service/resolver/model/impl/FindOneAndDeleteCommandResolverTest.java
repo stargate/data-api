@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -14,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -36,7 +36,7 @@ public class FindOneAndDeleteCommandResolverTest {
   @Nested
   class Resolve {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -123,16 +123,62 @@ public class FindOneAndDeleteCommandResolverTest {
     }
 
     @Test
-    public void filterConditionVectorSearch() throws Exception {
+    public void filterConditionVectorizeSearch() throws Exception {
       String json =
           """
         {
           "findOneAndDelete": {
             "filter" : {"status" : "active"},
-            "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]}
+            "sort" : {"$vectorize" : "test data"}
           }
         }
         """;
+
+      FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
+      Operation operation =
+          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
+              op -> {
+                assertThat(op.commandContext())
+                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                assertThat(op.returnDocumentInResponse()).isTrue();
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext())
+                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.vector()).isNotNull();
+                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
+                          assertThat(find.singleResponse()).isTrue();
+                        });
+              });
+    }
+
+    @Test
+    public void filterConditionVectorSearch() throws Exception {
+      String json =
+          """
+                {
+                  "findOneAndDelete": {
+                    "filter" : {"status" : "active"},
+                    "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]}
+                  }
+                }
+                """;
 
       FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, command);

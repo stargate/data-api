@@ -59,6 +59,15 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
           ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + oper.operator());
     }
 
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
+        && !(oper.operator().equals("$set")
+            || oper.operator().equals("$unset")
+            || oper.operator().equals("$setOnInsert"))) {
+      throw new JsonApiException(
+          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTORIZE,
+          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTORIZE.getMessage() + ": " + oper.operator());
+    }
+
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
       throw new JsonApiException(
           ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID,

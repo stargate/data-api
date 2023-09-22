@@ -29,6 +29,8 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
 
+  SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
+
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
@@ -46,6 +48,7 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
@@ -68,6 +71,11 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
 
+  UNSUPPORTED_COMMAND_EMBEDDING_SERVICE(
+      "Unsupported command `createEmbeddingService` since application is configured for property based embedding"),
+
+  UNAVAILABLE_EMBEDDING_SERVICE("Unable to vectorize data, embedding service not available"),
+
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
@@ -79,6 +87,7 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
 
   UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
@@ -91,7 +100,14 @@ public enum ErrorCode {
   VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED(
       "$similarity projection is not supported for this command"),
 
-  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big");
+  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
+  VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
+
+  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported : "),
+
+  VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
+  VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause");
 
   private final String message;
 

@@ -46,7 +46,8 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           KEYSPACE_NAME,
           COLLECTION_NAME,
           true,
-          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE);
+          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE,
+          null);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
