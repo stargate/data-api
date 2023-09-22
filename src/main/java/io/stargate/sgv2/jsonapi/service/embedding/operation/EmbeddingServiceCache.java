@@ -8,11 +8,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingService
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
+import org.slf4j.Logger;
 
 @ApplicationScoped
 public class EmbeddingServiceCache {
+
+  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingServiceCache.class);
   @Inject Instance<EmbeddingServiceConfigStore> embeddingServiceConfigStore;
 
   record CacheKey(Optional<String> tenant, String namespace, String modelName) {}
@@ -54,21 +56,24 @@ public class EmbeddingServiceCache {
             configuration.baseUrl(), configuration.apiKey(), modelName);
       case "custom":
         try {
-          Class<?> clazz = Class.forName(configuration.className());
-          final EmbeddingService customEmbeddingClient =
-              (EmbeddingService) clazz.getConstructor().newInstance();
-          return customEmbeddingClient;
-        } catch (NoSuchMethodException
-            | ClassNotFoundException
-            | InstantiationException
-            | IllegalAccessException
-            | InvocationTargetException
-            | ClassCastException e) {
+          Optional<Class<?>> clazz = configuration.clazz();
+          if (clazz.isPresent()) {
+            final EmbeddingService customEmbeddingClient =
+                (EmbeddingService) clazz.get().getConstructor().newInstance();
+            return customEmbeddingClient;
+          } else {
+            throw new JsonApiException(
+                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
+                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
+                    + "custom class undefined");
+          }
+        } catch (Exception e) {
           e.printStackTrace();
           throw new JsonApiException(
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                  + configuration.className());
+                  + "custom class provided does not resolved to EmbeddingService "
+                  + configuration.clazz().get().getCanonicalName());
         }
       default:
         throw new JsonApiException(

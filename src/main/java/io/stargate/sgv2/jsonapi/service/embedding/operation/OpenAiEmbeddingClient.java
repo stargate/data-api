@@ -26,10 +26,6 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
             .build(OpenAiEmbeddingService.class);
   }
 
-  public OpenAiEmbeddingClient(String apiKey, String modelName) {
-    this("https://api.openai.com/v1", apiKey, modelName);
-  }
-
   @RegisterRestClient
   public interface OpenAiEmbeddingService {
     @POST

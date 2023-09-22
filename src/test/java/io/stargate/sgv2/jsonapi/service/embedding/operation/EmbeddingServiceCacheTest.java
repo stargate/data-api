@@ -3,21 +3,18 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(EmbeddingServiceCacheTest.PropertyBasedOverrideProfile.class)
+@TestProfile(PropertyBasedOverrideProfile.class)
 public class EmbeddingServiceCacheTest {
 
   @Inject EmbeddingServiceCache embeddingServiceCache;
@@ -69,27 +66,6 @@ public class EmbeddingServiceCacheTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED)
           .hasFieldOrPropertyWithValue("message", "Vectorize service type not enabled : vertexai");
-    }
-  }
-
-  public static class PropertyBasedOverrideProfile implements QuarkusTestProfile {
-    @Override
-    public boolean disableGlobalTestResources() {
-      return true;
-    }
-
-    @Override
-    public Map<String, String> getConfigOverrides() {
-      return ImmutableMap.<String, String>builder()
-          .put("stargate.jsonapi.embedding.config.store", "property")
-          .put("stargate.jsonapi.embedding.service.openai.enabled", "true")
-          .put("stargate.jsonapi.embedding.service.openai.api-key", "openai-api-key")
-          .put("stargate.jsonapi.embedding.service.openai.url", "https://api.openai.com/v1/")
-          .put("stargate.jsonapi.embedding.service.hf.enabled", "true")
-          .put("stargate.jsonapi.embedding.service.hf.api-key", "hf-api-key")
-          .put("stargate.jsonapi.embedding.service.hf.url", "https://api-inference.huggingface.co")
-          .put("stargate.jsonapi.embedding.service.vertexai.enabled", "false")
-          .build();
     }
   }
 }

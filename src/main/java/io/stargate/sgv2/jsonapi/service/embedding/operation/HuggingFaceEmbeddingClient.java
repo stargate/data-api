@@ -27,10 +27,6 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
             .build(HuggingFaceEmbeddingService.class);
   }
 
-  public HuggingFaceEmbeddingClient(String apiKey, String modelName) {
-    this("https://api-inference.huggingface.co", apiKey, modelName);
-  }
-
   @RegisterRestClient
   public interface HuggingFaceEmbeddingService {
     @POST

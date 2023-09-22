@@ -23,8 +23,7 @@ public record CreateEmbeddingServiceCommand(
             regexp = "(openai|vertexai|huggingface)",
             message = "supported providers are 'openai', 'vertexai' or 'huggingface'")
         @Schema(
-            description = "Embedding service provider service name",
-            defaultValue = "cosine",
+            description = "Embedding service provider name",
             type = SchemaType.STRING,
             implementation = String.class)
         String apiProvider,

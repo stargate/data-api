@@ -112,6 +112,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f))
           .body("errors", is(nullValue()));
     }
 
@@ -342,12 +343,15 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
           .body("data.documents[0].$vectorize", is(notNullValue()))
+          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f))
           .body("data.documents[1]._id", is("2"))
           .body("data.documents[1].$vector", is(notNullValue()))
           .body("data.documents[1].$vectorize", is(notNullValue()))
+          .body("data.documents[1].$vector", contains(0.45f, 0.09f, 0.01f, 0.2f, 0.11f))
           .body("data.documents[2]._id", is("3"))
           .body("data.documents[2].$vector", is(notNullValue()))
           .body("data.documents[2].$vectorize", is(notNullValue()))
+          .body("data.documents[2].$vector", contains(0.1f, 0.05f, 0.08f, 0.3f, 0.6f))
           .body("errors", is(nullValue()));
     }
 

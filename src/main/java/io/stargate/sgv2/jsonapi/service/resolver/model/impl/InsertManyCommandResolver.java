@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -33,10 +32,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
-    if (ctx.embeddingService() != null) {
-      new VectorizeData(ctx.embeddingService(), objectMapper.getNodeFactory())
-          .vectorize(command.documents());
-    }
+    // Vectorize documents
+    ctx.tryVectorize(objectMapper.getNodeFactory(), command.documents());
 
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream().map(shredder::shred).toList();

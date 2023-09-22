@@ -17,15 +17,32 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class VectorizeData {
+/**
+ * Utility class to execute embedding serive to get vector embeddings for the text fields in the
+ * '$vectorize' field. The class has three utility methods to handle vectorization in json
+ * documents, sort clause and update clause.
+ */
+public class DataVectorizer {
   private final EmbeddingService embeddingService;
   private final JsonNodeFactory nodeFactory;
 
-  public VectorizeData(EmbeddingService embeddingService, JsonNodeFactory nodeFactory) {
+  /**
+   * Constructor
+   *
+   * @param embeddingService - Service client based on embedding service configuration set for the
+   *     table
+   * @param nodeFactory - Jackson node factory to create json nodes added to the document
+   */
+  public DataVectorizer(EmbeddingService embeddingService, JsonNodeFactory nodeFactory) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
   }
 
+  /**
+   * Vectorize the '$vectorize' fields in the document
+   *
+   * @param documents - Documents to be vectorized
+   */
   public void vectorize(List<JsonNode> documents) {
     int vectorDataPosition = 0;
     List<String> vectorizeTexts = new ArrayList<>();
@@ -53,6 +70,11 @@ public class VectorizeData {
     }
 
     if (!vectorizeTexts.isEmpty()) {
+      if (embeddingService == null) {
+        throw new JsonApiException(
+            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
+            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+      }
       List<float[]> vectors = embeddingService.vectorize(vectorizeTexts);
       for (int vectorPosition = 0; vectorPosition < vectors.size(); vectorPosition++) {
         int position = vectorizeMap.get(vectorPosition);
@@ -67,19 +89,35 @@ public class VectorizeData {
     }
   }
 
+  /**
+   * Vectorize the '$vectorize' fields in the sort clause
+   *
+   * @param sortClause - Sort clause to be vectorized
+   */
   public void vectorize(SortClause sortClause) {
     if (sortClause == null || sortClause.sortExpressions().isEmpty()) return;
     if (sortClause.hasVectorizeSearchClause()) {
       final List<SortExpression> sortExpressions = sortClause.sortExpressions();
       SortExpression expression = sortExpressions.get(0);
       String text = expression.vectorize();
+      if (embeddingService == null) {
+        throw new JsonApiException(
+            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
+            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+      }
       List<float[]> vectors = embeddingService.vectorize(List.of(text));
       sortExpressions.clear();
       sortExpressions.add(SortExpression.vsearch(vectors.get(0)));
     }
   }
 
+  /**
+   * Vectorize the '$vectorize' fields in the update clause
+   *
+   * @param updateClause - Update clause to be vectorized
+   */
   public void vectorizeUpdateClause(UpdateClause updateClause) {
+    if (updateClause == null) return;
     final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
     final ObjectNode setOnInsertNode =
         updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
@@ -99,6 +137,11 @@ public class VectorizeData {
         node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
+        if (embeddingService == null) {
+          throw new JsonApiException(
+              ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
+              ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+        }
         final List<float[]> vectors = embeddingService.vectorize(List.of(text));
         final ArrayNode arrayNode = nodeFactory.arrayNode(vectors.get(0).length);
         for (float listValue : vectors.get(0)) {

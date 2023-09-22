@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -417,7 +417,7 @@ public class UpdateOneCommandResolverTest {
       UpdateClause updateClause =
           DocumentUpdaterUtils.updateClause(
               UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
-      new VectorizeData(
+      new DataVectorizer(
               TestEmbeddingService.commandContextWithVectorize.embeddingService(),
               objectMapper.getNodeFactory())
           .vectorizeUpdateClause(updateClause);

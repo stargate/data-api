@@ -72,7 +72,9 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
 
   UNSUPPORTED_COMMAND_EMBEDDING_SERVICE(
-      "Unsupported command createEmbeddingService since application is configured for property based embedding"),
+      "Unsupported command `createEmbeddingService` since application is configured for property based embedding"),
+
+  UNAVAILABLE_EMBEDDING_SERVICE("Unable to vectorize data, embedding service not available"),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
@@ -102,7 +104,7 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
-  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupporterd : "),
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported : "),
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause");

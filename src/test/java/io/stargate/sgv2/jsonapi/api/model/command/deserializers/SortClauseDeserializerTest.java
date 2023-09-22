@@ -176,6 +176,23 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void vectorizeSearchWithOtherSort() {
+      String json =
+          """
+        {
+         "$vectorize" : "test data",
+         "some.path" : 1
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage())
+          .contains("Vector search can't be used with other sort clause");
+    }
+
+    @Test
     public void mustTrimPath() throws Exception {
       String json = """
               {"some.path " : 1}

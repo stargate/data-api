@@ -40,7 +40,7 @@ stargate:
           api-key: YOUR_API_KEY
 
         # Hugging face embedding service configuration
-        hf:
+        huggingface:
           enabled: false
           url: https://api-inference.huggingface.co
           api-key: YOUR_API_KEY

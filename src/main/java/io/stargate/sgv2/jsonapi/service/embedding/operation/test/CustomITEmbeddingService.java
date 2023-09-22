@@ -11,7 +11,7 @@ import java.util.List;
  * VectorizeSearchIntegrationTest
  */
 @RegisterForReflection
-public class TestEmbeddingService implements EmbeddingService {
+public class CustomITEmbeddingService implements EmbeddingService {
 
   public static HashMap<String, float[]> TEST_DATA = new HashMap<>();
 
@@ -37,7 +37,7 @@ public class TestEmbeddingService implements EmbeddingService {
       if (TEST_DATA.containsKey(text)) {
         response.add(TEST_DATA.get(text));
       } else {
-        response.add(new float[] {0.25f, 0.25f, 0.25f});
+        response.add(new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f});
       }
     }
     return response;

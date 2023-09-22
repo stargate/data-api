@@ -65,6 +65,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           vectorize = objectMapper.writeValueAsString(command.options().vectorize());
         } catch (JsonProcessingException e) {
           // This should never happen because the object is extracted from json request
+          throw new RuntimeException(e);
         }
       }
 

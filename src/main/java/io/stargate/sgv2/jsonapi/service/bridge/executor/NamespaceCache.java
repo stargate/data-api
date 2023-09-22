@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -106,22 +106,30 @@ public class NamespaceCache {
                     }
                   }
                   final String comment = table.get().getOptionsOrDefault("comment", null);
-                  CreateCollectionCommand.Options.VectorizeConfig vectorizeConfig = null;
                   if (comment != null && !comment.isBlank()) {
                     try {
-                      vectorizeConfig =
-                          objectMapper.readValue(
-                              comment, CreateCollectionCommand.Options.VectorizeConfig.class);
+                      JsonNode vectorizeConfig = objectMapper.readTree(comment);
+                      String vectorizeServiceName =
+                          vectorizeConfig != null && vectorizeConfig.has("service")
+                              ? vectorizeConfig.get("service").textValue()
+                              : null;
+                      String modelName = null;
+                      final JsonNode optionsNode =
+                          vectorizeConfig != null && vectorizeConfig.has("options")
+                              ? vectorizeConfig.get("options")
+                              : null;
+                      if (optionsNode != null && optionsNode.has("modelName")) {
+                        modelName = optionsNode.get("modelName").textValue();
+                      }
+                      return new CollectionProperty(
+                          vectorEnabled, function, vectorizeServiceName, modelName);
                     } catch (JsonProcessingException e) {
                       // This should never happen
+                      throw new RuntimeException(e);
                     }
+                  } else {
+                    return new CollectionProperty(vectorEnabled, function, null, null);
                   }
-                  String vectorizeServiceName =
-                      vectorizeConfig != null ? vectorizeConfig.service() : null;
-                  String modelName =
-                      vectorizeConfig != null ? vectorizeConfig.options().modelName() : null;
-                  return new CollectionProperty(
-                      vectorEnabled, function, vectorizeServiceName, modelName);
                 } else {
                   return new CollectionProperty(
                       vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED, null, null);

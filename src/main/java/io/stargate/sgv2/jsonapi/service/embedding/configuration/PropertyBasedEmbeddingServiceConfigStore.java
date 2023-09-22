@@ -24,15 +24,18 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
       case "openai":
         if (config.openai().enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.openai().apiKey(), config.openai().url());
+              serviceName, serviceName, config.openai().apiKey(), config.openai().url().toString());
         }
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
       case "huggingface":
-        if (config.hf().enabled()) {
+        if (config.huggingface().enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.hf().apiKey(), config.hf().url());
+              serviceName,
+              serviceName,
+              config.huggingface().apiKey(),
+              config.huggingface().url().toString());
         }
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
@@ -40,14 +43,17 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
       case "vertexai":
         if (config.vertexai().enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.vertexai().apiKey(), config.vertexai().url());
+              serviceName,
+              serviceName,
+              config.vertexai().apiKey(),
+              config.vertexai().url().toString());
         }
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
       case "custom":
         if (config.custom().enabled()) {
-          return ServiceConfig.custom(config.custom().className());
+          return ServiceConfig.custom(config.custom().clazz());
         }
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,

@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(EmbeddingServiceCacheTest.PropertyBasedOverrideProfile.class)
+@TestProfile(PropertyBasedOverrideProfile.class)
 public class VectorizeDataTest {
   @Inject ObjectMapper objectMapper;
 
@@ -40,8 +40,9 @@ public class VectorizeDataTest {
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
       }
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorize(documents);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorize(documents);
       for (JsonNode document : documents) {
         assertThat(document.has("$vectorize")).isTrue();
         assertThat(document.has("$vector")).isTrue();
@@ -57,8 +58,9 @@ public class VectorizeDataTest {
         documents.add(objectMapper.createObjectNode().put("$vectorize", 5));
       }
 
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      Throwable failure = catchThrowable(() -> vectorizeData.vectorize(documents));
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      Throwable failure = catchThrowable(() -> dataVectorizer.vectorize(documents));
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTORIZE_VALUE)
@@ -72,8 +74,9 @@ public class VectorizeDataTest {
         documents.add(objectMapper.createObjectNode().put("$vectorize", (String) null));
       }
 
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorize(documents);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorize(documents);
       for (JsonNode document : documents) {
         assertThat(document.has("$vectorize")).isTrue();
         assertThat(document.has("$vector")).isTrue();
@@ -89,8 +92,9 @@ public class VectorizeDataTest {
       List<SortExpression> sortExpressions = new ArrayList<>();
       sortExpressions.add(sortExpression);
       SortClause sortClause = new SortClause(sortExpressions);
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorize(sortClause);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorize(sortClause);
       assertThat(sortClause.hasVsearchClause()).isTrue();
       assertThat(sortClause.hasVectorizeSearchClause()).isFalse();
       assertThat(sortClause.sortExpressions().get(0).vector()).isNotNull();
@@ -113,8 +117,9 @@ public class VectorizeDataTest {
         """;
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorizeUpdateClause(updateClause);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorizeUpdateClause(updateClause);
       final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
       assertThat(setNode.has("$vectorize")).isTrue();
       assertThat(setNode.has("$vector")).isTrue();
@@ -135,8 +140,9 @@ public class VectorizeDataTest {
         """;
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorizeUpdateClause(updateClause);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorizeUpdateClause(updateClause);
       final ObjectNode setNode =
           updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
       assertThat(setNode.has("$vectorize")).isTrue();
@@ -158,8 +164,9 @@ public class VectorizeDataTest {
         """;
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
-      VectorizeData vectorizeData = new VectorizeData(testService, objectMapper.getNodeFactory());
-      vectorizeData.vectorizeUpdateClause(updateClause);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      dataVectorizer.vectorizeUpdateClause(updateClause);
       final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
       assertThat(unsetNode.has("$vectorize")).isTrue();
       assertThat(unsetNode.has("$vector")).isTrue();

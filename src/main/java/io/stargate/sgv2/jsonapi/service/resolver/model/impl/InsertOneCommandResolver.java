@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.service.embedding.VectorizeData;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -33,10 +32,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertOneCommand command) {
-    if (ctx.embeddingService() != null) {
-      new VectorizeData(ctx.embeddingService(), objectMapper.getNodeFactory())
-          .vectorize(List.of(command.document()));
-    }
+    // Vectorize document
+    ctx.tryVectorize(objectMapper.getNodeFactory(), List.of(command.document()));
     WritableShreddedDocument shreddedDocument = shredder.shred(command.document());
     return new InsertOperation(ctx, shreddedDocument);
   }

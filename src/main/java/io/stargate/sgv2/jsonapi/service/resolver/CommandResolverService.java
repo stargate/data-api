@@ -41,6 +41,7 @@ public class CommandResolverService {
     // try to get from the map of resolvers
     return Uni.createFrom()
         .item((CommandResolver<T>) resolvers.get(command.getClass()))
+        // Command Resolver runs on worker thread since vectorize() is blocking call
         .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
         // if this results to null, fail here with not implemented
         .onItem()
