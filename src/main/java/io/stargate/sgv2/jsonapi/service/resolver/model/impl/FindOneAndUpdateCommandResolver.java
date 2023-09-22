@@ -55,6 +55,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage());
     }
 
+    // Vectorize update clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
+
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve options
@@ -81,6 +84,10 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
       CommandContext commandContext, FindOneAndUpdateCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+
+    // vectorize sort clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
+
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

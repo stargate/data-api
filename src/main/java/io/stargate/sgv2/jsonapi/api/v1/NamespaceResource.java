@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
@@ -41,6 +42,8 @@ public class NamespaceResource {
   public static final String BASE_PATH = "/v1/{namespace}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
+
+  @Inject private StargateRequestInfo stargateRequestInfo;
 
   @Inject
   public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {

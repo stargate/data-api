@@ -185,6 +185,7 @@ public class DocumentProjector {
         }
         if (path.charAt(0) == '$'
             && !(path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
                 || DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD.equals(path))) {
           // First: no operators allowed at root level
           if (parentPath == null) {

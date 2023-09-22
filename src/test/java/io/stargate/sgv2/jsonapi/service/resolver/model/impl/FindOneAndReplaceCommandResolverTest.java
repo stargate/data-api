@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -16,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -42,7 +42,7 @@ public class FindOneAndReplaceCommandResolverTest {
   @Nested
   class Resolve {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -294,6 +294,75 @@ public class FindOneAndReplaceCommandResolverTest {
                           assertThat(find.filters()).singleElement().isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
+                          assertThat(find.singleResponse()).isTrue();
+                        });
+              });
+    }
+
+    @Test
+    public void filterConditionVectorizeSearch() throws Exception {
+      String json =
+          """
+        {
+          "findOneAndReplace": {
+            "filter" : {"status" : "active"},
+            "sort" : {"$vectorize" : "test data"},
+            "replacement" : {"col1" : "val1", "col2" : "val2", "$vectorize" : "test data"}
+          }
+        }
+        """;
+
+      FindOneAndReplaceCommand command =
+          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+      Operation operation =
+          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
+      String expected =
+          "{\"col1\":\"val1\",\"col2\":\"val2\",\"$vectorize\":\"test data\",\"$vector\":[0.25,0.25,0.25]}";
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              ReadAndUpdateOperation.class,
+              op -> {
+                assertThat(op.commandContext())
+                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                assertThat(op.returnDocumentInResponse()).isTrue();
+                assertThat(op.returnUpdatedDocument()).isFalse();
+                assertThat(op.upsert()).isFalse();
+                assertThat(op.shredder()).isEqualTo(shredder);
+                assertThat(op.updateLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        replacer -> {
+                          try {
+                            ObjectNode replacement =
+                                (ObjectNode)
+                                    objectMapper.readTree(
+                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                          }
+                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                          assertThat(replacer.replaceDocumentId()).isNull();
+                        });
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext())
+                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.vector()).isNotNull();
+                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
                           assertThat(find.singleResponse()).isTrue();
                         });
               });

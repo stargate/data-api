@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
@@ -13,6 +14,8 @@ public class SchemaCache {
 
   @Inject private QueryExecutor queryExecutor;
 
+  @Inject private ObjectMapper objectMapper;
+
   private final Cache<CacheKey, NamespaceCache> schemaCache =
       Caffeine.newBuilder().maximumSize(1000).build();
 
@@ -24,7 +27,7 @@ public class SchemaCache {
   }
 
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {
-    return new NamespaceCache(cacheKey.namespace(), queryExecutor);
+    return new NamespaceCache(cacheKey.namespace(), queryExecutor, objectMapper);
   }
 
   record CacheKey(Optional<String> tenant, String namespace) {}

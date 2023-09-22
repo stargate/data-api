@@ -47,14 +47,16 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           KEYSPACE_NAME,
           COLLECTION_NAME,
           true,
-          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE);
+          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE,
+          null);
 
   private static final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
       new CommandContext(
           KEYSPACE_NAME,
           COLLECTION_NAME,
           true,
-          NamespaceCache.CollectionProperty.SimilarityFunction.DOT_PRODUCT);
+          NamespaceCache.CollectionProperty.SimilarityFunction.DOT_PRODUCT,
+          null);
 
   @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;

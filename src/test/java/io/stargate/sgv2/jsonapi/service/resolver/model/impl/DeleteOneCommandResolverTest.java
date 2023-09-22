@@ -3,13 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -30,7 +30,7 @@ public class DeleteOneCommandResolverTest {
   @Nested
   class DeleteOneCommandResolveCommand {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -237,6 +237,55 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
+                          assertThat(find.singleResponse()).isTrue();
+                        });
+              });
+    }
+
+    @Test
+    public void dynamicFilterConditionWithVectorizeSearch() throws Exception {
+      String json =
+          """
+              {
+                "deleteOne": {
+                  "filter" : {"col" : "val"},
+                  "sort" : {"$vectorize" : "test data"}
+                }
+              }
+              """;
+
+      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      Operation operation =
+          resolver.resolveCommand(
+              TestEmbeddingService.commandContextWithVectorize, deleteOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              DeleteOperation.class,
+              op -> {
+                assertThat(op.commandContext())
+                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                assertThat(op.deleteLimit()).isEqualTo(1);
+                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                assertThat(op.findOperation())
+                    .isInstanceOfSatisfying(
+                        FindOperation.class,
+                        find -> {
+                          DBFilterBase.TextFilter filter =
+                              new DBFilterBase.TextFilter(
+                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+
+                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                          assertThat(find.commandContext())
+                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                          assertThat(find.pageSize()).isEqualTo(1);
+                          assertThat(find.limit()).isEqualTo(1);
+                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(find.orderBy()).isNull();
+                          assertThat(find.vector()).isNotNull();
+                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
                           assertThat(find.singleResponse()).isTrue();
                         });
               });

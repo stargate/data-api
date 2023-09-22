@@ -51,6 +51,9 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
 
+    // vectorize sort clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
+
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

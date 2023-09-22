@@ -63,6 +63,9 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     // resolve sort clause
     SortClause sortClause = command.sortClause();
 
+    // vectorize sort clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
+
     // if vector search
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
