@@ -29,7 +29,13 @@ public record CreateCollectionCommand(
               description = "Vector search index configuration for the collection",
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
-          VectorSearchConfig vector) {
+          VectorSearchConfig vector,
+      @Nullable
+          @Schema(
+              description = "Embedding api configuration to support `$vectorize`",
+              type = SchemaType.OBJECT,
+              implementation = VectorSearchConfig.class)
+          VectorizeConfig vectorize) {
 
     public record VectorSearchConfig(
         @Positive(message = "size should be greater than `0`")
@@ -53,6 +59,22 @@ public record CreateCollectionCommand(
         this.size = size;
         this.function = function == null ? "cosine" : function;
       }
+    }
+
+    public record VectorizeConfig(
+        @NotNull
+            @Schema(
+                description = "Registered Embedding service name",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            String service,
+        @NotNull
+            @Schema(
+                description = "Model options for the embedding service call",
+                type = SchemaType.OBJECT,
+                implementation = VectorizeOptions.class)
+            VectorizeOptions options) {
+      public record VectorizeOptions(String modelName) {}
     }
   }
 }

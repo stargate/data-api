@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -33,7 +33,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveCommand {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -364,6 +364,42 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void vectorizeSearch() throws Exception {
+      String json =
+          """
+                  {
+                    "find": {
+                      "sort" : {"$vectorize" : "test data"}
+                    }
+                  }
+                  """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation =
+          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                float[] vector = new float[] {0.25f, 0.25f, 0.25f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext())
+                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).isEmpty();
+              });
+    }
+
+    @Test
     public void vectorSearchWithSimilarityProjection() throws Exception {
       String json =
           """
@@ -588,7 +624,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveWithProjection {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void idFilterConditionAndProjection() throws Exception {

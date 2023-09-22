@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -296,6 +297,36 @@ class ObjectMapperConfigurationTest {
   }
 
   @Nested
+  class CreateEmbeddingService {
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+            {
+              "createEmbeddingService": {
+                "name": "openai",
+                "apiProvider" : "openai",
+                "apiKey" : "API-TOKEN",
+                "baseUrl" : "https://api.openai.com/v1/"
+              }
+            }
+            """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateEmbeddingServiceCommand.class,
+              createEmbeddingServiceCommand -> {
+                assertThat(createEmbeddingServiceCommand.name()).isNotNull();
+                assertThat(createEmbeddingServiceCommand.apiKey()).isNotNull();
+                assertThat(createEmbeddingServiceCommand.apiProvider()).isNotNull();
+                assertThat(createEmbeddingServiceCommand.baseUrl()).isNotNull();
+              });
+    }
+  }
+
+  @Nested
   class CreateCollection {
     @Test
     public void happyPath() throws Exception {
@@ -348,6 +379,50 @@ class ObjectMapperConfigurationTest {
                 assertThat(createCollection.options().vector()).isNotNull();
                 assertThat(createCollection.options().vector().size()).isEqualTo(5);
                 assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+              });
+    }
+
+    @Test
+    public void happyPathVectorizeSearch() throws Exception {
+      String json =
+          """
+              {
+                "createCollection": {
+                  "name": "some_name",
+                  "options": {
+                    "vector": {
+                      "size": 5,
+                      "function": "cosine"
+                    },
+                    "vectorize" : {
+                      "service" : "my_service",
+                      "options" : {
+                        "modelName": "text-embedding-ada-002"
+                      }
+                    }
+                  }
+                }
+              }
+              """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                String name = createCollection.name();
+                assertThat(name).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().vector()).isNotNull();
+                assertThat(createCollection.options().vector().size()).isEqualTo(5);
+                assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+                assertThat(createCollection.options().vectorize()).isNotNull();
+                assertThat(createCollection.options().vectorize().service())
+                    .isEqualTo("my_service");
+                assertThat(createCollection.options().vectorize().options()).isNotNull();
+                assertThat(createCollection.options().vectorize().options().modelName())
+                    .isEqualTo("text-embedding-ada-002");
               });
     }
 

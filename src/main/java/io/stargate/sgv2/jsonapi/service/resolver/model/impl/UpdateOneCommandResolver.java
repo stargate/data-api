@@ -46,6 +46,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   public Operation resolveCommand(CommandContext commandContext, UpdateOneCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
 
+    // Vectorize update clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
+
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert
@@ -69,6 +72,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {
     List<DBFilterBase> filters = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+
+    // vectorize sort clause
+    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

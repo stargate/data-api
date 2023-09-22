@@ -132,6 +132,67 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void happyPathVectorizeSearch() throws Exception {
+      String json = """
+        {
+         "$vectorize" : "test data"
+        }
+        """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vectorize");
+      assertThat(sortClause.sortExpressions().get(0).vectorize()).isEqualTo("test data");
+    }
+
+    @Test
+    public void vectorizeSearchNonText() {
+      String json = """
+        {
+         "$vectorize" : 0.55
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage()).contains("$vectorize search needs to be text value");
+    }
+
+    @Test
+    public void vectorizeSearchObject() {
+      String json = """
+        {
+         "$vectorize" : {}
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage()).contains("$vectorize search needs to be text value");
+    }
+
+    @Test
+    public void vectorizeSearchWithOtherSort() {
+      String json =
+          """
+        {
+         "$vectorize" : "test data",
+         "some.path" : 1
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable.getMessage())
+          .contains("Vector search can't be used with other sort clause");
+    }
+
+    @Test
     public void mustTrimPath() throws Exception {
       String json = """
               {"some.path " : 1}

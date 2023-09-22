@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -13,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -32,7 +32,7 @@ class InsertOneCommandResolverTest {
   @Nested
   class ResolveCommand {
 
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void happyPath() throws Exception {
@@ -86,6 +86,38 @@ class InsertOneCommandResolverTest {
                 WritableShreddedDocument expected = shredder.shred(command.document());
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.ordered()).isTrue();
+                assertThat(op.documents()).singleElement().isEqualTo(expected);
+              });
+    }
+
+    @Test
+    public void happyPathWithVectorize() throws Exception {
+      String json =
+          """
+            {
+              "insertOne": {
+                "document" : {
+                  "_id": "1",
+                  "$vectorize" : "test data"
+                }
+              }
+            }
+                """;
+
+      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+      Operation result =
+          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              InsertOperation.class,
+              op -> {
+                WritableShreddedDocument expected = shredder.shred(command.document());
+                assertThat(expected.queryVectorValues().length).isEqualTo(3);
+                assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
+                assertThat(op.commandContext())
+                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
                 assertThat(op.ordered()).isTrue();
                 assertThat(op.documents()).singleElement().isEqualTo(expected);
               });

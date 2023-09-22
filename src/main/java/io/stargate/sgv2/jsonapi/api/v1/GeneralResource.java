@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -47,8 +48,11 @@ public class GeneralResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {CreateNamespaceCommand.class}),
+              schema =
+                  @Schema(
+                      anyOf = {CreateEmbeddingServiceCommand.class, CreateNamespaceCommand.class}),
               examples = {
+                @ExampleObject(ref = "createEmbeddingService"),
                 @ExampleObject(ref = "createNamespace"),
                 @ExampleObject(ref = "createNamespaceWithReplication"),
                 @ExampleObject(ref = "findNamespaces"),
