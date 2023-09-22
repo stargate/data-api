@@ -12,13 +12,19 @@ public record SortExpression(
 
     // this can be modeled in different ways, would this be enough for now
     boolean ascending,
-    @Nullable float[] vector) {
+    @Nullable float[] vector,
+    @Nullable String vectorize) {
 
   public static SortExpression sort(String path, boolean ascending) {
-    return new SortExpression(path, ascending, null);
+    return new SortExpression(path, ascending, null, null);
   }
 
   public static SortExpression vsearch(float[] vector) {
-    return new SortExpression(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, false, vector);
+    return new SortExpression(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, false, vector, null);
+  }
+
+  public static SortExpression vectorizeSearch(String vectorize) {
+    return new SortExpression(
+        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize);
   }
 }

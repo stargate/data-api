@@ -21,6 +21,8 @@ import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceCache;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -58,6 +60,8 @@ public class CollectionResource {
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private SchemaCache schemaCache;
+
+  @Inject private EmbeddingServiceCache serviceCache;
 
   @Inject private StargateRequestInfo stargateRequestInfo;
 
@@ -164,12 +168,23 @@ public class CollectionResource {
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
+                EmbeddingService embeddingService = null;
+                if (collectionProperty.vectorizeServiceName() != null
+                    && collectionProperty.modelName() != null) {
+                  embeddingService =
+                      serviceCache.getConfiguration(
+                          stargateRequestInfo.getTenantId(),
+                          collectionProperty.vectorizeServiceName(),
+                          collectionProperty.modelName());
+                }
+
                 CommandContext commandContext =
                     new CommandContext(
                         namespace,
                         collection,
                         collectionProperty.vectorEnabled(),
-                        collectionProperty.similarityFunction());
+                        collectionProperty.similarityFunction(),
+                        embeddingService);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);
