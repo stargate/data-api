@@ -724,7 +724,7 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithINOperator {
-    @Mock CommandContext commandContext;
+    CommandContext commandContext = CommandContext.empty();
 
     @Test
     public void NonIdIn() throws Exception {
