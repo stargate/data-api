@@ -42,6 +42,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
 
         # Run Stargate coordinator in developer mode to save time / resources
         # Pull JSON API image from ECR corresponding to latest commit on main branch
