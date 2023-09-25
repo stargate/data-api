@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
@@ -24,7 +25,7 @@ public record FindCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable {
+    implements ReadCommand, Filterable, Projectable, Sortable {
 
   public record Options(
 

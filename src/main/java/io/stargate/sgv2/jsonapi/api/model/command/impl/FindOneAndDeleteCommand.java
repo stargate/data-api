@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
+import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import jakarta.validation.Valid;
@@ -19,4 +20,4 @@ public record FindOneAndDeleteCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition)
-    implements ModifyCommand, Filterable, Projectable {}
+    implements ModifyCommand, Filterable, Projectable, Sortable {}

@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import jakarta.validation.Valid;
@@ -28,4 +29,4 @@ public record DeleteOneCommand(
         @JsonProperty("filter")
         FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause)
-    implements ModifyCommand, NoOptionsCommand, Filterable {}
+    implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {}
