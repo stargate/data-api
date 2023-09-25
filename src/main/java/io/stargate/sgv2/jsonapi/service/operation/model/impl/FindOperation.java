@@ -389,7 +389,7 @@ public record FindOperation(
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
-          if (filter instanceof DBFilterBase.INFilter) {
+          if (filter instanceof DBFilterBase.InFilter) {
             hasInFilterBesidesIdField.set(true);
             return; // need to break
           }
@@ -595,7 +595,7 @@ public record FindOperation(
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
-          if (filter instanceof DBFilterBase.INFilter) {
+          if (filter instanceof DBFilterBase.InFilter) {
             hasInFilterBesidesIdField.set(true);
             return; // need to break
           }
@@ -716,7 +716,7 @@ public record FindOperation(
     // if we have id filter overwrite ignore existing IDFilter
     boolean idFilterOverwrite = additionalIdFilter != null;
     for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.INFilter inFilter) {
+      if (filter instanceof DBFilterBase.InFilter inFilter) {
         List<BuiltCondition> conditions = inFilter.getAll();
         if (!conditions.isEmpty()) {
           List<Variable<BuiltCondition>> variableConditions =

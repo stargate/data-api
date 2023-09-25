@@ -745,8 +745,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
@@ -784,8 +784,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new DBFilterBase.IDFilter(
                         DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id1"));
@@ -824,8 +824,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new DBFilterBase.IDFilter(
                         DBFilterBase.IDFilter.Operator.IN,
@@ -867,8 +867,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 float[] vector = new float[] {0.15f, 0.1f, 0.1f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -908,8 +908,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new DBFilterBase.IDFilter(
                         DBFilterBase.IDFilter.Operator.IN,
@@ -955,8 +955,8 @@ public class FindCommandResolverTest {
               find -> {
                 FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", false);
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
@@ -999,8 +999,8 @@ public class FindCommandResolverTest {
               find -> {
                 FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", true);
                 DBFilterBase inFilter =
-                    new DBFilterBase.INFilter(
-                        DBFilterBase.INFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new DBFilterBase.IDFilter(
                         DBFilterBase.IDFilter.Operator.IN,

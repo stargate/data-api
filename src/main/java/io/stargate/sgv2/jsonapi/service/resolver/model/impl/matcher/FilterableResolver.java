@@ -163,8 +163,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           expression -> {
             final DocValueHasher docValueHasher = new DocValueHasher();
             filters.add(
-                new DBFilterBase.INFilter(
-                    DBFilterBase.INFilter.Operator.IN, expression.path(), expression.value()));
+                new DBFilterBase.InFilter(
+                    DBFilterBase.InFilter.Operator.IN, expression.path(), expression.value()));
           });
     }
 

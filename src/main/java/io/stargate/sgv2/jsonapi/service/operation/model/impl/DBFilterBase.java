@@ -290,9 +290,9 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    * Filters db documents based on non document id field values if id use "$in" operator, use
    * IDFilter, since partition key 'or' is not supported besides id, "$in" operator, use INFilter
    */
-  public static class INFilter extends DBFilterBase {
+  public static class InFilter extends DBFilterBase {
     private final Object arrayValue;
-    protected final INFilter.Operator operator;
+    protected final InFilter.Operator operator;
 
     @Override
     JsonNode asJson(JsonNodeFactory nodeFactory) {
@@ -308,7 +308,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       IN;
     }
 
-    public INFilter(INFilter.Operator operator, String path, Object arrayValue) {
+    public InFilter(InFilter.Operator operator, String path, Object arrayValue) {
       super(path);
       this.arrayValue = arrayValue;
       this.operator = operator;
@@ -318,7 +318,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      INFilter inFilter = (INFilter) o;
+      InFilter inFilter = (InFilter) o;
       return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
     }
 
