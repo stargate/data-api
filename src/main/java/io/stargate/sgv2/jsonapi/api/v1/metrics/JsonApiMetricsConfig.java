@@ -30,6 +30,7 @@ public interface JsonApiMetricsConfig {
   @WithDefault("command.processor.process")
   String metricsName();
 
+  /** List of values that can be used as value for metrics sort_type. */
   enum SortType {
     // Uses vertor search sorting for document resolution
     SIMILARITY_SORT,
