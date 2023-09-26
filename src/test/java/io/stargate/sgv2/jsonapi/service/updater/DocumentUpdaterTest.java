@@ -35,7 +35,8 @@ public class DocumentUpdaterTest {
     {
         "_id": "1",
         "location": "London",
-        "$vector": [0.11, 0.22, 0.33]
+        "$vector": [0.11, 0.22, 0.33],
+        "$vectorize": "London City"
     }
     """;
 
@@ -100,20 +101,49 @@ public class DocumentUpdaterTest {
     }
 
     @Test
+    public void setUpdateVector() throws Exception {
+      String expected =
+          """
+                    {
+                        "_id": "1",
+                        "location": "London",
+                        "new_data" : "data"
+                    }
+                  """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
+      JsonNode expectedData = objectMapper.readTree(expected);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET,
+                  objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
     public void setVectorData() throws Exception {
       String expected =
           """
             {
                 "_id": "1",
                 "location": "London",
-                "$vector" : [0.11, 0.22, 0.33]
+                "$vector" : [0.25, 0.25, 0.25]
             }
             """;
 
-      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
       JsonNode expectedData = objectMapper.readTree(expected);
       String vectorData = """
-              {"$vector" : [0.11, 0.22, 0.33] }
+              {"$vector" : [0.25, 0.25, 0.25] }
               """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(

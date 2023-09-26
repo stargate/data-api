@@ -50,6 +50,9 @@ public class DataVectorizer {
     for (int position = 0; position < documents.size(); position++) {
       JsonNode document = documents.get(position);
       if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+        }
         final JsonNode jsonNode =
             document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         if (jsonNode.isNull()) {
@@ -58,9 +61,7 @@ public class DataVectorizer {
           continue;
         }
         if (!jsonNode.isTextual()) {
-          throw new JsonApiException(
-              ErrorCode.SHRED_BAD_VECTORIZE_VALUE,
-              ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
+          throw new JsonApiException(ErrorCode.SHRED_BAD_VECTORIZE_VALUE);
         }
 
         vectorizeTexts.add(jsonNode.asText());
@@ -71,9 +72,7 @@ public class DataVectorizer {
 
     if (!vectorizeTexts.isEmpty()) {
       if (embeddingService == null) {
-        throw new JsonApiException(
-            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
-            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+        throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
       }
       List<float[]> vectors = embeddingService.vectorize(vectorizeTexts);
       for (int vectorPosition = 0; vectorPosition < vectors.size(); vectorPosition++) {
@@ -101,9 +100,7 @@ public class DataVectorizer {
       SortExpression expression = sortExpressions.get(0);
       String text = expression.vectorize();
       if (embeddingService == null) {
-        throw new JsonApiException(
-            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
-            ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+        throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
       }
       List<float[]> vectors = embeddingService.vectorize(List.of(text));
       sortExpressions.clear();
@@ -125,6 +122,9 @@ public class DataVectorizer {
     updateVectorize(setOnInsertNode);
     final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
     if (unsetNode != null && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      if (unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+      }
       unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
@@ -132,15 +132,16 @@ public class DataVectorizer {
   private void updateVectorize(ObjectNode node) {
     if (node == null) return;
     if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+      }
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
         node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
         if (embeddingService == null) {
-          throw new JsonApiException(
-              ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE,
-              ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE.getMessage());
+          throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
         final List<float[]> vectors = embeddingService.vectorize(List.of(text));
         final ArrayNode arrayNode = nodeFactory.arrayNode(vectors.get(0).length);
