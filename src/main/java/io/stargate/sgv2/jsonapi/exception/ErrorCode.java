@@ -63,6 +63,8 @@ public enum ErrorCode {
   INVALID_SORT_CLAUSE_VALUE(
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),
 
+  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together."),
+
   UNSUPPORTED_OPERATION("Unsupported operation class"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),

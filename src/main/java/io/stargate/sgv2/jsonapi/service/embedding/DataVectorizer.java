@@ -50,6 +50,11 @@ public class DataVectorizer {
     for (int position = 0; position < documents.size(); position++) {
       JsonNode document = documents.get(position);
       if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_USAGE_OF_VECTORIZE,
+              ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+        }
         final JsonNode jsonNode =
             document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         if (jsonNode.isNull()) {
@@ -125,6 +130,11 @@ public class DataVectorizer {
     updateVectorize(setOnInsertNode);
     final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
     if (unsetNode != null && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      if (unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_USAGE_OF_VECTORIZE,
+            ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      }
       unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
@@ -132,6 +142,11 @@ public class DataVectorizer {
   private void updateVectorize(ObjectNode node) {
     if (node == null) return;
     if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_USAGE_OF_VECTORIZE,
+            ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      }
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
         node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
