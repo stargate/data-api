@@ -10,9 +10,14 @@ import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.List;
 
 @ApplicationScoped
 public class MeteredCommandProcessor {
@@ -80,7 +85,7 @@ public class MeteredCommandProcessor {
         .onItem()
         .invoke(
             result -> {
-              Tags tags = getCustomTags(command, result);
+              Tags tags = getCustomTags(commandContext, command, result);
               // add metrics
               sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
             });
@@ -93,7 +98,7 @@ public class MeteredCommandProcessor {
    * @param result - response command result
    * @return
    */
-  private Tags getCustomTags(Command command, CommandResult result) {
+  private Tags getCustomTags(CommandContext commandContext, Command command, CommandResult result) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     String tenant = stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
@@ -110,7 +115,49 @@ public class MeteredCommandProcessor {
           (String) result.errors().get(0).fields().getOrDefault("errorCode", UNKNOWN_VALUE);
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
-    Tags tags = Tags.of(commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag);
+
+    Tag vectorEnabled =
+        commandContext.isVectorEnabled()
+            ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
+            : Tag.of(jsonApiMetricsConfig.vectorEnabled(), "false");
+    JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(command);
+    Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
+    Tags tags =
+        Tags.of(
+            commandTag,
+            tenantTag,
+            errorTag,
+            errorClassTag,
+            errorCodeTag,
+            vectorEnabled,
+            sortTypeTag);
     return tags;
+  }
+
+  private JsonApiMetricsConfig.SortType getVectorTypeTag(Command command) {
+    int filterCount = 0;
+    if (command instanceof Filterable fc && fc.filterClause() != null) {
+      filterCount = fc.filterClause().comparisonExpressions().size();
+    }
+    if (command instanceof Sortable sc
+        && sc.sortClause() != null
+        && !sc.sortClause().sortExpressions().isEmpty()) {
+      if (sc.sortClause() != null) {
+        List<SortExpression> sortClause = sc.sortClause().sortExpressions();
+        if (sortClause.size() == 1
+            && (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortClause.get(0).path())
+                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(
+                    sortClause.get(0).path()))) {
+          if (filterCount == 0) {
+            return JsonApiMetricsConfig.SortType.SIMILARITY_SORT;
+          } else {
+            return JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS;
+          }
+        } else {
+          return JsonApiMetricsConfig.SortType.SORT_BY_FIELD;
+        }
+      }
+    }
+    return JsonApiMetricsConfig.SortType.NONE;
   }
 }

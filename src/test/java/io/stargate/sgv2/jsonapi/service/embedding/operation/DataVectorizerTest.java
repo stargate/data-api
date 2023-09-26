@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -25,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
-public class VectorizeDataTest {
+public class DataVectorizerTest {
   @Inject ObjectMapper objectMapper;
 
   CommandContext commandContext = CommandContext.empty();
@@ -82,6 +83,31 @@ public class VectorizeDataTest {
         assertThat(document.has("$vector")).isTrue();
       }
     }
+
+    @Test
+    public void testWithBothVectorFieldValues() {
+      List<JsonNode> documents = new ArrayList<>();
+
+      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", "test data");
+      final ArrayNode arrayNode = document.putArray("$vector");
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      documents.add(document);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      Throwable t =
+          catchThrowable(
+              () -> {
+                dataVectorizer.vectorize(documents);
+              });
+
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+    }
   }
 
   @Nested
@@ -128,6 +154,34 @@ public class VectorizeDataTest {
     }
 
     @Test
+    public void updateClauseSetBothValues() throws Exception {
+      String json =
+          """
+            {
+              "findOneAndUpdate": {
+                "filter" : {"_id" : "id"},
+                "update" : {"$set" : {"$vectorize" : "New York", "$vector" : [0.11, 0.11]}}
+              }
+            }
+            """;
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateClause updateClause = command.updateClause();
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      Throwable t =
+          catchThrowable(
+              () -> {
+                dataVectorizer.vectorizeUpdateClause(updateClause);
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+    }
+
+    @Test
     public void updateClauseSetOnInsertValues() throws Exception {
       String json =
           """
@@ -152,6 +206,34 @@ public class VectorizeDataTest {
     }
 
     @Test
+    public void updateClauseSetOnInsertBothValues() throws Exception {
+      String json =
+          """
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id" : "id"},
+                          "update" : {"$setOnInsert" : {"$vectorize" : "New York", "$vector" : [0.11, 0.11]}}
+                        }
+                      }
+                      """;
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateClause updateClause = command.updateClause();
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      Throwable t =
+          catchThrowable(
+              () -> {
+                dataVectorizer.vectorizeUpdateClause(updateClause);
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+    }
+
+    @Test
     public void updateClauseUnsetValues() throws Exception {
       String json =
           """
@@ -171,6 +253,34 @@ public class VectorizeDataTest {
       assertThat(unsetNode.has("$vectorize")).isTrue();
       assertThat(unsetNode.has("$vector")).isTrue();
       assertThat(unsetNode.get("$vector").isNull()).isTrue();
+    }
+
+    @Test
+    public void updateClauseUnsetBothValues() throws Exception {
+      String json =
+          """
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id" : "id"},
+                          "update" : {"$unset" : {"$vectorize" : null, "$vector" : null}}
+                        }
+                      }
+                      """;
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateClause updateClause = command.updateClause();
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory());
+      Throwable t =
+          catchThrowable(
+              () -> {
+                dataVectorizer.vectorizeUpdateClause(updateClause);
+              });
+      assertThat(t)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
     }
   }
 }
