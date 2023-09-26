@@ -1789,32 +1789,32 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindCommand", JsonApiMetricsConfig.SortType.NONE.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand",
           JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.NONE.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndDeleteCommand",
           JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndDeleteCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndReplaceCommand",
           JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.super.checkVectorMetrics(
+      VectorSearchIntegrationTest.checkVectorMetrics(
           "UpdateOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
     }
   }
