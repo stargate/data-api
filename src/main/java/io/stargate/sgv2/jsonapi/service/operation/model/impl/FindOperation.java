@@ -376,8 +376,6 @@ public record FindOperation(
     return ReadDocument.from(documentId, null, rootNode);
   }
 
-  // builds select query
-
   /**
    * Builds select query based on filters and additionalIdFilter overrides.
    *
@@ -386,6 +384,9 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+    // if the query has "$in" operator for non-id field, buildCondition should return List of
+    // Expression
+    // that is the reason having this boolean
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
@@ -592,6 +593,9 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
+    // if the query has "$in" operator for non-id field, buildCondition should return List of
+    // Expression
+    // that is the reason having this boolean
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {

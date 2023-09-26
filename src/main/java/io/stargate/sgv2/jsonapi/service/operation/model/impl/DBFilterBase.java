@@ -16,7 +16,10 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -363,7 +366,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
-      CONTAINS,
+      CONTAINS;
     }
 
     protected final String columnName;

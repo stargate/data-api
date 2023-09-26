@@ -410,6 +410,31 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void inConditionNonIdFieldMulti() {
+      String json =
+          """
+              {
+                "find": {
+                    "filter" : {
+                         "username" : {"$in" : ["user1", "user2"]}
+                    }
+                  }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(2))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void inConditionNonIdFieldIdField() {
       String json =
           """
