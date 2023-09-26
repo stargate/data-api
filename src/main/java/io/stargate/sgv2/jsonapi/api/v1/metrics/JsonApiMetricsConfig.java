@@ -19,6 +19,26 @@ public interface JsonApiMetricsConfig {
   String command();
 
   @NotBlank
+  @WithDefault("vector.enabled")
+  String vectorEnabled();
+
+  @NotBlank
+  @WithDefault("sort.type")
+  String sortType();
+
+  @NotBlank
   @WithDefault("command.processor.process")
   String metricsName();
+
+  /** List of values that can be used as value for metrics sort_type. */
+  enum SortType {
+    // Uses vertor search sorting for document resolution
+    SIMILARITY_SORT,
+    // Uses vector search with filters for document resolution
+    SIMILARITY_SORT_WITH_FILTERS,
+    // Uses sort based on a document field for document resolution
+    SORT_BY_FIELD,
+    // No sort queries
+    NONE
+  }
 }

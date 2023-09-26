@@ -9,6 +9,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -1781,5 +1782,40 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       sb.append(nums[ix]);
     }
     return sb.toString();
+  }
+
+  @Nested
+  @Order(99)
+  class Metrics {
+    @Test
+    public void checkInsertOneMetrics() {
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindCommand", JsonApiMetricsConfig.SortType.NONE.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndUpdateCommand",
+          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.NONE.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndDeleteCommand",
+          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndDeleteCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "FindOneAndReplaceCommand",
+          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkVectorMetrics(
+          "UpdateOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+    }
   }
 }
