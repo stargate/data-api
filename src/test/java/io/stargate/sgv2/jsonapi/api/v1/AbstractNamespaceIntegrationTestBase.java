@@ -102,7 +102,23 @@ public abstract class AbstractNamespaceIntegrationTestBase {
             .filter(
                 line ->
                     line.startsWith("command_processor_process")
-                        && line.contains("command=\"" + commandName + "\""))
+                        && line.contains("command=\"" + commandName + "\"")
+                        && line.contains("vector_enabled=\"false\""))
+            .toList();
+    assertThat(countMetrics.size()).isGreaterThan(0);
+  }
+
+  public static void checkVectorMetrics(String commandName, String sortType) {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> countMetrics =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("command_processor_process")
+                        && line.contains("command=\"" + commandName + "\"")
+                        && line.contains("vector_enabled=\"true\"")
+                        && line.contains("sort_type=\"" + sortType + "\""))
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
   }
