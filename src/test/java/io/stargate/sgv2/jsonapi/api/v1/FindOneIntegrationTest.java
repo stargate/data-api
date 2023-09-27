@@ -347,10 +347,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("Can use $in operator only on _id field"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()));
     }
 
     @Test

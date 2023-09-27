@@ -65,7 +65,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
       }
     }
-
     validate(expressionList);
     return new FilterClause(expressionList);
   }
@@ -90,11 +89,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
         case IN -> {
-          if (!path.equals(DocumentConstants.Fields.DOC_ID)) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION, "Can use $in operator only on _id field");
-          }
-
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.defaultPageSize()) {
               throw new JsonApiException(

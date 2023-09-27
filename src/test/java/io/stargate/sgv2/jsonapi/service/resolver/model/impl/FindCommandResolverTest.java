@@ -721,4 +721,304 @@ public class FindCommandResolverTest {
               });
     }
   }
+
+  @Nested
+  class FindCommandResolveWithINOperator {
+    CommandContext commandContext = CommandContext.empty();
+
+    @Test
+    public void NonIdIn() throws Exception {
+      String json =
+          """
+                    {
+                      "find": {
+                        "filter" : {"name" : { "$in" : ["test1", "test2"]}}
+                      }
+                    }
+                    """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(filter);
+              });
+
+      final FindOperation operation1 = (FindOperation) operation;
+    }
+
+    @Test
+    public void NonIdInIdEq() throws Exception {
+      String json =
+          """
+                    {
+                      "find": {
+                        "filter" : {
+                        "_id" : "id1",
+                        "name" : { "$in" : ["test1", "test2"]}
+                        }
+                      }
+                    }
+                    """;
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                DBFilterBase idFilter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id1"));
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+              });
+    }
+
+    @Test
+    public void NonIdInIdIn() throws Exception {
+      String json =
+          """
+                    {
+                      "find": {
+                        "filter" : {
+                        "_id" : { "$in" : ["id1", "id2"]},
+                        "name" : { "$in" : ["test1", "test2"]}
+                        }
+                      }
+                    }
+                    """;
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                DBFilterBase idFilter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.IN,
+                        List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+              });
+    }
+
+    @Test
+    public void NonIdInVSearch() throws Exception {
+      String json =
+          """
+                    {
+                      "find": {
+                        "filter" : {
+                            "name" : { "$in" : ["test1", "test2"]}
+                        },
+                        "sort" : {"$vector" : [0.15, 0.1, 0.1]}
+                      }
+                    }
+                    """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                float[] vector = new float[] {0.15f, 0.1f, 0.1f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).containsOnly(inFilter);
+              });
+    }
+
+    @Test
+    public void NonIdInIdInVSearch() throws Exception {
+      String json =
+          """
+                    {
+                      "find": {
+                        "filter" : {
+                            "_id" : { "$in" : ["id1", "id2"]},
+                            "name" : { "$in" : ["test1", "test2"]}
+                        },
+                        "sort" : {"$vector" : [0.15, 0.1, 0.1]}
+                      }
+                    }
+                    """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                DBFilterBase idFilter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.IN,
+                        List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
+                float[] vector = new float[] {0.15f, 0.1f, 0.1f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+              });
+    }
+
+    @Test
+    public void descendingSortNonIdIn() throws Exception {
+      String json =
+          """
+                        {
+                            "find": {
+                                "sort": {
+                                    "name": -1
+                                },
+                                "filter" : {
+                                    "name" : {"$in" : ["test1", "test2"]}
+                                }
+                            }
+                        }
+                    """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", false);
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).containsOnly(orderBy);
+                assertThat(find.filters()).containsOnly(inFilter);
+              });
+    }
+
+    @Test
+    public void ascendingSortNonIdInIdIn() throws Exception {
+      String json =
+          """
+                        {
+                            "find": {
+                                "sort": {
+                                    "name": 1
+                                },
+                                "filter" : {
+                                    "name" : {"$in" : ["test1", "test2"]},
+                                    "_id" : {"$in" : ["id1","id2"]}
+                                }
+                            }
+                        }
+                    """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", true);
+                DBFilterBase inFilter =
+                    new DBFilterBase.InFilter(
+                        DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
+                DBFilterBase idFilter =
+                    new DBFilterBase.IDFilter(
+                        DBFilterBase.IDFilter.Operator.IN,
+                        List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).containsOnly(orderBy);
+                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+              });
+    }
+  }
 }

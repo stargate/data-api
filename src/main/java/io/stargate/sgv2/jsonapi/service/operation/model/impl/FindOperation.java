@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.bpodgursky.jbool_expressions.And;
+import com.bpodgursky.jbool_expressions.Expression;
+import com.bpodgursky.jbool_expressions.Or;
+import com.bpodgursky.jbool_expressions.Variable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,6 +27,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -371,8 +376,6 @@ public record FindOperation(
     return ReadDocument.from(documentId, null, rootNode);
   }
 
-  // builds select query
-
   /**
    * Builds select query based on filters and additionalIdFilter overrides.
    *
@@ -381,34 +384,75 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-    if (conditions == null) {
-      return List.of();
-    }
-    List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
-    conditions.forEach(
-        condition -> {
-          if (vector() == null) {
-            queries.add(
-                new QueryBuilder()
-                    .select()
-                    .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(condition)
-                    .limit(limit)
-                    .build());
-          } else {
-            QueryOuterClass.Query builtQuery = getVectorSearchQuery(condition);
-            final List<QueryOuterClass.Value> valuesList =
-                builtQuery.getValuesOrBuilder().getValuesList();
-            final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
-            valuesList.forEach(builder::addValues);
-            builder.addValues(CustomValueSerializers.getVectorValue(vector()));
-            queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
-          }
-        });
+    // if the query has "$in" operator for non-id field, buildCondition should return List of
+    // Expression
+    // that is the reason having this boolean
+    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
+    // TODO List<List<BuildCondition>>
+    final Optional<DBFilterBase> inFilter =
+        filters.stream().filter(filter -> filter instanceof DBFilterBase.InFilter).findFirst();
+    if (inFilter.isPresent()) {
+      // This if block handles filter with "$in" for non-id field
+      List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
+      if (expressions == null) {
+        return List.of();
+      }
+      List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+      expressions.forEach(
+          expression -> {
+            if (vector() == null) {
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(expression)
+                      .limit(limit)
+                      .build());
+            } else {
+              QueryOuterClass.Query builtQuery = getVectorSearchQueryByExpression(expression);
+              final List<QueryOuterClass.Value> valuesList =
+                  builtQuery.getValuesOrBuilder().getValuesList();
+              final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
+              valuesList.forEach(builder::addValues);
+              builder.addValues(CustomValueSerializers.getVectorValue(vector()));
+              queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
+            }
+          });
 
-    return queries;
+      return queries;
+    } else {
+      // This if block handles filter with no "$in" for non-id field
+      List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
+      if (conditions == null) {
+        return List.of();
+      }
+      List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
+      conditions.forEach(
+          condition -> {
+            if (vector() == null) {
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(condition)
+                      .limit(limit)
+                      .build());
+            } else {
+              QueryOuterClass.Query builtQuery = getVectorSearchQuery(condition);
+              final List<QueryOuterClass.Value> valuesList =
+                  builtQuery.getValuesOrBuilder().getValuesList();
+              final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
+              valuesList.forEach(builder::addValues);
+              builder.addValues(CustomValueSerializers.getVectorValue(vector()));
+              queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
+            }
+          });
+
+      return queries;
+    }
   }
 
   /** Making it a separate method to build vector search query as there are many options */
@@ -457,8 +501,9 @@ public record FindOperation(
         }
         default -> {
           throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
+                  + commandContext().similarityFunction());
         }
       }
     } else {
@@ -472,7 +517,72 @@ public record FindOperation(
           .build();
     }
   }
-
+  /**
+   * A separate method to build vector search query by using expression, expression can contain
+   * logic operations like 'or','and'..
+   */
+  private QueryOuterClass.Query getVectorSearchQueryByExpression(
+      Expression<BuiltCondition> expression) {
+    QueryOuterClass.Query builtQuery = null;
+    if (projection().doIncludeSimilarityScore()) {
+      switch (commandContext().similarityFunction()) {
+        case COSINE, UNDEFINED -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityCosine(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        case EUCLIDEAN -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityEuclidean(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        case DOT_PRODUCT -> {
+          return new QueryBuilder()
+              .select()
+              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+              .similarityDotProduct(
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+                  CustomValueSerializers.getVectorValue(vector()))
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expression)
+              .limit(limit)
+              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+              .build();
+        }
+        default -> {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
+                  + commandContext().similarityFunction());
+        }
+      }
+    } else {
+      return new QueryBuilder()
+          .select()
+          .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+          .from(commandContext.namespace(), commandContext.collection())
+          .where(expression)
+          .limit(limit)
+          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+          .build();
+    }
+  }
   /**
    * Builds select query based on filters, sort fields and additionalIdFilter overrides.
    *
@@ -482,30 +592,69 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
-    List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-    if (conditions == null) {
-      return List.of();
+    // if the query has "$in" operator for non-id field, buildCondition should return List of
+    // Expression
+    // that is the reason having this boolean
+    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
+    // TODO List<List<BuildCondition>>
+
+    final Optional<DBFilterBase> inFilter =
+        filters.stream().filter(filter -> filter instanceof DBFilterBase.InFilter).findFirst();
+    if (inFilter.isPresent()) {
+      // This if block handles filter with "$in" for non-id field
+      List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
+      if (expressions == null) {
+        return List.of();
+      }
+      String[] columns = sortedDataColumns;
+      if (orderBy() != null) {
+        List<String> sortColumns = Lists.newArrayList(columns);
+        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
+        columns = new String[sortColumns.size()];
+        sortColumns.toArray(columns);
+      }
+      final String[] columnsToAdd = columns;
+      List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+      expressions.forEach(
+          expression ->
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(columnsToAdd)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(expression)
+                      .limit(maxSortReadLimit())
+                      .build()));
+      return queries;
+
+    } else {
+      // This if block handles filter with "$in" for non-id field
+      List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
+      if (conditions == null) {
+        return List.of();
+      }
+      String[] columns = sortedDataColumns;
+      if (orderBy() != null) {
+        List<String> sortColumns = Lists.newArrayList(columns);
+        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
+        columns = new String[sortColumns.size()];
+        sortColumns.toArray(columns);
+      }
+      final String[] columnsToAdd = columns;
+      List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
+      conditions.forEach(
+          condition ->
+              queries.add(
+                  new QueryBuilder()
+                      .select()
+                      .column(columnsToAdd)
+                      .from(commandContext.namespace(), commandContext.collection())
+                      .where(condition)
+                      .limit(maxSortReadLimit())
+                      .build()));
+      return queries;
     }
-    String[] columns = sortedDataColumns;
-    if (orderBy() != null) {
-      List<String> sortColumns = Lists.newArrayList(columns);
-      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
-      columns = new String[sortColumns.size()];
-      sortColumns.toArray(columns);
-    }
-    final String[] columnsToAdd = columns;
-    List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
-    conditions.forEach(
-        condition ->
-            queries.add(
-                new QueryBuilder()
-                    .select()
-                    .column(columnsToAdd)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(condition)
-                    .limit(maxSortReadLimit())
-                    .build()));
-    return queries;
   }
 
   /**
@@ -549,6 +698,69 @@ public record FindOperation(
       }
     } else {
       return List.of(conditions);
+    }
+  }
+
+  /**
+   * Builds select query based on filters and additionalIdFilter overrides. return expression to
+   * pass logic operation information, eg 'or'
+   */
+  private List<Expression<BuiltCondition>> buildConditionExpressions(
+      DBFilterBase.IDFilter additionalIdFilter) {
+    Expression<BuiltCondition> conditionExpression = null;
+    //        for (DBFilterBase filter : filters) {
+    //            // all filters will be in And.of
+    //            // if the filter is DBFilterBase.INFilter
+    //            // inside of this filter, it has getAll method to return a list of BuiltCondition,
+    // these
+    //            // BuiltCondition will be in Or.of
+    //        }
+    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
+    // if we have id filter overwrite ignore existing IDFilter
+    boolean idFilterOverwrite = additionalIdFilter != null;
+    for (DBFilterBase filter : filters) {
+      if (filter instanceof DBFilterBase.InFilter inFilter) {
+        List<BuiltCondition> conditions = inFilter.getAll();
+        if (!conditions.isEmpty()) {
+          List<Variable<BuiltCondition>> variableConditions =
+              conditions.stream().map(Variable::of).toList();
+          conditionExpression =
+              conditionExpression == null
+                  ? Or.of(variableConditions)
+                  : And.of(Or.of(variableConditions), conditionExpression);
+        }
+      } else if (filter instanceof DBFilterBase.IDFilter idFilter) {
+        if (!idFilterOverwrite) {
+          idFilterToUse = idFilter;
+        }
+      } else {
+        conditionExpression =
+            conditionExpression == null
+                ? Variable.of(filter.get())
+                : And.of(Variable.of(filter.get()), conditionExpression);
+      }
+    }
+
+    if (idFilterToUse != null) {
+      final List<BuiltCondition> inSplit = idFilterToUse.getAll();
+      if (inSplit.isEmpty()) {
+        return null;
+      } else {
+        // split n queries by id
+        Expression<BuiltCondition> tempExpression = conditionExpression;
+        return inSplit.stream()
+            .map(
+                idCondition -> {
+                  Expression<BuiltCondition> newExpression =
+                      tempExpression == null
+                          ? Variable.of(idCondition)
+                          : And.of(Variable.of((idCondition)), tempExpression);
+                  return newExpression;
+                })
+            .collect(Collectors.toList());
+      }
+    } else {
+      return conditionExpression == null ? null : List.of(conditionExpression); // only one query
     }
   }
 

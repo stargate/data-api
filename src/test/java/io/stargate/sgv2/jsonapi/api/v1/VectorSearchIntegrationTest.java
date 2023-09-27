@@ -573,6 +573,64 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
+    @Order(3)
+    public void happyPathWithInFilter() {
+      String json =
+          """
+            {
+               "insertOne": {
+                  "document": {
+                      "_id": "xx",
+                      "name": "Logic Layers",
+                      "description": "ChatGPT integrated sneakers that talk to you",
+                      "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                  }
+               }
+            }
+            """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("xx"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      json =
+          """
+                          {
+                            "find": {
+                              "filter" : {
+                              "_id" : {"$in" : ["??", "xx"]},
+                               "name":  {"$in" : ["Logic Layers","???"]}
+                              },
+                              "projection" : {"_id" : 1, "$vector" : 0},
+                              "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                              "options" : {
+                                  "limit" : 5
+                              }
+                            }
+                          }
+                          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is("xx"))
+          .body("data.documents[0].$vector", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     @Order(4)
     public void happyPathWithEmptyVector() {
       String json =

@@ -9,6 +9,12 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
 
+    /**
+     * Atomic values are added to the array_contains field to support $eq on both atomic value and
+     * array element
+     */
+    String DATA_CONTAINS = "array_contains";
+
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
 

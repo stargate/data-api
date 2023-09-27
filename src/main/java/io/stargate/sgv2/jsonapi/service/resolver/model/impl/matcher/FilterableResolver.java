@@ -34,7 +34,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
-
+  private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
@@ -62,6 +62,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
+    //    matchRules
+    //            .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.STRICT)
+    //            .matcher()
+    //            .capture(DYNAMIC_GROUP_IN)
+    //            .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
     // NOTE - can only do eq ops on fields until SAI changes
     matchRules
         .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
@@ -70,6 +76,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .capture(DYNAMIC_GROUP_IN)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
@@ -146,6 +154,18 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               filters.add(
                   new DBFilterBase.IDFilter(
                       DBFilterBase.IDFilter.Operator.IN, expression.value())));
+    }
+
+    final CaptureGroup<List<Object>> dynamicGroups =
+        (CaptureGroup<List<Object>>) captures.getGroupIfPresent(DYNAMIC_GROUP_IN);
+    if (dynamicGroups != null) {
+      dynamicGroups.consumeAllCaptures(
+          expression -> {
+            final DocValueHasher docValueHasher = new DocValueHasher();
+            filters.add(
+                new DBFilterBase.InFilter(
+                    DBFilterBase.InFilter.Operator.IN, expression.path(), expression.value()));
+          });
     }
 
     final CaptureGroup<String> textGroup =

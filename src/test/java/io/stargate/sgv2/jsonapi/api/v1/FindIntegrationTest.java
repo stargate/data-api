@@ -87,6 +87,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "insertOne": {
                 "document": {
                   "_id": "doc4",
+                  "username" : "user4",
                   "indexedObject" : { "0": "value_0", "1": "value_1" }
                 }
               }
@@ -263,7 +264,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """;
       String expected2 =
           """
-              {"_id":"doc4", "indexedObject":{"0":"value_0","1":"value_1"}}
+              {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
               """;
 
       given()
@@ -387,11 +388,14 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {
             "find": {
-              "filter" : {"non_id" : {"$in": ["a", "b", "c"]}}
-            }
+                "filter" : {
+                     "username" : {"$in" : ["user1", "user10"]}
+                }
+              }
           }
           """;
-
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -400,12 +404,103 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("data.documents", hasSize(1))
           .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("Can use $in operator only on _id field"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected1));
+    }
+
+    @Test
+    public void inConditionNonIdFieldMulti() {
+      String json =
+          """
+              {
+                "find": {
+                    "filter" : {
+                         "username" : {"$in" : ["user1", "user4"]}
+                    }
+                  }
+              }
+              """;
+      String expected1 =
+          """
+                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                  """;
+      String expected2 =
+          """
+                  {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(2))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+    }
+
+    @Test
+    public void inConditionNonIdFieldIdField() {
+      String json =
+          """
+                {
+                  "find": {
+                      "filter" : {
+                           "username" : {"$in" : ["user1", "user10"]},
+                           "_id" : {"$in" : ["doc1", "???"]}
+                      }
+                    }
+                }
+              """;
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected1));
+    }
+
+    @Test
+    public void inConditionNonIdFieldIdFieldSort() {
+      String json =
+          """
+                        {
+                          "find": {
+                              "filter" : {
+                                   "username" : {"$in" : ["user1", "user10"]},
+                                   "_id" : {"$in" : ["doc1", "???"]}
+                              },
+                              "sort": { "username": -1 }
+                            }
+                        }
+                      """;
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected1));
     }
 
     @Test
@@ -571,6 +666,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {
             "_id": "doc4",
+            "username":"user4",
             "indexedObject" : { "0": "value_0", "1": "value_1" }
           }
           """;

@@ -74,6 +74,11 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.bpodgursky</groupId>
+      <artifactId>jbool_expressions</artifactId>
+      <version>1.24</version>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
     </dependency>

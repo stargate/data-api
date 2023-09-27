@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -77,12 +79,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final String key;
     protected final DBFilterBase.MapFilterBase.Operator operator;
     private final T value;
-
-    /**
-     * Atomic values are added to the array_contains field to support $eq on both atomic value and
-     * array element
-     */
-    private static final String DATA_CONTAINS = "array_contains";
 
     protected MapFilterBase(
         String columnName, String key, MapFilterBase.Operator operator, T value) {
@@ -288,10 +284,75 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       }
     }
   }
+
   /**
-   * DB filter / condition for testing a set value Note: we can only do CONTAINS until SAI indexes
-   * are updated
+   * based on values of fields other than document id: for filtering on non-id field use InFilter.
    */
+  public static class InFilter extends DBFilterBase {
+    private final List<Object> arrayValue;
+    protected final InFilter.Operator operator;
+
+    @Override
+    JsonNode asJson(JsonNodeFactory nodeFactory) {
+      return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return false;
+    }
+    // IN operator for non-id field filtering
+    public enum Operator {
+      IN;
+    }
+
+    public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
+      super(path);
+      this.arrayValue = arrayValue;
+      this.operator = operator;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      InFilter inFilter = (InFilter) o;
+      return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(arrayValue, operator);
+    }
+
+    @Override
+    public BuiltCondition get() {
+      throw new UnsupportedOperationException("For IN filter we always use getALL() method");
+    }
+
+    public List<BuiltCondition> getAll() {
+      List<Object> values = arrayValue;
+      switch (operator) {
+        case IN:
+          if (values.isEmpty()) return List.of();
+          return values.stream()
+              .map(
+                  v ->
+                      BuiltCondition.of(
+                          DATA_CONTAINS,
+                          Predicate.CONTAINS,
+                          getGrpcValue(getHashValue(new DocValueHasher(), getPath(), v))))
+              .collect(Collectors.toList());
+
+        default:
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_FILTER_OPERATION,
+              String.format("Unsupported %s column operation %s", getPath(), operator));
+      }
+    }
+  }
+
+  /** DB filter / condition for testing a set value */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
       CONTAINS;
