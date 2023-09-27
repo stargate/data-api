@@ -27,7 +27,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -389,17 +389,10 @@ public record FindOperation(
     // that is the reason having this boolean
     // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
     // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
-    // List<List<BuildCondition>>
-    AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
-    filters.forEach(
-        filter -> {
-          if (filter instanceof DBFilterBase.InFilter) {
-            hasInFilterBesidesIdField.set(true);
-            return; // need to break
-          }
-        });
-
-    if (hasInFilterBesidesIdField.get()) {
+    // TODO List<List<BuildCondition>>
+    final Optional<DBFilterBase> inFilter =
+        filters.stream().filter(filter -> filter instanceof DBFilterBase.InFilter).findFirst();
+    if (inFilter.isPresent()) {
       // This if block handles filter with "$in" for non-id field
       List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
       if (expressions == null) {
@@ -604,16 +597,11 @@ public record FindOperation(
     // that is the reason having this boolean
     // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
     // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
-    // List<List<BuildCondition>>
-    AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
-    filters.forEach(
-        filter -> {
-          if (filter instanceof DBFilterBase.InFilter) {
-            hasInFilterBesidesIdField.set(true);
-            return; // need to break
-          }
-        });
-    if (hasInFilterBesidesIdField.get()) {
+    // TODO List<List<BuildCondition>>
+
+    final Optional<DBFilterBase> inFilter =
+        filters.stream().filter(filter -> filter instanceof DBFilterBase.InFilter).findFirst();
+    if (inFilter.isPresent()) {
       // This if block handles filter with "$in" for non-id field
       List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
       if (expressions == null) {
