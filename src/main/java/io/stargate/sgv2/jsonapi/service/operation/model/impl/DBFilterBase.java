@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -77,12 +79,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     private final String key;
     protected final DBFilterBase.MapFilterBase.Operator operator;
     private final T value;
-
-    /**
-     * Atomic values are added to the array_contains field to support $eq on both atomic value and
-     * array element
-     */
-    private static final String DATA_CONTAINS = "array_contains";
 
     protected MapFilterBase(
         String columnName, String key, MapFilterBase.Operator operator, T value) {
@@ -290,11 +286,10 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /**
-   * Filters db documents based on non document id field values if id use "$in" operator, use
-   * IDFilter, since partition key 'or' is not supported besides id, "$in" operator, use INFilter
+   * based on values of fields other than document id: for filtering on non-id field use InFilter.
    */
   public static class InFilter extends DBFilterBase {
-    private final Object arrayValue;
+    private final List<Object> arrayValue;
     protected final InFilter.Operator operator;
 
     @Override
@@ -306,12 +301,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     boolean canAddField() {
       return false;
     }
-
+    // IN operator for non-id field filtering
     public enum Operator {
       IN;
     }
 
-    public InFilter(InFilter.Operator operator, String path, Object arrayValue) {
+    public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
       super(path);
       this.arrayValue = arrayValue;
       this.operator = operator;
@@ -330,16 +325,13 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return Objects.hash(arrayValue, operator);
     }
 
-    private static final String DATA_CONTAINS = "array_contains";
-
     @Override
     public BuiltCondition get() {
-      // For IN filter we always use getALL() method
-      return null;
+      throw new UnsupportedOperationException("For IN filter we always use getALL() method");
     }
 
     public List<BuiltCondition> getAll() {
-      List<String> values = (List<String>) arrayValue;
+      List<Object> values = arrayValue;
       switch (operator) {
         case IN:
           if (values.isEmpty()) return List.of();
@@ -360,10 +352,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-  /**
-   * DB filter / condition for testing a set value Note: we can only do CONTAINS until SAI indexes
-   * are updated Now, cassandra supports or operation, we can add $in
-   */
+  /** DB filter / condition for testing a set value */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
       CONTAINS;

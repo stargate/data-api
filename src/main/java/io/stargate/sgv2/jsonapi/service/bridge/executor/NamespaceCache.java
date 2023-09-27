@@ -164,8 +164,8 @@ public class NamespaceCache {
           case "euclidean" -> EUCLIDEAN;
           case "dot_product" -> DOT_PRODUCT;
           default -> throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage() + similarityFunction);
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
         };
       }
     }

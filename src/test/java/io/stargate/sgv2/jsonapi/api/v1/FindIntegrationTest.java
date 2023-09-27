@@ -87,6 +87,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "insertOne": {
                 "document": {
                   "_id": "doc4",
+                  "username" : "user4",
                   "indexedObject" : { "0": "value_0", "1": "value_1" }
                 }
               }
@@ -263,7 +264,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """;
       String expected2 =
           """
-              {"_id":"doc4", "indexedObject":{"0":"value_0","1":"value_1"}}
+              {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
               """;
 
       given()
@@ -416,11 +417,19 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               {
                 "find": {
                     "filter" : {
-                         "username" : {"$in" : ["user1", "user2"]}
+                         "username" : {"$in" : ["user1", "user4"]}
                     }
                   }
               }
               """;
+      String expected1 =
+          """
+                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                  """;
+      String expected2 =
+          """
+                  {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -431,7 +440,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("data.documents", hasSize(2))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
     }
 
     @Test
@@ -656,6 +666,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {
             "_id": "doc4",
+            "username":"user4",
             "indexedObject" : { "0": "value_0", "1": "value_1" }
           }
           """;

@@ -504,8 +504,9 @@ public record FindOperation(
         }
         default -> {
           throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
+                  + commandContext().similarityFunction());
         }
       }
     } else {
@@ -569,8 +570,9 @@ public record FindOperation(
         }
         default -> {
           throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUCTION_NAME.getMessage());
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
+                  + commandContext().similarityFunction());
         }
       }
     } else {
