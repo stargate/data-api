@@ -388,7 +388,8 @@ public record FindOperation(
     // Expression
     // that is the reason having this boolean
     // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
-    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of List<List<BuildCondition>>
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
+    // List<List<BuildCondition>>
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
@@ -602,7 +603,8 @@ public record FindOperation(
     // Expression
     // that is the reason having this boolean
     // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
-    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of List<List<BuildCondition>>
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
+    // List<List<BuildCondition>>
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
