@@ -7,8 +7,10 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Implementation of {@code $set} update operation used to assign values to document fields; also
@@ -73,14 +75,21 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   @Override
   public boolean updateDocument(ObjectNode doc) {
     boolean modified = false;
+    Set<String> setPaths = new HashSet<>();
+    actions.stream().forEach(action -> setPaths.add(action.locator().path()));
     for (Action action : actions) {
       PathMatch target = action.locator().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
-
       // Modify if no old value OR new value differs, as per Mongo-equality rules
       if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
         target.replaceValue(newValue);
+        // $vector is updated and $vectorize is not updated, remove the $vectorize field in the
+        // document
+        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(action.locator().path())
+            && !setPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+          doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+        }
         modified = true;
       }
     }

@@ -85,6 +85,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
 
       # Use docker-compose to start required stack
       # Pull JSON API image from ECR corresponding to latest commit on main branch
