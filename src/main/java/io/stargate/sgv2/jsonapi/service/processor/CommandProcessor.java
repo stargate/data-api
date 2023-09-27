@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -57,10 +58,15 @@ public class CommandProcessor {
         // resolver can be null, not handled in CommandResolverService for now
         .flatMap(
             resolver -> {
-              // if we have resolver, resolve operation and execute
+              // if we have resolver, resolve operation
               Operation operation = resolver.resolveCommand(commandContext, command);
-              return operation.execute(queryExecutor);
+              return Uni.createFrom().item(operation);
             })
+
+        // run on worker thread pool since operation hsa blocking code for vectorize
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+        //  execute the operation
+        .flatMap(operation -> operation.execute(queryExecutor))
 
         // handle failures here
         .onFailure()
