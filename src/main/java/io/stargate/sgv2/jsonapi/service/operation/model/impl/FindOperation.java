@@ -387,6 +387,8 @@ public record FindOperation(
     // if the query has "$in" operator for non-id field, buildCondition should return List of
     // Expression
     // that is the reason having this boolean
+    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of List<List<BuildCondition>>
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
@@ -397,6 +399,7 @@ public record FindOperation(
         });
 
     if (hasInFilterBesidesIdField.get()) {
+      // This if block handles filter with "$in" for non-id field
       List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
       if (expressions == null) {
         return List.of();
@@ -425,8 +428,8 @@ public record FindOperation(
           });
 
       return queries;
-
     } else {
+      // This if block handles filter with no "$in" for non-id field
       List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
       if (conditions == null) {
         return List.of();
@@ -598,6 +601,8 @@ public record FindOperation(
     // if the query has "$in" operator for non-id field, buildCondition should return List of
     // Expression
     // that is the reason having this boolean
+    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
+    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of List<List<BuildCondition>>
     AtomicBoolean hasInFilterBesidesIdField = new AtomicBoolean(false);
     filters.forEach(
         filter -> {
@@ -607,6 +612,7 @@ public record FindOperation(
           }
         });
     if (hasInFilterBesidesIdField.get()) {
+      // This if block handles filter with "$in" for non-id field
       List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
       if (expressions == null) {
         return List.of();
@@ -633,6 +639,7 @@ public record FindOperation(
       return queries;
 
     } else {
+      // This if block handles filter with "$in" for non-id field
       List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
       if (conditions == null) {
         return List.of();
