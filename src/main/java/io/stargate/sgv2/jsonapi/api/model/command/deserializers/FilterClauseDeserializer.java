@@ -7,14 +7,9 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.smallrye.config.SmallRyeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -50,23 +45,105 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) throw new JsonApiException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
-    List<ComparisonExpression> expressionList = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
-      // TODO: Does not handle logical expressions, they are out of scope
-      JsonNode operatorExpression = entry.getValue();
-      if (operatorExpression.isObject()) {
-        expressionList.add(createComparisonExpression(entry));
-      } else {
-        // @TODO: Need to add array value type to this condition
-        expressionList.add(
-            ComparisonExpression.eq(
-                entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+    //        Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
+    // implicit and
+    Log.error("entry 111");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    populateExpression(implicitAnd, filterNode);
+    Log.error("give me ~~~~~~ " + implicitAnd);
+    ////        List<ComparisonExpression> expressionList = new ArrayList<>();
+    //        while (fieldIter.hasNext()) {
+    //            //single filter map
+    //            Map.Entry<String, JsonNode> entry = fieldIter.next();
+    //            Log.info("filter field ------ " + entry);
+    //            // TODO: Does not handle logical expressions, they are out of scope
+    //            JsonNode operatorExpression = entry.getValue();
+    //
+    //            if (operatorExpression.isObject()) {
+    //                //if is object, then there will be no explicit $and,$or in it ???
+    //                Log.info("filter field entry value ------ " + entry.getValue() + " --- is
+    // object");
+    //                implicitAnd.addComparisonExpression(createComparisonExpression(entry));
+    ////                implicitAnd.add(createLogicalExpression(entry));
+    ////                expressionList.add(createComparisonExpression(entry));
+    //            } else if(operatorExpression.isArray()) {
+    //                //if is array, then there may be nested $and,$or in it
+    //                implicitAnd.addLogicalExpression();
+    //            }else{
+    //                implicitAnd.addComparisonExpression(ComparisonExpression.eq(
+    //                        entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+    ////                expressionList.add(
+    ////                        ComparisonExpression.eq(
+    ////                                entry.getKey(), jsonNodeValue(entry.getKey(),
+    // entry.getValue())));
+    //
+    ////                Log.info(
+    ////                        "filter field entry value ------ " + entry.getValue() + " --- is
+    // array/string/???");
+    ////                // @TODO: Need to add array value type to this
+    //////        if(entry.getValue().isArray()){
+    //////          //$and, $or
+    //////          expressionList.add(constructNestedExpression(entry)){
+    //////
+    //////          }
+    //////        }
+    //
+    //            }
+    //        }
+    //        validate(expressionList);
+    //        Log.info("important expression List " + expressionList);
+    //        Log.info("important FilterClause " + new FilterClause(expressionList));
+
+    //        return new FilterClause(expressionList);
+    return null;
+  }
+
+  private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
+    Log.error("entry 222");
+    if (node.isObject()) {
+      Log.error("is Object !!! ");
+      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.fields();
+      while (fieldsIterator.hasNext()) {
+        Map.Entry<String, JsonNode> entry = fieldsIterator.next();
+        populateExpression(logicalExpression, entry);
       }
+    } else if (node.isArray()) {
+      ArrayNode arrayNode = (ArrayNode) node;
+      for (JsonNode next : arrayNode) {
+        if (!next.isObject()) {
+          // nodes in $and/$or array must be objects
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+              String.format(
+                  "Unsupported NodeType %s in $%s",
+                  next.getNodeType(), logicalExpression.getLogicalRelation()));
+        }
+        populateExpression(logicalExpression, next);
+      }
+    } else {
+      Log.error("should never reach here");
     }
-    validate(expressionList);
-    return new FilterClause(expressionList);
+  }
+
+  private void populateExpression(
+      LogicalExpression logicalExpression, Map.Entry<String, JsonNode> entry) {
+    Log.error("entry 333");
+    if (entry.getValue().isObject()) {
+      // inside of this entry, only implicit and, no explicit $and/$or
+      logicalExpression.addComparisonExpression(createComparisonExpression(entry));
+    } else if (entry.getValue().isArray()) {
+      Log.error("entry 444 " + entry.getKey());
+      LogicalExpression innerLogicalExpression =
+          entry.getKey().equals("$and") ? LogicalExpression.and() : LogicalExpression.or();
+      ArrayNode arrayNode = (ArrayNode) entry.getValue();
+      for (JsonNode next : arrayNode) {
+        populateExpression(innerLogicalExpression, next);
+      }
+      logicalExpression.addLogicalExpression(innerLogicalExpression);
+    } else {
+      logicalExpression.addComparisonExpression(
+          ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+    }
   }
 
   private void validate(List<ComparisonExpression> expressionList) {
@@ -221,6 +298,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
    * @return
    */
   private static Object jsonNodeValue(JsonNode node) {
+    Log.info("json node value " + node.getNodeType());
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();
@@ -232,6 +310,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         return null;
       case ARRAY:
         {
+          Log.error("here");
           ArrayNode arrayNode = (ArrayNode) node;
           List<Object> arrayVals = new ArrayList<>(arrayNode.size());
           for (JsonNode element : arrayNode) {
@@ -242,16 +321,24 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       case OBJECT:
         {
           if (JsonUtil.looksLikeEJsonValue(node)) {
+            Log.info("yes");
             JsonNode value = node.get(JsonUtil.EJSON_VALUE_KEY_DATE);
             if (value != null) {
+              Log.error("???!");
+
               if (value.isIntegralNumber() && value.canConvertToLong()) {
+                Log.error("???!!");
+
                 return new Date(value.longValue());
               } else {
+                Log.error("???");
                 throw new JsonApiException(
                     ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
             }
           } else {
+            Log.info("yes1");
+
             ObjectNode objectNode = (ObjectNode) node;
             Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
             final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
@@ -259,10 +346,13 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               final Map.Entry<String, JsonNode> nextField = fields.next();
               values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
             }
+            Log.info("done");
+
             return values;
           }
         }
       default:
+        Log.error("woaco " + node.getNodeType());
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
             String.format("Unsupported NodeType %s", node.getNodeType()));
