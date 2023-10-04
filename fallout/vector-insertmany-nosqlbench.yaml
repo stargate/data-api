@@ -13,9 +13,9 @@ description: >2
 
 scenarios:
   default:
-    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
+    schema-namespace: run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+    schema-collection: run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
     write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
-    read:     run driver=http tags==name:"read.*" cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -36,10 +36,12 @@ bindings:
 
   seq_key: Mod(<<docscount:500>>); ToString() -> String
   random_key: Uniform(0,<<docscount:500>>); ToString() -> String
-  vector_json: HashedLineToString('<<dataset:vector-dataset.txt>>');
+  vector_json: HashedFloatVectors(<<dimensions:1536>>); ToCqlVector()
 
 blocks:
   schema:
+    ops:
+  schema-namespace:
     ops:
       create-namespace:
         method: POST
@@ -52,13 +54,15 @@ blocks:
         body: >2
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_vector_crud_namespace>>"
+              "name": "<<namespace:jsonapi_vector_insertmany_namespace>>"
             }
           }
 
+  schema-collection:
+    ops:
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_insertmany_namespace>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -67,13 +71,12 @@ blocks:
         body: >2
           {
             "deleteCollection": {
-              "name": "<<collection:jsonapi_vector_crud_collection>>"
+              "name": "<<collection:jsonapi_vector_insertmany_collection>>"
             }
           }
-
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_insertmany_namespace>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -83,7 +86,7 @@ blocks:
         body: >2
           {
             "createCollection": {
-              "name": "<<collection:jsonapi_vector_crud_collection>>",
+              "name": "<<collection:jsonapi_vector_insertmany_collection>>",
               "options": {
                           "vector": {
                               "size": 1536
@@ -91,7 +94,6 @@ blocks:
               }
             }
           }
-
   write:
     ops:
       write-insert-many-vector:
@@ -99,7 +101,7 @@ blocks:
           ratio: 5
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_insertmany_namespace>>/<<collection:jsonapi_vector_insertmany_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
