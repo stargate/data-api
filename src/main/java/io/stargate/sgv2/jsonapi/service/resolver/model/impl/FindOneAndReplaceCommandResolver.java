@@ -81,7 +81,9 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
 
   private FindOperation getFindOperation(
       CommandContext commandContext, FindOneAndReplaceCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    //    List<DBFilterBase> filters = resolve(commandContext, command);
+    List<DBFilterBase> filters = null;
+
     final SortClause sortClause = command.sortClause();
 
     // vectorize sort clause

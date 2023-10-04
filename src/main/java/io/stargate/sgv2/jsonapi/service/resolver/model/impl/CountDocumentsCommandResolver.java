@@ -27,7 +27,9 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
 
   @Override
   public Operation resolveCommand(CommandContext ctx, CountDocumentsCommands command) {
-    List<DBFilterBase> filters = resolve(ctx, command);
+    List<DBFilterBase> filters = null;
+
+    //    List<DBFilterBase> filters = resolve(ctx, command);
     return new CountOperation(ctx, filters);
   }
 }

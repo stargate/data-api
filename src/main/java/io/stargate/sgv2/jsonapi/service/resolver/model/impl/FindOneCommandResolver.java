@@ -37,7 +37,8 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    //    List<DBFilterBase> filters = resolve(commandContext, command);
+    List<DBFilterBase> filters = null;
     final SortClause sortClause = command.sortClause();
 
     // vectorize sort clause

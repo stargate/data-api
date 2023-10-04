@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import jakarta.validation.constraints.NotBlank;
 import java.util.*;
-import javax.annotation.Nullable;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
@@ -10,20 +9,36 @@ import javax.annotation.Nullable;
  * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
  */
-public record LogicalExpression(
-    @NotBlank(message = "logical relation of attribute logicalExpressions") String logicalRelation,
-    @Nullable List<LogicalExpression> logicalExpressions,
-    @Nullable List<ComparisonExpression> comparisonExpressions) {
+public class LogicalExpression {
+
+  @NotBlank(message = "logical relation of attribute logicalExpressions")
+  String logicalRelation;
+
+  public int totalComparisonExpressionCount;
+  public List<LogicalExpression> logicalExpressions;
+  public List<ComparisonExpression> comparisonExpressions;
+
+  private LogicalExpression(
+      String logicalRelation,
+      int totalComparisonExpressionCount,
+      List<LogicalExpression> logicalExpressions,
+      List<ComparisonExpression> comparisonExpression) {
+    this.logicalRelation = logicalRelation;
+    this.totalComparisonExpressionCount = totalComparisonExpressionCount;
+    this.logicalExpressions = logicalExpressions;
+    this.comparisonExpressions = comparisonExpression;
+  }
 
   public static LogicalExpression and() {
-    return new LogicalExpression("and", new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression("and", 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public static LogicalExpression or() {
-    return new LogicalExpression("or", new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression("or", 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {
+    totalComparisonExpressionCount+= logicalExpression.totalComparisonExpressionCount;
     if (logicalExpression.logicalExpressions.isEmpty()
         && logicalExpression.comparisonExpressions.isEmpty()) {
       return;
@@ -32,10 +47,26 @@ public record LogicalExpression(
   }
 
   public void addComparisonExpression(ComparisonExpression comparisonExpression) {
+    totalComparisonExpressionCount++;
     comparisonExpressions.add(comparisonExpression);
   }
 
   public String getLogicalRelation() {
     return logicalRelation;
+  }
+
+  @Override
+  public String toString() {
+    return "LogicalExpression{"
+        + "logicalRelation='"
+        + logicalRelation
+        + '\''
+        + ", totalComparisonExpressionCount="
+        + totalComparisonExpressionCount
+        + ", logicalExpressions="
+        + logicalExpressions
+        + ", comparisonExpressions="
+        + comparisonExpressions
+        + '}';
   }
 }

@@ -68,10 +68,13 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   }
 
   private FindOperation getFindOperation(CommandContext commandContext, UpdateManyCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    //    List<DBFilterBase> filters = resolve(commandContext, command);
+    List<DBFilterBase> filters = null;
+
     return FindOperation.unsorted(
         commandContext,
         filters,
+        null,
         DocumentProjector.identityProjector(),
         null,
         operationsConfig.maxDocumentUpdateCount() + 1,

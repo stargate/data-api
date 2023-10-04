@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.validation.constraints.NotNull;

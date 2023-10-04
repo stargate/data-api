@@ -18,12 +18,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /** {@link StdDeserializer} for the {@link FilterClause}. */
@@ -45,57 +40,18 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) throw new JsonApiException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
-    //        Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
     // implicit and
+
+    //    if(filterNode.isEmpty()){
+    //      return ne
+    //
+    //    }
+    //
     Log.error("entry 111");
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
     Log.error("give me ~~~~~~ " + implicitAnd);
-    ////        List<ComparisonExpression> expressionList = new ArrayList<>();
-    //        while (fieldIter.hasNext()) {
-    //            //single filter map
-    //            Map.Entry<String, JsonNode> entry = fieldIter.next();
-    //            Log.info("filter field ------ " + entry);
-    //            // TODO: Does not handle logical expressions, they are out of scope
-    //            JsonNode operatorExpression = entry.getValue();
-    //
-    //            if (operatorExpression.isObject()) {
-    //                //if is object, then there will be no explicit $and,$or in it ???
-    //                Log.info("filter field entry value ------ " + entry.getValue() + " --- is
-    // object");
-    //                implicitAnd.addComparisonExpression(createComparisonExpression(entry));
-    ////                implicitAnd.add(createLogicalExpression(entry));
-    ////                expressionList.add(createComparisonExpression(entry));
-    //            } else if(operatorExpression.isArray()) {
-    //                //if is array, then there may be nested $and,$or in it
-    //                implicitAnd.addLogicalExpression();
-    //            }else{
-    //                implicitAnd.addComparisonExpression(ComparisonExpression.eq(
-    //                        entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
-    ////                expressionList.add(
-    ////                        ComparisonExpression.eq(
-    ////                                entry.getKey(), jsonNodeValue(entry.getKey(),
-    // entry.getValue())));
-    //
-    ////                Log.info(
-    ////                        "filter field entry value ------ " + entry.getValue() + " --- is
-    // array/string/???");
-    ////                // @TODO: Need to add array value type to this
-    //////        if(entry.getValue().isArray()){
-    //////          //$and, $or
-    //////          expressionList.add(constructNestedExpression(entry)){
-    //////
-    //////          }
-    //////        }
-    //
-    //            }
-    //        }
-    //        validate(expressionList);
-    //        Log.info("important expression List " + expressionList);
-    //        Log.info("important FilterClause " + new FilterClause(expressionList));
-
-    //        return new FilterClause(expressionList);
-    return null;
+    return new FilterClause(implicitAnd);
   }
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
@@ -146,11 +102,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     }
   }
 
-  private void validate(List<ComparisonExpression> expressionList) {
-    for (ComparisonExpression expression : expressionList) {
-      expression.filterOperations().forEach(operation -> validate(expression.path(), operation));
-    }
-  }
+  //  private void validate(List<ComparisonExpression> expressionList) {
+  //    for (ComparisonExpression expression : expressionList) {
+  //      expression.filterOperations().forEach(operation -> validate(expression.path(),
+  // operation));
+  //    }
+  //  }
 
   private void validate(String path, FilterOperation<?> filterOperation) {
     // First: $vector can only be used with $exists operator
@@ -239,7 +196,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
    * @return
    */
   private ComparisonExpression createComparisonExpression(Map.Entry<String, JsonNode> entry) {
-    ComparisonExpression expression = new ComparisonExpression(entry.getKey(), new ArrayList<>());
+    ComparisonExpression expression =
+        new ComparisonExpression(entry.getKey(), new ArrayList<>(), null);
     // Check if the value is EJson date and add filter expression for date filter
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {

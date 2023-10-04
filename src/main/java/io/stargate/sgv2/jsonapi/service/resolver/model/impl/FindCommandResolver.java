@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -39,7 +41,11 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    Log.error(
+        "logical expression before resolve ~~~ " + command.filterClause().logicalExpression());
+    final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
+    Log.error("logical expression after resolve ~~~" + resolvedLogicalExpression);
+    List<DBFilterBase> filters = null;
 
     // limit and paging state defaults
     int limit = Integer.MAX_VALUE;
@@ -107,6 +113,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
       return FindOperation.unsorted(
           commandContext,
           filters,
+          resolvedLogicalExpression,
           command.buildProjector(),
           pagingState,
           limit,

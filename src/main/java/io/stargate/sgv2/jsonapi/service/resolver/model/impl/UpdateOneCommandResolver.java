@@ -70,7 +70,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   }
 
   private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    //    List<DBFilterBase> filters = resolve(commandContext, command);
+    List<DBFilterBase> filters = null;
+
     final SortClause sortClause = command.sortClause();
 
     // vectorize sort clause

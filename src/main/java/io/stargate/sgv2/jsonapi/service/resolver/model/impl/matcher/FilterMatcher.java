@@ -1,18 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * This class matches the filter clauses against the filter match rules defined. The match rules
@@ -32,72 +30,116 @@ public class FilterMatcher<T extends Command & Filterable> {
 
   private final MatchStrategy strategy;
 
-  FilterMatcher(MatchStrategy strategy) {
+  private final Function<CaptureExpression, List<DBFilterBase>> resolveFunction;
+
+  FilterMatcher(
+      MatchStrategy strategy, Function<CaptureExpression, List<DBFilterBase>> resolveFunction) {
     this.strategy = strategy;
+    this.resolveFunction = resolveFunction;
   }
 
-  public Optional<CaptureGroups<T>> apply(T command) {
+  public Optional<LogicalExpression> apply(T command) {
+
     FilterClause filter = command.filterClause();
-    List<Capture> unmatchedCaptures = new ArrayList<>(captures);
-    CaptureGroups captures = new CaptureGroups(command);
+    Log.error("matcher apply " + filter.logicalExpression());
+
+    //    CaptureGroups returnedCaptureGroups = new CaptureGroups(command);
     if (strategy == MatchStrategy.EMPTY) {
-      if (filter == null || filter.comparisonExpressions().isEmpty()) {
-        return Optional.of(captures);
+      if (filter == null
+          || (filter.logicalExpression().logicalExpressions.isEmpty()
+              && filter.logicalExpression().comparisonExpressions.isEmpty())) {
+        return Optional.of(filter.logicalExpression()); // TODO
       } else {
         return Optional.empty();
       }
     }
-
     if (filter == null) {
       return Optional.empty();
     }
 
-    List<ComparisonExpression> unmatchedExpressions =
-        new ArrayList<>(filter.comparisonExpressions());
-    ListIterator<ComparisonExpression> expressionIter = unmatchedExpressions.listIterator();
-    while (expressionIter.hasNext()) {
-      ComparisonExpression comparisonExpression = expressionIter.next();
-      ListIterator<Capture> captureIter = unmatchedCaptures.listIterator();
-      while (captureIter.hasNext()) {
-        Capture capture = captureIter.next();
-        List<FilterOperation> matched = capture.match(comparisonExpression);
-        if (!matched.isEmpty()) {
-          captures.getGroup(capture.marker).withCapture(comparisonExpression.path(), matched);
-          switch (strategy) {
-            case STRICT:
-              captureIter.remove();
-              expressionIter.remove();
-              break;
-            case GREEDY:
-              expressionIter.remove();
-              break;
-          }
-          break;
-        }
-      }
-    }
+    // 在strict的模式下, baseCaptures个会被 iterator 删除，，用完拉到
+    List<Capture> unmatchedCaptures = new ArrayList<>(captures);
+    final MatchStrategyCounter matchStrategyCounter =
+        new MatchStrategyCounter(
+            unmatchedCaptures.size(), filter.logicalExpression().totalComparisonExpressionCount);
+    captureRecursive(filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
+    Log.error("after captureRecursive  " + filter.logicalExpression());
+
     // these strategies should be abstracted if we have another one, only 2 for now.
     switch (strategy) {
       case STRICT:
-        if (unmatchedCaptures.isEmpty() && unmatchedExpressions.isEmpty()) {
+        if (matchStrategyCounter.unmatchedCaptureCount == 0
+            && matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
           // everything group and expression matched
-          return Optional.of(captures);
+          Log.error("matcher strict " + filter.logicalExpression());
+          return Optional.of(filter.logicalExpression());
         }
         break;
       case GREEDY:
-        if (unmatchedExpressions.isEmpty()) {
+        if (matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
           // everything expression matched, some captures may not match
-          return Optional.of(captures);
+          Log.error("matcher greedy");
+          return Optional.of(filter.logicalExpression());
         }
         break;
     }
     return Optional.empty();
   }
 
+  public void captureRecursive(
+      LogicalExpression expression,
+      List<Capture> unmatchedCaptures,
+      MatchStrategyCounter matchStrategyCounter) {
+    for (LogicalExpression logicalExpression : expression.logicalExpressions) {
+      captureRecursive(logicalExpression, unmatchedCaptures, matchStrategyCounter);
+    }
+    ListIterator<ComparisonExpression> expressionIterator =
+        expression.comparisonExpressions.listIterator();
+    while (expressionIterator.hasNext()) {
+      ComparisonExpression comparisonExpression = expressionIterator.next();
+      ListIterator<Capture> captureIter = unmatchedCaptures.listIterator();
+      while (captureIter.hasNext()) {
+        Capture capture = captureIter.next();
+        List<FilterOperation<?>> matched = capture.match(comparisonExpression); // TODO 会有多个？？？？
+        if (!matched.isEmpty()) { // 说明这一轮的comparisonExpression被match了 那么我们需要把matched放起来
+          //          comparisonExpression
+          //              .getGroup(capture.marker)
+          //              .withCapture(comparisonExpression.getPath(), matched);
+          // TODO  index of matched 会有多个？？？
+          comparisonExpression.setDBFilters(
+              resolveFunction.apply(
+                  new CaptureExpression(capture.marker, matched, comparisonExpression.getPath())));
+          //          comparisonExpression.setDBFilters(
+          //              resolveFunction.apply(
+          //                  capture.marker,
+          //                  new CaptureExpression(
+          //                      comparisonExpression.getPath(),
+          //                      matched.get(0).operator(),
+          //                      matched.get(0).operand().value())));
+
+          switch (strategy) {
+            case STRICT:
+              captureIter.remove();
+              matchStrategyCounter.decreaseUnmatchedCaptureCount();
+              ;
+              //              expressionIterator.remove();
+              matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
+              break;
+            case GREEDY:
+              //              expressionIterator.remove();
+              matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
+              break;
+          }
+          break;
+        }
+      }
+    }
+  }
+
   /**
    * Start of the fluent API, create a Capture then add the matching
    *
-   * <p>See {@link FilterMatchRules#addMatchRule(BiFunction, MatchStrategy)}}
+   * <p>See {@link FilterMatchRules #addMatchRule(BiFunction, MatchStrategy)}}
    *
    * @param marker
    * @return
@@ -125,7 +167,7 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.marker = marker;
     }
 
-    public List<FilterOperation> match(ComparisonExpression t) {
+    public List<FilterOperation<?>> match(ComparisonExpression t) {
       return t.match(matchPath, operators, type);
     }
 
@@ -146,6 +188,25 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.operators = operators;
       this.type = type;
       return FilterMatcher.this;
+    }
+  }
+
+  public final class MatchStrategyCounter {
+
+    private int unmatchedCaptureCount;
+    private int unmatchedComparisonExpressionCount;
+
+    public MatchStrategyCounter(int unmatchedCaptureCount, int unmatchedComparisonExpressionCount) {
+      this.unmatchedCaptureCount = unmatchedCaptureCount;
+      this.unmatchedComparisonExpressionCount = unmatchedComparisonExpressionCount;
+    }
+
+    public void decreaseUnmatchedCaptureCount() {
+      unmatchedCaptureCount--;
+    }
+
+    public void decreaseUnmatchedComparisonExpressionCount() {
+      unmatchedComparisonExpressionCount--;
     }
   }
 }
