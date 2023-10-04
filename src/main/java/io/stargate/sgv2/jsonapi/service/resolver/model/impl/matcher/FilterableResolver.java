@@ -121,8 +121,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       if (captureExpression.marker() == ID_GROUP) {
         filters.add(
             new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.EQ,
-                (List<DocumentId>) filterOperation.operand().value()));
+                DBFilterBase.IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
       }
 
       if (captureExpression.marker() == ID_GROUP_IN) {

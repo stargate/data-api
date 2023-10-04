@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 
@@ -11,10 +12,15 @@ import java.util.*;
  */
 public class LogicalExpression {
 
+  public static final String OR = "or";
+  public static final String AND = "and";
+
   @NotBlank(message = "logical relation of attribute logicalExpressions")
   String logicalRelation;
 
   public int totalComparisonExpressionCount;
+
+  public int totalIdComparisonExpressionCount;
   public List<LogicalExpression> logicalExpressions;
   public List<ComparisonExpression> comparisonExpressions;
 
@@ -30,15 +36,16 @@ public class LogicalExpression {
   }
 
   public static LogicalExpression and() {
-    return new LogicalExpression("and", 0, new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression(AND, 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public static LogicalExpression or() {
-    return new LogicalExpression("or", 0, new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression(OR, 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {
-    totalComparisonExpressionCount+= logicalExpression.totalComparisonExpressionCount;
+    totalComparisonExpressionCount += logicalExpression.totalComparisonExpressionCount;
+    totalIdComparisonExpressionCount += logicalExpression.totalIdComparisonExpressionCount;
     if (logicalExpression.logicalExpressions.isEmpty()
         && logicalExpression.comparisonExpressions.isEmpty()) {
       return;
@@ -47,6 +54,9 @@ public class LogicalExpression {
   }
 
   public void addComparisonExpression(ComparisonExpression comparisonExpression) {
+    if (comparisonExpression.getPath().equals(DocumentConstants.Fields.DOC_ID)) {
+      totalIdComparisonExpressionCount++;
+    }
     totalComparisonExpressionCount++;
     comparisonExpressions.add(comparisonExpression);
   }

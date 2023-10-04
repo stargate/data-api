@@ -410,9 +410,9 @@ public record FindOperation(
     // buildConditionExpressions(additionalIdFilter);
     List<Expression<BuiltCondition>> expressions = testBuild(additionalIdFilter);
 
-    if (expressions == null) {
-      return List.of();
-    }
+    //    if (expressions == null) { // TODO 这个到底需要不需要
+    //      return List.of();
+    //    }
     List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
@@ -722,15 +722,92 @@ public record FindOperation(
   }
 
   private List<Expression<BuiltCondition>> testBuild(DBFilterBase.IDFilter additionalIdFilter) {
-    Expression<BuiltCondition> expression = buildExpressionRecursive(logicalExpression);
-    Log.error("got it : ------ " + expression);
-    return List.of(expression);
+    // after validate in FilterClauseDeserializer, partition key column key will not be nested under
+    // OR operator
+    // so we can collect all id_conditions, then do a combination to generate separate queries
+    List<DBFilterBase.IDFilter> idFilters = new ArrayList<>();
+    // expressionWithoutId must be a And(if not null), since we have outer implicit and in the
+    // filter
+    Expression<BuiltCondition> expressionWithoutId =
+        buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
+
+    Log.error("expression without id " + expressionWithoutId);
+    List<Expression<BuiltCondition>> expressions =
+        buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
+
+    Log.error("got it : ------ " + expressions.get(0));
+    //    List<Expression<BuiltCondition>> result = new ArrayList<>();
+    //    if (expression == null) {
+    //      result.add(expression);
+    //    } else {
+    //      result.add(expression); // ID involved, will be addAll
+    //    }
+    return expressions;
+    //    return expression == null? null List.of(expression);
   }
 
-  private Expression<BuiltCondition> buildExpressionRecursive(LogicalExpression logicalExpression) {
+  private List<Expression<BuiltCondition>> buildExpressionWithId(
+      DBFilterBase.IDFilter additionalIdFilter,
+      Expression<BuiltCondition> expressionWithoutId,
+      List<DBFilterBase.IDFilter> idFilters) {
+    if (additionalIdFilter != null) {
+      // if we have id filter overwrite ignore existing IDFilter //TODO test
+      List<BuiltCondition> idConditions = additionalIdFilter.getAll();
+      List<Variable<BuiltCondition>> idConditionVariables =
+          idConditions.stream().map(Variable::of).toList();
+      Expression<BuiltCondition> addtionalIdFilterExpression = And.of(idConditionVariables);
+      return List.of(And.of(addtionalIdFilterExpression, expressionWithoutId)); // TODO null
+    }
+
+    List<Expression<BuiltCondition>> expressionsWithId = new ArrayList<>();
+    if (idFilters.isEmpty()) {
+      if (expressionWithoutId == null) {
+        expressionsWithId.add(null);
+        return expressionsWithId;
+      } else {
+        return List.of(expressionWithoutId);
+      }
+    }
+    if (idFilters.size() > 1) {
+      throw new JsonApiException(
+          ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
+    }
+    final List<BuiltCondition> inSplit = idFilters.get(0).getAll();
+    if (inSplit.isEmpty()) {
+      if (expressionWithoutId == null) {
+        expressionsWithId.add(null);
+        return expressionsWithId;
+      } else {
+        return List.of(expressionWithoutId);
+      }
+    } else {
+      // split n queries by id
+      return inSplit.stream()
+          .map(
+              idCondition -> {
+                Expression<BuiltCondition> newExpression =
+                    expressionWithoutId == null
+                        ? Variable.of(idCondition)
+                        : And.of(Variable.of((idCondition)), expressionWithoutId); // TODO 安全吗
+                return newExpression;
+              })
+          .collect(Collectors.toList());
+    }
+  }
+
+  private Expression<BuiltCondition> buildExpressionRecursive(
+      LogicalExpression logicalExpression,
+      DBFilterBase.IDFilter additionalIdFilter,
+      List<DBFilterBase.IDFilter> idConditionExpressions) {
     List<Expression<BuiltCondition>> conditionExpressions = new ArrayList<>();
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      conditionExpressions.add(buildExpressionRecursive(subLogicalExpression));
+      final Expression<BuiltCondition> subExpressionCondition =
+          buildExpressionRecursive(
+              subLogicalExpression, additionalIdFilter, idConditionExpressions);
+      if (subExpressionCondition == null) {
+        continue;
+      }
+      conditionExpressions.add(subExpressionCondition);
     }
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) { // TODO
@@ -742,11 +819,19 @@ public record FindOperation(
             conditionExpressions.add(Or.of(inConditions));
           }
         } else if (dbFilter instanceof DBFilterBase.IDFilter idFilter) {
-          // TODO
+          // if we have id filter overwrite ignore existing IDFilter //TODO
+          Log.error("find a id filter");
+          if (additionalIdFilter != null) continue;
+          idConditionExpressions.add(idFilter);
         } else {
           conditionExpressions.add(Variable.of(dbFilter.get()));
         }
       }
+    }
+    // current logicalExpression is empty (implies sub-logicalExpression and
+    // sub-comparisonExpression are all empty)
+    if (conditionExpressions.isEmpty()) {
+      return null;
     }
     return logicalExpression.getLogicalRelation().equals("and")
         ? And.of(conditionExpressions)

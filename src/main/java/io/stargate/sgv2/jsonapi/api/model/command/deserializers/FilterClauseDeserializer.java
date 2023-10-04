@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,6 +52,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     Log.error("entry 111");
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
+
+    validate(implicitAnd);
     Log.error("give me ~~~~~~ " + implicitAnd);
     return new FilterClause(implicitAnd);
   }
@@ -90,7 +94,9 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     } else if (entry.getValue().isArray()) {
       Log.error("entry 444 " + entry.getKey());
       LogicalExpression innerLogicalExpression =
-          entry.getKey().equals("$and") ? LogicalExpression.and() : LogicalExpression.or();
+          entry.getKey().equals(DocumentConstants.Fields.LOGICAL_AND)
+              ? LogicalExpression.and()
+              : LogicalExpression.or();
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
       for (JsonNode next : arrayNode) {
         populateExpression(innerLogicalExpression, next);
@@ -102,14 +108,37 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     }
   }
 
-  //  private void validate(List<ComparisonExpression> expressionList) {
-  //    for (ComparisonExpression expression : expressionList) {
-  //      expression.filterOperations().forEach(operation -> validate(expression.path(),
-  // operation));
-  //    }
-  //  }
+  private void validate(LogicalExpression logicalExpression) {
+    if (logicalExpression.totalIdComparisonExpressionCount > 1) {
+      throw new JsonApiException(
+          ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
+    }
+    for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
+      validate(subLogicalExpression);
+    }
+    for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
+      subComparisonExpression
+          .getFilterOperations()
+          .forEach(
+              operation ->
+                  validate(
+                      subComparisonExpression.getPath(),
+                      operation,
+                      logicalExpression.getLogicalRelation()));
+    }
+  }
 
-  private void validate(String path, FilterOperation<?> filterOperation) {
+  private void validate(
+      String path, FilterOperation<?> filterOperation, String fromLogicalRelation) {
+    if (fromLogicalRelation.equals(LogicalExpression.OR)
+        && path.equals(DocumentConstants.Fields.DOC_ID)) {
+      throw new JsonApiException(
+          ErrorCode.INVALID_FILTER_EXPRESSION,
+          String.format(
+              "Cannot filter on '%s' field within '%s'",
+              DocumentConstants.Fields.DOC_ID, DocumentConstants.Fields.LOGICAL_OR));
+    }
+
     // First: $vector can only be used with $exists operator
     if (path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
         && ElementComparisonOperator.EXISTS != filterOperation.operator()) {
@@ -233,7 +262,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private static Object jsonNodeValue(String path, JsonNode node) {
     // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
     // operator in filter
-    if (path.equals(DocumentConstants.Fields.DOC_ID)) {
+    if (path.equals(DOC_ID)) {
       if (node.getNodeType() == JsonNodeType.ARRAY) {
         ArrayNode arrayNode = (ArrayNode) node;
         List<Object> arrayVals = new ArrayList<>(arrayNode.size());

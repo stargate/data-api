@@ -33,6 +33,10 @@ public class ComparisonExpression {
     return dbFilters;
   }
 
+  public List<FilterOperation<?>> getFilterOperations() {
+    return filterOperations;
+  }
+
   public ComparisonExpression(
       String path,
       List<FilterOperation<?>> filterOperations,
