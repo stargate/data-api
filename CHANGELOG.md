@@ -1,5 +1,3 @@
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
-
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-13...HEAD)
 
 **Closed issues:**
