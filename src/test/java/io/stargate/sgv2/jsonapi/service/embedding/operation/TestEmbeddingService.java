@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionProperty;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +12,7 @@ public class TestEmbeddingService implements EmbeddingService {
           "namespace",
           "collection",
           true,
-          CollectionProperty.SimilarityFunction.COSINE,
+          CollectionSettings.SimilarityFunction.COSINE,
           new TestEmbeddingService());
 
   @Override

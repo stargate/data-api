@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionProperty;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.List;
@@ -21,7 +21,7 @@ public record CommandContext(
     String namespace,
     String collection,
     boolean isVectorEnabled,
-    CollectionProperty.SimilarityFunction similarityFunction,
+    CollectionSettings.SimilarityFunction similarityFunction,
     EmbeddingService embeddingService) {
 
   public CommandContext(String namespace, String collection) {

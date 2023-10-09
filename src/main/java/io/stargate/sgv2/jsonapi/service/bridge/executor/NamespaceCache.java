@@ -19,7 +19,7 @@ public class NamespaceCache {
 
   private static final long CACHE_TTL_SECONDS = 300;
   private static final long CACHE_MAX_SIZE = 1000;
-  private final Cache<String, CollectionProperty> vectorCache =
+  private final Cache<String, CollectionSettings> vectorCache =
       Caffeine.newBuilder()
           .expireAfterWrite(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
@@ -31,8 +31,8 @@ public class NamespaceCache {
     this.objectMapper = objectMapper;
   }
 
-  protected Uni<CollectionProperty> getCollectionProperties(String collectionName) {
-    CollectionProperty collectionProperty = vectorCache.getIfPresent(collectionName);
+  protected Uni<CollectionSettings> getCollectionProperties(String collectionName) {
+    CollectionSettings collectionProperty = vectorCache.getIfPresent(collectionName);
     if (null != collectionProperty) {
       return Uni.createFrom().item(collectionProperty);
     } else {
@@ -50,7 +50,7 @@ public class NamespaceCache {
                           && rte.getMessage()
                               .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage()))) {
                     return Uni.createFrom()
-                        .item(new CollectionProperty(collectionName, false, 0, null, null, null));
+                        .item(new CollectionSettings(collectionName, false, 0, null, null, null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -61,14 +61,14 @@ public class NamespaceCache {
     }
   }
 
-  private Uni<CollectionProperty> getVectorProperties(String collectionName) {
+  private Uni<CollectionSettings> getVectorProperties(String collectionName) {
     return queryExecutor
         .getSchema(namespace, collectionName)
         .onItem()
         .transform(
             table -> {
               if (table.isPresent()) {
-                return CollectionProperty.getVectorProperties(table.get(), objectMapper);
+                return CollectionSettings.getVectorProperties(table.get(), objectMapper);
               } else {
                 throw new RuntimeException(
                     ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);

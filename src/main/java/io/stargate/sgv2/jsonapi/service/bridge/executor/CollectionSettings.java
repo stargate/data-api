@@ -20,7 +20,7 @@ import java.util.Optional;
  * @param vectorizeServiceName
  * @param modelName
  */
-public record CollectionProperty(
+public record CollectionSettings(
     String collectionName,
     Boolean vectorEnabled,
     int vectorSize,
@@ -51,7 +51,7 @@ public record CollectionProperty(
     }
   }
 
-  public static CollectionProperty getVectorProperties(
+  public static CollectionSettings getVectorProperties(
       Schema.CqlTable table, ObjectMapper objectMapper) {
     String collectionName = table.getName();
     final Optional<QueryOuterClass.ColumnSpec> first =
@@ -69,7 +69,7 @@ public record CollectionProperty(
                       i.getColumnName()
                           .equals(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME))
               .findFirst();
-      CollectionProperty.SimilarityFunction function = CollectionProperty.SimilarityFunction.COSINE;
+      CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
       if (vectorIndex.isPresent()) {
 
         if (vectorIndex
@@ -77,7 +77,7 @@ public record CollectionProperty(
             .getOptionsMap()
             .containsKey(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME)) {
           function =
-              CollectionProperty.SimilarityFunction.fromString(
+              CollectionSettings.SimilarityFunction.fromString(
                   vectorIndex
                       .get()
                       .getOptions()
@@ -100,22 +100,22 @@ public record CollectionProperty(
           if (optionsNode != null && optionsNode.has("modelName")) {
             modelName = optionsNode.get("modelName").textValue();
           }
-          return new CollectionProperty(
+          return new CollectionSettings(
               collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
         } catch (JsonProcessingException e) {
           // This should never happen
           throw new RuntimeException(e);
         }
       } else {
-        return new CollectionProperty(
+        return new CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, null, null);
       }
     } else {
-      return new CollectionProperty(
+      return new CollectionSettings(
           collectionName,
           vectorEnabled,
           0,
-          CollectionProperty.SimilarityFunction.UNDEFINED,
+          CollectionSettings.SimilarityFunction.UNDEFINED,
           null,
           null);
     }

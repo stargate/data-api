@@ -14,7 +14,7 @@ import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionProperty;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -44,14 +44,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
   private static final CommandContext VECTOR_COMMAND_CONTEXT =
       new CommandContext(
-          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionProperty.SimilarityFunction.COSINE, null);
+          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
   private static final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
       new CommandContext(
           KEYSPACE_NAME,
           COLLECTION_NAME,
           true,
-          CollectionProperty.SimilarityFunction.DOT_PRODUCT,
+          CollectionSettings.SimilarityFunction.DOT_PRODUCT,
           null);
 
   @Inject QueryExecutor queryExecutor;

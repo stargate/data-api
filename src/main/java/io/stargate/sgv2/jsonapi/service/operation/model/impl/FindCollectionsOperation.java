@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionProperty;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
@@ -69,7 +69,7 @@ public record FindCollectionsOperation(
         .filter(tableMatcher)
 
         // map to name
-        .map(table -> CollectionProperty.getVectorProperties(table, objectMapper))
+        .map(table -> CollectionSettings.getVectorProperties(table, objectMapper))
 
         // get as list
         .collect()
@@ -80,7 +80,7 @@ public record FindCollectionsOperation(
   }
 
   // simple result wrapper
-  private record Result(boolean explain, List<CollectionProperty> collections)
+  private record Result(boolean explain, List<CollectionSettings> collections)
       implements Supplier<CommandResult> {
 
     @Override
@@ -119,7 +119,7 @@ public record FindCollectionsOperation(
             Map.of(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
         return new CommandResult(statuses);
       } else {
-        List<String> tables = collections.stream().map(CollectionProperty::collectionName).toList();
+        List<String> tables = collections.stream().map(CollectionSettings::collectionName).toList();
         Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_COLLECTIONS, tables);
         return new CommandResult(statuses);
       }
