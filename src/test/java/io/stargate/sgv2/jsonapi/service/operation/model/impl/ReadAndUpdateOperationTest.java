@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.NamespaceCache;
+import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionProperty;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -49,11 +49,7 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
 
   private static final CommandContext COMMAND_VECTOR_CONTEXT =
       new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          true,
-          NamespaceCache.CollectionProperty.SimilarityFunction.COSINE,
-          null);
+          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionProperty.SimilarityFunction.COSINE, null);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;

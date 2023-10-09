@@ -2,6 +2,9 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -13,10 +16,12 @@ import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -25,12 +30,13 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
   @Nested
   @Order(1)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindCollections {
 
     @Test
+    @Order(1)
     public void happyPath() {
       // create first
-      String collection = "col" + RandomStringUtils.randomAlphanumeric(16);
       String json =
           """
           {
@@ -39,7 +45,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
             }
           }
           """
-              .formatted(collection);
+              .formatted("collection1");
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -68,11 +74,88 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("status.collections", hasSize(1))
-          .body("status.collections", hasItem(collection));
+          .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
+          .body("status.collections", hasItem("collection1"));
     }
 
     @Test
+    @Order(1)
+    public void happyPathWithExplain() {
+      String json =
+          """
+              {
+                "createCollection": {
+                  "name": "%s",
+                  "options": {
+                    "vector": {
+                      "size": 5,
+                      "function": "cosine"
+                    }
+                  }
+                }
+              }
+              """
+              .formatted("collection2");
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      String expected1 =
+          """
+                  {
+                    "name": "%s"
+                    }
+                  }
+                    """
+              .formatted("collection1");
+      String expected2 =
+          """
+              {
+                  "name": "%s",
+                  "options": {
+                    "vector": {
+                      "size": 5,
+                      "function": "cosine"
+                    }
+                  }
+                }
+                """
+              .formatted("collection2");
+
+      json =
+          """
+              {
+                "findCollections": {
+                  "options": {
+                    "explain" : true
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(2))
+          .body(
+              "status.collections",
+              containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+    }
+
+    @Test
+    @Order(3)
     public void emptyNamespace() {
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
@@ -138,6 +221,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
+    @Order(4)
     public void systemKeyspace() {
       // then find
       String json =
@@ -160,6 +244,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
+    @Order(5)
     public void notExistingNamespace() {
       // then find
       String json =

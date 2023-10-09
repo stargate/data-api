@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
@@ -14,10 +15,12 @@ import jakarta.inject.Inject;
 public class FindCollectionsCommandResolver implements CommandResolver<FindCollectionsCommand> {
 
   private final SchemaManager schemaManager;
+  private final ObjectMapper objectMapper;
 
   @Inject
-  public FindCollectionsCommandResolver(SchemaManager schemaManager) {
+  public FindCollectionsCommandResolver(SchemaManager schemaManager, ObjectMapper objectMapper) {
     this.schemaManager = schemaManager;
+    this.objectMapper = objectMapper;
   }
 
   /** {@inheritDoc} */
@@ -29,6 +32,7 @@ public class FindCollectionsCommandResolver implements CommandResolver<FindColle
   /** {@inheritDoc} */
   @Override
   public Operation resolveCommand(CommandContext ctx, FindCollectionsCommand command) {
-    return new FindCollectionsOperation(schemaManager, ctx);
+    boolean explain = command.options() != null ? command.options().explain() : false;
+    return new FindCollectionsOperation(explain, objectMapper, schemaManager, ctx);
   }
 }
