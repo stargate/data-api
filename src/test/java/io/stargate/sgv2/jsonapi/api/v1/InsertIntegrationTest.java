@@ -752,7 +752,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("status.insertedIds", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("The provided namespace does not exist"))
+          .body(
+              "errors[0].message",
+              startsWith("The provided namespace does not exist: something_else"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
