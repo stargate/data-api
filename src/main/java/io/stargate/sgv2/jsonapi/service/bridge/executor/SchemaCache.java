@@ -19,7 +19,7 @@ public class SchemaCache {
   private final Cache<CacheKey, NamespaceCache> schemaCache =
       Caffeine.newBuilder().maximumSize(1000).build();
 
-  public Uni<CollectionSettings> getCollectionProperties(
+  public Uni<CollectionSettings> getCollectionSettings(
       Optional<String> tenant, String namespace, String collectionName) {
     final NamespaceCache namespaceCache =
         schemaCache.get(new CacheKey(tenant, namespace), this::addNamespaceCache);

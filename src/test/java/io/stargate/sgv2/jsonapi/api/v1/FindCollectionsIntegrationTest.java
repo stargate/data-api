@@ -111,7 +111,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           """
                   {
                     "name": "%s"
-                    }
                   }
                     """
               .formatted("collection1");

@@ -154,7 +154,7 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionProperties(stargateRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionSettings(stargateRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
             (collectionProperty, throwable) -> {

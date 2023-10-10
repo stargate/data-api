@@ -77,7 +77,13 @@ public record CreateCollectionCommand(
                 type = SchemaType.OBJECT,
                 implementation = VectorizeOptions.class)
             VectorizeOptions options) {
-      public record VectorizeOptions(String modelName) {}
+      public record VectorizeOptions(
+          @NotNull
+              @Schema(
+                  description = "Model name used for embedding data",
+                  type = SchemaType.STRING,
+                  implementation = String.class)
+              String modelName) {}
     }
   }
 }

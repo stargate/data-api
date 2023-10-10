@@ -23,6 +23,8 @@ import java.util.function.Supplier;
  * Find collection operation. Uses {@link SchemaManager} to fetch all valid jsonapi tables for a
  * namespace. The schema check against the table is done in the {@link JsonapiTableMatcher}.
  *
+ * @param explain - returns collection options if `true`; returns only collection names if `false`
+ * @param objectMapper {@link ObjectMapper}
  * @param schemaManager {@link SchemaManager}
  * @param tableMatcher {@link JsonapiTableMatcher}
  * @param commandContext {@link CommandContext}
@@ -69,7 +71,7 @@ public record FindCollectionsOperation(
         .filter(tableMatcher)
 
         // map to name
-        .map(table -> CollectionSettings.getVectorProperties(table, objectMapper))
+        .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
 
         // get as list
         .collect()
@@ -111,6 +113,8 @@ public record FindCollectionsOperation(
                             new CreateCollectionCommand.Options(
                                 vectorSearchConfig, vectorizeConfig);
                       }
+                      // CreateCollectionCommand object is created for convenience to generate json
+                      // response. The code is not creating a collection here.
                       return new CreateCollectionCommand(
                           collectionProperty.collectionName(), options);
                     })

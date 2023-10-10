@@ -68,7 +68,7 @@ public class NamespaceCache {
         .transform(
             table -> {
               if (table.isPresent()) {
-                return CollectionSettings.getVectorProperties(table.get(), objectMapper);
+                return CollectionSettings.getCollectionSettings(table.get(), objectMapper);
               } else {
                 throw new RuntimeException(
                     ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);

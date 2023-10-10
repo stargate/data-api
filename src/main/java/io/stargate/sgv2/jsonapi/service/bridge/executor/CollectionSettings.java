@@ -22,7 +22,7 @@ import java.util.Optional;
  */
 public record CollectionSettings(
     String collectionName,
-    Boolean vectorEnabled,
+    boolean vectorEnabled,
     int vectorSize,
     SimilarityFunction similarityFunction,
     String vectorizeServiceName,
@@ -51,7 +51,7 @@ public record CollectionSettings(
     }
   }
 
-  public static CollectionSettings getVectorProperties(
+  public static CollectionSettings getCollectionSettings(
       Schema.CqlTable table, ObjectMapper objectMapper) {
     String collectionName = table.getName();
     final Optional<QueryOuterClass.ColumnSpec> first =
@@ -71,35 +71,21 @@ public record CollectionSettings(
               .findFirst();
       CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
       if (vectorIndex.isPresent()) {
-
-        if (vectorIndex
-            .get()
-            .getOptionsMap()
-            .containsKey(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME)) {
-          function =
-              CollectionSettings.SimilarityFunction.fromString(
-                  vectorIndex
-                      .get()
-                      .getOptions()
-                      .get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME));
-        }
+        final String functionName =
+            vectorIndex
+                .get()
+                .getOptionsMap()
+                .get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+        if (functionName != null)
+          function = CollectionSettings.SimilarityFunction.fromString(functionName);
       }
       final String comment = table.getOptionsOrDefault("comment", null);
       if (comment != null && !comment.isBlank()) {
         try {
           JsonNode vectorizeConfig = objectMapper.readTree(comment);
-          String vectorizeServiceName =
-              vectorizeConfig != null && vectorizeConfig.has("service")
-                  ? vectorizeConfig.get("service").textValue()
-                  : null;
-          String modelName = null;
-          final JsonNode optionsNode =
-              vectorizeConfig != null && vectorizeConfig.has("options")
-                  ? vectorizeConfig.get("options")
-                  : null;
-          if (optionsNode != null && optionsNode.has("modelName")) {
-            modelName = optionsNode.get("modelName").textValue();
-          }
+          String vectorizeServiceName = vectorizeConfig.get("service").textValue();
+          final JsonNode optionsNode = vectorizeConfig.get("options");
+          String modelName = optionsNode.get("modelName").textValue();
           return new CollectionSettings(
               collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
         } catch (JsonProcessingException e) {
