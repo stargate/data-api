@@ -68,7 +68,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -107,7 +109,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -145,7 +149,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -181,7 +187,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -222,7 +230,12 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter, filter2);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isIn(filter, filter2);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
+                    .isIn(filter, filter2);
               });
     }
 
@@ -253,7 +266,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -289,7 +302,7 @@ public class FindCommandResolverTest {
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).containsOnly(orderBy);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -325,7 +338,7 @@ public class FindCommandResolverTest {
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).containsOnly(orderBy);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -359,7 +372,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -395,7 +408,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -432,7 +445,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -468,7 +481,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -506,7 +519,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -543,7 +558,7 @@ public class FindCommandResolverTest {
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).containsOnly(orderBy);
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -579,7 +594,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -616,7 +631,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
   }
@@ -672,7 +689,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -717,7 +736,7 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
   }
@@ -758,7 +777,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
 
       final FindOperation operation1 = (FindOperation) operation;
@@ -800,7 +821,12 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
               });
     }
 
@@ -841,7 +867,12 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
-                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
               });
     }
 
@@ -881,7 +912,9 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(inFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(inFilter);
               });
     }
 
@@ -926,7 +959,12 @@ public class FindCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
               });
     }
 
@@ -969,7 +1007,9 @@ public class FindCommandResolverTest {
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).containsOnly(orderBy);
-                assertThat(find.filters()).containsOnly(inFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(inFilter);
               });
     }
 
@@ -1017,7 +1057,12 @@ public class FindCommandResolverTest {
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).containsOnly(orderBy);
-                assertThat(find.filters()).containsOnly(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
+                    .isIn(inFilter, idFilter);
               });
     }
   }

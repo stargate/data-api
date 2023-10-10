@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -73,6 +74,7 @@ public class NamespaceCache {
         .transform(
             table -> {
               if (table.isPresent()) {
+                Log.error("error find1");
                 Boolean vectorEnabled =
                     table.get().getColumnsList().stream()
                         .anyMatch(
@@ -135,6 +137,7 @@ public class NamespaceCache {
                       vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED, null, null);
                 }
               } else {
+                Log.error("error find");
                 throw new RuntimeException(
                     ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
               }

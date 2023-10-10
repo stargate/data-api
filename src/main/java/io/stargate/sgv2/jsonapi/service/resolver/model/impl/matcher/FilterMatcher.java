@@ -41,21 +41,20 @@ public class FilterMatcher<T extends Command & Filterable> {
   public Optional<LogicalExpression> apply(T command) {
 
     FilterClause filter = command.filterClause();
-    Log.error("matcher apply " + filter.logicalExpression());
-
-    //    CaptureGroups returnedCaptureGroups = new CaptureGroups(command);
     if (strategy == MatchStrategy.EMPTY) {
       if (filter == null
           || (filter.logicalExpression().logicalExpressions.isEmpty()
               && filter.logicalExpression().comparisonExpressions.isEmpty())) {
-        return Optional.of(filter.logicalExpression()); // TODO
+        return Optional.of(LogicalExpression.and()); // TODO ???
       } else {
         return Optional.empty();
       }
     }
+
     if (filter == null) {
       return Optional.empty();
     }
+    Log.error("matcher apply " + filter.logicalExpression());
 
     // 在strict的模式下, baseCaptures个会被 iterator 删除，，用完拉到
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
@@ -68,6 +67,8 @@ public class FilterMatcher<T extends Command & Filterable> {
     // these strategies should be abstracted if we have another one, only 2 for now.
     switch (strategy) {
       case STRICT:
+        Log.error("matcher strict " + matchStrategyCounter.unmatchedCaptureCount);
+        Log.error("matcher strict " + matchStrategyCounter.unmatchedComparisonExpressionCount);
         if (matchStrategyCounter.unmatchedCaptureCount == 0
             && matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
           // everything group and expression matched

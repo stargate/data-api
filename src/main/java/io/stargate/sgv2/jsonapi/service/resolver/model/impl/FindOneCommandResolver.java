@@ -2,12 +2,12 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -37,8 +37,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
-    //    List<DBFilterBase> filters = resolve(commandContext, command);
-    List<DBFilterBase> filters = null;
+    LogicalExpression logicalExpression = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
 
     // vectorize sort clause
@@ -54,7 +53,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
       }
       return FindOperation.vsearchSingle(
           commandContext,
-          filters,
+          logicalExpression,
           command.buildProjector(includeSimilarity),
           ReadType.DOCUMENT,
           objectMapper,
@@ -66,7 +65,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     if (orderBy != null) {
       return FindOperation.sortedSingle(
           commandContext,
-          filters,
+          logicalExpression,
           command.buildProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
@@ -79,7 +78,11 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           operationsConfig.maxDocumentSortCount());
     } else {
       return FindOperation.unsortedSingle(
-          commandContext, filters, command.buildProjector(), ReadType.DOCUMENT, objectMapper);
+          commandContext,
+          logicalExpression,
+          command.buildProjector(),
+          ReadType.DOCUMENT,
+          objectMapper);
     }
   }
 }

@@ -16,6 +16,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -89,12 +91,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -161,12 +169,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -274,12 +288,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               2,
               ReadType.SORTED_DOCUMENT,
@@ -390,12 +410,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "status", DBFilterBase.MapFilterBase.Operator.EQ, "active")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               2,
               ReadType.SORTED_DOCUMENT,
@@ -448,12 +474,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of());
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -516,12 +548,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -622,12 +660,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -730,12 +774,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -765,7 +815,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(commandResult.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to completetransaction due to concurrent transactions");
               });
     }
 
@@ -832,12 +882,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -917,12 +973,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               3,
@@ -1003,12 +1065,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               3,
@@ -1095,12 +1163,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               3,
@@ -1157,12 +1231,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of());
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -1279,12 +1359,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               3,
@@ -1323,7 +1409,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to completetransaction due to concurrent transactions");
               });
     }
 
@@ -1455,12 +1541,18 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(false))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               3,
@@ -1502,7 +1594,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1', 'doc2']: Unable to completetransaction due to concurrent transactions");
               });
     }
   }

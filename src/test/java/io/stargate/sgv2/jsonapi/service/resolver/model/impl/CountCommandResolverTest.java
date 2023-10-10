@@ -7,6 +7,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -36,7 +38,8 @@ public class CountCommandResolverTest {
         objectMapper.readValue(json, CountDocumentsCommands.class);
     final CommandContext commandContext = new CommandContext("namespace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
-    CountOperation expected = new CountOperation(commandContext, List.of());
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    CountOperation expected = new CountOperation(commandContext, implicitAnd);
     assertThat(operation)
         .isInstanceOf(CountOperation.class)
         .satisfies(op -> assertThat(op).isEqualTo(expected));
@@ -57,11 +60,16 @@ public class CountCommandResolverTest {
         objectMapper.readValue(json, CountDocumentsCommands.class);
     final CommandContext commandContext = new CommandContext("namespace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
-    CountOperation expected =
-        new CountOperation(
-            commandContext,
+
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    implicitAnd
+        .comparisonExpressions
+        .get(0)
+        .setDBFilters(
             List.of(
                 new DBFilterBase.TextFilter("col", DBFilterBase.MapFilterBase.Operator.EQ, "val")));
+    CountOperation expected = new CountOperation(commandContext, implicitAnd);
     assertThat(operation)
         .isInstanceOf(CountOperation.class)
         .satisfies(op -> assertThat(op).isEqualTo(expected));

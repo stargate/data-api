@@ -28,16 +28,13 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindOperation(
     CommandContext commandContext,
-    List<DBFilterBase> filters,
     LogicalExpression logicalExpression,
     /**
      * Projection used on document to return; if no changes desired, identity projection. Defined
@@ -61,7 +58,7 @@ public record FindOperation(
    * Constructs find operation for unsorted single document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param readType type of the read
    * @param objectMapper object mapper to use
@@ -69,15 +66,14 @@ public record FindOperation(
    */
   public static FindOperation unsortedSingle(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
+      LogicalExpression logicalExpression,
       DocumentProjector projection,
       ReadType readType,
       ObjectMapper objectMapper) {
 
     return new FindOperation(
         commandContext,
-        filters,
-        null,
+        logicalExpression,
         projection,
         null,
         1,
@@ -95,7 +91,7 @@ public record FindOperation(
    * Constructs find operation for unsorted multi document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param pagingState paging state to use
    * @param limit limit of rows to fetch
@@ -106,7 +102,6 @@ public record FindOperation(
    */
   public static FindOperation unsorted(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pagingState,
@@ -116,7 +111,6 @@ public record FindOperation(
       ObjectMapper objectMapper) {
     return new FindOperation(
         commandContext,
-        filters,
         logicalExpression,
         projection,
         pagingState,
@@ -135,7 +129,7 @@ public record FindOperation(
    * Constructs find operation for unsorted multi document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param readType type of the read
    * @param objectMapper object mapper to use
@@ -143,15 +137,14 @@ public record FindOperation(
    */
   public static FindOperation vsearchSingle(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
+      LogicalExpression logicalExpression,
       DocumentProjector projection,
       ReadType readType,
       ObjectMapper objectMapper,
       float[] vector) {
     return new FindOperation(
         commandContext,
-        filters,
-        null,
+        logicalExpression,
         projection,
         null,
         1,
@@ -169,7 +162,7 @@ public record FindOperation(
    * Constructs find operation for unsorted multi document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param pagingState paging state to use
    * @param limit limit of rows to fetch
@@ -180,7 +173,7 @@ public record FindOperation(
    */
   public static FindOperation vsearch(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
+      LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pagingState,
       int limit,
@@ -190,8 +183,7 @@ public record FindOperation(
       float[] vector) {
     return new FindOperation(
         commandContext,
-        filters,
-        null,
+        logicalExpression,
         projection,
         pagingState,
         limit,
@@ -209,7 +201,7 @@ public record FindOperation(
    * Constructs find operation for sorted single document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param pageSize page size for in memory sorting
    * @param readType type of the read
@@ -221,7 +213,7 @@ public record FindOperation(
    */
   public static FindOperation sortedSingle(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
+      LogicalExpression logicalExpression,
       DocumentProjector projection,
       int pageSize,
       ReadType readType,
@@ -231,8 +223,7 @@ public record FindOperation(
       int maxSortReadLimit) {
     return new FindOperation(
         commandContext,
-        filters,
-        null,
+        logicalExpression,
         projection,
         null,
         1,
@@ -250,7 +241,7 @@ public record FindOperation(
    * Constructs find operation for sorted multi document find.
    *
    * @param commandContext command context
-   * @param filters filters to match a document
+   * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param pagingState paging state to use
    * @param limit limit of rows to fetch
@@ -264,7 +255,7 @@ public record FindOperation(
    */
   public static FindOperation sorted(
       CommandContext commandContext,
-      List<DBFilterBase> filters,
+      LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pagingState,
       int limit,
@@ -276,8 +267,7 @@ public record FindOperation(
       int maxSortReadLimit) {
     return new FindOperation(
         commandContext,
-        filters,
-        null,
+        logicalExpression,
         projection,
         pagingState,
         limit,
@@ -341,6 +331,7 @@ public record FindOperation(
       }
       case DOCUMENT, KEY -> {
         List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
+        Log.error("???!!! " + queries);
         return findDocument(
             queryExecutor,
             queries,
@@ -370,18 +361,32 @@ public record FindOperation(
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
-        documentId = idFilter.values.get(0);
-        rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
-      } else {
-        if (filter.canAddField()) {
-          JsonNode value = filter.asJson(objectMapper().getNodeFactory());
-          if (value != null) {
-            String filterPath = filter.getPath();
-            SetOperation.constructSet(filterPath, value).updateDocument(rootNode);
+    //    if(logicalExpression.totalIdComparisonExpressionCount == 0){ //TODO
+    //      return ReadDocument.from(documentId, null, rootNode);
+    //    }
+    Stack<LogicalExpression> stack = new Stack<>();
+    stack.push(logicalExpression);
+    while (!stack.empty()) {
+      LogicalExpression currentLogicalExpression = stack.pop();
+      for (ComparisonExpression currentComparisonExpression :
+          currentLogicalExpression.comparisonExpressions) {
+        for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
+          if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
+            documentId = idFilter.values.get(0);
+            rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
+          } else {
+            if (filter.canAddField()) {
+              JsonNode value = filter.asJson(objectMapper().getNodeFactory());
+              if (value != null) {
+                String filterPath = filter.getPath();
+                SetOperation.constructSet(filterPath, value).updateDocument(rootNode);
+              }
+            }
           }
         }
+      }
+      for (LogicalExpression subLogicalExpression : currentLogicalExpression.logicalExpressions) {
+        stack.push(subLogicalExpression);
       }
     }
     return ReadDocument.from(documentId, null, rootNode);
@@ -395,28 +400,18 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    // if the query has "$in" operator for non-id field, buildCondition should return List of
-    // Expression
-    // that is the reason having this boolean
-    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
-    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
-    // TODO List<List<BuildCondition>>
-    //    final Optional<DBFilterBase> inFilter =
-    //        filters.stream().filter(filter -> filter instanceof
-    // DBFilterBase.InFilter).findFirst();
-    //    if (inFilter.isPresent()) {
-    // This if block handles filter with "$in" for non-id field
-    //      List<Expression<BuiltCondition>> expressions =
-    // buildConditionExpressions(additionalIdFilter);
-    List<Expression<BuiltCondition>> expressions = testBuild(additionalIdFilter);
+    List<Expression<BuiltCondition>> expressions =
+        buildExpressions(logicalExpression, additionalIdFilter);
+    Log.error("!!--- " + expressions);
 
-    //    if (expressions == null) { // TODO 这个到底需要不需要
-    //      return List.of();
-    //    }
+    if (expressions == null) { // in filter, but with empty values, find nothing
+      return List.of();
+    }
     List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
           if (vector() == null) {
+            Log.error(" no vector");
             queries.add(
                 new QueryBuilder()
                     .select()
@@ -612,116 +607,35 @@ public record FindOperation(
    */
   private List<QueryOuterClass.Query> buildSortedSelectQueries(
       DBFilterBase.IDFilter additionalIdFilter) {
-    // if the query has "$in" operator for non-id field, buildCondition should return List of
-    // Expression
-    // that is the reason having this boolean
-    // TODO queryBuilder change for where(Expression<BuildCondition) to handle null Expression
-    // TODO then we can fully rely on List<Expression<BuildCondition>> instead of
-    // TODO List<List<BuildCondition>>
-
-    final Optional<DBFilterBase> inFilter =
-        filters.stream().filter(filter -> filter instanceof DBFilterBase.InFilter).findFirst();
-    if (inFilter.isPresent()) {
-      // This if block handles filter with "$in" for non-id field
-      List<Expression<BuiltCondition>> expressions = buildConditionExpressions(additionalIdFilter);
-      if (expressions == null) {
-        return List.of();
-      }
-      String[] columns = sortedDataColumns;
-      if (orderBy() != null) {
-        List<String> sortColumns = Lists.newArrayList(columns);
-        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
-        columns = new String[sortColumns.size()];
-        sortColumns.toArray(columns);
-      }
-      final String[] columnsToAdd = columns;
-      List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
-      expressions.forEach(
-          expression ->
-              queries.add(
-                  new QueryBuilder()
-                      .select()
-                      .column(columnsToAdd)
-                      .from(commandContext.namespace(), commandContext.collection())
-                      .where(expression)
-                      .limit(maxSortReadLimit())
-                      .build()));
-      return queries;
-
-    } else {
-      // This if block handles filter with "$in" for non-id field
-      List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-      if (conditions == null) {
-        return List.of();
-      }
-      String[] columns = sortedDataColumns;
-      if (orderBy() != null) {
-        List<String> sortColumns = Lists.newArrayList(columns);
-        orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
-        columns = new String[sortColumns.size()];
-        sortColumns.toArray(columns);
-      }
-      final String[] columnsToAdd = columns;
-      List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
-      conditions.forEach(
-          condition ->
-              queries.add(
-                  new QueryBuilder()
-                      .select()
-                      .column(columnsToAdd)
-                      .from(commandContext.namespace(), commandContext.collection())
-                      .where(condition)
-                      .limit(maxSortReadLimit())
-                      .build()));
-      return queries;
+    List<Expression<BuiltCondition>> expressions =
+        buildExpressions(logicalExpression, additionalIdFilter);
+    if (expressions == null) {
+      return List.of();
     }
+    String[] columns = sortedDataColumns;
+    if (orderBy() != null) {
+      List<String> sortColumns = Lists.newArrayList(columns);
+      orderBy().forEach(order -> sortColumns.addAll(order.getOrderingColumns()));
+      columns = new String[sortColumns.size()];
+      sortColumns.toArray(columns);
+    }
+    final String[] columnsToAdd = columns;
+    List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+    expressions.forEach(
+        expression ->
+            queries.add(
+                new QueryBuilder()
+                    .select()
+                    .column(columnsToAdd)
+                    .from(commandContext.namespace(), commandContext.collection())
+                    .where(expression)
+                    .limit(maxSortReadLimit())
+                    .build()));
+    return queries;
   }
 
-  /**
-   * Builds select query based on filters and additionalIdFilter overrides.
-   *
-   * @param additionalIdFilter Used if a additional id filter need to be added to already available
-   *     contions
-   * @return Returns a list of list, where outer list represents conditions to be sent as multiple
-   *     queries. Only in condition on _id is returns multiple queries.
-   */
-  private List<List<BuiltCondition>> buildConditions(DBFilterBase.IDFilter additionalIdFilter) {
-    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
-    // if we have id filter overwrite ignore existing IDFilter
-    boolean idFilterOverwrite = additionalIdFilter != null;
-    for (DBFilterBase filter : filters) {
-      if (!(filter instanceof DBFilterBase.IDFilter idFilter)) {
-        conditions.add(filter.get());
-      } else {
-        if (!idFilterOverwrite) {
-          idFilterToUse = idFilter;
-        }
-      }
-    }
-    // then add id filter if available, in case of multiple `in` conditions we need to send multiple
-    // condtions
-    if (idFilterToUse != null) {
-      final List<BuiltCondition> inSplit = idFilterToUse.getAll();
-      if (inSplit.isEmpty()) {
-        // returning null means return empty result
-        return null;
-      } else {
-        return inSplit.stream()
-            .map(
-                idCondition -> {
-                  List<BuiltCondition> conditionsWithId = new ArrayList<>(conditions);
-                  conditionsWithId.add(idCondition);
-                  return conditionsWithId;
-                })
-            .collect(Collectors.toList());
-      }
-    } else {
-      return List.of(conditions);
-    }
-  }
-
-  private List<Expression<BuiltCondition>> testBuild(DBFilterBase.IDFilter additionalIdFilter) {
+  public static List<Expression<BuiltCondition>> buildExpressions(
+      LogicalExpression logicalExpression, DBFilterBase.IDFilter additionalIdFilter) {
     // after validate in FilterClauseDeserializer, partition key column key will not be nested under
     // OR operator
     // so we can collect all id_conditions, then do a combination to generate separate queries
@@ -735,67 +649,99 @@ public record FindOperation(
     List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
 
-    Log.error("got it : ------ " + expressions.get(0));
-    //    List<Expression<BuiltCondition>> result = new ArrayList<>();
-    //    if (expression == null) {
-    //      result.add(expression);
-    //    } else {
-    //      result.add(expression); // ID involved, will be addAll
-    //    }
+    // make sure the expression logic order does not change
+    if (expressions != null) {
+      for (int i = 0; i < expressions.size(); i++) {
+        if (expressions.get(i) == null) {
+          continue;
+        }
+        Log.error("i " + i);
+        expressions.set(i, expressions.get(i).sort(Expression.LEXICOGRAPHIC_COMPARATOR));
+      }
+    }
     return expressions;
     //    return expression == null? null List.of(expression);
   }
 
-  private List<Expression<BuiltCondition>> buildExpressionWithId(
+  //  public static class BuiltConditionExpressionComparator implements
+  // Comparator<Expression<BuiltCondition>> {
+  //    @Override
+  //    public int compare(Expression o1, Expression o2) {
+  //      if((o1 instanceof And && o2 instanceof And) || ()){
+  //
+  //      }
+  //
+  //      Variable v1 = Variable
+  //      return o1.toString().compareTo(o2.toString());
+  //    }
+  //  }
+
+  private static List<Expression<BuiltCondition>> buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
-    if (additionalIdFilter != null) {
-      // if we have id filter overwrite ignore existing IDFilter //TODO test
-      List<BuiltCondition> idConditions = additionalIdFilter.getAll();
-      List<Variable<BuiltCondition>> idConditionVariables =
-          idConditions.stream().map(Variable::of).toList();
-      Expression<BuiltCondition> addtionalIdFilterExpression = And.of(idConditionVariables);
-      return List.of(And.of(addtionalIdFilterExpression, expressionWithoutId)); // TODO null
-    }
+    //    if (additionalIdFilter != null) {
+    //      // if we have id filter overwrite ignore existing IDFilter //TODO test
+    //      List<BuiltCondition> idConditions = additionalIdFilter.getAll();
+    //      List<Variable<BuiltCondition>> idConditionVariables =
+    //          idConditions.stream().map(Variable::of).toList();
+    //      Expression<BuiltCondition> addtionalIdFilterExpression = And.of(idConditionVariables);
+    //      Log.error("");
+    //      return expressionWithoutId != null ? List.of(And.of(addtionalIdFilterExpression,
+    // expressionWithoutId)) : List.of(addtionalIdFilterExpression); // TODO null
+    //    }
 
     List<Expression<BuiltCondition>> expressionsWithId = new ArrayList<>();
-    if (idFilters.isEmpty()) {
-      if (expressionWithoutId == null) {
-        expressionsWithId.add(null);
-        return expressionsWithId;
-      } else {
-        return List.of(expressionWithoutId);
-      }
-    }
+    //    if (idFilters.isEmpty()) {
+    //      if (expressionWithoutId == null) {
+    //        expressionsWithId.add(null);
+    //        return expressionsWithId;
+    //      } else {
+    //        return List.of(expressionWithoutId);
+    //      }
+    //    }
     if (idFilters.size() > 1) {
       throw new JsonApiException(
           ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
     }
-    final List<BuiltCondition> inSplit = idFilters.get(0).getAll();
-    if (inSplit.isEmpty()) {
+    if (idFilters.isEmpty()
+        && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
-        expressionsWithId.add(null);
+        expressionsWithId.add(null); // should find everything
         return expressionsWithId;
       } else {
-        return List.of(expressionWithoutId);
+        return new ArrayList<>(List.of(expressionWithoutId)); // mutable for later sorting
       }
-    } else {
-      // split n queries by id
-      return inSplit.stream()
-          .map(
-              idCondition -> {
-                Expression<BuiltCondition> newExpression =
-                    expressionWithoutId == null
-                        ? Variable.of(idCondition)
-                        : And.of(Variable.of((idCondition)), expressionWithoutId); // TODO 安全吗
-                return newExpression;
-              })
-          .collect(Collectors.toList());
     }
+
+    // have an idFilter
+    DBFilterBase.IDFilter idFilter =
+        additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+    if (idFilter.operator == DBFilterBase.IDFilter.Operator.IN && idFilter.getAll().isEmpty()) {
+      return null; // should find nothing
+    }
+    // idFilter's operator is IN or EQ, for both, we can follow the split query logic
+    List<BuiltCondition> inSplit =
+        idFilters.isEmpty() ? new ArrayList<>() : idFilters.get(0).getAll();
+    if (additionalIdFilter != null) {
+      inSplit = additionalIdFilter.getAll(); // override
+    }
+
+    Log.error("expreesion Without iD null ? " + (expressionWithoutId == null));
+    // split n queries by id
+    return inSplit.stream()
+        .map(
+            idCondition -> {
+              Expression<BuiltCondition> newExpression =
+                  expressionWithoutId == null
+                      ? Variable.of(idCondition)
+                      : And.of(Variable.of(idCondition), expressionWithoutId); // TODO 安全吗
+              return newExpression;
+            })
+        .collect(Collectors.toList());
   }
 
-  private Expression<BuiltCondition> buildExpressionRecursive(
+  private static Expression<BuiltCondition> buildExpressionRecursive(
       LogicalExpression logicalExpression,
       DBFilterBase.IDFilter additionalIdFilter,
       List<DBFilterBase.IDFilter> idConditionExpressions) {
@@ -824,6 +770,7 @@ public record FindOperation(
           if (additionalIdFilter != null) continue;
           idConditionExpressions.add(idFilter);
         } else {
+          Log.error("hit");
           conditionExpressions.add(Variable.of(dbFilter.get()));
         }
       }
@@ -833,72 +780,11 @@ public record FindOperation(
     if (conditionExpressions.isEmpty()) {
       return null;
     }
+    Log.error("hererrr " + conditionExpressions);
+    //    return conditionExpressions.get(0);
     return logicalExpression.getLogicalRelation().equals("and")
         ? And.of(conditionExpressions)
         : Or.of(conditionExpressions);
-  }
-
-  /**
-   * Builds select query based on filters and additionalIdFilter overrides. return expression to
-   * pass logic operation information, eg 'or'
-   */
-  private List<Expression<BuiltCondition>> buildConditionExpressions(
-      DBFilterBase.IDFilter additionalIdFilter) {
-    Expression<BuiltCondition> conditionExpression = null;
-    //        for (DBFilterBase filter : filters) {
-    //            // all filters will be in And.of
-    //            // if the filter is DBFilterBase.INFilter
-    //            // inside of this filter, it has getAll method to return a list of BuiltCondition,
-    // these
-    //            // BuiltCondition will be in Or.of
-    //        }
-    DBFilterBase.IDFilter idFilterToUse = additionalIdFilter;
-    // if we have id filter overwrite ignore existing IDFilter
-    boolean idFilterOverwrite = additionalIdFilter != null;
-    for (DBFilterBase filter : filters) {
-      if (filter instanceof DBFilterBase.InFilter inFilter) {
-        List<BuiltCondition> conditions = inFilter.getAll();
-        if (!conditions.isEmpty()) {
-          List<Variable<BuiltCondition>> variableConditions =
-              conditions.stream().map(Variable::of).toList();
-          conditionExpression =
-              conditionExpression == null
-                  ? Or.of(variableConditions)
-                  : And.of(Or.of(variableConditions), conditionExpression);
-        }
-      } else if (filter instanceof DBFilterBase.IDFilter idFilter) {
-        if (!idFilterOverwrite) {
-          idFilterToUse = idFilter;
-        }
-      } else {
-        conditionExpression =
-            conditionExpression == null
-                ? Variable.of(filter.get())
-                : And.of(Variable.of(filter.get()), conditionExpression);
-      }
-    }
-
-    if (idFilterToUse != null) {
-      final List<BuiltCondition> inSplit = idFilterToUse.getAll();
-      if (inSplit.isEmpty()) {
-        return null;
-      } else {
-        // split n queries by id
-        Expression<BuiltCondition> tempExpression = conditionExpression;
-        return inSplit.stream()
-            .map(
-                idCondition -> {
-                  Expression<BuiltCondition> newExpression =
-                      tempExpression == null
-                          ? Variable.of(idCondition)
-                          : And.of(Variable.of((idCondition)), tempExpression);
-                  return newExpression;
-                })
-            .collect(Collectors.toList());
-      }
-    } else {
-      return conditionExpression == null ? null : List.of(conditionExpression); // only one query
-    }
   }
 
   /**

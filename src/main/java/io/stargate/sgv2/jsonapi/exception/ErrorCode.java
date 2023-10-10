@@ -21,7 +21,8 @@ public enum ErrorCode {
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
-  FILTER_MULTIPLE_ID_FILTER("Should be just have one _id filter, key cannot be restricted by more than one relation if it includes an Equal"),
+  FILTER_MULTIPLE_ID_FILTER(
+      "Should be just have one _id filter, key cannot be restricted by more than one relation if it includes an Equal"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 

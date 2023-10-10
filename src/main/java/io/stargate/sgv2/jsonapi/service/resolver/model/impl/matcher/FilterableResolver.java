@@ -41,10 +41,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   @Inject
   public FilterableResolver() {
-    matchRules.addMatchRule(this::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
+    matchRules.addMatchRule(FilterableResolver::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
     //
     matchRules
-        .addMatchRule(this::findById, FilterMatcher.MatchStrategy.STRICT)
+        .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
@@ -57,7 +57,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
     //     NOTE - can only do eq ops on fields until SAI changes
     matchRules
-        .addMatchRule(this::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
+        .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
@@ -91,7 +91,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return matchRules.apply(commandContext, command);
   }
 
-  private List<DBFilterBase> findById(CaptureExpression captureExpression) {
+  public static List<DBFilterBase> findById(CaptureExpression captureExpression) {
 
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
@@ -110,11 +110,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return filters;
   }
 
-  private List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
+  public static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
     return List.of();
   }
 
-  private List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
+  public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
 

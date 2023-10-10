@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -10,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -41,11 +39,12 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
-    Log.error(
-        "logical expression before resolve ~~~ " + command.filterClause().logicalExpression());
+    //    Log.error(
+    //        "logical expression before resolve ~~~ " +
+    // command.filterClause().logicalExpression());
     final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
-    Log.error("logical expression after resolve ~~~" + resolvedLogicalExpression);
-    List<DBFilterBase> filters = null;
+    //    Log.error("logical expression after resolve ~~~" + resolvedLogicalExpression);
+    //    List<DBFilterBase> filters = null;
 
     // limit and paging state defaults
     int limit = Integer.MAX_VALUE;
@@ -81,7 +80,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
       return FindOperation.vsearch(
           commandContext,
-          filters,
+          resolvedLogicalExpression,
           command.buildProjector(includeSimilarity),
           pagingState,
           limit,
@@ -96,7 +95,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     if (orderBy != null) {
       return FindOperation.sorted(
           commandContext,
-          filters,
+          resolvedLogicalExpression,
           command.buildProjector(),
           pagingState,
           // For in memory sorting if no limit provided in the request will use
@@ -112,7 +111,6 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     } else {
       return FindOperation.unsorted(
           commandContext,
-          filters,
           resolvedLogicalExpression,
           command.buildProjector(),
           pagingState,

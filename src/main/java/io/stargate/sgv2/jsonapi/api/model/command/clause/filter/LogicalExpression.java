@@ -44,6 +44,9 @@ public class LogicalExpression {
   }
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {
+    if (logicalExpression == null) {
+      return;
+    }
     totalComparisonExpressionCount += logicalExpression.totalComparisonExpressionCount;
     totalIdComparisonExpressionCount += logicalExpression.totalIdComparisonExpressionCount;
     if (logicalExpression.logicalExpressions.isEmpty()

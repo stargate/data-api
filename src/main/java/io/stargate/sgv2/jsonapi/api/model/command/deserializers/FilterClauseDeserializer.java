@@ -53,12 +53,17 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
 
+    Log.error("implict and here " + implicitAnd);
     validate(implicitAnd);
+
     Log.error("give me ~~~~~~ " + implicitAnd);
     return new FilterClause(implicitAnd);
   }
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
+    if (logicalExpression == null) {
+      return;
+    }
     Log.error("entry 222");
     if (node.isObject()) {
       Log.error("is Object !!! ");
@@ -93,14 +98,26 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       logicalExpression.addComparisonExpression(createComparisonExpression(entry));
     } else if (entry.getValue().isArray()) {
       Log.error("entry 444 " + entry.getKey());
-      LogicalExpression innerLogicalExpression =
-          entry.getKey().equals(DocumentConstants.Fields.LOGICAL_AND)
-              ? LogicalExpression.and()
-              : LogicalExpression.or();
+      LogicalExpression innerLogicalExpression = null;
+      switch (entry.getKey()) {
+        case DocumentConstants.Fields.LOGICAL_AND:
+          innerLogicalExpression = LogicalExpression.and();
+          break;
+        case DocumentConstants.Fields.LOGICAL_OR:
+          innerLogicalExpression = LogicalExpression.or();
+          break;
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION,
+              String.format(
+                  "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+                  DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
+      }
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
       for (JsonNode next : arrayNode) {
         populateExpression(innerLogicalExpression, next);
       }
+      Log.error("不应该 " + innerLogicalExpression);
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
       logicalExpression.addComparisonExpression(
@@ -139,16 +156,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               DocumentConstants.Fields.DOC_ID, DocumentConstants.Fields.LOGICAL_OR));
     }
 
-    // First: $vector can only be used with $exists operator
-    if (path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-        && ElementComparisonOperator.EXISTS != filterOperation.operator()) {
-      throw new JsonApiException(
-          ErrorCode.INVALID_FILTER_EXPRESSION,
-          String.format(
-              "Cannot filter on '%s' field using operator '%s': only '$exists' is supported",
-              DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
-              filterOperation.operator().getOperator()));
-    }
+    //    Log.error("find ;;;; " + filterOperation.operator());
+
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
         case IN -> {
