@@ -1,15 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.bpodgursky.jbool_expressions.Expression;
+import com.bpodgursky.jbool_expressions.Variable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.api.common.cql.Expression.And;
-import io.stargate.sgv2.api.common.cql.Expression.Expression;
-import io.stargate.sgv2.api.common.cql.Expression.Or;
-import io.stargate.sgv2.api.common.cql.Expression.Variable;
+import io.stargate.sgv2.api.common.cql.ExpressionUtils;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -585,7 +584,7 @@ public record FindOperation(
               Expression<BuiltCondition> newExpression =
                   expressionWithoutId == null
                       ? Variable.of(idCondition)
-                      : And.of(Variable.of(idCondition), expressionWithoutId);
+                      : ExpressionUtils.OrderedAndOf(Variable.of(idCondition), expressionWithoutId);
               return newExpression;
             })
         .collect(Collectors.toList());
@@ -610,9 +609,9 @@ public record FindOperation(
         if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
-            List<Variable<BuiltCondition>> inConditions =
+            List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
-            conditionExpressions.add(Or.of(inConditions));
+            conditionExpressions.add(ExpressionUtils.OrderedOrOf(inConditionsVariables));
           }
         } else if (dbFilter instanceof DBFilterBase.IDFilter idFilter) {
           if (additionalIdFilter != null) continue;
@@ -628,8 +627,8 @@ public record FindOperation(
       return null;
     }
     return logicalExpression.getLogicalRelation().equals("and")
-        ? And.of(conditionExpressions)
-        : Or.of(conditionExpressions);
+        ? ExpressionUtils.OrderedAndOf(conditionExpressions)
+        : ExpressionUtils.OrderedOrOf(conditionExpressions);
   }
 
   /**

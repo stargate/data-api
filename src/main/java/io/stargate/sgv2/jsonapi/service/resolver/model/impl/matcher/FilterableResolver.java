@@ -42,18 +42,17 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   @Inject
   public FilterableResolver() {
     matchRules.addMatchRule(FilterableResolver::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
-    //
     matchRules
         .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
-    //
-    //    matchRules
-    //        .addMatchRule(this::findById, FilterMatcher.MatchStrategy.STRICT)
-    //        .matcher()
-    //        .capture(ID_GROUP_IN)
-    //        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
+    matchRules
+        .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
+        .matcher()
+        .capture(ID_GROUP_IN)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
     //     NOTE - can only do eq ops on fields until SAI changes
     matchRules

@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
+import com.bpodgursky.jbool_expressions.Expression;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.api.common.cql.Expression.Expression;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;

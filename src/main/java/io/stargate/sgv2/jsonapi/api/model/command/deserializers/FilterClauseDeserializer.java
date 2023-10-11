@@ -276,7 +276,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
    * @return
    */
   private static Object jsonNodeValue(JsonNode node) {
-    Log.info("json node value " + node.getNodeType());
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();

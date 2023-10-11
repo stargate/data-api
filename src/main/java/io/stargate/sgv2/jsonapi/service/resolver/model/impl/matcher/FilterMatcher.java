@@ -53,7 +53,6 @@ public class FilterMatcher<T extends Command & Filterable> {
       return Optional.empty();
     }
 
-    // 在strict的模式下, baseCaptures个会被 iterator 删除，，用完拉到
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
     final MatchStrategyCounter matchStrategyCounter =
         new MatchStrategyCounter(

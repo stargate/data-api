@@ -22,11 +22,8 @@ public class ComparisonExpression {
   @NotBlank(message = "json node path can not be null in filter")
   private final String path;
 
-  @Valid @NotEmpty private final List<FilterOperation<?>> filterOperations; // 不一定全部被match，这个里面到底是什么
+  @Valid @NotEmpty private final List<FilterOperation<?>> filterOperations;
 
-  //  private final Map<Object, CaptureGroup<?>> captureGroupMap;
-
-  // TODO should be one comparisonExpression oneDBFilter, but there is $all,
   private List<DBFilterBase> dbFilters;
 
   public List<DBFilterBase> getDbFilters() {
@@ -38,13 +35,9 @@ public class ComparisonExpression {
   }
 
   public ComparisonExpression(
-      String path,
-      List<FilterOperation<?>> filterOperations,
-      //      Map<Object, CaptureGroup<?>> captureGroupMap,
-      List<DBFilterBase> dbFilters) {
+      String path, List<FilterOperation<?>> filterOperations, List<DBFilterBase> dbFilters) {
     this.path = path;
     this.filterOperations = filterOperations;
-    //    this.captureGroupMap = captureGroupMap;
     this.dbFilters = dbFilters;
   }
 
@@ -61,7 +54,6 @@ public class ComparisonExpression {
     return new ComparisonExpression(
         path,
         List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))),
-        //        new HashMap<>(),
         null);
   }
 
@@ -127,14 +119,6 @@ public class ComparisonExpression {
       return List.of();
     }
   }
-
-  //  public CaptureGroup<?> getGroup(Object marker) {
-  //    return captureGroupMap.computeIfAbsent(marker, f -> new CaptureGroup(new HashMap<>()));
-  //  }
-  //
-  //  public CaptureGroup<?> getGroupIfPresent(Object marker) {
-  //    return captureGroupMap.get(marker);
-  //  }
 
   public void setDBFilters(List<DBFilterBase> dbFilters) {
     this.dbFilters = dbFilters;
