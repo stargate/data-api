@@ -64,7 +64,7 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
       this.metadata = metadata;
     }
 
-    private static class Prediction {
+    protected static class Prediction {
       public Prediction() {}
 
       private Embeddings embeddings;
@@ -77,7 +77,7 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
         this.embeddings = embeddings;
       }
 
-      private static class Embeddings {
+      protected static class Embeddings {
         public Embeddings() {}
 
         private float[] values;
