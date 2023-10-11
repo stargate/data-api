@@ -39,13 +39,12 @@ public class FilterMatcher<T extends Command & Filterable> {
   }
 
   public Optional<LogicalExpression> apply(T command) {
-
     FilterClause filter = command.filterClause();
     if (strategy == MatchStrategy.EMPTY) {
       if (filter == null
           || (filter.logicalExpression().logicalExpressions.isEmpty()
               && filter.logicalExpression().comparisonExpressions.isEmpty())) {
-        return Optional.of(LogicalExpression.and()); // TODO ???
+        return Optional.of(LogicalExpression.and()); //TODO
       } else {
         return Optional.empty();
       }
@@ -54,7 +53,6 @@ public class FilterMatcher<T extends Command & Filterable> {
     if (filter == null) {
       return Optional.empty();
     }
-    Log.error("matcher apply " + filter.logicalExpression());
 
     // 在strict的模式下, baseCaptures个会被 iterator 删除，，用完拉到
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
@@ -62,24 +60,19 @@ public class FilterMatcher<T extends Command & Filterable> {
         new MatchStrategyCounter(
             unmatchedCaptures.size(), filter.logicalExpression().totalComparisonExpressionCount);
     captureRecursive(filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
-    Log.error("after captureRecursive  " + filter.logicalExpression());
 
     // these strategies should be abstracted if we have another one, only 2 for now.
     switch (strategy) {
       case STRICT:
-        Log.error("matcher strict " + matchStrategyCounter.unmatchedCaptureCount);
-        Log.error("matcher strict " + matchStrategyCounter.unmatchedComparisonExpressionCount);
         if (matchStrategyCounter.unmatchedCaptureCount == 0
             && matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
           // everything group and expression matched
-          Log.error("matcher strict " + filter.logicalExpression());
           return Optional.of(filter.logicalExpression());
         }
         break;
       case GREEDY:
         if (matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
           // everything expression matched, some captures may not match
-          Log.error("matcher greedy");
           return Optional.of(filter.logicalExpression());
         }
         break;
@@ -101,33 +94,18 @@ public class FilterMatcher<T extends Command & Filterable> {
       ListIterator<Capture> captureIter = unmatchedCaptures.listIterator();
       while (captureIter.hasNext()) {
         Capture capture = captureIter.next();
-        List<FilterOperation<?>> matched = capture.match(comparisonExpression); // TODO 会有多个？？？？
-        if (!matched.isEmpty()) { // 说明这一轮的comparisonExpression被match了 那么我们需要把matched放起来
-          //          comparisonExpression
-          //              .getGroup(capture.marker)
-          //              .withCapture(comparisonExpression.getPath(), matched);
-          // TODO  index of matched 会有多个？？？
+        List<FilterOperation<?>> matched = capture.match(comparisonExpression);
+        if (!matched.isEmpty()) {
           comparisonExpression.setDBFilters(
               resolveFunction.apply(
                   new CaptureExpression(capture.marker, matched, comparisonExpression.getPath())));
-          //          comparisonExpression.setDBFilters(
-          //              resolveFunction.apply(
-          //                  capture.marker,
-          //                  new CaptureExpression(
-          //                      comparisonExpression.getPath(),
-          //                      matched.get(0).operator(),
-          //                      matched.get(0).operand().value())));
-
           switch (strategy) {
             case STRICT:
               captureIter.remove();
               matchStrategyCounter.decreaseUnmatchedCaptureCount();
-              ;
-              //              expressionIterator.remove();
               matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
               break;
             case GREEDY:
-              //              expressionIterator.remove();
               matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
               break;
           }

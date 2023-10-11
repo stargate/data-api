@@ -81,7 +81,6 @@ public class MeteredCommandProcessor {
       CommandContext commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
     // start by resolving the command, get resolver
-    Log.error("inside");
     return commandProcessor
         .processCommand(commandContext, command)
         .onItem()

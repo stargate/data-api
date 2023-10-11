@@ -1,9 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import com.bpodgursky.jbool_expressions.And;
-import com.bpodgursky.jbool_expressions.Expression;
-import com.bpodgursky.jbool_expressions.Or;
-import com.bpodgursky.jbool_expressions.Variable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -11,6 +7,10 @@ import com.google.common.collect.Lists;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.cql.Expression.And;
+import io.stargate.sgv2.api.common.cql.Expression.Expression;
+import io.stargate.sgv2.api.common.cql.Expression.Or;
+import io.stargate.sgv2.api.common.cql.Expression.Variable;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -331,7 +331,6 @@ public record FindOperation(
       }
       case DOCUMENT, KEY -> {
         List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
-        Log.error("???!!! " + queries);
         return findDocument(
             queryExecutor,
             queries,
@@ -361,9 +360,6 @@ public record FindOperation(
   public ReadDocument getNewDocument() {
     ObjectNode rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    //    if(logicalExpression.totalIdComparisonExpressionCount == 0){ //TODO
-    //      return ReadDocument.from(documentId, null, rootNode);
-    //    }
     Stack<LogicalExpression> stack = new Stack<>();
     stack.push(logicalExpression);
     while (!stack.empty()) {
@@ -402,8 +398,6 @@ public record FindOperation(
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         buildExpressions(logicalExpression, additionalIdFilter);
-    Log.error("!!--- " + expressions);
-
     if (expressions == null) { // in filter, but with empty values, find nothing
       return List.of();
     }
@@ -411,7 +405,6 @@ public record FindOperation(
     expressions.forEach(
         expression -> {
           if (vector() == null) {
-            Log.error(" no vector");
             queries.add(
                 new QueryBuilder()
                     .select()
@@ -432,103 +425,6 @@ public record FindOperation(
         });
 
     return queries;
-    //    } else {
-    //      // This if block handles filter with no "$in" for non-id field
-    //      List<List<BuiltCondition>> conditions = buildConditions(additionalIdFilter);
-    //      if (conditions == null) {
-    //        return List.of();
-    //      }
-    //      List<QueryOuterClass.Query> queries = new ArrayList<>(conditions.size());
-    //      conditions.forEach(
-    //          condition -> {
-    //            if (vector() == null) {
-    //              queries.add(
-    //                  new QueryBuilder()
-    //                      .select()
-    //                      .column(ReadType.DOCUMENT == readType ? documentColumns :
-    // documentKeyColumns)
-    //                      .from(commandContext.namespace(), commandContext.collection())
-    //                      .where(condition)
-    //                      .limit(limit)
-    //                      .build());
-    //            } else {
-    //              QueryOuterClass.Query builtQuery = getVectorSearchQuery(condition);
-    //              final List<QueryOuterClass.Value> valuesList =
-    //                  builtQuery.getValuesOrBuilder().getValuesList();
-    //              final QueryOuterClass.Values.Builder builder =
-    // QueryOuterClass.Values.newBuilder();
-    //              valuesList.forEach(builder::addValues);
-    //              builder.addValues(CustomValueSerializers.getVectorValue(vector()));
-    //
-    // queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
-    //            }
-    //          });
-    //
-    //      return queries;
-    //    }
-  }
-
-  /** Making it a separate method to build vector search query as there are many options */
-  private QueryOuterClass.Query getVectorSearchQuery(List<BuiltCondition> conditions) {
-    QueryOuterClass.Query builtQuery = null;
-    if (projection().doIncludeSimilarityScore()) {
-      switch (commandContext().similarityFunction()) {
-        case COSINE, UNDEFINED -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityCosine(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(conditions)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        case EUCLIDEAN -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityEuclidean(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(conditions)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        case DOT_PRODUCT -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityDotProduct(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(conditions)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        default -> {
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
-                  + commandContext().similarityFunction());
-        }
-      }
-    } else {
-      return new QueryBuilder()
-          .select()
-          .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-          .from(commandContext.namespace(), commandContext.collection())
-          .where(conditions)
-          .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-          .build();
-    }
   }
 
   /**
@@ -645,61 +541,18 @@ public record FindOperation(
     Expression<BuiltCondition> expressionWithoutId =
         buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
 
-    Log.error("expression without id " + expressionWithoutId);
     List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
 
-    // make sure the expression logic order does not change
-    if (expressions != null) {
-      for (int i = 0; i < expressions.size(); i++) {
-        if (expressions.get(i) == null) {
-          continue;
-        }
-        Log.error("i " + i);
-        expressions.set(i, expressions.get(i).sort(Expression.LEXICOGRAPHIC_COMPARATOR));
-      }
-    }
     return expressions;
-    //    return expression == null? null List.of(expression);
   }
-
-  //  public static class BuiltConditionExpressionComparator implements
-  // Comparator<Expression<BuiltCondition>> {
-  //    @Override
-  //    public int compare(Expression o1, Expression o2) {
-  //      if((o1 instanceof And && o2 instanceof And) || ()){
-  //
-  //      }
-  //
-  //      Variable v1 = Variable
-  //      return o1.toString().compareTo(o2.toString());
-  //    }
-  //  }
 
   private static List<Expression<BuiltCondition>> buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
-    //    if (additionalIdFilter != null) {
-    //      // if we have id filter overwrite ignore existing IDFilter //TODO test
-    //      List<BuiltCondition> idConditions = additionalIdFilter.getAll();
-    //      List<Variable<BuiltCondition>> idConditionVariables =
-    //          idConditions.stream().map(Variable::of).toList();
-    //      Expression<BuiltCondition> addtionalIdFilterExpression = And.of(idConditionVariables);
-    //      Log.error("");
-    //      return expressionWithoutId != null ? List.of(And.of(addtionalIdFilterExpression,
-    // expressionWithoutId)) : List.of(addtionalIdFilterExpression); // TODO null
-    //    }
-
     List<Expression<BuiltCondition>> expressionsWithId = new ArrayList<>();
-    //    if (idFilters.isEmpty()) {
-    //      if (expressionWithoutId == null) {
-    //        expressionsWithId.add(null);
-    //        return expressionsWithId;
-    //      } else {
-    //        return List.of(expressionWithoutId);
-    //      }
-    //    }
+
     if (idFilters.size() > 1) {
       throw new JsonApiException(
           ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
@@ -726,8 +579,6 @@ public record FindOperation(
     if (additionalIdFilter != null) {
       inSplit = additionalIdFilter.getAll(); // override
     }
-
-    Log.error("expreesion Without iD null ? " + (expressionWithoutId == null));
     // split n queries by id
     return inSplit.stream()
         .map(
@@ -735,7 +586,7 @@ public record FindOperation(
               Expression<BuiltCondition> newExpression =
                   expressionWithoutId == null
                       ? Variable.of(idCondition)
-                      : And.of(Variable.of(idCondition), expressionWithoutId); // TODO 安全吗
+                      : And.of(Variable.of(idCondition), expressionWithoutId);
               return newExpression;
             })
         .collect(Collectors.toList());
@@ -756,7 +607,7 @@ public record FindOperation(
       conditionExpressions.add(subExpressionCondition);
     }
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
-      for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) { // TODO
+      for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
         if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
@@ -765,12 +616,9 @@ public record FindOperation(
             conditionExpressions.add(Or.of(inConditions));
           }
         } else if (dbFilter instanceof DBFilterBase.IDFilter idFilter) {
-          // if we have id filter overwrite ignore existing IDFilter //TODO
-          Log.error("find a id filter");
           if (additionalIdFilter != null) continue;
           idConditionExpressions.add(idFilter);
         } else {
-          Log.error("hit");
           conditionExpressions.add(Variable.of(dbFilter.get()));
         }
       }
@@ -780,8 +628,6 @@ public record FindOperation(
     if (conditionExpressions.isEmpty()) {
       return null;
     }
-    Log.error("hererrr " + conditionExpressions);
-    //    return conditionExpressions.get(0);
     return logicalExpression.getLogicalRelation().equals("and")
         ? And.of(conditionExpressions)
         : Or.of(conditionExpressions);

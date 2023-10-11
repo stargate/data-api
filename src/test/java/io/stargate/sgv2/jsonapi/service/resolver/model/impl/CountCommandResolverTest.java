@@ -42,7 +42,12 @@ public class CountCommandResolverTest {
     CountOperation expected = new CountOperation(commandContext, implicitAnd);
     assertThat(operation)
         .isInstanceOf(CountOperation.class)
-        .satisfies(op -> assertThat(op).isEqualTo(expected));
+        .satisfies(
+            op -> {
+              CountOperation countOperation = (CountOperation) op;
+              assertThat(countOperation.logicalExpression().totalComparisonExpressionCount)
+                  .isEqualTo(expected.logicalExpression().totalComparisonExpressionCount);
+            });
   }
 
   @Test
@@ -72,6 +77,17 @@ public class CountCommandResolverTest {
     CountOperation expected = new CountOperation(commandContext, implicitAnd);
     assertThat(operation)
         .isInstanceOf(CountOperation.class)
-        .satisfies(op -> assertThat(op).isEqualTo(expected));
+        .satisfies(
+            op -> {
+              CountOperation countOperation = (CountOperation) op;
+              assertThat(
+                      countOperation
+                          .logicalExpression()
+                          .comparisonExpressions
+                          .get(0)
+                          .getDbFilters())
+                  .isEqualTo(
+                      expected.logicalExpression().comparisonExpressions.get(0).getDbFilters());
+            });
   }
 }

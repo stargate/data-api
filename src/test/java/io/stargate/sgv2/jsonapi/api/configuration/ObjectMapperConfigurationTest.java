@@ -266,7 +266,13 @@ class ObjectMapperConfigurationTest {
                 ValueComparisonOperation<String> op =
                     new ValueComparisonOperation<>(
                         ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
-                assertThat(filterClause.logicalExpression().comparisonExpressions.get(0))
+                assertThat(
+                        filterClause
+                            .logicalExpression()
+                            .comparisonExpressions
+                            .get(0)
+                            .getFilterOperations()
+                            .get(0))
                     .isEqualTo(op);
               });
     }

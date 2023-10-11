@@ -92,7 +92,6 @@ public class NamespaceResource {
     // create context
     CommandContext commandContext = new CommandContext(namespace, null);
 
-    Log.error("gogogo");
     // call processor
     return meteredCommandProcessor
         .processCommand(commandContext, command)

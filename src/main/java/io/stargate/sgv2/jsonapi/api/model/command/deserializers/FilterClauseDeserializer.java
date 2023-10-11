@@ -43,20 +43,9 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) throw new JsonApiException(ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE);
     // implicit and
-
-    //    if(filterNode.isEmpty()){
-    //      return ne
-    //
-    //    }
-    //
-    Log.error("entry 111");
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
-
-    Log.error("implict and here " + implicitAnd);
     validate(implicitAnd);
-
-    Log.error("give me ~~~~~~ " + implicitAnd);
     return new FilterClause(implicitAnd);
   }
 
@@ -64,9 +53,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (logicalExpression == null) {
       return;
     }
-    Log.error("entry 222");
     if (node.isObject()) {
-      Log.error("is Object !!! ");
       Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.fields();
       while (fieldsIterator.hasNext()) {
         Map.Entry<String, JsonNode> entry = fieldsIterator.next();
@@ -92,12 +79,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
 
   private void populateExpression(
       LogicalExpression logicalExpression, Map.Entry<String, JsonNode> entry) {
-    Log.error("entry 333");
     if (entry.getValue().isObject()) {
       // inside of this entry, only implicit and, no explicit $and/$or
       logicalExpression.addComparisonExpression(createComparisonExpression(entry));
     } else if (entry.getValue().isArray()) {
-      Log.error("entry 444 " + entry.getKey());
       LogicalExpression innerLogicalExpression = null;
       switch (entry.getKey()) {
         case DocumentConstants.Fields.LOGICAL_AND:
@@ -117,7 +102,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       for (JsonNode next : arrayNode) {
         populateExpression(innerLogicalExpression, next);
       }
-      Log.error("不应该 " + innerLogicalExpression);
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
       logicalExpression.addComparisonExpression(
@@ -155,8 +139,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               "Cannot filter on '%s' field within '%s'",
               DocumentConstants.Fields.DOC_ID, DocumentConstants.Fields.LOGICAL_OR));
     }
-
-    //    Log.error("find ;;;; " + filterOperation.operator());
 
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
       switch (valueComparisonOperator) {
@@ -306,7 +288,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         return null;
       case ARRAY:
         {
-          Log.error("here");
           ArrayNode arrayNode = (ArrayNode) node;
           List<Object> arrayVals = new ArrayList<>(arrayNode.size());
           for (JsonNode element : arrayNode) {
@@ -317,24 +298,16 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       case OBJECT:
         {
           if (JsonUtil.looksLikeEJsonValue(node)) {
-            Log.info("yes");
             JsonNode value = node.get(JsonUtil.EJSON_VALUE_KEY_DATE);
             if (value != null) {
-              Log.error("???!");
-
               if (value.isIntegralNumber() && value.canConvertToLong()) {
-                Log.error("???!!");
-
                 return new Date(value.longValue());
               } else {
-                Log.error("???");
                 throw new JsonApiException(
                     ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
             }
           } else {
-            Log.info("yes1");
-
             ObjectNode objectNode = (ObjectNode) node;
             Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
             final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
@@ -342,13 +315,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               final Map.Entry<String, JsonNode> nextField = fields.next();
               values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
             }
-            Log.info("done");
-
             return values;
           }
         }
       default:
-        Log.error("woaco " + node.getNodeType());
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
             String.format("Unsupported NodeType %s", node.getNodeType()));

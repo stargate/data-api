@@ -148,7 +148,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == DYNAMIC_BOOL_GROUP) {
-        // TODO
         filters.add(
             new DBFilterBase.BoolFilter(
                 captureExpression.path(),
@@ -169,8 +168,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
-        // TODO check
-
         filters.add(
             new DBFilterBase.DateFilter(
                 captureExpression.path(),
@@ -187,8 +184,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE, "$exists is supported only with true option");
         }
       }
-
-      // TODO check
       if (captureExpression.marker() == ALL_GROUP) {
         final DocValueHasher docValueHasher = new DocValueHasher();
         List<Object> objects = (List<Object>) filterOperation.operand().value();
@@ -212,7 +207,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
-        // TODO check
         filters.add(
             new DBFilterBase.SubDocEqualsFilter(
                 new DocValueHasher(),

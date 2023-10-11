@@ -613,14 +613,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(tx_id1))));
 
       String collectionReadCql2 =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert2 =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -727,14 +727,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(tx_id1))));
 
       String collectionReadCql2 =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert2 =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -815,7 +815,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(commandResult.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1']: Unable to completetransaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
               });
     }
 
@@ -849,14 +849,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(tx_id1))));
 
       String collectionReadCql2 =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert2 =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -1302,14 +1302,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(tx_id2))));
 
       String collectionReadCql2 =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 3"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesAssert2 =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(3)
               .withColumnSpec(
                   List.of(
@@ -1409,7 +1409,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1']: Unable to completetransaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
               });
     }
 
@@ -1451,14 +1451,14 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(tx_id2))));
 
       String collectionReadCql2 =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 3"
+          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       ValidatingStargateBridge.QueryAssert candidatesDoc1Assert =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(3)
               .withColumnSpec(
                   List.of(
@@ -1481,9 +1481,9 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
       ValidatingStargateBridge.QueryAssert candidatesDoc2Assert =
           withQuery(
                   collectionReadCql2,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(3)
               .withColumnSpec(
                   List.of(
@@ -1594,7 +1594,7 @@ public class DeleteOperationTest extends AbstractValidatingStargateBridgeTest {
                     .isEqualTo("CONCURRENCY_FAILURE");
                 assertThat(result.errors().get(0).message())
                     .isEqualTo(
-                        "Failed to delete documents with _id ['doc1', 'doc2']: Unable to completetransaction due to concurrent transactions");
+                        "Failed to delete documents with _id ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
               });
     }
   }

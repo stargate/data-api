@@ -23,7 +23,6 @@ public record DeleteCollectionOperation(CommandContext context, String name) imp
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     String cql = DROP_TABLE_CQL.formatted(context.namespace(), name);
     QueryOuterClass.Query query = QueryOuterClass.Query.newBuilder().setCql(cql).build();
-    Log.error("herehre1");
     // execute
     return queryExecutor
         .executeSchemaChange(query)

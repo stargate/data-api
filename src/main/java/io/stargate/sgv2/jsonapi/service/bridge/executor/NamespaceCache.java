@@ -74,7 +74,6 @@ public class NamespaceCache {
         .transform(
             table -> {
               if (table.isPresent()) {
-                Log.error("error find1");
                 Boolean vectorEnabled =
                     table.get().getColumnsList().stream()
                         .anyMatch(
@@ -137,7 +136,6 @@ public class NamespaceCache {
                       vectorEnabled, CollectionProperty.SimilarityFunction.UNDEFINED, null, null);
                 }
               } else {
-                Log.error("error find");
                 throw new RuntimeException(
                     ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
               }

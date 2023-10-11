@@ -8,6 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
@@ -634,6 +635,318 @@ public class FindCommandResolverTest {
                 assertThat(
                         find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(filter);
+              });
+    }
+
+    @Test
+    public void explicitAnd() throws Exception {
+      String json =
+          """
+                          {
+                            "find": {
+                              "filter" :{
+                                "$and":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+                            }
+                          }
+                          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter1 =
+                    new DBFilterBase.TextFilter(
+                        "name", DBFilterBase.TextFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new DBFilterBase.TextFilter(
+                        "age", DBFilterBase.TextFilter.Operator.EQ, "testAge");
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+                    .isEqualTo(LogicalExpression.AND);
+                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(0)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter1);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(1)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter2);
+              });
+    }
+
+    @Test
+    public void explicitOr() throws Exception {
+      String json =
+          """
+                          {
+                            "find": {
+                              "filter" :{
+                                "$or":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+                            }
+                          }
+                          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter1 =
+                    new DBFilterBase.TextFilter(
+                        "name", DBFilterBase.TextFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new DBFilterBase.TextFilter(
+                        "age", DBFilterBase.TextFilter.Operator.EQ, "testAge");
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+                    .isEqualTo(LogicalExpression.OR);
+                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(0)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter1);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(1)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter2);
+              });
+    }
+
+    @Test
+    public void emptyAnd() throws Exception {
+      String json =
+          """
+                          {
+                            "find": {
+                              "filter" :{
+                                "$and":[
+                                 ]
+                              }
+                            }
+                          }
+                          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.logicalExpression().logicalExpressions).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+              });
+    }
+
+    @Test
+    public void nestedAndOr() throws Exception {
+      String json =
+          """
+                         {
+                              "find": {
+                                  "filter": {
+                                      "$and": [
+                                          {
+                                              "name": "testName"
+                                          },
+                                          {
+                                              "age": "testAge"
+                                          },
+                                          {
+                                              "$or": [
+                                                  {
+                                                      "address": "testAddress"
+                                                  },
+                                                  {
+                                                      "height": "testHeight"
+                                                  }
+                                              ]
+                                          }
+                                      ]
+                                  }
+                              }
+                          }
+                          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter1 =
+                    new DBFilterBase.TextFilter(
+                        "name", DBFilterBase.TextFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new DBFilterBase.TextFilter(
+                        "age", DBFilterBase.TextFilter.Operator.EQ, "testAge");
+                DBFilterBase filter3 =
+                    new DBFilterBase.TextFilter(
+                        "address", DBFilterBase.TextFilter.Operator.EQ, "testAddress");
+                DBFilterBase filter4 =
+                    new DBFilterBase.TextFilter(
+                        "height", DBFilterBase.TextFilter.Operator.EQ, "testHeight");
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+                    .isEqualTo(LogicalExpression.AND);
+                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(4);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(0)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter1);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(1)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter2);
+
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .logicalExpressions
+                            .get(0)
+                            .getLogicalRelation())
+                    .isEqualTo(LogicalExpression.OR);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(0)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter3);
+                assertThat(
+                        find.logicalExpression()
+                            .logicalExpressions
+                            .get(0)
+                            .logicalExpressions
+                            .get(0)
+                            .comparisonExpressions
+                            .get(1)
+                            .getDbFilters()
+                            .get(0))
+                    .isEqualTo(filter4);
+              });
+    }
+
+    @Test
+    public void emptyOr() throws Exception {
+      String json =
+          """
+                          {
+                            "find": {
+                              "filter" :{
+                                "$or":[
+                                 ]
+                              }
+                            }
+                          }
+                          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pagingState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(find.logicalExpression().logicalExpressions).isEmpty();
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
   }

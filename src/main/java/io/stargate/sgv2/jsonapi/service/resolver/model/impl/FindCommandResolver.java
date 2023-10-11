@@ -39,13 +39,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
-    //    Log.error(
-    //        "logical expression before resolve ~~~ " +
-    // command.filterClause().logicalExpression());
     final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
-    //    Log.error("logical expression after resolve ~~~" + resolvedLogicalExpression);
-    //    List<DBFilterBase> filters = null;
-
     // limit and paging state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
