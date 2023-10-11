@@ -2,20 +2,20 @@ min_version: "5.17.3"
 
 # Example command line
 # Against AstraDB
-# nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
+# nb5 -v http-jsonapi-vector-insertmany docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
 # Against local JSON API
-# nb5 -v http-jsonapi-vector-crud jsonapi_host=localhost docscount=1000 threads=20
+# nb5 -v http-jsonapi-vector-insertmany jsonapi_host=localhost docscount=1000 threads=20
 
 description: >2
   This workload emulates vector insertmany operations for Stargate JSON API.
   It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
   1536 is a standard vector size that openAI embedding generates, using this size for benchmark
 
-scenarios:
-  default:
-    schema-namespace: run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
-    schema-collection: run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
-    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
+#scenarios:
+#  default:
+#    schema-namespace: run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+#    schema-collection: run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+#    write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -26,7 +26,7 @@ bindings:
   weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
 
   # spread into different spaces to use multiple connections
-  space: HashRange(1,<<connections:20>>); ToString();
+#  space: HashRange(1,<<connections:20>>); ToString();
 
   # http request id
   request_id: ToHashedUUID(); ToString();
@@ -97,9 +97,9 @@ blocks:
   write:
     ops:
       write-insert-many-vector:
-        params:
-          ratio: 5
-        space: "{space}"
+#        params:
+#          ratio: 5
+#        space: "{space}"
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_insertmany_namespace>>/<<collection:jsonapi_vector_insertmany_collection>>
         Accept: "application/json"
