@@ -3,11 +3,15 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Base64;
@@ -120,13 +124,25 @@ public class QueryExecutor {
     final Uni<Schema.CqlKeyspaceDescribe> cqlKeyspaceDescribeUni =
         stargateRequestInfo.getStargateBridge().describeKeyspace(describeKeyspaceQuery);
     return cqlKeyspaceDescribeUni
-        .onItem()
-        .transform(
-            cqlKeyspaceDescribe -> {
+        .onItemOrFailure()
+        .transformToUni(
+            (cqlKeyspaceDescribe, error) -> {
+              if (error != null
+                  && (error instanceof StatusRuntimeException sre
+                      && sre.getStatus().getCode() == Status.Code.NOT_FOUND)) {
+                return Uni.createFrom()
+                    .failure(
+                        new RuntimeException(
+                            new JsonApiException(
+                                ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                                "The provided namespace does not exist: " + namespace)));
+              }
               Schema.CqlTable cqlTable = null;
-              return cqlKeyspaceDescribe.getTablesList().stream()
-                  .filter(table -> table.getName().equals(collectionName))
-                  .findFirst();
+              return Uni.createFrom()
+                  .item(
+                      cqlKeyspaceDescribe.getTablesList().stream()
+                          .filter(table -> table.getName().equals(collectionName))
+                          .findFirst());
             });
   }
 
