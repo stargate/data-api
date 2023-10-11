@@ -132,6 +132,34 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void wrongNamespace() {
+      String json =
+          """
+          {
+            "find": {
+              "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+              "options" : {
+                  "limit" : 100
+              }
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", is("The provided namespace does not exist: something_else"))
+          .body("errors[0].errorCode", is("NAMESPACE_DOES_NOT_EXIST"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void noFilter() {
       String json =
           """
