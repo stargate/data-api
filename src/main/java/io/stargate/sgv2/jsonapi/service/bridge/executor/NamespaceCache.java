@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;

@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
@@ -44,7 +43,7 @@ public class FilterMatcher<T extends Command & Filterable> {
       if (filter == null
           || (filter.logicalExpression().logicalExpressions.isEmpty()
               && filter.logicalExpression().comparisonExpressions.isEmpty())) {
-        return Optional.of(LogicalExpression.and()); //TODO
+        return Optional.of(LogicalExpression.and()); // TODO
       } else {
         return Optional.empty();
       }
