@@ -68,11 +68,11 @@ public record CreateCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return schemaManager
         .getTable(commandContext.namespace(), name, MISSING_KEYSPACE_FUNCTION)
-        .onItemOrFailure()
+        .onItem()
         .transformToUni(
-            (table, error) -> {
+            table -> {
               // table doesn't exist
-              if (error == null) {
+              if (table == null) {
                 return executeQuery(queryExecutor);
               }
               // if table exists and user want to create a vector collection with the same name
@@ -98,10 +98,9 @@ public record CreateCollectionOperation(
                     // if settings are not equal, error out
                     return Uni.createFrom()
                         .failure(
-                            new RuntimeException(
-                                new JsonApiException(
-                                    ErrorCode.INVALID_COLLECTION_NAME,
-                                    "The provided collection already exists with a different vector setting")));
+                            new JsonApiException(
+                                ErrorCode.INVALID_COLLECTION_NAME,
+                                "The provided collection already exists with a different vector setting"));
                   }
                 } else {
                   // if existing collection is a non-vector collection, error out

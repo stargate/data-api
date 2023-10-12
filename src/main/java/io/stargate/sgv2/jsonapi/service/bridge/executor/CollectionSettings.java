@@ -115,21 +115,26 @@ public record CollectionSettings(
       String vectorize,
       ObjectMapper objectMapper) {
     // parse vectorize to get vectorizeServiceName and modelName
-    try {
-      JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
-      String vectorizeServiceName_ = vectorizeConfig.get("service").textValue();
-      final JsonNode optionsNode = vectorizeConfig.get("options");
-      String modelName_ = optionsNode.get("modelName").textValue();
+    if (vectorize != null && !vectorize.isBlank()) {
+      try {
+        JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
+        String vectorizeServiceName_ = vectorizeConfig.get("service").textValue();
+        final JsonNode optionsNode = vectorizeConfig.get("options");
+        String modelName_ = optionsNode.get("modelName").textValue();
+        return new CollectionSettings(
+            collectionName,
+            vectorEnabled,
+            vectorSize,
+            similarityFunction,
+            vectorizeServiceName_,
+            modelName_);
+      } catch (JsonProcessingException e) {
+        // This should never happen
+        throw new RuntimeException(e);
+      }
+    } else {
       return new CollectionSettings(
-          collectionName,
-          vectorEnabled,
-          vectorSize,
-          similarityFunction,
-          vectorizeServiceName_,
-          modelName_);
-    } catch (JsonProcessingException e) {
-      // This should never happen
-      throw new RuntimeException(e);
+          collectionName, vectorEnabled, vectorSize, similarityFunction, null, null);
     }
   }
 }
