@@ -81,17 +81,8 @@ public record CollectionSettings(
       }
       final String comment = table.getOptionsOrDefault("comment", null);
       if (comment != null && !comment.isBlank()) {
-        try {
-          JsonNode vectorizeConfig = objectMapper.readTree(comment);
-          String vectorizeServiceName = vectorizeConfig.get("service").textValue();
-          final JsonNode optionsNode = vectorizeConfig.get("options");
-          String modelName = optionsNode.get("modelName").textValue();
-          return new CollectionSettings(
-              collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
-        } catch (JsonProcessingException e) {
-          // This should never happen
-          throw new RuntimeException(e);
-        }
+        return createCollectionSettingsFromJson(
+            collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
       } else {
         return new CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, null, null);
@@ -116,25 +107,31 @@ public record CollectionSettings(
       ObjectMapper objectMapper) {
     // parse vectorize to get vectorizeServiceName and modelName
     if (vectorize != null && !vectorize.isBlank()) {
-      try {
-        JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
-        String vectorizeServiceName_ = vectorizeConfig.get("service").textValue();
-        final JsonNode optionsNode = vectorizeConfig.get("options");
-        String modelName_ = optionsNode.get("modelName").textValue();
-        return new CollectionSettings(
-            collectionName,
-            vectorEnabled,
-            vectorSize,
-            similarityFunction,
-            vectorizeServiceName_,
-            modelName_);
-      } catch (JsonProcessingException e) {
-        // This should never happen
-        throw new RuntimeException(e);
-      }
+      return createCollectionSettingsFromJson(
+          collectionName, vectorEnabled, vectorSize, similarityFunction, vectorize, objectMapper);
     } else {
       return new CollectionSettings(
           collectionName, vectorEnabled, vectorSize, similarityFunction, null, null);
+    }
+  }
+
+  private static CollectionSettings createCollectionSettingsFromJson(
+      String collectionName,
+      boolean vectorEnabled,
+      int vectorSize,
+      SimilarityFunction function,
+      String vectorize,
+      ObjectMapper objectMapper) {
+    try {
+      JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
+      String vectorizeServiceName = vectorizeConfig.get("service").textValue();
+      JsonNode optionsNode = vectorizeConfig.get("options");
+      String modelName = optionsNode.get("modelName").textValue();
+      return new CollectionSettings(
+          collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
+    } catch (JsonProcessingException e) {
+      // This should never happen
+      throw new RuntimeException(e);
     }
   }
 }
