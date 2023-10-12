@@ -2,8 +2,10 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -24,7 +26,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-
+  @Inject ObjectMapper objectMapper;
+  @Inject SchemaManager schemaManager;
   @Inject QueryExecutor queryExecutor;
 
   @Nested
@@ -37,7 +40,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
-          CreateCollectionOperation.withoutVectorSearch(commandContext, COLLECTION_NAME);
+          CreateCollectionOperation.withoutVectorSearch(
+              commandContext, objectMapper, schemaManager, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -59,7 +63,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContextUpper, COLLECTION_NAME.toUpperCase());
+              commandContextUpper, objectMapper, schemaManager, COLLECTION_NAME.toUpperCase());
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -79,7 +83,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "cosine", null);
+              commandContext, objectMapper, schemaManager, COLLECTION_NAME, 4, "cosine", null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -106,6 +110,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,
+              objectMapper,
+              schemaManager,
               COLLECTION_NAME,
               4,
               "cosine",
@@ -129,7 +135,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "dot_product", null);
+              commandContext, objectMapper, schemaManager, COLLECTION_NAME, 4, "dot_product", null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
