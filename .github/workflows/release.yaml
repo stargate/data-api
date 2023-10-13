@@ -17,7 +17,6 @@ jobs:
   # only executed if we have created the new release
   create-pr:
     name: Version upgrade PR
-    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
