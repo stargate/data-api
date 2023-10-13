@@ -5,9 +5,7 @@ name: Release Workflow
 # runs on
 # * pushing new tag with 'v' prefix
 # * manual trigger
-on:
-  push:
-      - '*'
+on: push
 
 # global env vars, available in all jobs and steps
 env:
