@@ -1,6 +1,4 @@
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-13...HEAD)
-**Closed issues:**
-- Reduce index columns [\#505](https://github.com/stargate/jsonapi/issues/505)
+# ChangeLog
 
 ## [v1.0.0-ALPHA-13](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-13) (2023-08-16)
 

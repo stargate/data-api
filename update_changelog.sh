@@ -9,7 +9,7 @@ cd -P -- "$(dirname -- "$0")" # switch to this dir
 echo 123123
 
 CHANGELOG_FILE=CHANGELOG.md
-previous_version=$(head -5 $CHANGELOG_FILE | grep "##" | awk -F']' '{print $1}' | cut -c 5-)
+previous_version=$(head -3 $CHANGELOG_FILE | grep "##" | awk -F']' '{print $1}' | cut -c 5-)
 echo $previous_version
 
 # Remove the header so we can append the additions
