@@ -124,14 +124,21 @@ public record CollectionSettings(
       ObjectMapper objectMapper) {
     try {
       JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
-      String vectorizeServiceName = vectorizeConfig.get("service").textValue();
-      JsonNode optionsNode = vectorizeConfig.get("options");
-      String modelName = optionsNode.get("modelName").textValue();
-      return new CollectionSettings(
-          collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
+      String vectorizeServiceName = vectorizeConfig.path("service").textValue();
+      JsonNode optionsNode = vectorizeConfig.path("options");
+      String modelName = optionsNode.path("modelName").textValue();
+      if (vectorizeServiceName != null
+          && !vectorizeServiceName.isEmpty()
+          && modelName != null
+          && !modelName.isEmpty()) {
+        return new CollectionSettings(
+            collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
+      } else {
+        throw new RuntimeException("Invalid json string");
+      }
     } catch (JsonProcessingException e) {
       // This should never happen
-      throw new RuntimeException(e);
+      throw new RuntimeException("Invalid json string");
     }
   }
 }
