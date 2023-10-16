@@ -1313,29 +1313,38 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void nestedAndOr() {
       String json =
           """
-{
-    "find": {
-        "filter": {
-            "$or": [
-                {
-                    "username": "user1"
-                },
-                {
-                    "$and": [
-                        {
-                            "username": "user3"
-                        },
-                        {
-                            "subdoc.id": {
-                                "$eq": "abc"
+            {
+                "find": {
+                    "filter": {
+                        "$and": [
+                            {
+                                "$or": [
+                                    {
+                                        "username": "user3"
+                                    },
+                                    {
+                                        "subdoc.id": {
+                                            "$eq": "abc"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "$or": [
+                                    {
+                                        "username": "user2"
+                                    },
+                                    {
+                                        "subdoc.id": {
+                                            "$eq": "xyz"
+                                        }
+                                    }
+                                ]
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
-            ]
-        }
-    }
-}
+            }
 
               """;
 
