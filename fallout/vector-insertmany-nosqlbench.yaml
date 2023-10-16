@@ -22,7 +22,7 @@ bindings:
   #   single host: jsonapi_host=host1
   #   multiple hosts: jsonapi_host=host1,host2,host3
   #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  weighted_hosts: WeightedStrings('<<stargate_host:jsonapi>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
