@@ -13,8 +13,7 @@ description: >2
 
 scenarios:
   default:
-    schema-namespace: run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
-    schema-collection: run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+    schema:   run driver=http tags==block:schema threads==1 cycles==UNDEF
     write:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,500)) threads=auto errors=timer,warn
 
 bindings:
@@ -39,24 +38,7 @@ bindings:
   vector_json: HashedLineToString('<<dataset:vector-dataset.txt>>');
 
 blocks:
-  schema-namespace:
-    ops:
-      create-namespace:
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
-        Content-Type: "application/json"
-        ok-body: ".*\"ok\":1.*"
-        body: >2
-          {
-            "createNamespace": {
-              "name": "<<namespace:jsonapi_vector_insertmany_namespace>>"
-            }
-          }
-
-  schema-collection:
+  schema:
     ops:
       delete-collection:
         method: POST
@@ -69,7 +51,7 @@ blocks:
         body: >2
           {
             "deleteCollection": {
-              "name": "<<collection:jsonapi_vector_insertmany_collection>>"
+              "name": "<<collection:jsonapi_vector_crud_collection>>"
             }
           }
       create-collection:
@@ -84,7 +66,7 @@ blocks:
         body: >2
           {
             "createCollection": {
-              "name": "<<collection:jsonapi_vector_insertmany_collection>>",
+              "name": "<<collection:jsonapi_vector_crud_collection>>",
               "options": {
                           "vector": {
                               "size": 1536
