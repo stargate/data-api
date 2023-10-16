@@ -85,10 +85,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     } else if (entry.getValue().isArray()) {
       LogicalExpression innerLogicalExpression = null;
       switch (entry.getKey()) {
-        case DocumentConstants.Fields.LOGICAL_AND:
+        case LogicalExpression.AND_OPERATOR:
           innerLogicalExpression = LogicalExpression.and();
           break;
-        case DocumentConstants.Fields.LOGICAL_OR:
+        case LogicalExpression.OR_OPERATOR:
           innerLogicalExpression = LogicalExpression.or();
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
@@ -137,7 +137,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           ErrorCode.INVALID_FILTER_EXPRESSION,
           String.format(
               "Cannot filter on '%s' field within '%s'",
-              DocumentConstants.Fields.DOC_ID, DocumentConstants.Fields.LOGICAL_OR));
+              DocumentConstants.Fields.DOC_ID, LogicalExpression.LogicalOperator.OR.getOperator()));
     }
 
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {

@@ -9,12 +9,6 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
 
-    /** logical expression and filter */
-    String LOGICAL_AND = "$and";
-
-    /** logical expression or filter */
-    String LOGICAL_OR = "$or";
-
     /**
      * Atomic values are added to the array_contains field to support $eq on both atomic value and
      * array element

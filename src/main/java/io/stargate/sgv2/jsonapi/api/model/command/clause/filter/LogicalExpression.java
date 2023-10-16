@@ -12,8 +12,24 @@ import java.util.*;
  */
 public class LogicalExpression {
 
+  public enum LogicalOperator{
+    AND("$and"),
+    OR("$or");
+    private String operator;
+
+    LogicalOperator(String operator) {
+      this.operator = operator;
+    }
+    public String getOperator() {
+      return operator;
+    }
+  }
+  public static final String OR_OPERATOR = "$or";
+  public static final String AND_OPERATOR = "$and";
   public static final String OR = "or";
   public static final String AND = "and";
+
+
 
   @NotBlank(message = "logical relation of attribute logicalExpressions")
   String logicalRelation;
