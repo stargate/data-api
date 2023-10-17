@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -39,9 +41,12 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, false, 0, null, null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
+      SchemaManager schemaManagerMock = mock(SchemaManager.class);
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
+
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContext, objectMapper, schemaManager, COLLECTION_NAME);
+              commandContext, objectMapper, schemaManagerMock, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
