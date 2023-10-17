@@ -25,6 +25,50 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   @Nested
   @Order(1)
   class CreateCollection {
+    String deleteCollectionJson =
+        """
+            {
+              "deleteCollection": {
+                "name": "simple_collection"
+              }
+            }
+            """;
+    String createNonVectorCollectionJson =
+        """
+            {
+              "createCollection": {
+                "name": "simple_collection"
+              }
+            }
+            """;
+    String createVectorCollection =
+        """
+            {
+              "createCollection": {
+                "name": "simple_collection",
+                "options" : {
+                  "vector" : {
+                  "size" : 5,
+                    "function" : "cosine"
+                  }
+                }
+              }
+            }
+            """;
+    String createVectorCollectionWithOtherSettings =
+        """
+            {
+              "createCollection": {
+                "name": "simple_collection",
+                "options" : {
+                  "vector" : {
+                  "size" : 6,
+                    "function" : "cosine"
+                  }
+                }
+              }
+            }
+            """;
 
     @Test
     public void happyPath() {
@@ -50,51 +94,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void duplicateCollectionName() {
-      String deleteCollectionJson =
-          """
-          {
-            "deleteCollection": {
-              "name": "simple_collection"
-            }
-          }
-          """;
-      String createNonVectorCollectionJson =
-          """
-          {
-            "createCollection": {
-              "name": "simple_collection"
-            }
-          }
-          """;
-      String createVectorCollection =
-          """
-          {
-            "createCollection": {
-              "name": "simple_collection",
-              "options" : {
-                "vector" : {
-                "size" : 5,
-                  "function" : "cosine"
-                }
-              }
-            }
-          }
-          """;
-      String createVectorCollectionWithOtherSettings =
-          """
-          {
-            "createCollection": {
-              "name": "simple_collection",
-              "options" : {
-                "vector" : {
-                "size" : 6,
-                  "function" : "cosine"
-                }
-              }
-            }
-          }
-          """;
+    public void duplicateNonVectorCollectionName() {
       // create a non vector collection
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -143,7 +143,10 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+    }
 
+    @Test
+    public void duplicateVectorCollectionName() {
       // create a vector collection
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -154,7 +157,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-
       // recreate the same vector collection
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -165,7 +167,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-
       // create a non vector collection with the same name
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -176,7 +177,30 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+      // delete the collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(deleteCollectionJson.formatted("simple_collection"))
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
 
+    @Test
+    public void duplicateVectorCollectionNameWithDiffSetting() {
+      // create a vector collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createVectorCollection)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
       // create another vector collection with the same name but different setting
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -193,6 +217,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               is("The provided collection already exists with a different vector setting"))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+      // delete the collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(deleteCollectionJson.formatted("simple_collection"))
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
     }
   }
 
