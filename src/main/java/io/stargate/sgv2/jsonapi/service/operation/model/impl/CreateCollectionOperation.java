@@ -69,13 +69,9 @@ public record CreateCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return schemaManager
         .getTable(commandContext.namespace(), name, MISSING_KEYSPACE_FUNCTION)
-        .onItemOrFailure()
+        .onItem()
         .transformToUni(
-            (table, error) -> {
-              // if getTable return null, continue
-              if (error != null) {
-                return executeCollectionCreation(queryExecutor);
-              }
+            table -> {
               // table doesn't exist
               if (table == null) {
                 return executeCollectionCreation(queryExecutor);
