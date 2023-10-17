@@ -179,7 +179,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
