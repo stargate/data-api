@@ -99,57 +99,6 @@ blocks:
                 },
                 {
                   "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
-                },
-                {
-                  "$vector": {vector_json}
                 }
               ]
             }
