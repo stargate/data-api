@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Optional;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
+
 /**
  * Refactored as seperate class that represent a collection property.
  *
@@ -134,11 +136,12 @@ public record CollectionSettings(
         return new CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
       } else {
-        throw new RuntimeException("Invalid json string");
+        // This should never happen, VectorizeConfig check null, unless it fails
+        throw new JsonApiException(VECTORIZECONFIG_CHECK_FAIL);
       }
     } catch (JsonProcessingException e) {
-      // This should never happen
-      throw new RuntimeException("Invalid json string");
+      // This should never happen, already check if vectorize is a valid JSON
+      throw new RuntimeException("Invalid json string", e);
     }
   }
 }
