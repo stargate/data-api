@@ -113,8 +113,6 @@ public enum ErrorCode {
 
   VECTORIZECONFIG_CHECK_FAIL("VectorizeConfig check null fail");
 
-
-
   private final String message;
 
   ErrorCode(String message) {
