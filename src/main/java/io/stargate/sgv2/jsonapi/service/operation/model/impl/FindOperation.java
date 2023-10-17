@@ -338,7 +338,8 @@ public record FindOperation(
             ReadType.DOCUMENT == readType,
             objectMapper,
             projection,
-            limit());
+            limit(),
+            filters());
       }
       default -> {
         JsonApiException failure =

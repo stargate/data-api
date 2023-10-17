@@ -13,6 +13,7 @@ import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -44,6 +46,10 @@ public interface ReadOperation extends Operation {
           "query_null_values['%s']",
           "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
+
+  String responseDoc = """
+          {"_id" : "%s", "value" : "test"}
+          """;
   /**
    * Default implementation to query and parse the result set
    *
@@ -65,8 +71,20 @@ public interface ReadOperation extends Operation {
       boolean readDocument,
       ObjectMapper objectMapper,
       DocumentProjector projection,
-      int limit) {
-
+      int limit,
+      List<DBFilterBase> filters) {
+    if (Boolean.getBoolean("MOCK_BRIDGE")) {
+      try {
+        DBFilterBase.IDFilter filter = (DBFilterBase.IDFilter) filters.get(0);
+        DocumentId id = filter.getValue();
+        final ReadDocument from =
+            ReadDocument.from(
+                id, UUID.randomUUID(), objectMapper.readTree(responseDoc.formatted(id.asDBKey())));
+        return Uni.createFrom().item(new FindResponse(List.of(from), null));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
     return Multi.createFrom()
         .items(queries.stream())
         .onItem()

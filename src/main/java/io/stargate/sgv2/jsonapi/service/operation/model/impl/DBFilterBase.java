@@ -245,6 +245,10 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return null;
     }
 
+    public DocumentId getValue() {
+      return values.get(0);
+    }
+
     public List<BuiltCondition> getAll() {
       switch (operator) {
         case EQ:
