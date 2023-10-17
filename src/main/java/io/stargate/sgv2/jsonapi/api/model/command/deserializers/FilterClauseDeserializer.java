@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.logging.Log;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -73,7 +72,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         populateExpression(logicalExpression, next);
       }
     } else {
-      Log.error("should never reach here");
+      throw new JsonApiException(
+          ErrorCode.INVALID_FILTER_EXPRESSION,
+          String.format(
+              "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+              DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
     }
   }
 
@@ -85,10 +88,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     } else if (entry.getValue().isArray()) {
       LogicalExpression innerLogicalExpression = null;
       switch (entry.getKey()) {
-        case LogicalExpression.AND_OPERATOR:
+        case "$and":
           innerLogicalExpression = LogicalExpression.and();
           break;
-        case LogicalExpression.OR_OPERATOR:
+        case "$or":
           innerLogicalExpression = LogicalExpression.or();
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
@@ -97,6 +100,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               String.format(
                   "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
                   DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
+        default:
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION,
+              String.format("Cannot filter on '%s' by array type", entry.getKey()));
       }
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
       for (JsonNode next : arrayNode) {
@@ -110,7 +117,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   private void validate(LogicalExpression logicalExpression) {
-    if (logicalExpression.totalIdComparisonExpressionCount > 1) {
+    if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
       throw new JsonApiException(
           ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
     }
@@ -130,8 +137,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   private void validate(
-      String path, FilterOperation<?> filterOperation, String fromLogicalRelation) {
-    if (fromLogicalRelation.equals(LogicalExpression.OR)
+      String path,
+      FilterOperation<?> filterOperation,
+      LogicalExpression.LogicalOperator fromLogicalRelation) {
+    if (fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)
         && path.equals(DocumentConstants.Fields.DOC_ID)) {
       throw new JsonApiException(
           ErrorCode.INVALID_FILTER_EXPRESSION,

@@ -2937,7 +2937,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                 objectMapper);
 
         List<Expression<BuiltCondition>> expressions1 =
-            FindOperation.buildExpressions(operation1.logicalExpression(), null);
+            ExpressionBuilder.buildExpressions(operation1.logicalExpression(), null);
 
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -2959,7 +2959,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                 objectMapper);
 
         List<Expression<BuiltCondition>> expressions2 =
-            FindOperation.buildExpressions(operation2.logicalExpression(), null);
+            ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
     }

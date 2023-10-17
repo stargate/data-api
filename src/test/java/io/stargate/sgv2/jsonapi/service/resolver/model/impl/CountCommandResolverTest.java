@@ -45,8 +45,8 @@ public class CountCommandResolverTest {
         .satisfies(
             op -> {
               CountOperation countOperation = (CountOperation) op;
-              assertThat(countOperation.logicalExpression().totalComparisonExpressionCount)
-                  .isEqualTo(expected.logicalExpression().totalComparisonExpressionCount);
+              assertThat(countOperation.logicalExpression().getTotalComparisonExpressionCount())
+                  .isEqualTo(expected.logicalExpression().getTotalComparisonExpressionCount());
             });
   }
 

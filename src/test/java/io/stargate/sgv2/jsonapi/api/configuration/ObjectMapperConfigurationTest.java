@@ -75,7 +75,7 @@ class ObjectMapperConfigurationTest {
 
                 FilterClause filterClause = findOne.filterClause();
                 assertThat(filterClause).isNotNull();
-                assertThat(filterClause.logicalExpression().totalComparisonExpressionCount)
+                assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
                 assertThat(filterClause.logicalExpression().comparisonExpressions)
                     .singleElement()
@@ -262,7 +262,7 @@ class ObjectMapperConfigurationTest {
               cmd -> {
                 FilterClause filterClause = cmd.filterClause();
                 assertThat(filterClause).isNotNull();
-                assertThat(filterClause.logicalExpression().totalComparisonExpressionCount)
+                assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
 
                 assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())

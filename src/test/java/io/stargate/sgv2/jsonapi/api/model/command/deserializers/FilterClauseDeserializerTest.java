@@ -204,7 +204,7 @@ public class FilterClauseDeserializerTest {
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().totalComparisonExpressionCount).isEqualTo(1);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
       assertThat(
               filterClause
                   .logicalExpression()
@@ -325,7 +325,7 @@ public class FilterClauseDeserializerTest {
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
       assertThat(
               filterClause
                   .logicalExpression()
@@ -545,7 +545,7 @@ public class FilterClauseDeserializerTest {
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
       assertThat(
               filterClause
                   .logicalExpression()
@@ -740,7 +740,7 @@ public class FilterClauseDeserializerTest {
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().totalComparisonExpressionCount).isEqualTo(4);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(4);
       assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
           .hasSize(2);
       assertThat(

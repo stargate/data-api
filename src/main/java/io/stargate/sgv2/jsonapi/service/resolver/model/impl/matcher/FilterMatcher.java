@@ -43,39 +43,21 @@ public class FilterMatcher<T extends Command & Filterable> {
       if (filter == null
           || (filter.logicalExpression().logicalExpressions.isEmpty()
               && filter.logicalExpression().comparisonExpressions.isEmpty())) {
-        return Optional.of(LogicalExpression.and()); // TODO
+        return Optional.of(LogicalExpression.and());
       } else {
         return Optional.empty();
       }
     }
-
     if (filter == null) {
       return Optional.empty();
     }
-
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
     final MatchStrategyCounter matchStrategyCounter =
         new MatchStrategyCounter(
-            unmatchedCaptures.size(), filter.logicalExpression().totalComparisonExpressionCount);
+            unmatchedCaptures.size(),
+            filter.logicalExpression().getTotalComparisonExpressionCount());
     captureRecursive(filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
-
-    // these strategies should be abstracted if we have another one, only 2 for now.
-    switch (strategy) {
-      case STRICT:
-        if (matchStrategyCounter.unmatchedCaptureCount == 0
-            && matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
-          // everything group and expression matched
-          return Optional.of(filter.logicalExpression());
-        }
-        break;
-      case GREEDY:
-        if (matchStrategyCounter.unmatchedComparisonExpressionCount == 0) {
-          // everything expression matched, some captures may not match
-          return Optional.of(filter.logicalExpression());
-        }
-        break;
-    }
-    return Optional.empty();
+    return matchStrategyCounter.applyStrategy(strategy, filter);
   }
 
   public void captureRecursive(
@@ -100,11 +82,10 @@ public class FilterMatcher<T extends Command & Filterable> {
           switch (strategy) {
             case STRICT:
               captureIter.remove();
-              matchStrategyCounter.decreaseUnmatchedCaptureCount();
-              matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
+              matchStrategyCounter.strictMatch();
               break;
             case GREEDY:
-              matchStrategyCounter.decreaseUnmatchedComparisonExpressionCount();
+              matchStrategyCounter.greedyMatch();
               break;
           }
           break;
@@ -168,7 +149,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
   }
 
-  public final class MatchStrategyCounter {
+  public static final class MatchStrategyCounter {
 
     private int unmatchedCaptureCount;
     private int unmatchedComparisonExpressionCount;
@@ -178,12 +159,32 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.unmatchedComparisonExpressionCount = unmatchedComparisonExpressionCount;
     }
 
-    public void decreaseUnmatchedCaptureCount() {
+    public void strictMatch() {
       unmatchedCaptureCount--;
+      unmatchedComparisonExpressionCount--;
     }
 
-    public void decreaseUnmatchedComparisonExpressionCount() {
+    public void greedyMatch() {
       unmatchedComparisonExpressionCount--;
+    }
+
+    public Optional<LogicalExpression> applyStrategy(MatchStrategy strategy, FilterClause filter) {
+      // these strategies should be abstracted if we have another one, only 2 for now.
+      switch (strategy) {
+        case STRICT:
+          if (unmatchedCaptureCount == 0 && unmatchedComparisonExpressionCount == 0) {
+            // everything group and expression matched
+            return Optional.of(filter.logicalExpression());
+          }
+          break;
+        case GREEDY:
+          if (unmatchedComparisonExpressionCount == 0) {
+            // everything expression matched, some captures may not match
+            return Optional.of(filter.logicalExpression());
+          }
+          break;
+      }
+      return Optional.empty();
     }
   }
 }

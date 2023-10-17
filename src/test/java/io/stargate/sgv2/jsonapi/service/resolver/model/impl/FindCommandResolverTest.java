@@ -678,8 +678,9 @@ public class FindCommandResolverTest {
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
                 assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-                    .isEqualTo(LogicalExpression.AND);
-                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+                    .isEqualTo(LogicalExpression.LogicalOperator.AND);
+                assertThat(find.logicalExpression().getTotalComparisonExpressionCount())
+                    .isEqualTo(2);
                 assertThat(
                         find.logicalExpression()
                             .logicalExpressions
@@ -741,8 +742,9 @@ public class FindCommandResolverTest {
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
                 assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-                    .isEqualTo(LogicalExpression.OR);
-                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(2);
+                    .isEqualTo(LogicalExpression.LogicalOperator.OR);
+                assertThat(find.logicalExpression().getTotalComparisonExpressionCount())
+                    .isEqualTo(2);
                 assertThat(
                         find.logicalExpression()
                             .logicalExpressions
@@ -860,8 +862,9 @@ public class FindCommandResolverTest {
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.orderBy()).isNull();
                 assertThat(find.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-                    .isEqualTo(LogicalExpression.AND);
-                assertThat(find.logicalExpression().totalComparisonExpressionCount).isEqualTo(4);
+                    .isEqualTo(LogicalExpression.LogicalOperator.AND);
+                assertThat(find.logicalExpression().getTotalComparisonExpressionCount())
+                    .isEqualTo(4);
                 assertThat(
                         find.logicalExpression()
                             .logicalExpressions
@@ -888,7 +891,7 @@ public class FindCommandResolverTest {
                             .logicalExpressions
                             .get(0)
                             .getLogicalRelation())
-                    .isEqualTo(LogicalExpression.OR);
+                    .isEqualTo(LogicalExpression.LogicalOperator.OR);
                 assertThat(
                         find.logicalExpression()
                             .logicalExpressions

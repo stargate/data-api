@@ -21,9 +21,6 @@ public record FilterMatchRule<T extends Command & Filterable>(FilterMatcher<T> m
     implements BiFunction<CommandContext, T, Optional<LogicalExpression>> {
   @Override
   public Optional<LogicalExpression> apply(CommandContext commandContext, T command) {
-    // 用当前FilterMatchRule 的 matcher 去 尝试capture, 得到的captureGroups 里面   private final Map<Object,
-    // CaptureGroup<?>> groups; 然后CaptureGroup里 是 Map<String, List<FilterOperation<TYPE>>> captures
-
     return matcher.apply(command);
   }
 }

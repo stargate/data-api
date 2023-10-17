@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 
 /**
@@ -12,7 +11,7 @@ import java.util.*;
  */
 public class LogicalExpression {
 
-  public enum LogicalOperator{
+  public enum LogicalOperator {
     AND("$and"),
     OR("$or");
     private String operator;
@@ -20,28 +19,21 @@ public class LogicalExpression {
     LogicalOperator(String operator) {
       this.operator = operator;
     }
+
     public String getOperator() {
       return operator;
     }
   }
-  public static final String OR_OPERATOR = "$or";
-  public static final String AND_OPERATOR = "$and";
-  public static final String OR = "or";
-  public static final String AND = "and";
 
+  private final LogicalOperator logicalRelation;
+  private int totalComparisonExpressionCount;
+  private int totalIdComparisonExpressionCount;
 
-
-  @NotBlank(message = "logical relation of attribute logicalExpressions")
-  String logicalRelation;
-
-  public int totalComparisonExpressionCount;
-
-  public int totalIdComparisonExpressionCount;
   public List<LogicalExpression> logicalExpressions;
   public List<ComparisonExpression> comparisonExpressions;
 
   private LogicalExpression(
-      String logicalRelation,
+      LogicalOperator logicalRelation,
       int totalComparisonExpressionCount,
       List<LogicalExpression> logicalExpressions,
       List<ComparisonExpression> comparisonExpression) {
@@ -52,23 +44,21 @@ public class LogicalExpression {
   }
 
   public static LogicalExpression and() {
-    return new LogicalExpression(AND, 0, new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression(LogicalOperator.AND, 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public static LogicalExpression or() {
-    return new LogicalExpression(OR, 0, new ArrayList<>(), new ArrayList<>());
+    return new LogicalExpression(LogicalOperator.OR, 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {
-    if (logicalExpression == null) {
-      return;
-    }
-    totalComparisonExpressionCount += logicalExpression.totalComparisonExpressionCount;
-    totalIdComparisonExpressionCount += logicalExpression.totalIdComparisonExpressionCount;
+    // skip empty logic expression
     if (logicalExpression.logicalExpressions.isEmpty()
         && logicalExpression.comparisonExpressions.isEmpty()) {
       return;
     }
+    totalComparisonExpressionCount += logicalExpression.totalComparisonExpressionCount;
+    totalIdComparisonExpressionCount += logicalExpression.totalIdComparisonExpressionCount;
     logicalExpressions.add(logicalExpression);
   }
 
@@ -80,22 +70,26 @@ public class LogicalExpression {
     comparisonExpressions.add(comparisonExpression);
   }
 
-  public String getLogicalRelation() {
+  public LogicalOperator getLogicalRelation() {
     return logicalRelation;
   }
 
-  @Override
+  public int getTotalComparisonExpressionCount() {
+    return totalComparisonExpressionCount;
+  }
+
+  public int getTotalIdComparisonExpressionCount() {
+    return totalIdComparisonExpressionCount;
+  }
+
   public String toString() {
-    return "LogicalExpression{"
-        + "logicalRelation='"
-        + logicalRelation
-        + '\''
-        + ", totalComparisonExpressionCount="
-        + totalComparisonExpressionCount
-        + ", logicalExpressions="
-        + logicalExpressions
-        + ", comparisonExpressions="
-        + comparisonExpressions
-        + '}';
+    StringBuilder sb = new StringBuilder();
+    sb.append("LogicalExpression{");
+    sb.append("logicalRelation='").append(logicalRelation).append("'");
+    sb.append(", totalComparisonExpressionCount=").append(totalComparisonExpressionCount);
+    sb.append(", logicalExpressions=").append(logicalExpressions);
+    sb.append(", comparisonExpressions=").append(comparisonExpressions);
+    sb.append("}");
+    return sb.toString();
   }
 }

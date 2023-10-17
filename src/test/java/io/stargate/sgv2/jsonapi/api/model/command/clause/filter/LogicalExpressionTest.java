@@ -43,8 +43,8 @@ public class LogicalExpressionTest {
       and.addLogicalExpression(nestedOr);
       and.addComparisonExpression(comparisonExpression1);
 
-      assertThat(and.totalComparisonExpressionCount).isEqualTo(3);
-      assertThat(and.totalIdComparisonExpressionCount).isEqualTo(1);
+      assertThat(and.getTotalComparisonExpressionCount()).isEqualTo(3);
+      assertThat(and.getTotalIdComparisonExpressionCount()).isEqualTo(1);
     }
   }
 }
