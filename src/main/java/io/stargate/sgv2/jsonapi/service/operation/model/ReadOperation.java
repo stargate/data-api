@@ -73,7 +73,7 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection,
       int limit,
       List<DBFilterBase> filters) {
-    if (Boolean.getBoolean("MOCK_BRIDGE")) {
+    if (Boolean.getBoolean("MOCK_BRIDGE") || System.getenv("MOCK_BRIDGE") != null) {
       try {
         DBFilterBase.IDFilter filter = (DBFilterBase.IDFilter) filters.get(0);
         DocumentId id = filter.getValue();
