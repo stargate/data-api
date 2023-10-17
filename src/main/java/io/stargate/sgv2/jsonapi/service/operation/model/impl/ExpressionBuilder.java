@@ -69,7 +69,7 @@ public class ExpressionBuilder {
               Expression<BuiltCondition> newExpression =
                   expressionWithoutId == null
                       ? Variable.of(idCondition)
-                      : ExpressionUtils.OrderedAndOf(Variable.of(idCondition), expressionWithoutId);
+                      : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId);
               return newExpression;
             })
         .collect(Collectors.toList());
@@ -99,7 +99,7 @@ public class ExpressionBuilder {
           if (!inFilterConditions.isEmpty()) {
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
-            conditionExpressions.add(ExpressionUtils.OrderedOrOf(inConditionsVariables));
+            conditionExpressions.add(ExpressionUtils.orOf(inConditionsVariables));
           }
         } else if (dbFilter instanceof DBFilterBase.IDFilter idFilter) {
           if (additionalIdFilter == null) {
@@ -115,8 +115,7 @@ public class ExpressionBuilder {
     if (conditionExpressions.isEmpty()) {
       return null;
     }
-    return logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)
-        ? ExpressionUtils.OrderedAndOf(conditionExpressions)
-        : ExpressionUtils.OrderedOrOf(conditionExpressions);
+    return ExpressionUtils.buildExpression(
+        conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
   }
 }

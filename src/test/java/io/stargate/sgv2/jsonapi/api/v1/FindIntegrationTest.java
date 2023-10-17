@@ -1348,11 +1348,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
               """;
 
-      String expected1 =
-          """
-                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-                  """;
-      String expected2 =
+      String expected =
           """
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                   """;
@@ -1366,6 +1362,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
     }
 
