@@ -32,7 +32,8 @@ public record CreateCollectionOperation(
       MISSING_KEYSPACE_FUNCTION =
           keyspace -> {
             String message =
-                "Unknown namespace '%s', you must create it first.".formatted(keyspace);
+                "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
+                    .formatted(keyspace);
             Exception exception = new JsonApiException(ErrorCode.NAMESPACE_DOES_NOT_EXIST, message);
             return Uni.createFrom().failure(exception);
           };
