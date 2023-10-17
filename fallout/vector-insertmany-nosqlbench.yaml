@@ -89,88 +89,68 @@ blocks:
         ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2
           {
-            "insertMany" : {
-              "documents" : [
+            "insertMany": {
+              "documents": [
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
-                },  
-                {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
+                  "$vector": {vector_json}
                 },
                 {
-                    "_id" :         "{seq_key}",
-                    "$vector" :      {vector_json}
-                },  
+                  "$vector": {vector_json}
+                },
+                {
+                  "$vector": {vector_json}
+                }
               ]
             }
           }
