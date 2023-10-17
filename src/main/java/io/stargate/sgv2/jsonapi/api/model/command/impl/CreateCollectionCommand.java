@@ -41,12 +41,12 @@ public record CreateCollectionCommand(
           VectorizeConfig vectorize) {
 
     public record VectorSearchConfig(
-        @Positive(message = "size should be greater than `0`")
+        @Positive(message = "dimension should be greater than `0`")
             @Schema(
-                description = "Vector field embedding size",
+                description = "Dimension of the vector field",
                 type = SchemaType.INTEGER,
                 implementation = Integer.class)
-            Integer size,
+            Integer dimension,
         @Nullable
             @Pattern(
                 regexp = "(dot_product|cosine|euclidean)",
@@ -57,10 +57,10 @@ public record CreateCollectionCommand(
                 defaultValue = "cosine",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            String function) {
-      public VectorSearchConfig(Integer size, String function) {
-        this.size = size;
-        this.function = function == null ? "cosine" : function;
+            String metric) {
+      public VectorSearchConfig(Integer dimension, String metric) {
+        this.dimension = dimension;
+        this.metric = metric == null ? "cosine" : metric;
       }
     }
 

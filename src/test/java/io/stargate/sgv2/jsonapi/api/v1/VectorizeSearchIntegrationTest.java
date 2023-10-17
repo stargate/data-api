@@ -37,8 +37,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                     "name" : "my_collection_vectorize",
                     "options": {
                       "vector": {
-                        "size": 5,
-                        "function": "cosine"
+                        "dimension": 5,
+                        "metric": "cosine"
                       },
                       "vectorize": {
                         "service" : "custom",

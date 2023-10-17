@@ -35,8 +35,8 @@ public class CreateCollectionResolverVectorDisabledTest {
               "name" : "my_collection",
               "options": {
                 "vector": {
-                  "size": 4,
-                  "function": "cosine"
+                  "dimension": 4,
+                  "metric": "cosine"
                 }
               }
             }
