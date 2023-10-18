@@ -21,7 +21,7 @@ public class CQLSessionHandler {
     }
   }
 
-  private static synchronized void init() {
+  private static void init() {
     if (isInitialed) {
       return;
     }
