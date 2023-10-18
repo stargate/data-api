@@ -4,6 +4,8 @@ import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
 import com.bpodgursky.jbool_expressions.Variable;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -26,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -321,17 +324,19 @@ public record FindOperation(
               "select key, tx_id, doc_json from %s where key = (1, '%s');",
               tableName, id.asDBKey());
 
-      var rows = CQLSessionHandler.getSession().execute(cql);
-      var row = rows.one();
+      ResultSet rows = CQLSessionHandler.getSession().execute(cql);
+      Row row = rows.one();
 
       try {
-        var readDocument =
+        if (row == null) {
+          return Uni.createFrom().item(new FindResponse(Collections.emptyList(), null));
+        }
+        ReadDocument responseDoc =
             ReadDocument.from(
                 DocumentId.fromString(id.asDBKey()),
                 row.getUuid("tx_id"),
                 objectMapper.readTree(row.getString("doc_json")));
-
-        return Uni.createFrom().item(new FindResponse(List.of(readDocument), null));
+        return Uni.createFrom().item(new FindResponse(List.of(responseDoc), null));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
