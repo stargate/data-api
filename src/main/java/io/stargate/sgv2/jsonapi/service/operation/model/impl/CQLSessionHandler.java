@@ -67,7 +67,7 @@ public class CQLSessionHandler {
           session = cqlSessionBuilder.build();
         }
       } catch (Exception e) {
-        logger.error("Error while creating CQL session", e);
+        throw new RuntimeException(e);
       }
     }
     isInitialed = true;
