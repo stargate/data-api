@@ -65,7 +65,7 @@ public class CQLSessionHandler {
             CqlSession.builder()
                 .withCloudSecureConnectBundle(
                     Paths.get(
-                        CQLSessionHandler.class.getClassLoader().getResource("cql.zip").toURI()))
+                        CQLSessionHandler.class.getClassLoader().getResource("json.zip").toURI()))
                 .withAuthCredentials(
                     "token",
                     "AstraCS:zZehRZfHFfykFmDCzipEnJMZ:169baaa8bc7d3c8c875aeaa913289eb28b0c283ecc5792c1274cd6ea0019bfb0")
