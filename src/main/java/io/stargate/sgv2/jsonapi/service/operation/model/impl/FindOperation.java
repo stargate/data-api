@@ -4,6 +4,7 @@ import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
 import com.bpodgursky.jbool_expressions.Variable;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -25,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -311,6 +313,59 @@ public record FindOperation(
   public Uni<FindResponse> getDocuments(
       QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
 
+    if (Boolean.getBoolean("MOCK_BRIDGE") || System.getenv("MOCK_BRIDGE") != null) {
+
+      // Dev 5 testing
+      //      var token =
+      // "AstraCS:zZehRZfHFfykFmDCzipEnJMZ:169baaa8bc7d3c8c875aeaa913289eb28b0c283ecc5792c1274cd6ea0019bfb0";
+      //      var contactHost =
+      // "cndb-coordinators.3f5e34ca-99e6-4d06-b7a2-08131921a1c7.svc.cluster.local";
+      //      var port = 9042;
+      //      var keyspace =
+      // "33663565333463612d393965362d346430362d623761322d303831333139323161316337_baselines";
+      //      var table = "keyvalue";
+      // var user = "token"
+
+      // local testing
+      var token = "cassandra";
+      var contactHost = "127.0.0.1";
+      var port = 9042;
+      var keyspace = "perf_test";
+      var table = "keyvalue";
+      var user = "cassandra";
+
+      // UPTO - create the session as a static var and reuse it
+      var session =
+          CqlSession.builder()
+              .withAuthCredentials(user, token)
+              .addContactPoint(new InetSocketAddress(contactHost, port))
+              .withLocalDatacenter("datacenter1") // not sure if we want to use this in the astra
+              .withKeyspace(keyspace)
+              .build();
+
+      DBFilterBase.IDFilter filter = (DBFilterBase.IDFilter) filters.get(0);
+      DocumentId id = filter.values.get(0);
+
+      var cql =
+          String.format(
+              "select key, tx_id, doc_json from %s where key = (1, '%s');", table, id.asDBKey());
+
+      var rows = session.execute(cql);
+      var row = rows.one();
+
+      try {
+        var readDocument =
+            ReadDocument.from(
+                DocumentId.fromString(id.asDBKey()),
+                row.getUuid("tx_id"),
+                objectMapper.readTree(row.getString("doc_json")));
+
+        return Uni.createFrom().item(new FindResponse(List.of(readDocument), null));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
     switch (readType) {
@@ -517,6 +572,7 @@ public record FindOperation(
           .build();
     }
   }
+
   /**
    * A separate method to build vector search query by using expression, expression can contain
    * logic operations like 'or','and'..
@@ -583,6 +639,7 @@ public record FindOperation(
           .build();
     }
   }
+
   /**
    * Builds select query based on filters, sort fields and additionalIdFilter overrides.
    *
