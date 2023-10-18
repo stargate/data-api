@@ -10,8 +10,21 @@ public class CQLSessionHandler {
   private static final Logger logger = LoggerFactory.getLogger(CQLSessionHandler.class);
 
   private static CqlSession session;
+  private static boolean isInitialed;
 
-  static {
+  protected static CqlSession getSession() {
+    if (isInitialed) {
+      return session;
+    } else {
+      init();
+      return session;
+    }
+  }
+
+  private static synchronized void init() {
+    if (isInitialed) {
+      return;
+    }
     if (Boolean.getBoolean("MOCK_BRIDGE") || System.getenv("MOCK_BRIDGE") != null) {
       try {
 
@@ -57,9 +70,6 @@ public class CQLSessionHandler {
         logger.error("Error while creating CQL session", e);
       }
     }
-  }
-
-  public static CqlSession getSession() {
-    return session;
+    isInitialed = true;
   }
 }
