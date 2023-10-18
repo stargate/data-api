@@ -77,22 +77,22 @@ public record CreateCollectionOperation(
               if (table == null) {
                 return executeCollectionCreation(queryExecutor);
               }
+              // get collection settings from the existing collection
+              CollectionSettings collectionSettings =
+                  CollectionSettings.getCollectionSettings(table, objectMapper);
+              // get collection settings from user input
+              CollectionSettings collectionSettings_cur =
+                  CollectionSettings.getCollectionSettings(
+                      name,
+                      vectorSearch,
+                      vectorSize,
+                      CollectionSettings.SimilarityFunction.fromString(vectorFunction),
+                      vectorize,
+                      objectMapper);
               // if table exists and user want to create a vector collection with the same name
               if (vectorSearch) {
-                // get collection settings from the existing collection
-                CollectionSettings collectionSettings =
-                    CollectionSettings.getCollectionSettings(table, objectMapper);
                 // if existing collection is a vector collection
                 if (collectionSettings.vectorEnabled()) {
-                  // get collection settings from user input
-                  CollectionSettings collectionSettings_cur =
-                      CollectionSettings.getCollectionSettings(
-                          name,
-                          vectorSearch,
-                          vectorSize,
-                          CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-                          vectorize,
-                          objectMapper);
                   if (collectionSettings.equals(collectionSettings_cur)) {
                     // if settings are equal, no error
                     return executeCollectionCreation(queryExecutor);
@@ -112,9 +112,19 @@ public record CreateCollectionOperation(
                               ErrorCode.INVALID_COLLECTION_NAME,
                               "The provided collection already exists with a non-vector setting"));
                 }
+              } else { // if table exists and user want to create a non-vector collection
+                // if existing table is vector enabled, error out
+                if (collectionSettings.vectorEnabled()) {
+                  return Uni.createFrom()
+                      .failure(
+                          new JsonApiException(
+                              ErrorCode.INVALID_COLLECTION_NAME,
+                              "The provided collection already exists with a vector setting"));
+                } else {
+                  // if existing table is a non-vector collection, continue
+                  return executeCollectionCreation(queryExecutor);
+                }
               }
-              // if table exists and user want to create a non-vector collection, continue
-              return executeCollectionCreation(queryExecutor);
             });
   }
 

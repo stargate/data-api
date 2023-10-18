@@ -55,7 +55,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
             }
             """;
-    String createVectorCollectionWithOtherSettings =
+    String createVectorCollectionWithOtherSizeSettings =
         """
             {
               "createCollection": {
@@ -69,6 +69,20 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
             }
             """;
+    String createVectorCollectionWithOtherFunctionSettings =
+        """
+                {
+                  "createCollection": {
+                    "name": "simple_collection",
+                    "options" : {
+                      "vector" : {
+                      "size" : 5,
+                        "function" : "euclidean"
+                      }
+                    }
+                  }
+                }
+                """;
 
     @Test
     public void happyPath() {
@@ -175,8 +189,13 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              is("The provided collection already exists with a vector setting"))
+          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
       // delete the collection
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -201,11 +220,27 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-      // create another vector collection with the same name but different setting
+      // create another vector collection with the same name but different size setting
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(createVectorCollectionWithOtherSettings)
+          .body(createVectorCollectionWithOtherSizeSettings)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              is("The provided collection already exists with a different vector setting"))
+          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+      // create another vector collection with the same name but different function setting
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createVectorCollectionWithOtherFunctionSettings)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
