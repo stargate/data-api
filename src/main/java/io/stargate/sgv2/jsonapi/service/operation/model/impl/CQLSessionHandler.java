@@ -1,7 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import java.nio.file.Paths;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,17 +66,20 @@ public class CQLSessionHandler {
                   .withKeyspace(keyspace)
                   .build();
         } else {*/
-        session =
-            CqlSession.builder()
-                .withCloudSecureConnectBundle(
-                    Paths.get(
-                        CQLSessionHandler.class.getClassLoader().getResource("json.zip").toURI()))
-                .withAuthCredentials(
-                    "token",
-                    "AstraCS:zZehRZfHFfykFmDCzipEnJMZ:169baaa8bc7d3c8c875aeaa913289eb28b0c283ecc5792c1274cd6ea0019bfb0")
-                .withKeyspace("baselines")
-                .build();
-        // }
+        final Map<String, String> env = new HashMap<>();
+        URI uri = CQLSessionHandler.class.getClassLoader().getResource("json.zip").toURI();
+        final String[] array = uri.toString().split("!");
+        try (final FileSystem fs = FileSystems.newFileSystem(URI.create(array[0]), env); ) {
+          final Path path = fs.getPath(array[1]);
+          session =
+              CqlSession.builder()
+                  .withCloudSecureConnectBundle(path)
+                  .withAuthCredentials(
+                      "token",
+                      "AstraCS:zZehRZfHFfykFmDCzipEnJMZ:169baaa8bc7d3c8c875aeaa913289eb28b0c283ecc5792c1274cd6ea0019bfb0")
+                  .withKeyspace("baselines")
+                  .build();
+        }
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
