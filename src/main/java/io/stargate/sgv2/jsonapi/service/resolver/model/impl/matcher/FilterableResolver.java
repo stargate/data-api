@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonO
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ElementComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -45,6 +46,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+  @Inject DocumentLimitsConfig docLimits;
 
   @Inject
   public FilterableResolver() {
@@ -101,6 +103,16 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected List<DBFilterBase> resolve(CommandContext commandContext, T command) {
+    List<DBFilterBase> filter = matchRules.apply(commandContext, command);
+    if (filter.size() > docLimits.maxObjectProperties()) {
+      throw new JsonApiException(
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+              String.format(
+                      "%s: number of fields in filter has (%d) exceeds maximum allowed (%s)",
+                      ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                      filter.size(),
+                      docLimits.maxObjectProperties()));
+    }
     return matchRules.apply(commandContext, command);
   }
 
