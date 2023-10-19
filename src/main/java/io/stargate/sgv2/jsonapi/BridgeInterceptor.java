@@ -90,7 +90,7 @@ public class BridgeInterceptor implements ClientInterceptor, Prioritized {
 
   @Override
   public int getPriority() {
-    return -1;
+    return 10;
   }
 
   private static final class HeaderAttachingClientCall<ReqT, RespT>
@@ -106,10 +106,10 @@ public class BridgeInterceptor implements ClientInterceptor, Prioritized {
     public void start(ClientCall.Listener<RespT> responseListener, Metadata headers) {
       if (this.extraHeaders != null) {
         headers.merge(this.extraHeaders);
-        headers.put(
-            Metadata.Key.of("Host", Metadata.ASCII_STRING_MARSHALLER),
-            "3f5e34ca-99e6-4d06-b7a2-08131921a1c7-europe-west4.apps.astra.datastax.com");
       }
+      headers.put(
+              Metadata.Key.of("Host", Metadata.ASCII_STRING_MARSHALLER),
+              "3f5e34ca-99e6-4d06-b7a2-08131921a1c7-europe-west4.apps.astra.datastax.com");
       super.start(responseListener, headers);
     }
   }
