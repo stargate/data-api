@@ -22,11 +22,20 @@ import io.smallrye.config.WithDefault;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
 public interface OperationsConfig {
+
+  /** @return keyspace that will be used by json-api, <code>default_namespace</> */
+  @NotNull
+  @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+  @Size(min = 1, max = 48)
+  @WithDefault("default_keyspace")
+  String keyspace();
 
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)

@@ -1,11 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -20,6 +21,8 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
@@ -38,25 +41,29 @@ public class GeneralResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
+  @Inject private StargateRequestInfo stargateRequestInfo;
+
+  @Inject private OperationsConfig operationsConfig;
+
   @Inject
   public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
     this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
-  @Operation(summary = "Execute command", description = "Executes a single general command.")
+  @Operation(
+      summary = "Execute command",
+      description = "Executes a single command against a collection.")
+  @Parameters(value = {@Parameter(name = "namespace", ref = "namespace")})
   @RequestBody(
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema =
-                  @Schema(
-                      anyOf = {CreateEmbeddingServiceCommand.class, CreateNamespaceCommand.class}),
+              schema = @Schema(anyOf = {CreateCollectionCommand.class}),
               examples = {
-                @ExampleObject(ref = "createEmbeddingService"),
-                @ExampleObject(ref = "createNamespace"),
-                @ExampleObject(ref = "createNamespaceWithReplication"),
-                @ExampleObject(ref = "findNamespaces"),
-                @ExampleObject(ref = "dropNamespace"),
+                @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "createCollectionVectorSearch"),
+                @ExampleObject(ref = "findCollections"),
+                @ExampleObject(ref = "deleteCollection"),
               }))
   @APIResponses(
       @APIResponse(
@@ -69,15 +76,18 @@ public class GeneralResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCreate"),
-                    @ExampleObject(ref = "resultFindNamespaces"),
+                    @ExampleObject(ref = "resultFindCollections"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST
-  public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
+  public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid NamespaceCommand command) {
+
+    // create context
+    CommandContext commandContext = new CommandContext(operationsConfig.keyspace(), null);
 
     // call processor
     return meteredCommandProcessor
-        .processCommand(CommandContext.empty(), command)
+        .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }

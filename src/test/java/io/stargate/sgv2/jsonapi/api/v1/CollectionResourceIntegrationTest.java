@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
-class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CollectionResourceIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   class ClientErrors {
@@ -31,7 +31,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(401)
           .body(
@@ -47,7 +47,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
@@ -69,36 +69,11 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
           .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
-    }
-
-    @Test
-    public void invalidNamespaceName() {
-      String json =
-          """
-          {
-            "insertOne": {
-                "document": {}
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
-          .then()
-          .statusCode(200)
-          .body(
-              "errors[0].message",
-              startsWith("Request invalid, the field postCommand.namespace not valid"))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
     }
 
     @Test
@@ -117,7 +92,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
+          .post(CollectionResource.BASE_PATH, "7_no_leading_number")
           .then()
           .statusCode(200)
           .body(
@@ -132,7 +107,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))

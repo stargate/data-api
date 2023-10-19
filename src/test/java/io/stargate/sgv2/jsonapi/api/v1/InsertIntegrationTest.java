@@ -60,7 +60,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc3"))
@@ -78,7 +78,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -113,7 +113,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc-hyphen"))
@@ -131,7 +131,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -166,7 +166,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc_date"))
@@ -196,7 +196,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected))
@@ -223,7 +223,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"))
@@ -253,7 +253,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
@@ -279,7 +279,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is(4))
@@ -307,7 +307,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected))
@@ -334,7 +334,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("doc3"))
@@ -361,7 +361,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.document", is(nullValue()))
@@ -394,7 +394,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("duplicate"))
@@ -417,7 +417,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", jsonEquals("[]"))
@@ -448,7 +448,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected));
@@ -471,7 +471,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is(notNullValue()))
@@ -494,7 +494,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
@@ -528,7 +528,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -560,7 +560,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -591,7 +591,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
@@ -634,7 +634,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4", "doc5"))
@@ -654,7 +654,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -690,7 +690,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4"))
@@ -711,51 +711,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(1))
           .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void orderedDuplicateDocumentNoNamespace() {
-      String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
-              ]
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.insertedIds", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith("The provided namespace does not exist: something_else"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -784,7 +744,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
@@ -804,7 +764,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -841,7 +801,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
@@ -862,7 +822,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(2))
@@ -894,7 +854,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("5", 5))
@@ -922,7 +882,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected));
@@ -948,7 +908,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expected));
@@ -980,7 +940,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", contains("doc4", "doc5"))
@@ -1007,7 +967,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", hasSize(2))

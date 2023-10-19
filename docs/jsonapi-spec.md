@@ -721,7 +721,7 @@ If an error occurs the command will not return `data`.
 
 `findCollections` returns all collections from a given namespace.
 
-There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{namespace}`.
+There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1`.
 
 *Syntax:*
 

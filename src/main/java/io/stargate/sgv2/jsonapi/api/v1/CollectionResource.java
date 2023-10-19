@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -55,13 +56,15 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{namespace}/{collection}";
+  public static final String BASE_PATH = "/v1/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private SchemaCache schemaCache;
 
   @Inject private EmbeddingServiceCache serviceCache;
+
+  @Inject private OperationsConfig operationsConfig;
 
   @Inject private StargateRequestInfo stargateRequestInfo;
 
@@ -143,18 +146,14 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("namespace")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String namespace,
       @PathParam("collection")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(stargateRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionSettings(
+            stargateRequestInfo.getTenantId(), operationsConfig.keyspace(), collection)
         .onItemOrFailure()
         .transformToUni(
             (collectionProperty, throwable) -> {
@@ -180,7 +179,7 @@ public class CollectionResource {
 
                 CommandContext commandContext =
                     new CommandContext(
-                        namespace,
+                        operationsConfig.keyspace(),
                         collection,
                         collectionProperty.vectorEnabled(),
                         collectionProperty.similarityFunction(),

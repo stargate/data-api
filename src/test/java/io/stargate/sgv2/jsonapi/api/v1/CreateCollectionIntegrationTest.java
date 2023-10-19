@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -42,7 +42,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));

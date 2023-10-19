@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 public class MetricsTest {
 
   @Test
-  public void unauthorizedNamespaceResource() {
+  public void unauthorizedGeneralResource() {
     String json =
         """
         {
@@ -41,12 +41,7 @@ public class MetricsTest {
         metrics.lines().filter(line -> line.startsWith("http_server_requests_seconds")).toList();
     assertThat(httpMetrics)
         .allSatisfy(
-            line ->
-                assertThat(line)
-                    .containsAnyOf(
-                        "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
+            line -> assertThat(line).containsAnyOf("uri=\"/v1\"", "uri=\"/v1/{collection}\""));
   }
 
   @Test
@@ -63,7 +58,7 @@ public class MetricsTest {
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(CollectionResource.BASE_PATH, "keyspace", "collection")
+        .post(CollectionResource.BASE_PATH, "collection")
         .then()
         .statusCode(401);
 
@@ -73,45 +68,6 @@ public class MetricsTest {
 
     assertThat(httpMetrics)
         .allSatisfy(
-            line ->
-                assertThat(line)
-                    .containsAnyOf(
-                        "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
-  }
-
-  @Test
-  public void unauthorizedGeneralResource() {
-    String json =
-        """
-        {
-          "createNamespace": {
-          "name": "purchase_database"
-          }
-        }
-        """;
-
-    // ensure namespace not in tags when no auth token used
-    given()
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(GeneralResource.BASE_PATH)
-        .then()
-        .statusCode(401);
-
-    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    List<String> httpMetrics =
-        metrics.lines().filter(line -> line.startsWith("http_server_requests_seconds")).toList();
-
-    assertThat(httpMetrics)
-        .allSatisfy(
-            line ->
-                assertThat(line)
-                    .containsAnyOf(
-                        "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
+            line -> assertThat(line).containsAnyOf("uri=\"/v1\"", "uri=\"/v1/{collection}\""));
   }
 }

@@ -22,7 +22,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     info = @Info(title = "", version = ""),
     tags = {
       @Tag(name = "General", description = "Executes general commands."),
-      @Tag(name = "Namespaces", description = "Executes namespace commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),
@@ -304,69 +303,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
-                  name = "createNamespace",
-                  summary = "`CreateNamespace` command",
-                  value =
-                      """
-                        {
-                            "createNamespace": {
-                              "name": "cycling"
-                            }
-                        }
-                      """),
-              @ExampleObject(
-                  name = "createEmbeddingService",
-                  summary = "`createEmbeddingService` command",
-                  value =
-                      """
-                          {
-                            "createEmbeddingService": {
-                              "name": "open_ai_service_name",
-                              "apiProvider" : "openai",
-                              "apiKey" : "token",
-                              "baseUrl" : "https://api.openai.com/v1/"
-                            }
-                          }
-                      """),
-              @ExampleObject(
-                  name = "createNamespaceWithReplication",
-                  summary = "`CreateNamespace` command with replication",
-                  value =
-                      """
-                        {
-                            "createNamespace": {
-                              "name": "cycling",
-                              "options": {
-                                "replication": {
-                                   "class": "SimpleStrategy",
-                                   "replication_factor": 3
-                                }
-                              }
-                            }
-                        }
-                      """),
-              @ExampleObject(
-                  name = "findNamespaces",
-                  summary = "`FindNamespaces` command",
-                  value =
-                      """
-                        {
-                            "findNamespaces": {
-                            }
-                        }
-                      """),
-              @ExampleObject(
-                  name = "dropNamespace",
-                  summary = "`DropNamespace` command",
-                  value =
-                      """
-                        {
-                            "dropNamespace": {
-                              "name": "cycling"
-                            }
-                        }
-                      """),
-              @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
@@ -640,19 +576,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                                 """),
               @ExampleObject(
-                  name = "resultFindNamespaces",
-                  summary = "`findNamespaces` command result",
-                  value =
-                      """
-                                {
-                                  "status": {
-                                    "namespaces": [
-                                      "cycling"
-                                    ]
-                                  }
-                                }
-                                """),
-              @ExampleObject(
                   name = "resultFindCollections",
                   summary = "`findCollections` command result",
                   value =
@@ -675,18 +598,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                           }
                         ]
                       }
-                      """),
-              @ExampleObject(
-                  name = "resultCreate",
-                  summary = "Create result",
-                  value =
-                      """
-                      {
-                        "status": {
-                            "ok": 1
-                        }
-                      }
-                      """),
+                      """)
             }))
 public class StargateJsonApi extends Application {
 

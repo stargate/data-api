@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -293,36 +292,6 @@ class ObjectMapperConfigurationTest {
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
               ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": DeleteOneCommand");
-    }
-  }
-
-  @Nested
-  class CreateEmbeddingService {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-            {
-              "createEmbeddingService": {
-                "name": "openai",
-                "apiProvider" : "openai",
-                "apiKey" : "API-TOKEN",
-                "baseUrl" : "https://api.openai.com/v1/"
-              }
-            }
-            """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              CreateEmbeddingServiceCommand.class,
-              createEmbeddingServiceCommand -> {
-                assertThat(createEmbeddingServiceCommand.name()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiKey()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiProvider()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.baseUrl()).isNotNull();
-              });
     }
   }
 

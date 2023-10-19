@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class DeleteCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -47,7 +47,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(createJson)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -68,7 +68,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -94,7 +94,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -115,7 +115,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))

@@ -77,7 +77,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -118,7 +118,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -164,7 +164,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -211,7 +211,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -249,7 +249,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -293,7 +293,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -335,7 +335,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -378,7 +378,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(200)
           .body(

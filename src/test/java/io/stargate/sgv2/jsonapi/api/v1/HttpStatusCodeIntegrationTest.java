@@ -43,7 +43,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(401)
           .body("errors", is(notNullValue()))
@@ -66,14 +66,14 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           AnyOf.anyOf(
               endsWith(
                   "INVALID_ARGUMENT: table %s.%s does not exist"
-                      .formatted(namespaceName, "badCollection")),
+                      .formatted("default_namespace", "badCollection")),
               endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, "badCollection")
+          .post(CollectionResource.BASE_PATH, "badCollection")
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
@@ -99,7 +99,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post("/unknown/{namespace}/{collection}", namespaceName, collectionName)
+          .post("/unknown/{collection}", collectionName)
           .then()
           .statusCode(404);
     }
@@ -121,101 +121,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .get(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(405);
-    }
-  }
-
-  @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class NamespaceResourceStatusCode {
-    @Test
-    public void unauthenticated() {
-      String json =
-          """
-            {
-              "createCollection": {
-                  "name": "ignore_me"
-              }
-            }
-            """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(401)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
-    }
-
-    @Test
-    public void regularError() {
-      String json =
-          """
-             {
-              "createCollection": {
-                "name": "ignore_me"
-              }
-             }
-             """;
-      AnyOf<String> anyOf =
-          AnyOf.anyOf(
-              endsWith("INVALID_ARGUMENT: Keyspace '%s' doesn't exist".formatted("badNamespace")),
-              endsWith("INVALID_ARGUMENT: Unknown keyspace %s".formatted("badNamespace")));
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, "badNamespace")
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
-    }
-
-    @Test
-    public void resourceNotFound() {
-      String json =
-          """
-            {
-                "createCollection": {
-                    "name": "ignore_me"
-                }
-            }
-            """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post("/unknown/{namespace}", namespaceName)
-          .then()
-          .statusCode(404);
-    }
-
-    @Test
-    public void methodNotFound() {
-      String json =
-          """
-            {
-              "createCollection": {
-                "name": "ignore_me"
-              }
-            }
-            """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .get(NamespaceResource.BASE_PATH, namespaceName)
+          .get(CollectionResource.BASE_PATH, collectionName)
           .then()
           .statusCode(405);
     }
@@ -229,7 +135,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
       String json =
           """
             {
-              "createNamespace": {
+              "createCollection": {
                   "name": "ignore_me"
               }
             }
@@ -251,9 +157,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
       String json =
           """
             {
-              "createNamespace": {
-                "name": "ignore_me"
-              }
+                "createCollection": {
+                    "name": "ignore_me"
+                }
             }
             """;
       given()
@@ -261,7 +167,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post("/unknown/{namespace}", namespaceName)
+          .post("/unknown")
           .then()
           .statusCode(404);
     }
@@ -270,11 +176,11 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     public void methodNotFound() {
       String json =
           """
-              {
-                "createNamespace": {
-                  "name": "ignore_me"
-                }
+            {
+              "createCollection": {
+                "name": "ignore_me"
               }
+            }
             """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
