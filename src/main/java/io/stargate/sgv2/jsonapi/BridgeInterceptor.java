@@ -16,6 +16,7 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.GrpcConfig;
 import io.stargate.sgv2.api.common.grpc.GrpcMetadataResolver;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.Map;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 @GlobalInterceptor
 @ApplicationScoped
-public class BridgeInterceptor implements ClientInterceptor {
+public class BridgeInterceptor implements ClientInterceptor, Prioritized {
 
   /** Our {@link GrpcConfig}. */
   @Inject GrpcConfig grpcConfig;
@@ -85,6 +86,11 @@ public class BridgeInterceptor implements ClientInterceptor {
       }
     }
     return false;
+  }
+
+  @Override
+  public int getPriority() {
+    return -1;
   }
 
   private static final class HeaderAttachingClientCall<ReqT, RespT>
