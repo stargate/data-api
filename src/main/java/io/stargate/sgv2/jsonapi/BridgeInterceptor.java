@@ -108,8 +108,8 @@ public class BridgeInterceptor implements ClientInterceptor, Prioritized {
         headers.merge(this.extraHeaders);
       }
       headers.put(
-              Metadata.Key.of("Host", Metadata.ASCII_STRING_MARSHALLER),
-              "3f5e34ca-99e6-4d06-b7a2-08131921a1c7-europe-west4.apps.astra.datastax.com");
+          Metadata.Key.of("Host", Metadata.ASCII_STRING_MARSHALLER),
+          "3f5e34ca-99e6-4d06-b7a2-08131921a1c7-europe-west4.apps.astra.datastax.com");
       super.start(responseListener, headers);
     }
   }
