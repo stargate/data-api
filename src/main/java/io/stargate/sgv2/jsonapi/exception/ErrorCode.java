@@ -4,7 +4,6 @@ package io.stargate.sgv2.jsonapi.exception;
 public enum ErrorCode {
 
   /** Command error codes. */
-  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
@@ -21,6 +20,8 @@ public enum ErrorCode {
       "The replace document and document resolved using filter have different _id"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
+
+  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
