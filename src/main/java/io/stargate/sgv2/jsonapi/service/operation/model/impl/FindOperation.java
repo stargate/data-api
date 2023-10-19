@@ -406,7 +406,7 @@ public record FindOperation(
                   new QueryBuilder()
                       .select()
                       .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                      .from(commandContext.namespace(), commandContext.collection())
+                      .from(commandContext.keyspace(), commandContext.collection())
                       .where(expression)
                       .limit(limit)
                       .build());
@@ -436,7 +436,7 @@ public record FindOperation(
                   new QueryBuilder()
                       .select()
                       .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                      .from(commandContext.namespace(), commandContext.collection())
+                      .from(commandContext.keyspace(), commandContext.collection())
                       .where(condition)
                       .limit(limit)
                       .build());
@@ -467,7 +467,7 @@ public record FindOperation(
               .similarityCosine(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(conditions)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -480,7 +480,7 @@ public record FindOperation(
               .similarityEuclidean(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(conditions)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -493,7 +493,7 @@ public record FindOperation(
               .similarityDotProduct(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(conditions)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -510,7 +510,7 @@ public record FindOperation(
       return new QueryBuilder()
           .select()
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-          .from(commandContext.namespace(), commandContext.collection())
+          .from(commandContext.keyspace(), commandContext.collection())
           .where(conditions)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -533,7 +533,7 @@ public record FindOperation(
               .similarityCosine(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(expression)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -546,7 +546,7 @@ public record FindOperation(
               .similarityEuclidean(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(expression)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -559,7 +559,7 @@ public record FindOperation(
               .similarityDotProduct(
                   DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
                   CustomValueSerializers.getVectorValue(vector()))
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(commandContext.keyspace(), commandContext.collection())
               .where(expression)
               .limit(limit)
               .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -576,7 +576,7 @@ public record FindOperation(
       return new QueryBuilder()
           .select()
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-          .from(commandContext.namespace(), commandContext.collection())
+          .from(commandContext.keyspace(), commandContext.collection())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
@@ -622,7 +622,7 @@ public record FindOperation(
                   new QueryBuilder()
                       .select()
                       .column(columnsToAdd)
-                      .from(commandContext.namespace(), commandContext.collection())
+                      .from(commandContext.keyspace(), commandContext.collection())
                       .where(expression)
                       .limit(maxSortReadLimit())
                       .build()));
@@ -649,7 +649,7 @@ public record FindOperation(
                   new QueryBuilder()
                       .select()
                       .column(columnsToAdd)
-                      .from(commandContext.namespace(), commandContext.collection())
+                      .from(commandContext.keyspace(), commandContext.collection())
                       .where(condition)
                       .limit(maxSortReadLimit())
                       .build()));

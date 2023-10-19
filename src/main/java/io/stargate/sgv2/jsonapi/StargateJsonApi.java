@@ -42,14 +42,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
             parameters = {
               @Parameter(
                   in = ParameterIn.PATH,
-                  name = "namespace",
+                  name = "keyspace",
                   required = true,
                   schema =
                       @Schema(
                           implementation = String.class,
                           pattern = "[a-zA-Z][a-zA-Z0-9_]*",
                           maxLength = 48),
-                  description = "The namespace where the collection is located.",
+                  description = "The keyspace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,

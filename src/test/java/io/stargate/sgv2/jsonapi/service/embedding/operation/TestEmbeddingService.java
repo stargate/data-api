@@ -9,7 +9,7 @@ public class TestEmbeddingService implements EmbeddingService {
 
   public static CommandContext commandContextWithVectorize =
       new CommandContext(
-          "namespace",
+          "keyspace",
           "collection",
           true,
           CollectionSettings.SimilarityFunction.COSINE,

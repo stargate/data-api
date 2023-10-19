@@ -37,14 +37,14 @@ public record CreateCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final Uni<QueryOuterClass.ResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeSchemaChange(getCreateTable(commandContext.keyspace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
             .transformToUni(
                 res -> {
                   final List<QueryOuterClass.Query> indexStatements =
-                      getIndexStatements(commandContext.namespace(), name);
+                      getIndexStatements(commandContext.keyspace(), name);
                   List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
                   indexStatements.stream()
                       .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));

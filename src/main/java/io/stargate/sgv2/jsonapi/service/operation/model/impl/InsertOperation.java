@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 /**
  * Operation that inserts one or more documents.
  *
- * @param commandContext Context that defines namespace and database.
+ * @param commandContext Context that defines keyspace and database.
  * @param documents Documents to insert.
  * @param ordered If insert should be ordered.
  */
@@ -160,7 +160,7 @@ public record InsertOperation(
       return QueryOuterClass.Query.newBuilder()
           .setCql(
               String.format(
-                  insertWithVector, commandContext.namespace(), commandContext.collection()))
+                  insertWithVector, commandContext.keyspace(), commandContext.collection()))
           .build();
     } else {
       String insert =
@@ -169,7 +169,7 @@ public record InsertOperation(
               + " VALUES"
               + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
+          .setCql(String.format(insert, commandContext.keyspace(), commandContext.collection()))
           .build();
     }
   }

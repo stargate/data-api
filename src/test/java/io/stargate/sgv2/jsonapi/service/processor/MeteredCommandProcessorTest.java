@@ -49,7 +49,7 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommands countCommand =
           objectMapper.readValue(json, CountDocumentsCommands.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext commandContext = new CommandContext("keyspace", "collection");
       CommandResult commandResult = new CommandResult(Collections.emptyList());
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -95,7 +95,7 @@ public class MeteredCommandProcessorTest {
         """;
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext commandContext = new CommandContext("keyspace", "collection");
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
@@ -147,7 +147,7 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommands countCommand =
           objectMapper.readValue(json, CountDocumentsCommands.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext commandContext = new CommandContext("keyspace", "collection");
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");

@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 /**
  * Implementation of the delete collection.
  *
- * @param context Command context, carries namespace of the collection.
+ * @param context Command context, carries keyspace of the collection.
  * @param name Collection name.
  */
 public record DeleteCollectionOperation(CommandContext context, String name) implements Operation {
@@ -20,7 +20,7 @@ public record DeleteCollectionOperation(CommandContext context, String name) imp
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    String cql = DROP_TABLE_CQL.formatted(context.namespace(), name);
+    String cql = DROP_TABLE_CQL.formatted(context.keyspace(), name);
     QueryOuterClass.Query query = QueryOuterClass.Query.newBuilder().setCql(cql).build();
 
     // execute

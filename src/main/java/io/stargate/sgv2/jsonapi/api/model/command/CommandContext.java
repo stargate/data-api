@@ -12,13 +12,13 @@ import java.util.List;
 /**
  * Defines the context in which to execute the command.
  *
- * @param namespace The name of the namespace.
+ * @param keyspace The name of the keyspace.
  * @param collection The name of the collection.
  * @param isVectorEnabled Whether the vector is enabled for the collection
  * @param similarityFunction The similarity function used for indexing the vector
  */
 public record CommandContext(
-    String namespace,
+    String keyspace,
     String collection,
     boolean isVectorEnabled,
     CollectionSettings.SimilarityFunction similarityFunction,
@@ -31,7 +31,7 @@ public record CommandContext(
   private static final CommandContext EMPTY = new CommandContext(null, null, false, null, null);
 
   /**
-   * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
+   * @return Returns empty command context, having both {@link #keyspace} and {@link #collection}
    *     as <code>null</code>.
    */
   public static CommandContext empty() {

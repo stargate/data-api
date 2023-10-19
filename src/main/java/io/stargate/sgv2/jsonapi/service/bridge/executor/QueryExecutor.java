@@ -112,7 +112,7 @@ public class QueryExecutor {
   }
 
   /**
-   * Gets the schema for the provided namespace and collection name
+   * Gets the schema for the provided keyspace and collection name
    *
    * @param namespace
    * @param collectionName
@@ -135,7 +135,7 @@ public class QueryExecutor {
                         new RuntimeException(
                             new JsonApiException(
                                 ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                                "The provided namespace does not exist: " + namespace)));
+                                "The provided keyspace does not exist: " + namespace)));
               }
               Schema.CqlTable cqlTable = null;
               return Uni.createFrom()

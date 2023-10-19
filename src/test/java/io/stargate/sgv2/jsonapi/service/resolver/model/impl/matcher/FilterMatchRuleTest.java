@@ -54,7 +54,7 @@ public class FilterMatchRuleTest {
       FilterMatchRule<FindOneCommand> filterMatchRule =
           new FilterMatchRule(matcher, resolveFunction);
       Optional<List<DBFilterBase>> response =
-          filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
+          filterMatchRule.apply(new CommandContext("keyspace", "collection"), findOneCommand);
       assertThat(response).isPresent();
 
       matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
@@ -63,7 +63,7 @@ public class FilterMatchRuleTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
       filterMatchRule = new FilterMatchRule(matcher, resolveFunction);
       response =
-          filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
+          filterMatchRule.apply(new CommandContext("keyspace", "collection"), findOneCommand);
       assertThat(response).isEmpty();
     }
 

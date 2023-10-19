@@ -12,7 +12,7 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.Optional;
 
-/** Caches the vector enabled status for the namespace */
+/** Caches the vector enabled status for the keyspace */
 @ApplicationScoped
 public class SchemaCache {
 

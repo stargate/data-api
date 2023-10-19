@@ -53,7 +53,7 @@ public class GeneralResource {
   @Operation(
       summary = "Execute command",
       description = "Executes a single command against a collection.")
-  @Parameters(value = {@Parameter(name = "namespace", ref = "namespace")})
+  @Parameters(value = {@Parameter(name = "keyspace", ref = "keyspace")})
   @RequestBody(
       content =
           @Content(

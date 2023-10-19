@@ -54,7 +54,7 @@ public class FilterMatchRulesTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
       List<DBFilterBase> response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+          filterMatchRules.apply(new CommandContext("keyspace", "collection"), findOneCommand);
       assertThat(response).isNotNull();
 
       json =
@@ -68,7 +68,7 @@ public class FilterMatchRulesTest {
 
       findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+          filterMatchRules.apply(new CommandContext("keyspace", "collection"), findOneCommand);
       assertThat(response).isNotNull();
     }
 

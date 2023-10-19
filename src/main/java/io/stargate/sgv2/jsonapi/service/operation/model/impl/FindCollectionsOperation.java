@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 
 /**
  * Find collection operation. Uses {@link SchemaManager} to fetch all valid jsonapi tables for a
- * namespace. The schema check against the table is done in the {@link JsonapiTableMatcher}.
+ * keyspace. The schema check against the table is done in the {@link JsonapiTableMatcher}.
  *
  * @param explain - returns collection options if `true`; returns only collection names if `false`
  * @param objectMapper {@link ObjectMapper}
@@ -41,7 +41,7 @@ public record FindCollectionsOperation(
   private static final Function<String, Uni<? extends Schema.CqlKeyspaceDescribe>>
       MISSING_KEYSPACE_FUNCTION =
           keyspace -> {
-            String message = "Unknown namespace %s, you must create it first.".formatted(keyspace);
+            String message = "Unknown keyspace %s, you must create it first.".formatted(keyspace);
             Exception exception = new JsonApiException(ErrorCode.NAMESPACE_DOES_NOT_EXIST, message);
             return Uni.createFrom().failure(exception);
           };
@@ -60,7 +60,7 @@ public record FindCollectionsOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    String namespace = commandContext.namespace();
+    String namespace = commandContext.keyspace();
 
     // get all valid tables
     // get all tables

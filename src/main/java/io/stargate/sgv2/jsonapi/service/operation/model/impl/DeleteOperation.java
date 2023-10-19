@@ -151,7 +151,7 @@ public record DeleteOperation(
   private QueryOuterClass.Query buildDeleteQuery() {
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
     return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(delete, commandContext.namespace(), commandContext.collection()))
+        .setCql(String.format(delete, commandContext.keyspace(), commandContext.collection()))
         .build();
   }
 

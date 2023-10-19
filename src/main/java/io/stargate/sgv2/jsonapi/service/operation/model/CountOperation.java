@@ -37,7 +37,7 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
         .select()
         .count()
         .as("count")
-        .from(commandContext.namespace(), commandContext.collection())
+        .from(commandContext.keyspace(), commandContext.collection())
         .where(conditions)
         .build();
   }

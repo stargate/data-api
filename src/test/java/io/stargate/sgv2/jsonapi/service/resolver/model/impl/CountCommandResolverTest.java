@@ -34,7 +34,7 @@ public class CountCommandResolverTest {
 
     CountDocumentsCommands countCommand =
         objectMapper.readValue(json, CountDocumentsCommands.class);
-    final CommandContext commandContext = new CommandContext("namespace", "collection");
+    final CommandContext commandContext = new CommandContext("keyspace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
     CountOperation expected = new CountOperation(commandContext, List.of());
     assertThat(operation)
@@ -55,7 +55,7 @@ public class CountCommandResolverTest {
 
     CountDocumentsCommands countCommand =
         objectMapper.readValue(json, CountDocumentsCommands.class);
-    final CommandContext commandContext = new CommandContext("namespace", "collection");
+    final CommandContext commandContext = new CommandContext("keyspace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
     CountOperation expected =
         new CountOperation(

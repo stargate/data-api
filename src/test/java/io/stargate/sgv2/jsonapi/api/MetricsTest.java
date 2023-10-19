@@ -27,7 +27,7 @@ public class MetricsTest {
         }
         """;
 
-    // ensure namespace not in tags when no auth token used
+    // ensure keyspace not in tags when no auth token used
     given()
         .contentType(ContentType.JSON)
         .body(json)
@@ -53,7 +53,7 @@ public class MetricsTest {
         }
         """;
 
-    // ensure namespace not in tags when no auth token used
+    // ensure keyspace not in tags when no auth token used
     given()
         .contentType(ContentType.JSON)
         .body(json)
