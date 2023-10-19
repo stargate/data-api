@@ -4,6 +4,7 @@ package io.stargate.sgv2.jsonapi.exception;
 public enum ErrorCode {
 
   /** Command error codes. */
+  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
