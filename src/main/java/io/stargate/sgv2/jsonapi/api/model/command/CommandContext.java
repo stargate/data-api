@@ -31,8 +31,8 @@ public record CommandContext(
   private static final CommandContext EMPTY = new CommandContext(null, null, false, null, null);
 
   /**
-   * @return Returns empty command context, having both {@link #keyspace} and {@link #collection}
-   *     as <code>null</code>.
+   * @return Returns empty command context, having both {@link #keyspace} and {@link #collection} as
+   *     <code>null</code>.
    */
   public static CommandContext empty() {
     return EMPTY;

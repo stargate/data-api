@@ -4,7 +4,6 @@ zone: us-west-2
 instance: m5.2xlarge
 token: token
 workload_duration: 25m
-keyspace: fallout
 workload_file: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/vector-test-nosqlbench.yaml
 dataset: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/vector-dataset.txt
 client_count: 1
@@ -21,7 +20,6 @@ threads: 20
 #  instance: desired instance type
 #  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
 #  workload_duration: workload duration time
-#  keyspace: Your existing AstraDB keyspace
 #  workload_file: workload_file is in JSON API repo
 #  dataset: dataset file is in JSON API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
 #  client_count: 1
@@ -38,7 +36,6 @@ ensemble:
       name: existing_astra
       properties:
         bundle_download_url: {{download_url}}
-        keyspace: {{keyspace}}
         username: token
         password: <<secret:{{token}}>>
         token: <<secret:{{token}}>>
@@ -68,7 +65,6 @@ workload:
             - driver=http
             - yaml={{workload_file}}
             - tags=block:schema-collection
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -85,7 +81,6 @@ workload:
             - workload={{workload_file}}
             - tags=block:write
             - dataset={{dataset}}
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -104,7 +99,6 @@ workload:
             - workload={{workload_file}}
             - tags=block:read
             - dataset={{dataset}}
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -122,7 +116,6 @@ workload:
             - workload={{workload_file}}
             - tags=block:update
             - dataset={{dataset}}
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -140,7 +133,6 @@ workload:
             - workload={{workload_file}}
             - tags=block:delete
             - dataset={{dataset}}
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json

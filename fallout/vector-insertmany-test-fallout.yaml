@@ -4,7 +4,6 @@ zone: us-west-2
 instance: m5.2xlarge
 token: token
 workload_duration: 25m
-keyspace: test
 workload_file: https://github.com/stargate/jsonapi/blob/hazel-nb-insertmany/fallout/vector-insertmany-test-fallout.yaml
 dataset: https://github.com/stargate/jsonapi/blob/main/nosqlbench/vector-dataset.txt
 client_count: 1
@@ -24,7 +23,6 @@ docs_count: 1000
 #  instance: desired instance type
 #  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
 #  workload_duration: workload duration time
-#  keyspace: Your existing AstraDB keyspace
 #  workload_file: workload_file is in JSON API repo
 #  dataset: dataset file is in JSON API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
 #  client_count: 1
@@ -41,7 +39,6 @@ ensemble:
       name: existing_astra
       properties:
         bundle_download_url: {{download_url}}
-        keyspace: {{keyspace}}
         username: token
         password: <<secret:{{token}}>>
         token: <<secret:{{token}}>>
@@ -72,7 +69,6 @@ workload:
             - driver=http
             - yaml={{workload_file}}
             - tags=block:schema-collection
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -92,7 +88,6 @@ workload:
             - workload={{workload_file}}
             - tags=block:write
             - dataset={{dataset}}
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json

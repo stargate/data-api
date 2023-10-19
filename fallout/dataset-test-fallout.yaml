@@ -12,9 +12,6 @@ client_nb_version: 5.17.3-release
 # branch where NoSQLBench test file is located
 test_branch: main
 
-# keyspace setup
-keyspace: jsonapi_dataset_test
-
 # 100K documents and 25 groups, so that sort and count target ~4K docs
 # adapt if needed, but keep in mind that sort supports max 10K docs per operation
 docs_count: 100000
@@ -61,7 +58,6 @@ ensemble:
       properties:
         cloud.provider: {{astra_provider}}
         cloud.region: {{astra_region}}
-        keyspace: {{keyspace}}
         settle_time: 120
 
   client:
@@ -90,7 +86,6 @@ workload:
             - driver=http
             - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:schema-collection
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -111,7 +106,6 @@ workload:
             - tags=block:write
             - threads=30
             - errors=warn
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json
@@ -134,7 +128,6 @@ workload:
             - tags=block:main,name:.*{{op}}
             - threads={{threads}}
             - errors=histogram
-            - namespace={{keyspace}}
             - protocol=https
             - jsonapi_port=443
             - path_prefix=/api/json

@@ -25,7 +25,7 @@ spec:
       initContainers:
       - name: wait-for-bridge
         image: busybox
-        command: ["sh", "-c", "until nc -z {{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }} 8091 > /dev/null; do echo Waiting for bridge.; sleep 5;done;"]
+        command: ["sh", "-c", "until nc -z {{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.keyspace }} 8091 > /dev/null; do echo Waiting for bridge.; sleep 5;done;"]
       containers:
       - name: jsonapi
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -53,7 +53,7 @@ spec:
             memory: {{ .Values.memory | default 1024 }}Mi
         env:
         - name: QUARKUS_GRPC_CLIENTS_BRIDGE_HOST
-          value: "{{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }}"
+          value: "{{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.keyspace }}"
         - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXRETRIES
           value: "50"
         - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXDURATION

@@ -21,7 +21,7 @@ To expose access to Stargate APIs from clients outside your Kubernetes cluster, 
 ```shell script
  helm upgrade --install ingress-nginx ingress-nginx \
    --repo https://kubernetes.github.io/ingress-nginx \
-   --namespace ingress-nginx --create-namespace 
+   --keyspace ingress-nginx --create-keyspace 
 ```
 
 You'll use the name of ingress class name as the `ingress.ingressClassName` in the Stargate Helm chart values.
@@ -47,7 +47,7 @@ To install with overriden values, you can use the `--set` option as shown below:
 
 ```shell script
 helm install jsonapi jsonapi \
---namespace <ENTER_NAMESPACE_HERE> \
---set sgGrpcBridge.namespace=<SG_GRPC_BRIDGE_NAMESPACE> \
+--keyspace <ENTER_NAMESPACE_HERE> \
+--set sgGrpcBridge.keyspace=<SG_GRPC_BRIDGE_NAMESPACE> \
 --set replicaCount=2
 ```
