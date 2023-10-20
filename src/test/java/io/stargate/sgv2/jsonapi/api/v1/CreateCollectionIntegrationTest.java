@@ -143,7 +143,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("The provided collection already exists with a non-vector setting"))
+              is(
+                  "The provided collection name 'simple_collection' already exists with a non-vector setting."))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -193,7 +194,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("The provided collection already exists with a vector setting"))
+              is(
+                  "The provided collection name 'simple_collection' already exists with a vector setting."))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // delete the collection
@@ -233,7 +235,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("The provided collection already exists with a different vector setting"))
+              is(
+                  "The provided collection name 'simple_collection' already exists with a different vector setting."))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // create another vector collection with the same name but different function setting
@@ -249,7 +252,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("The provided collection already exists with a different vector setting"))
+              is(
+                  "The provided collection name 'simple_collection' already exists with a different vector setting."))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // delete the collection

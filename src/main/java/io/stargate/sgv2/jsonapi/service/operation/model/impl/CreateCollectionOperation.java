@@ -102,7 +102,8 @@ public record CreateCollectionOperation(
                         .failure(
                             new JsonApiException(
                                 ErrorCode.INVALID_COLLECTION_NAME,
-                                "The provided collection already exists with a different vector setting"));
+                                "The provided collection name '%s' already exists with a different vector setting."
+                                    .formatted(name)));
                   }
                 } else {
                   // if existing collection is a non-vector collection, error out
@@ -110,7 +111,8 @@ public record CreateCollectionOperation(
                       .failure(
                           new JsonApiException(
                               ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection already exists with a non-vector setting"));
+                              "The provided collection name '%s' already exists with a non-vector setting."
+                                  .formatted(name)));
                 }
               } else { // if table exists and user want to create a non-vector collection
                 // if existing table is vector enabled, error out
@@ -119,7 +121,8 @@ public record CreateCollectionOperation(
                       .failure(
                           new JsonApiException(
                               ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection already exists with a vector setting"));
+                              "The provided collection name '%s' already exists with a vector setting."
+                                  .formatted(name)));
                 } else {
                   // if existing table is a non-vector collection, continue
                   return executeCollectionCreation(queryExecutor);
