@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public record CreateCollectionOperation(
+    boolean createKeyspace,
     CommandContext commandContext,
     String name,
     boolean vectorSearch,
@@ -20,24 +21,35 @@ public record CreateCollectionOperation(
     implements Operation {
 
   public static CreateCollectionOperation withVectorSearch(
+      boolean createKeyspace,
       CommandContext commandContext,
       String name,
       int vectorSize,
       String vectorFunction,
       String vectorize) {
     return new CreateCollectionOperation(
-        commandContext, name, true, vectorSize, vectorFunction, vectorize);
+        createKeyspace, commandContext, name, true, vectorSize, vectorFunction, vectorize);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
-      CommandContext commandContext, String name) {
-    return new CreateCollectionOperation(commandContext, name, false, 0, null, null);
+      boolean createKeyspace, CommandContext commandContext, String name) {
+    return new CreateCollectionOperation(
+        createKeyspace, commandContext, name, false, 0, null, null);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    final CreateNamespaceOperation createNamespaceOperation =
+        new CreateNamespaceOperation(
+            createKeyspace(), commandContext().keyspace(), simpleStrategyMap());
     final Uni<QueryOuterClass.ResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.keyspace(), name));
+        createNamespaceOperation
+            .execute(queryExecutor)
+            .onItem()
+            .transformToUni(
+                res ->
+                    queryExecutor.executeSchemaChange(
+                        getCreateTable(commandContext.keyspace(), name)));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -170,5 +182,9 @@ public record CreateCollectionOperation(
               .build());
     }
     return statements;
+  }
+
+  private static String simpleStrategyMap() {
+    return "{'class': 'SimpleStrategy', 'replication_factor': 1}";
   }
 }

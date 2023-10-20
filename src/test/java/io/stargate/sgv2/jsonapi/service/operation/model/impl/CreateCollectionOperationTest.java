@@ -9,6 +9,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
   @Inject QueryExecutor queryExecutor;
 
+  @Inject OperationsConfig operationsConfig;
+
   @Nested
   class CreateCollectionOperationsTest {
 
@@ -37,7 +40,8 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
       CreateCollectionOperation createCollectionOperation =
-          CreateCollectionOperation.withoutVectorSearch(commandContext, COLLECTION_NAME);
+          CreateCollectionOperation.withoutVectorSearch(
+              operationsConfig.createDefaultKeyspace(), commandContext, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -59,7 +63,9 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContextUpper, COLLECTION_NAME.toUpperCase());
+              operationsConfig.createDefaultKeyspace(),
+              commandContextUpper,
+              COLLECTION_NAME.toUpperCase());
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -79,7 +85,12 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "cosine", null);
+              operationsConfig.createDefaultKeyspace(),
+              commandContext,
+              COLLECTION_NAME,
+              4,
+              "cosine",
+              null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -105,6 +116,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
+              operationsConfig.createDefaultKeyspace(),
               commandContext,
               COLLECTION_NAME,
               4,
@@ -129,7 +141,12 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "dot_product", null);
+              operationsConfig.createDefaultKeyspace(),
+              commandContext,
+              COLLECTION_NAME,
+              4,
+              "dot_product",
+              null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();

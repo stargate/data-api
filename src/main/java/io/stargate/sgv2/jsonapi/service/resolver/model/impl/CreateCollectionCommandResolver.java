@@ -6,6 +6,7 @@ import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -22,18 +23,22 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   private final DocumentLimitsConfig documentLimitsConfig;
 
+  private final OperationsConfig operationsConfig;
+
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
       DataStoreConfig dataStoreConfig,
-      DocumentLimitsConfig documentLimitsConfig) {
+      DocumentLimitsConfig documentLimitsConfig,
+      OperationsConfig operationsConfig) {
     this.objectMapper = objectMapper;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null);
+    this(null, null, null, null);
   }
 
   @Override
@@ -70,9 +75,15 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       }
 
       return CreateCollectionOperation.withVectorSearch(
-          ctx, command.name(), vectorSize, command.options().vector().function(), vectorize);
+          operationsConfig.createDefaultKeyspace(),
+          ctx,
+          command.name(),
+          vectorSize,
+          command.options().vector().function(),
+          vectorize);
     } else {
-      return CreateCollectionOperation.withoutVectorSearch(ctx, command.name());
+      return CreateCollectionOperation.withoutVectorSearch(
+          operationsConfig.createDefaultKeyspace(), ctx, command.name());
     }
   }
 }

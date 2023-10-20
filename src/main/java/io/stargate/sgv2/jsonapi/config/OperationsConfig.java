@@ -37,6 +37,11 @@ public interface OperationsConfig {
   @WithDefault("default_keyspace")
   String keyspace();
 
+  /** @return enable default keyspace creation, used for testing <code>false</> */
+  @NotNull
+  @WithDefault("false")
+  boolean createDefaultKeyspace();
+
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
   @Positive
