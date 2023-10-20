@@ -139,7 +139,8 @@ public record CollectionSettings(
         // This should never happen, VectorizeConfig check null, unless it fails
         throw new JsonApiException(
             VECTORIZECONFIG_CHECK_FAIL,
-            "%s, please check 'vectorize' configuration.".formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+            "%s, please check 'vectorize' configuration."
+                .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
       }
     } catch (JsonProcessingException e) {
       // This should never happen, already check if vectorize is a valid JSON
