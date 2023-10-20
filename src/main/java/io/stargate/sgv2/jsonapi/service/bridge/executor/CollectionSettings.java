@@ -137,11 +137,13 @@ public record CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
       } else {
         // This should never happen, VectorizeConfig check null, unless it fails
-        throw new JsonApiException(VECTORIZECONFIG_CHECK_FAIL);
+        throw new JsonApiException(
+            VECTORIZECONFIG_CHECK_FAIL,
+            "%s, please check 'vectorize' configuration.".formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
       }
     } catch (JsonProcessingException e) {
       // This should never happen, already check if vectorize is a valid JSON
-      throw new RuntimeException("Invalid json string", e);
+      throw new RuntimeException("Invalid json string, please check 'vectorize' configuration.", e);
     }
   }
 }

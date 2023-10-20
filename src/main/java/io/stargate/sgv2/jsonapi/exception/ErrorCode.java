@@ -111,7 +111,7 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
 
-  VECTORIZECONFIG_CHECK_FAIL("VectorizeConfig check null fail");
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail");
 
   private final String message;
 
