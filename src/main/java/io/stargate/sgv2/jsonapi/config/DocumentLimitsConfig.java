@@ -42,6 +42,10 @@ public interface DocumentLimitsConfig {
   @WithDefault("64")
   int maxObjectProperties();
 
+  @Positive
+  @WithDefault("64")
+  int maxFilterObjectProperties();
+
   /** @return Defines the maximum length of a single Number value (in characters). */
   @Positive
   @WithDefault("50")

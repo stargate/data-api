@@ -104,14 +104,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   protected List<DBFilterBase> resolve(CommandContext commandContext, T command) {
     List<DBFilterBase> filter = matchRules.apply(commandContext, command);
-    if (filter.size() > docLimits.maxObjectProperties()) {
+    if (filter.size() > docLimits.maxFilterObjectProperties()) {
       throw new JsonApiException(
           ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
-              "%s: number of fields in filter has (%d) exceeds maximum allowed (%s)",
+              "filter has %d fields, exceeds maximum allowed (%s)",
               ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
               filter.size(),
-              docLimits.maxObjectProperties()));
+              docLimits.maxFilterObjectProperties()));
     }
     return matchRules.apply(commandContext, command);
   }

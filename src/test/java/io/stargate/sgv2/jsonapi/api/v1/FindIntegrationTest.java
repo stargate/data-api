@@ -1286,7 +1286,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "errors[0].message",
               endsWith(
                   " number of fields in filter has (65) exceeds maximum allowed ("
-                      + docLimits.maxObjectProperties()
+                      + docLimits.maxFilterObjectProperties()
                       + ")"))
           .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
