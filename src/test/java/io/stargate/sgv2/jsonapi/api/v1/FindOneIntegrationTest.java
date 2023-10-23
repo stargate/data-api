@@ -209,19 +209,42 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void byId() {
-      String json =
-          """
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc1"}
             }
           }
-          """;
+          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", jsonEquals(DOC1_JSON))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
 
+    // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
+    @Test
+    public void byIdEmptySort() {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "findOne": {
+                    "filter": {"_id" : "doc1"},
+                    "sort": {}
+                  }
+                }
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()

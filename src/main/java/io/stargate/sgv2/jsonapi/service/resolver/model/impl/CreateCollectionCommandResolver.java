@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
+import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -18,6 +19,7 @@ import jakarta.inject.Inject;
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
   private final ObjectMapper objectMapper;
+  private final SchemaManager schemaManager;
   private final DataStoreConfig dataStoreConfig;
 
   private final DocumentLimitsConfig documentLimitsConfig;
@@ -25,15 +27,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
+      SchemaManager schemaManager,
       DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig) {
     this.objectMapper = objectMapper;
+    this.schemaManager = schemaManager;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null);
+    this(null, null, null, null);
   }
 
   @Override
@@ -70,9 +74,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       }
 
       return CreateCollectionOperation.withVectorSearch(
-          ctx, command.name(), vectorSize, command.options().vector().function(), vectorize);
+          ctx,
+          objectMapper,
+          schemaManager,
+          command.name(),
+          vectorSize,
+          command.options().vector().function(),
+          vectorize);
     } else {
-      return CreateCollectionOperation.withoutVectorSearch(ctx, command.name());
+      return CreateCollectionOperation.withoutVectorSearch(
+          ctx, objectMapper, schemaManager, command.name());
     }
   }
 }

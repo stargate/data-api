@@ -93,7 +93,13 @@ public class UpdateManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(
+                                  find.logicalExpression()
+                                      .comparisonExpressions
+                                      .get(0)
+                                      .getDbFilters()
+                                      .get(0))
+                              .isEqualTo(filter);
                         });
               });
     }
@@ -146,7 +152,7 @@ public class UpdateManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(find.filters()).isEmpty();
+                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
               });
     }
@@ -204,7 +210,13 @@ public class UpdateManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(
+                                  find.logicalExpression()
+                                      .comparisonExpressions
+                                      .get(0)
+                                      .getDbFilters()
+                                      .get(0))
+                              .isEqualTo(filter);
                         });
               });
     }
@@ -266,7 +278,13 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(21);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(
+                                  find.logicalExpression()
+                                      .comparisonExpressions
+                                      .get(0)
+                                      .getDbFilters()
+                                      .get(0))
+                              .isEqualTo(filter);
                           assertThat(find.singleResponse()).isFalse();
                         });
               });
@@ -321,7 +339,7 @@ public class UpdateManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(find.filters()).isEmpty();
+                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
               });
     }

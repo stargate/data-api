@@ -17,6 +17,8 @@ import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
@@ -25,6 +27,7 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+// import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.inject.Inject;
@@ -106,12 +109,18 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
               .returning(List.of(List.of(Values.of(true))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters1 =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(
-                  new DBFilterBase.IDFilter(
-                      DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"))),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.KEY,
               objectMapper);
@@ -318,10 +327,16 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
       DBFilterBase.IDFilter filter =
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters1 = List.of(filter);
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);

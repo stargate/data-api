@@ -60,7 +60,9 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
-                assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(
+                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
                 assertThat(op.orderBy()).isNull();
                 assertThat(op.singleResponse()).isTrue();
               });
@@ -95,7 +97,9 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(100);
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
-                assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(
+                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
                 assertThat(op.orderBy()).hasSize(2);
                 assertThat(op.orderBy())
                     .isEqualTo(
@@ -141,7 +145,9 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -182,7 +188,9 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -225,7 +233,9 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -267,7 +277,9 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.filters()).containsOnly(filter);
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
 
@@ -295,7 +307,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
-                assertThat(op.filters()).isEmpty();
+                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
               });
     }
@@ -324,7 +336,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
-                assertThat(op.filters()).isEmpty();
+                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
               });
     }
@@ -357,7 +369,9 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pagingState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
-                assertThat(op.filters()).singleElement().isEqualTo(filter);
+                assertThat(
+                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
                 assertThat(op.singleResponse()).isTrue();
               });
     }
