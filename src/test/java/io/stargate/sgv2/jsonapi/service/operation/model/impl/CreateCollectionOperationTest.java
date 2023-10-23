@@ -1,9 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -24,11 +28,14 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   private CommandContext commandContext = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-
+  @Inject ObjectMapper objectMapper;
+  @Inject SchemaManager schemaManager;
   @Inject QueryExecutor queryExecutor;
 
   @Nested
   class CreateCollectionOperationsTest {
+
+    SchemaManager schemaManagerMock = mock(SchemaManager.class);
 
     @Test
     public void createCollection() throws Exception {
@@ -36,8 +43,11 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, false, 0, null, null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
+
       CreateCollectionOperation createCollectionOperation =
-          CreateCollectionOperation.withoutVectorSearch(commandContext, COLLECTION_NAME);
+          CreateCollectionOperation.withoutVectorSearch(
+              commandContext, objectMapper, schemaManagerMock, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -57,9 +67,10 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       queries.stream().forEach(query -> withQuery(query).returningNothing());
       CommandContext commandContextUpper =
           new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContextUpper, COLLECTION_NAME.toUpperCase());
+              commandContextUpper, objectMapper, schemaManagerMock, COLLECTION_NAME.toUpperCase());
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -76,10 +87,10 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       List<String> queries =
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "cosine", null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
-
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "cosine", null);
+              commandContext, objectMapper, schemaManagerMock, COLLECTION_NAME, 4, "cosine", null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -102,10 +113,12 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
               "cosine",
               "{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}");
       queries.stream().forEach(query -> withQuery(query).returningNothing());
-
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,
+              objectMapper,
+              schemaManagerMock,
               COLLECTION_NAME,
               4,
               "cosine",
@@ -126,10 +139,16 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       List<String> queries =
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "dot_product", null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
-
+      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, COLLECTION_NAME, 4, "dot_product", null);
+              commandContext,
+              objectMapper,
+              schemaManagerMock,
+              COLLECTION_NAME,
+              4,
+              "dot_product",
+              null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
