@@ -37,87 +37,87 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void setUp() {
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc1",
-                  "username": "user1",
-                  "active_user" : true,
-                  "date" : {"$date": 1672531200000}
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "doc1",
+                              "username": "user1",
+                              "active_user" : true,
+                              "date" : {"$date": 1672531200000}
+                            }
+                          }
+                        }
+                      """);
 
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc2",
-                  "username": "user2",
-                  "subdoc" : {
-                     "id" : "abc"
-                  },
-                  "array" : [
-                      "value1"
-                  ]
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "doc2",
+                              "username": "user2",
+                              "subdoc" : {
+                                 "id" : "abc"
+                              },
+                              "array" : [
+                                  "value1"
+                              ]
+                            }
+                          }
+                        }
+                      """);
 
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc3",
-                  "username": "user3",
-                  "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                  "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "doc3",
+                              "username": "user3",
+                              "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
+                              "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
+                            }
+                          }
+                        }
+                      """);
 
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc4",
-                  "username" : "user4",
-                  "indexedObject" : { "0": "value_0", "1": "value_1" }
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "doc4",
+                              "username" : "user4",
+                              "indexedObject" : { "0": "value_0", "1": "value_1" }
+                            }
+                          }
+                        }
+                      """);
 
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "doc5",
-                  "username": "user5",
-                  "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "doc5",
+                              "username": "user5",
+                              "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                            }
+                          }
+                        }
+                      """);
 
       insert(
           """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": {"$date": 6},
-                  "user-name": "user6"
-                }
-              }
-            }
-          """);
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": {"$date": 6},
+                              "user-name": "user6"
+                            }
+                          }
+                        }
+                      """);
     }
 
     private void insert(String json) {
@@ -161,12 +161,13 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void noFilter() {
-      String json = """
-          {
-            "find": {
-            }
-          }
-          """;
+      String json =
+          """
+              {
+                "find": {
+                }
+              }
+              """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -185,14 +186,14 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void noFilterWithOptions() {
       String json =
           """
-          {
-            "find": {
-              "options" : {
-                "limit" : 2
-              }
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "options" : {
+                            "limit" : 2
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -211,22 +212,22 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void byId() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc1"}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "doc1"}
+                        }
+                      }
+                      """;
 
       String expected =
           """
-            {
-                "_id": "doc1",
-                "username": "user1",
-                "active_user" : true,
-                "date" : {"$date": 1672531200000}
-            }
-            """;
+                      {
+                          "_id": "doc1",
+                          "username": "user1",
+                          "active_user" : true,
+                          "date" : {"$date": 1672531200000}
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -282,20 +283,20 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void byDateId() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : {"$date": 6 }}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$date": 6 }}
+                        }
+                      }
+                      """;
 
       String expected =
           """
-          {
-            "_id": {"$date": 6},
-            "user-name": "user6"
-          }
-          """;
+                      {
+                        "_id": {"$date": 6},
+                        "user-name": "user6"
+                      }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -314,23 +315,23 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inCondition() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : {"$in": ["doc1", "doc4"]}}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$in": ["doc1", "doc4"]}}
+                        }
+                      }
+                      """;
 
       // findOne resolves any one of the resolved documents. So the order of the documents in the
       // $in clause is not guaranteed.
       String expected1 =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                      """;
       String expected2 =
           """
-              {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
-              """;
+                      {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -350,12 +351,12 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionWithOtherCondition() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : {"$in": ["doc1", "doc4"]}, "username" : "user1" }
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$in": ["doc1", "doc4"]}, "username" : "user1" }
+                        }
+                      }
+                      """;
       String expected1 =
           "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
@@ -376,12 +377,12 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionEmptyArray() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : {"$in": []}}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$in": []}}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -400,12 +401,12 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inOperatorEmptyArrayWithAdditionalFilters() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"username": "user1", "_id" : {"$in": []}}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"username": "user1", "_id" : {"$in": []}}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -424,12 +425,12 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionNonArrayArray() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : {"$in": true}}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$in": true}}
+                        }
+                      }
+                      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -451,14 +452,14 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionNonIdField() {
       String json =
           """
-          {
-            "find": {
-                "filter" : {
-                     "username" : {"$in" : ["user1", "user10"]}
-                }
-              }
-          }
-          """;
+                      {
+                        "find": {
+                            "filter" : {
+                                 "username" : {"$in" : ["user1", "user10"]}
+                            }
+                          }
+                      }
+                      """;
       String expected1 =
           "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
@@ -479,22 +480,22 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionNonIdFieldMulti() {
       String json =
           """
-              {
-                "find": {
-                    "filter" : {
-                         "username" : {"$in" : ["user1", "user4"]}
-                    }
-                  }
-              }
-              """;
+                      {
+                        "find": {
+                            "filter" : {
+                                 "username" : {"$in" : ["user1", "user4"]}
+                            }
+                          }
+                      }
+                      """;
       String expected1 =
           """
-                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-                  """;
+                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                      """;
       String expected2 =
           """
-                  {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
-                  """;
+                      {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -513,15 +514,15 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void inConditionNonIdFieldIdField() {
       String json =
           """
-                {
-                  "find": {
-                      "filter" : {
-                           "username" : {"$in" : ["user1", "user10"]},
-                           "_id" : {"$in" : ["doc1", "???"]}
-                      }
-                    }
-                }
-              """;
+                        {
+                          "find": {
+                              "filter" : {
+                                   "username" : {"$in" : ["user1", "user10"]},
+                                   "_id" : {"$in" : ["doc1", "???"]}
+                              }
+                            }
+                        }
+                      """;
       String expected1 =
           "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
       given()
@@ -572,13 +573,13 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void byIdWithProjection() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id" : "doc1"},
-              "projection": { "_id":0, "username":1 }
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"_id" : "doc1"},
+                          "projection": { "_id":0, "username":1 }
+                        }
+                      }
+                      """;
 
       String expected = """
               {"username":"user1"}
@@ -601,17 +602,17 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void byColumn() {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"username" : "user1"}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"username" : "user1"}
+                        }
+                      }
+                      """;
 
       String expected =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1305,6 +1306,140 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
+    }
+
+    @Test
+    public void simpleOr() {
+      String json =
+          """
+                {
+                    "find": {
+                        "filter": {
+                            "$or": [
+                                {"username" : "user1"},
+                                {"username" : "user2"}
+                            ]
+                        }
+                    }
+                }
+
+              """;
+
+      String expected1 =
+          """
+                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                  """;
+      String expected2 =
+          """
+                  {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(2));
+    }
+
+    @Test
+    public void nestedAndOr() {
+      String json =
+          """
+            {
+                "find": {
+                    "filter": {
+                        "$and": [
+                            {
+                                "$or": [
+                                    {
+                                        "username": "user3"
+                                    },
+                                    {
+                                        "subdoc.id": {
+                                            "$eq": "abc"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "$or": [
+                                    {
+                                        "username": "user2"
+                                    },
+                                    {
+                                        "subdoc.id": {
+                                            "$eq": "xyz"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+
+              """;
+
+      String expected =
+          """
+                  {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.documents", hasSize(1));
+    }
+
+    @Test
+    public void OrWithIdIn() {
+      String json =
+          """
+                      {
+                          "find": {
+                              "filter": {
+                                  "$or": [
+                                      {
+                                          "username": "user1"
+                                      },
+                                      {
+                                          "username": {
+                                              "$in": [
+                                                  "user2",
+                                                  "user3"
+                                              ]
+                                          }
+                                      }
+                                  ]
+                              }
+                          }
+                      }
+
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(3));
     }
   }
 

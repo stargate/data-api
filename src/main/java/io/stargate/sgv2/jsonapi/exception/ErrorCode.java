@@ -21,6 +21,9 @@ public enum ErrorCode {
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
+  FILTER_MULTIPLE_ID_FILTER(
+      "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),

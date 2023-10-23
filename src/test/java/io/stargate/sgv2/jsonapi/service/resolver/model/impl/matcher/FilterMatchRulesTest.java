@@ -9,13 +9,14 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +42,10 @@ public class FilterMatchRulesTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
-          resolveFunction = (commandContext, captures) -> filters;
+
+      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
+          captureExpression -> filters;
+
       filterMatchRules
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.EMPTY)
           .matcher()
@@ -53,7 +56,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      List<DBFilterBase> response =
+      LogicalExpression response =
           filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isNotNull();
 
@@ -86,8 +89,8 @@ public class FilterMatchRulesTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
-          resolveFunction = (commandContext, captures) -> filters;
+      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
+          captureExpression -> filters;
       filterMatchRules
           .addMatchRule(resolveFunction, FilterMatcher.MatchStrategy.EMPTY)
           .matcher()

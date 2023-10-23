@@ -22,10 +22,11 @@ public class ComparisonExpressionTest {
               "username",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))));
-
+                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))),
+              null);
       ComparisonExpression result = ComparisonExpression.eq("username", "abc");
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -35,11 +36,13 @@ public class ComparisonExpressionTest {
               "username",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))));
+                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))),
+              null);
 
-      ComparisonExpression result = new ComparisonExpression("username", new ArrayList<>());
+      ComparisonExpression result = new ComparisonExpression("username", new ArrayList<>(), null);
       result.add(ValueComparisonOperator.EQ, "abc");
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -50,10 +53,12 @@ public class ComparisonExpressionTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ,
-                      new JsonLiteral(BigDecimal.valueOf(10), JsonType.NUMBER))));
+                      new JsonLiteral(BigDecimal.valueOf(10), JsonType.NUMBER))),
+              null);
 
       ComparisonExpression result = ComparisonExpression.eq("id", BigDecimal.valueOf(10));
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -63,10 +68,12 @@ public class ComparisonExpressionTest {
               "bool",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))),
+              null);
 
       ComparisonExpression result = ComparisonExpression.eq("bool", true);
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -76,10 +83,12 @@ public class ComparisonExpressionTest {
               "nullVal",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))),
+              null);
 
       ComparisonExpression result = ComparisonExpression.eq("nullVal", null);
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -89,10 +98,12 @@ public class ComparisonExpressionTest {
               "dateVal",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(new Date(10L), JsonType.DATE))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(new Date(10L), JsonType.DATE))),
+              null);
 
       ComparisonExpression result = ComparisonExpression.eq("dateVal", new Date(10L));
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
   }
 
@@ -105,9 +116,10 @@ public class ComparisonExpressionTest {
               "path",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))),
+              null);
 
-      List<FilterOperation> match =
+      List<FilterOperation<?>> match =
           comparisonExpression.match("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
       assertThat(match).hasSize(1);
 

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bpodgursky.jbool_expressions.Expression;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -9,11 +10,14 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
@@ -68,18 +72,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       String doc2 =
           """
-              {
-                "_id": "doc2",
-                "username": "user2"
-              }
-              """;
+                  {
+                    "_id": "doc2",
+                    "username": "user2"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -112,10 +116,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               20,
@@ -150,18 +159,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-          {
-            "_id": "doc1",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc1",
+                "username": "user1"
+              }
+              """;
       String doc2 =
           """
-          {
-            "_id": "doc2",
-            "username": "user1"
-          }
-          """;
+              {
+                "_id": "doc2",
+                "username": "user1"
+              }
+              """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -220,14 +229,19 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.IN,
-              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.IN,
+                  List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"))));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               2,
@@ -257,12 +271,16 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
     @Test
     public void byIdWithInEmptyArray() throws Exception {
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of());
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of()));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               2,
@@ -288,28 +306,28 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void byIdWithInAndOtherOperator() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 2"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 2"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       String doc2 =
           """
-              {
-                "_id": "doc2",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc2",
+                    "username": "user1"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(2)
               .withColumnSpec(
                   List.of(
@@ -337,9 +355,9 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       ValidatingStargateBridge.QueryAssert candidatesAssert2 =
           withQuery(
                   collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(2)
               .withColumnSpec(
                   List.of(
@@ -370,10 +388,27 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
       DBFilterBase.TextFilter textFilter =
           new DBFilterBase.TextFilter("username", DBFilterBase.TextFilter.Operator.EQ, "user1");
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+      List<DBFilterBase> filters1 =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.IN,
+                  List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"))));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+      List<DBFilterBase> filters2 =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.TextFilter.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(1).setDBFilters(filters2);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter, textFilter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               2,
@@ -408,18 +443,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       String doc2 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -478,14 +513,19 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.IN,
-              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.IN,
+                  List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"))));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               1,
@@ -520,11 +560,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-        {
-          "_id": "doc1",
-          "username": "user1"
-        }
-        """;
+            {
+              "_id": "doc1",
+              "username": "user1"
+            }
+            """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -554,13 +594,17 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -613,13 +657,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of());
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               1,
@@ -653,11 +702,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
+
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -686,12 +736,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -724,12 +780,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -758,13 +814,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.BoolFilter filter =
-          new DBFilterBase.BoolFilter(
-              "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true);
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.BoolFilter(
+                  "registration_active", DBFilterBase.MapFilterBase.Operator.EQ, true));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -797,13 +858,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-                  {
-                    "_id": "doc1",
-                    "username": "user1",
-                    "registration_active" : true,
-                    "date_field" : {"$date" : 1672531200000}
-                  }
-                  """;
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "registration_active" : true,
+                        "date_field" : {"$date" : 1672531200000}
+                      }
+                      """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -834,13 +895,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.DateFilter filter =
-          new DBFilterBase.DateFilter(
-              "date_field", DBFilterBase.MapFilterBase.Operator.EQ, new Date(1672531200000L));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.DateFilter(
+                  "date_field", DBFilterBase.MapFilterBase.Operator.EQ, new Date(1672531200000L)));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -873,12 +939,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("registration_active"))
               .withPageSize(1)
@@ -905,11 +971,16 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.ExistsFilter filter = new DBFilterBase.ExistsFilter("registration_active", true);
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(new DBFilterBase.ExistsFilter("registration_active", true));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -937,18 +1008,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithAllFilter() throws Exception {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND array_contains CONTAINS ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? AND array_contains CONTAINS ?) LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true,
-                "tags": ["tag1", "tag2"]
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true,
+                    "tags": ["tag1", "tag2"]
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags Stag1"), Values.of("tags Stag2"))
               .withPageSize(1)
@@ -975,14 +1046,21 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"),
-              new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+      List<DBFilterBase> filters1 =
+          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+      List<DBFilterBase> filters2 =
+          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
+      implicitAnd.comparisonExpressions.get(1).setDBFilters(filters2);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              filters,
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1015,13 +1093,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true,
-                "tags" : ["tag1","tag2"]
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true,
+                    "tags" : ["tag1","tag2"]
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(2))
               .withPageSize(1)
@@ -1048,11 +1126,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.SizeFilter filter = new DBFilterBase.SizeFilter("tags", 2);
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of(new DBFilterBase.SizeFilter("tags", 2));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               1,
@@ -1088,13 +1170,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true,
-                "tags" : ["tag1","tag2"]
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true,
+                    "tags" : ["tag1","tag2"]
+                  }
+                  """;
       final String hash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
@@ -1122,12 +1204,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.ArrayEqualsFilter filter =
-          new DBFilterBase.ArrayEqualsFilter(new DocValueHasher(), "tags", List.of("tag1", "tag2"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.ArrayEqualsFilter(
+                  new DocValueHasher(), "tags", List.of("tag1", "tag2")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1160,13 +1248,13 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1",
-                "registration_active" : true,
-                "sub_doc" : {"col":"val"}
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "registration_active" : true,
+                    "sub_doc" : {"col":"val"}
+                  }
+                  """;
       final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("sub_doc"), Values.of(hash))
@@ -1194,13 +1282,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.SubDocEqualsFilter filter =
-          new DBFilterBase.SubDocEqualsFilter(
-              new DocValueHasher(), "sub_doc", Map.of("col", "val"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.SubDocEqualsFilter(
+                  new DocValueHasher(), "sub_doc", Map.of("col", "val")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1258,13 +1351,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returningFailure(exception);
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1292,46 +1390,46 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-            {
-              "_id": "doc1",
-              "username": "user1"
-            }
-            """;
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
       String doc2 =
           """
-            {
-              "_id": "doc2",
-              "username": "user2"
-            }
-            """;
+                {
+                  "_id": "doc2",
+                  "username": "user2"
+                }
+                """;
       String doc3 =
           """
-            {
-              "_id": "doc3",
-              "username": "user3"
-            }
-            """;
+                {
+                  "_id": "doc3",
+                  "username": "user3"
+                }
+                """;
       String doc4 =
           """
-            {
-              "_id": "doc4",
-              "username": "user4"
-            }
-            """;
+                {
+                  "_id": "doc4",
+                  "username": "user4"
+                }
+                """;
       String doc5 =
           """
-            {
-              "_id": "doc5",
-              "username": "user5"
-            }
-            """;
+                {
+                  "_id": "doc5",
+                  "username": "user5"
+                }
+                """;
       String doc6 =
           """
-            {
-              "_id": "doc6",
-              "username": "user6"
-            }
-            """;
+                {
+                  "_id": "doc6",
+                  "username": "user6"
+                }
+                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -1438,10 +1536,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.NULL)));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               5,
@@ -1486,65 +1589,65 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-                {
-                  "_id": "doc1",
-                  "username": "user1",
-                  "sort_date": {
-                    "$date": 1672531200000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc1",
+                      "username": "user1",
+                      "sort_date": {
+                        "$date": 1672531200000
+                      }
+                    }
+                    """;
       String doc2 =
           """
-                {
-                  "_id": "doc2",
-                  "username": "user2",
-                  "sort_date": {
-                    "$date": 1672531300000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc2",
+                      "username": "user2",
+                      "sort_date": {
+                        "$date": 1672531300000
+                      }
+                    }
+                    """;
       String doc3 =
           """
-                {
-                  "_id": "doc3",
-                  "username": "user3",
-                  "sort_date": {
-                    "$date": 1672531400000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc3",
+                      "username": "user3",
+                      "sort_date": {
+                        "$date": 1672531400000
+                      }
+                    }
+                    """;
       String doc4 =
           """
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                  ,
-                  "sort_date": {
-                    "$date": 1672531500000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc4",
+                      "username": "user4"
+                      ,
+                      "sort_date": {
+                        "$date": 1672531500000
+                      }
+                    }
+                    """;
       String doc5 =
           """
-                {
-                  "_id": "doc5",
-                  "username": "user5",
-                  "sort_date": {
-                    "$date": 1672531600000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc5",
+                      "username": "user5",
+                      "sort_date": {
+                        "$date": 1672531600000
+                      }
+                    }
+                    """;
       String doc6 =
           """
-                {
-                  "_id": "doc6",
-                  "username": "user6",
-                  "sort_date": {
-                    "$date": 1672531700000
-                  }
-                }
-                """;
+                    {
+                      "_id": "doc6",
+                      "username": "user6",
+                      "sort_date": {
+                        "$date": 1672531700000
+                      }
+                    }
+                    """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -1651,10 +1754,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.of(1672531600000L))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               5,
@@ -1699,46 +1807,46 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-            {
-              "_id": "doc1",
-              "username": "user1"
-            }
-            """;
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
       String doc2 =
           """
-            {
-              "_id": "doc2",
-              "username": "user2"
-            }
-            """;
+                {
+                  "_id": "doc2",
+                  "username": "user2"
+                }
+                """;
       String doc3 =
           """
-            {
-              "_id": "doc3",
-              "username": "user3"
-            }
-            """;
+                {
+                  "_id": "doc3",
+                  "username": "user3"
+                }
+                """;
       String doc4 =
           """
-            {
-              "_id": "doc4",
-              "username": "user4"
-            }
-            """;
+                {
+                  "_id": "doc4",
+                  "username": "user4"
+                }
+                """;
       String doc5 =
           """
-            {
-              "_id": "doc5",
-              "username": "user5"
-            }
-            """;
+                {
+                  "_id": "doc5",
+                  "username": "user5"
+                }
+                """;
       String doc6 =
           """
-            {
-              "_id": "doc6",
-              "username": "user6"
-            }
-            """;
+                {
+                  "_id": "doc6",
+                  "username": "user6"
+                }
+                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -1845,10 +1953,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.NULL)));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               5,
@@ -1887,46 +2000,46 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-            {
-              "_id": "doc1",
-              "username": "user1"
-            }
-            """;
+                {
+                  "_id": "doc1",
+                  "username": "user1"
+                }
+                """;
       String doc2 =
           """
-            {
-              "_id": "doc2",
-              "username": "user2"
-            }
-            """;
+                {
+                  "_id": "doc2",
+                  "username": "user2"
+                }
+                """;
       String doc3 =
           """
-            {
-              "_id": "doc3",
-              "username": "user3"
-            }
-            """;
+                {
+                  "_id": "doc3",
+                  "username": "user3"
+                }
+                """;
       String doc4 =
           """
-            {
-              "_id": "doc4",
-              "username": "user4"
-            }
-            """;
+                {
+                  "_id": "doc4",
+                  "username": "user4"
+                }
+                """;
       String doc5 =
           """
-            {
-              "_id": "doc5",
-              "username": "user5"
-            }
-            """;
+                {
+                  "_id": "doc5",
+                  "username": "user5"
+                }
+                """;
       String doc6 =
           """
-            {
-              "_id": "doc6",
-              "username": "user6"
-            }
-            """;
+                {
+                  "_id": "doc6",
+                  "username": "user6"
+                }
+                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(20)
@@ -2037,10 +2150,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL,
                           Values.NULL)));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               5,
@@ -2089,11 +2207,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2123,13 +2241,17 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -2158,11 +2280,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2195,10 +2317,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       DBFilterBase.IDFilter filter =
           new DBFilterBase.IDFilter(
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of(filter);
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -2227,11 +2354,11 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                  {
+                    "_id": "doc1",
+                    "username": "user1"
+                  }
+                  """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2260,12 +2387,17 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -2289,22 +2421,22 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     @Test
     public void findWithDynamicWithIdRetry() {
       String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       String doc1 =
           """
-              {
-                "_id": "doc1",
-                "username": "user1"
-              }
-              """;
+                        {
+                          "_id": "doc1",
+                          "username": "user1"
+                        }
+                        """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
                   Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
               .withPageSize(1)
               .withColumnSpec(
                   List.of(
@@ -2329,12 +2461,17 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -2365,20 +2502,20 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-        {
-          "_id": "doc1",
-          "username": "user1",
-          "$vector": [0.25, 0.25, 0.25, 0.25]
-        }
-        """;
+            {
+              "_id": "doc1",
+              "username": "user1",
+              "$vector": [0.25, 0.25, 0.25, 0.25]
+            }
+            """;
       String doc2 =
           """
-        {
-          "_id": "doc2",
-          "username": "user1",
-          "$vector": [0.35, 0.35, 0.35, 0.35]
-        }
-        """;
+            {
+              "_id": "doc2",
+              "username": "user1",
+              "$vector": [0.35, 0.35, 0.35, 0.35]
+            }
+            """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2413,10 +2550,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc2))));
 
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation operation =
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               2,
@@ -2448,6 +2590,128 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     public void vectorSearchWithSimilarityProjection() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, SIMILARITY_COSINE(query_vector_value, ?) FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                {
+                  "_id": "doc1",
+                  "username": "user1",
+                  "$vector": [0.25, 0.25, 0.25, 0.25]
+                }
+                """;
+      String doc2 =
+          """
+                {
+                  "_id": "doc2",
+                  "username": "user1",
+                  "$vector": [0.35, 0.35, 0.35, 0.35]
+                }
+                """;
+      String doc1Projection =
+          """
+                {
+                  "_id": "doc1",
+                  "$similarity": 0.75
+                }
+                """;
+      String doc2Projection =
+          """
+                {
+                  "_id": "doc2",
+                  "$similarity": 0.5
+                }
+                """;
+      ValidatingStargateBridge.QueryAssert candidatesAssert =
+          withQuery(
+                  collectionReadCql,
+                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}),
+                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
+              .withPageSize(2)
+              .withColumnSpec(
+                  List.of(
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("key")
+                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("tx_id")
+                          .setType(TypeSpecs.UUID)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("doc_json")
+                          .setType(TypeSpecs.VARCHAR)
+                          .build(),
+                      QueryOuterClass.ColumnSpec.newBuilder()
+                          .setName("SIMILARITY_COSINE(query_vector_value)")
+                          .setType(TypeSpecs.FLOAT)
+                          .build()))
+              .returning(
+                  List.of(
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc1"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc1),
+                          Values.of(0.75f)),
+                      List.of(
+                          Values.of(
+                              CustomValueSerializers.getDocumentIdValue(
+                                  DocumentId.fromString("doc2"))),
+                          Values.of(UUID.randomUUID()),
+                          Values.of(doc2),
+                          Values.of(0.50f))));
+
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                        { "_id" : 1,
+                                          "$similarity": 1
+                                        }
+                                        """));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.vsearch(
+              VECTOR_COMMAND_CONTEXT,
+              implicitAnd,
+              projection,
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      candidatesAssert.assertExecuteCount().isOne();
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments()).hasSize(2);
+      assertThat(result.data().getResponseDocuments().get(0).get("$similarity").floatValue())
+          .isCloseTo(0.75f, Offset.offset(0.001f));
+      assertThat(result.data().getResponseDocuments().get(1).get("$similarity").floatValue())
+          .isCloseTo(0.5f, Offset.offset(0.001f));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void vectorSearchWithSimilarityProjectionDotProduct() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json, SIMILARITY_DOT_PRODUCT(query_vector_value, ?) FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
@@ -2500,7 +2764,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setType(TypeSpecs.VARCHAR)
                           .build(),
                       QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("SIMILARITY_COSINE(query_vector_value)")
+                          .setName("SIMILARITY_DOT_PRODUCT(query_vector_value)")
                           .setType(TypeSpecs.FLOAT)
                           .build()))
               .returning(
@@ -2528,127 +2792,15 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                               "$similarity": 1
                             }
                             """));
-      FindOperation operation =
-          FindOperation.vsearch(
-              VECTOR_COMMAND_CONTEXT,
-              List.of(),
-              projection,
-              null,
-              2,
-              2,
-              ReadType.DOCUMENT,
-              objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters = List.of();
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      // then result
-      CommandResult result = execute.get();
-      assertThat(result.data().getResponseDocuments()).hasSize(2);
-      assertThat(result.data().getResponseDocuments().get(0).get("$similarity").floatValue())
-          .isCloseTo(0.75f, Offset.offset(0.001f));
-      assertThat(result.data().getResponseDocuments().get(1).get("$similarity").floatValue())
-          .isCloseTo(0.5f, Offset.offset(0.001f));
-      assertThat(result.status()).isNullOrEmpty();
-      assertThat(result.errors()).isNullOrEmpty();
-    }
-
-    @Test
-    public void vectorSearchWithSimilarityProjectionDotProduct() throws Exception {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json, SIMILARITY_DOT_PRODUCT(query_vector_value, ?) FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      String doc1 =
-          """
-        {
-          "_id": "doc1",
-          "username": "user1",
-          "$vector": [0.25, 0.25, 0.25, 0.25]
-        }
-        """;
-      String doc2 =
-          """
-        {
-          "_id": "doc2",
-          "username": "user1",
-          "$vector": [0.35, 0.35, 0.35, 0.35]
-        }
-        """;
-      String doc1Projection =
-          """
-        {
-          "_id": "doc1",
-          "$similarity": 0.75
-        }
-        """;
-      String doc2Projection =
-          """
-        {
-          "_id": "doc2",
-          "$similarity": 0.5
-        }
-        """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}),
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("SIMILARITY_DOT_PRODUCT(query_vector_value)")
-                          .setType(TypeSpecs.FLOAT)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of(0.75f)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of(0.50f))));
-
-      DocumentProjector projection =
-          DocumentProjector.createFromDefinition(
-              objectMapper.readTree(
-                  """
-                { "_id" : 1,
-                  "$similarity": 1
-                }
-                """));
       FindOperation operation =
           FindOperation.vsearch(
               VECTOR_DOT_PRODUCT_COMMAND_CONTEXT,
-              List.of(),
+              implicitAnd,
               projection,
               null,
               2,
@@ -2685,12 +2837,12 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       String doc1 =
           """
-            {
-              "_id": "doc1",
-              "username": "user1",
-              "$vector": [0.25, 0.25, 0.25, 0.25]
-            }
-            """;
+                {
+                  "_id": "doc1",
+                  "username": "user1",
+                  "$vector": [0.25, 0.25, 0.25, 0.25]
+                }
+                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2720,13 +2872,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
           FindOperation.vsearchSingle(
               VECTOR_COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper,
@@ -2740,15 +2897,71 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .awaitItem()
               .getItem();
 
-      // assert query execution
+      //       assert query execution
       candidatesAssert.assertExecuteCount().isOne();
-      // then result
+
+      //       then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
           .hasSize(1)
           .contains(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
+    }
+  }
+
+  @Nested
+  class LogicalExpressionOrder {
+
+    @Test
+    public void expressionSort() {
+
+      for (int i = 0; i < 20; i++) {
+        LogicalExpression implicitAnd1 = LogicalExpression.and();
+        implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+        implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+        List<DBFilterBase> filters1_1 =
+            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
+        implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1_1);
+        List<DBFilterBase> filters1_2 =
+            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
+        implicitAnd1.comparisonExpressions.get(1).setDBFilters(filters1_2);
+
+        FindOperation operation1 =
+            FindOperation.unsortedSingle(
+                COMMAND_CONTEXT,
+                implicitAnd1,
+                DocumentProjector.identityProjector(),
+                ReadType.DOCUMENT,
+                objectMapper);
+
+        List<Expression<BuiltCondition>> expressions1 =
+            ExpressionBuilder.buildExpressions(operation1.logicalExpression(), null);
+
+        LogicalExpression implicitAnd2 = LogicalExpression.and();
+        implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+        implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+        List<DBFilterBase> filters2_1 =
+            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
+        implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2_1);
+        List<DBFilterBase> filters2_2 =
+            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
+        implicitAnd2.comparisonExpressions.get(1).setDBFilters(filters2_2);
+
+        FindOperation operation2 =
+            FindOperation.unsortedSingle(
+                COMMAND_CONTEXT,
+                implicitAnd2,
+                DocumentProjector.identityProjector(),
+                ReadType.DOCUMENT,
+                objectMapper);
+
+        List<Expression<BuiltCondition>> expressions2 =
+            ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
+        assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
+      }
     }
   }
 }

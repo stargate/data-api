@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import jakarta.inject.Inject;
@@ -34,8 +35,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY, FilterableResolver::findNoFilter);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -43,67 +44,68 @@ public class FilterMatcherTest {
     public void applyWithFilter() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"col" : "val"}
-              }
-            }
-            """;
+                {
+                  "findOne": {
+                    "sort" : {"user.name" : 1, "user.age" : -1},
+                    "filter" : {"col" : "val"}
+                  }
+                }
+                """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY, FilterableResolver::findNoFilter);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
-  }
 
-  @Nested
-  class FilterMatcherStrictApply {
-    @Test
-    public void applyWithNoFilter() throws Exception {
-      String json =
-          """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1}
-              }
-            }
-            """;
+    @Nested
+    class FilterMatcherStrictApply {
+      @Test
+      public void applyWithNoFilter() throws Exception {
+        String json =
+            """
+                          {
+                            "findOne": {
+                              "sort" : {"user.name" : 1, "user.age" : -1}
+                            }
+                          }
+                          """;
 
-      FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT);
-      matcher
-          .capture("TEST")
-          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
-      assertThat(response.isPresent()).isFalse();
+        FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+        FilterMatcher<FindOneCommand> matcher =
+            new FilterMatcher<>(
+                FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
+        matcher
+            .capture("TEST")
+            .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
+        final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
+        assertThat(response.isPresent()).isFalse();
+      }
     }
 
     @Test
     public void applyWithFilterMatch() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"col" : "val", "col2" : 10}
-              }
-            }
-            """;
+                {
+                  "findOne": {
+                    "sort" : {"user.name" : 1, "user.age" : -1},
+                    "filter" : {"col" : "val", "col2" : 10}
+                  }
+                }
+                """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       matcher
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -111,24 +113,24 @@ public class FilterMatcherTest {
     public void applyWithFilterNotMatch() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"col" : "val"}
-              }
-            }
-            """;
+                {
+                  "findOne": {
+                    "sort" : {"user.name" : 1, "user.age" : -1},
+                    "filter" : {"col" : "val"}
+                  }
+                }
+                """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       matcher
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
   }
@@ -139,20 +141,20 @@ public class FilterMatcherTest {
     public void applyWithNoFilter() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "sort" : {"user.name" : 1, "user.age" : -1}
+                            }
+                          }
+                          """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
       matcher
           .capture("TEST")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
 
@@ -160,24 +162,24 @@ public class FilterMatcherTest {
     public void applyWithFilterMatch() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"col" : "val", "col2" : 10}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "sort" : {"user.name" : 1, "user.age" : -1},
+                              "filter" : {"col" : "val", "col2" : 10}
+                            }
+                          }
+                          """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       matcher
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -185,24 +187,24 @@ public class FilterMatcherTest {
     public void applyWithFilterNoMatch() throws Exception {
       String json =
           """
-            {
-              "findOne": {
-                "sort" : {"user.name" : 1, "user.age" : -1},
-                "filter" : {"col" : "val"}
-              }
-            }
-            """;
+                          {
+                            "findOne": {
+                              "sort" : {"user.name" : 1, "user.age" : -1},
+                              "filter" : {"col" : "val"}
+                            }
+                          }
+                          """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       matcher
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
-      final Optional<CaptureGroups<FindOneCommand>> response = matcher.apply(findOneCommand);
+      final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
   }

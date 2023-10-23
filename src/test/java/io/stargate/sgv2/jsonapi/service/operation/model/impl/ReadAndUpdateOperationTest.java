@@ -18,6 +18,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
@@ -181,13 +183,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_VECTOR_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -279,13 +285,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
       String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -462,12 +473,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               1,
@@ -605,13 +621,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -726,13 +746,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -914,12 +939,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               100,
               ReadType.SORTED_DOCUMENT,
@@ -1095,12 +1126,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               100,
               ReadType.SORTED_DOCUMENT,
@@ -1215,13 +1251,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1293,13 +1334,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build()))
               .returning(List.of());
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -1487,12 +1533,17 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               21,
@@ -1607,13 +1658,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
               .withSerialConsistency(queriesConfig.serialConsistency())
               .returning(List.of(List.of(Values.of(true))));
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               21,
@@ -1684,12 +1740,18 @@ public class ReadAndUpdateOperationTest extends AbstractValidatingStargateBridge
                           .build()))
               .returning(List.of());
 
-      DBFilterBase.TextFilter filter =
-          new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
       FindOperation findOperation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
-              List.of(filter),
+              implicitAnd,
               DocumentProjector.identityProjector(),
               null,
               21,

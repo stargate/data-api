@@ -7,13 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -48,9 +42,16 @@ public class FilterClauseDeserializerTest {
               "username",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
+              null);
       assertThat(filterClause).isNotNull();
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -65,9 +66,16 @@ public class FilterClauseDeserializerTest {
               "username",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
+              null);
       assertThat(filterClause).isNotNull();
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -86,8 +94,8 @@ public class FilterClauseDeserializerTest {
                     """;
 
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-
-      assertThat(filterClause.comparisonExpressions()).hasSize(0);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(0);
     }
 
     @Test
@@ -100,9 +108,16 @@ public class FilterClauseDeserializerTest {
               "username",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))));
+                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -116,9 +131,16 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ,
-                      new JsonLiteral(BigDecimal.valueOf(40), JsonType.NUMBER))));
+                      new JsonLiteral(BigDecimal.valueOf(40), JsonType.NUMBER))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -131,9 +153,16 @@ public class FilterClauseDeserializerTest {
               "boolType",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -147,15 +176,74 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ,
-                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))));
+                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleDateAndOr() throws Exception {
+      String json =
+          """
+               { "$and" : [{"dateType": {"$date": 1672531200000}}]}
+          """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "dateType",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
     public void mustHandleDateAsEpoch() throws Exception {
       String json = """
          {"dateType": {"$date": "2023-01-01"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+              });
+    }
+
+    @Test
+    public void mustHandleDateAsEpochAndOr() throws Exception {
+      String json = """
+         { "$or" : [{"dateType": {"$date": "2023-01-01"}}]}
         """;
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -195,9 +283,85 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ArrayComparisonOperator.ALL,
-                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))));
+                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleAllAndOr() throws Exception {
+      String json =
+          """
+                    {
+                           "$or": [
+                               {"allPath" : {"$all": ["a", "b"]}},
+                               {
+                                   "age": "testAge"
+                               }
+                           ]
+                       }
+                                """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "allPath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.ALL,
+                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getPath())
+          .isEqualTo(expectedResult1.getPath());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getPath())
+          .isEqualTo(expectedResult2.getPath());
     }
 
     @Test
@@ -239,9 +403,16 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(2), JsonType.NUMBER))));
+                      new JsonLiteral(new BigDecimal(2), JsonType.NUMBER))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -284,9 +455,16 @@ public class FilterClauseDeserializerTest {
               "sub_doc",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.SUB_DOC))));
+                      ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.SUB_DOC))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -302,9 +480,16 @@ public class FilterClauseDeserializerTest {
                       ValueComparisonOperator.IN,
                       new JsonLiteral(
                           List.of(DocumentId.fromString("2"), DocumentId.fromString("3")),
-                          JsonType.ARRAY))));
+                          JsonType.ARRAY))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -318,9 +503,296 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.IN,
-                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))));
+                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleNonIdFieldInAndOr() throws Exception {
+      String json =
+          """
+               {
+                           "$and": [
+                               {"name" : {"$in": ["name1", "name2"]}},
+                               {
+                                   "age": "testAge"
+                               }
+                           ]
+                       }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.IN,
+                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getPath())
+          .isEqualTo(expectedResult1.getPath());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getPath())
+          .isEqualTo(expectedResult2.getPath());
+    }
+
+    @Test
+    public void simpleOr() throws Exception {
+
+      String json =
+          """
+              {
+                                "$or":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+    }
+
+    @Test
+    public void simpleAnd() throws Exception {
+
+      String json =
+          """
+              {
+                                "$and":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+    }
+
+    @Test
+    public void nestedOrAnd() throws Exception {
+
+      String json =
+          """
+              {
+                              "$and": [
+                                          {
+                                              "name": "testName"
+                                          },
+                                          {
+                                              "age": "testAge"
+                                          },
+                                          {
+                                              "$or": [
+                                                  {
+                                                      "address": "testAddress"
+                                                  },
+                                                  {
+                                                      "height": "testHeight"
+                                                  }
+                                              ]
+                                          }
+                                      ]
+                              }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult3 =
+          new ComparisonExpression(
+              "address",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAddress", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult4 =
+          new ComparisonExpression(
+              "height",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testHeight", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(4);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions)
+          .hasSize(2);
+
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult3.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult4.getFilterOperations());
     }
 
     @Test
@@ -333,15 +805,44 @@ public class FilterClauseDeserializerTest {
               "_id",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))));
+                      ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.comparisonExpressions()).hasSize(1).contains(expectedResult);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
     public void mustHandleInArrayOnly() throws Exception {
       String json = """
                {"_id" : {"$in": "aaa"}}
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$in operator must have `ARRAY`");
+              });
+    }
+
+    @Test
+    public void mustHandleInArrayOnlyAnd() throws Exception {
+      String json =
+          """
+               {
+                           "$and": [
+                               {"_id" : {"$in": "aaa"}},
+                               {
+                                   "name": "testName"
+                               }
+                           ]
+                       }
               """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
@@ -369,6 +870,36 @@ public class FilterClauseDeserializerTest {
                         "$in operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
+              });
+    }
+
+    @Test
+    public void multipleIdFilterAndOr() throws Exception {
+      String json =
+          """
+               {
+                                  "_id": "testID1",
+                                  "$or": [
+                                      {
+                                          "name": "testName"
+                                      },
+                                      {
+                                          "age": "testAge"
+                                      },
+                                      {
+                                          "_id": "testID2"
+                                      }
+                                  ]
+                              }
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal");
               });
     }
   }

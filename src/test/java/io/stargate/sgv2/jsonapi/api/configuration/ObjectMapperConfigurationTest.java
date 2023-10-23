@@ -49,16 +49,16 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "findOne": {
-              "sort": {
-                "user.name" : 1,
-                "user.age" : -1
-              },
-              "filter": {"username": "aaron"}
-            }
-          }
-          """;
+              {
+                "findOne": {
+                  "sort": {
+                    "user.name" : 1,
+                    "user.age" : -1
+                  },
+                  "filter": {"username": "aaron"}
+                }
+              }
+              """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -75,8 +75,9 @@ class ObjectMapperConfigurationTest {
 
                 FilterClause filterClause = findOne.filterClause();
                 assertThat(filterClause).isNotNull();
-                assertThat(filterClause.comparisonExpressions()).hasSize(1);
-                assertThat(filterClause.comparisonExpressions())
+                assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
+                    .isEqualTo(1);
+                assertThat(filterClause.logicalExpression().comparisonExpressions)
                     .singleElement()
                     .satisfies(
                         expression -> {
@@ -85,8 +86,10 @@ class ObjectMapperConfigurationTest {
                                   ValueComparisonOperator.EQ,
                                   new JsonLiteral<>("aaron", JsonType.STRING));
 
-                          assertThat(expression.path()).isEqualTo("username");
-                          assertThat(expression.filterOperations()).singleElement().isEqualTo(op);
+                          assertThat(expression.getPath()).isEqualTo("username");
+                          assertThat(expression.getFilterOperations())
+                              .singleElement()
+                              .isEqualTo(op);
                         });
               });
     }
@@ -259,19 +262,22 @@ class ObjectMapperConfigurationTest {
               cmd -> {
                 FilterClause filterClause = cmd.filterClause();
                 assertThat(filterClause).isNotNull();
-                assertThat(filterClause.comparisonExpressions()).hasSize(1);
-                assertThat(filterClause.comparisonExpressions())
-                    .singleElement()
-                    .satisfies(
-                        expression -> {
-                          ValueComparisonOperation<String> op =
-                              new ValueComparisonOperation<>(
-                                  ValueComparisonOperator.EQ,
-                                  new JsonLiteral<>("Aaron", JsonType.STRING));
+                assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
+                    .isEqualTo(1);
 
-                          assertThat(expression.path()).isEqualTo("username");
-                          assertThat(expression.filterOperations()).singleElement().isEqualTo(op);
-                        });
+                assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+                    .isEqualTo("username");
+                ValueComparisonOperation<String> op =
+                    new ValueComparisonOperation<>(
+                        ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
+                assertThat(
+                        filterClause
+                            .logicalExpression()
+                            .comparisonExpressions
+                            .get(0)
+                            .getFilterOperations()
+                            .get(0))
+                    .isEqualTo(op);
               });
     }
 

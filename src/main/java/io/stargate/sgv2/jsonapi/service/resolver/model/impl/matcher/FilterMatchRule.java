@@ -3,9 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -18,12 +17,10 @@ import java.util.function.BiFunction;
  *
  * <p>T - Command type to match
  */
-public record FilterMatchRule<T extends Command & Filterable>(
-    FilterMatcher<T> matcher,
-    BiFunction<CommandContext, CaptureGroups<T>, List<DBFilterBase>> resolveFunction)
-    implements BiFunction<CommandContext, T, Optional<List<DBFilterBase>>> {
+public record FilterMatchRule<T extends Command & Filterable>(FilterMatcher<T> matcher)
+    implements BiFunction<CommandContext, T, Optional<LogicalExpression>> {
   @Override
-  public Optional<List<DBFilterBase>> apply(CommandContext commandContext, T command) {
-    return matcher.apply(command).map(captures -> resolveFunction.apply(commandContext, captures));
+  public Optional<LogicalExpression> apply(CommandContext commandContext, T command) {
+    return matcher.apply(command);
   }
 }

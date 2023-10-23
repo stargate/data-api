@@ -47,7 +47,7 @@ class CountDocumentsCommandResolverTest {
               CountOperation.class,
               op -> {
                 assertThat(op.commandContext()).isEqualTo(context);
-                assertThat(op.filters()).isEmpty();
+                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
               });
     }
 
@@ -75,7 +75,9 @@ class CountDocumentsCommandResolverTest {
                     new DBFilterBase.TextFilter("name", Operator.EQ, "Aaron");
 
                 assertThat(op.commandContext()).isEqualTo(context);
-                assertThat(op.filters()).singleElement().isEqualTo(expected);
+                assertThat(
+                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(expected);
               });
     }
   }

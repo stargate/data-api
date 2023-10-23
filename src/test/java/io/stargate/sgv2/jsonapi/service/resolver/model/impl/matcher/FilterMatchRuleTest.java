@@ -9,6 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -16,7 +17,7 @@ import jakarta.inject.Inject;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -40,28 +41,24 @@ public class FilterMatchRuleTest {
               }
               """;
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
+          captureExpression -> filters;
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
-          resolveFunction =
-              (commandContext, captures) -> {
-                return filters;
-              };
 
-      FilterMatchRule<FindOneCommand> filterMatchRule =
-          new FilterMatchRule(matcher, resolveFunction);
-      Optional<List<DBFilterBase>> response =
+      FilterMatchRule<FindOneCommand> filterMatchRule = new FilterMatchRule(matcher);
+      Optional<LogicalExpression> response =
           filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isPresent();
 
-      matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+      matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
-      filterMatchRule = new FilterMatchRule(matcher, resolveFunction);
+      filterMatchRule = new FilterMatchRule(matcher);
       response =
           filterMatchRule.apply(new CommandContext("namespace", "collection"), findOneCommand);
       assertThat(response).isEmpty();
@@ -78,24 +75,19 @@ public class FilterMatchRuleTest {
                   }
                   """;
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
+          captureExpression -> filters;
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
 
-      //      matcher.capture("capture marker")
-      //              .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
-
-      BiFunction<CommandContext, CaptureGroups<FindOneCommand>, List<DBFilterBase>>
-          resolveFunction = (commandContext, captures) -> filters;
-
-      FilterMatchRule<FindOneCommand> filterMatchRule =
-          new FilterMatchRule(matcher, resolveFunction);
+      FilterMatchRule<FindOneCommand> filterMatchRule = new FilterMatchRule(matcher);
 
       filterMatchRule
           .matcher()
           .capture("capture marker")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
-      Optional<List<DBFilterBase>> response =
+      Optional<LogicalExpression> response =
           filterMatchRule.apply(
               new CommandContext("testNamespace", "testCollection"), findOneCommand);
       assertThat(response).isPresent();
