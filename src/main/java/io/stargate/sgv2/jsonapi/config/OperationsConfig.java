@@ -23,6 +23,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
+import javax.annotation.Nullable;
 
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
@@ -108,5 +110,40 @@ public interface OperationsConfig {
     @Positive
     @WithDefault("3")
     int retries();
+  }
+
+  /** Cassandra/AstraDB related configurations. */
+  @NotNull
+  @Valid
+  DatabaseConfig databaseConfig();
+
+  interface DatabaseConfig {
+
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault("cassandra")
+    String type();
+
+    /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("cassandra")
+    String userName();
+
+    /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("cassandra")
+    String password();
+
+    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("127.0.0.1")
+    List<String> cassandraContactPoints();
+
+    /** AstraDB token (when type is <code>astra</code>) */
+    @Nullable
+    String token();
+
+    /** Secure connect bundle path (when type is <code>astra</code>) */
+    @Nullable
+    String secureConnectBundlePath();
   }
 }
