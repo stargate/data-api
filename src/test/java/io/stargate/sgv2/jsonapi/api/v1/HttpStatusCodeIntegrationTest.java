@@ -165,7 +165,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
       AnyOf<String> anyOf =
           AnyOf.anyOf(
               endsWith("INVALID_ARGUMENT: Keyspace '%s' doesn't exist".formatted("badNamespace")),
-              endsWith("INVALID_ARGUMENT: Unknown keyspace %s".formatted("badNamespace")));
+              endsWith(
+                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
+                      .formatted("badNamespace")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -177,7 +179,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test

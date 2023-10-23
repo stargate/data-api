@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import jakarta.validation.constraints.*;
@@ -15,7 +16,8 @@ public record CreateCollectionCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name,
-    @Nullable
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
         @Schema(
             description = "Configuration for the collection",
             type = SchemaType.OBJECT,
@@ -30,7 +32,8 @@ public record CreateCollectionCommand(
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
           VectorSearchConfig vector,
-      @Nullable
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
           @Schema(
               description = "Embedding api configuration to support `$vectorize`",
               type = SchemaType.OBJECT,
@@ -74,7 +77,13 @@ public record CreateCollectionCommand(
                 type = SchemaType.OBJECT,
                 implementation = VectorizeOptions.class)
             VectorizeOptions options) {
-      public record VectorizeOptions(String modelName) {}
+      public record VectorizeOptions(
+          @NotNull
+              @Schema(
+                  description = "Model name used for embedding data",
+                  type = SchemaType.STRING,
+                  implementation = String.class)
+              String modelName) {}
     }
   }
 }
