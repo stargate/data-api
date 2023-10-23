@@ -3,17 +3,13 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -1440,6 +1436,52 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(3));
+    }
+
+    @Test
+    public void exceedMaxFieldInFilter() {
+      // Max allowed 64, so fail with 65
+      String json = createJsonStringWithNFilterFields(65);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              endsWith(
+                  " filter has 65 fields, exceeds maximum allowed "
+                      + DocumentLimitsConfig.DEFAULT_MAX_FILTER_SIZE))
+          .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    private static String createJsonStringWithNFilterFields(int numberOfFields) {
+      StringBuilder sb = new StringBuilder();
+
+      sb.append("{\n");
+      sb.append("  \"find\": {\n");
+      sb.append("    \"filter\": {\n");
+
+      for (int i = 1; i <= numberOfFields; i++) {
+        sb.append("      \"name").append(i).append("\": \"").append(i).append("\"");
+        if (i < numberOfFields) {
+          sb.append(",\n");
+        } else {
+          sb.append("\n");
+        }
+      }
+
+      sb.append("    }\n");
+      sb.append("  }\n");
+      sb.append("}");
+
+      return sb.toString();
     }
   }
 
