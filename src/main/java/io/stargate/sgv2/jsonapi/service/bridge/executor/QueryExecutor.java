@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
@@ -56,6 +59,11 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
+  public Uni<ResultSet> executeRead(BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
+    return null;//TODO CQL
+  }
+
+
   /**
    * Runs the provided write document query, Updates the query with parameters
    *
@@ -77,6 +85,10 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
+  public Uni<ResultSet> executeWrite(BoundStatement boundStatement) {
+    return null;//TODO CQL
+  }
+
   /**
    * Runs the provided schema change query like create collection, Updates the query with parameters
    *
@@ -91,6 +103,10 @@ public class QueryExecutor {
         QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
     return queryBridge(
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
+  }
+
+  public Uni<ResultSet> executeSchemaChange(BoundStatement boundStatement) {
+        return null;//TODO CQL
   }
 
   private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
@@ -144,6 +160,10 @@ public class QueryExecutor {
                           .filter(table -> table.getName().equals(collectionName))
                           .findFirst());
             });
+  }
+
+  protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
+    return null;//TODO CQL
   }
 
   private static byte[] decodeBase64(String base64encoded) {
