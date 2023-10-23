@@ -108,7 +108,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       throw new JsonApiException(
           ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
-              "filter has %d fields, exceeds maximum allowed (%s)",
+              "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
               filter.size(),
               docLimits.maxFilterObjectProperties()));

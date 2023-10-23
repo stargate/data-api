@@ -11,7 +11,6 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import jakarta.inject.Inject;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -24,8 +23,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
-  @Inject DocumentLimitsConfig docLimits;
-
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
@@ -1277,7 +1274,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1285,9 +1282,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               endsWith(
-                  " number of fields in filter has (65) exceeds maximum allowed ("
-                      + docLimits.maxFilterObjectProperties()
-                      + ")"))
+                  " filter has 65 fields, exceeds maximum allowed "
+                      + DocumentLimitsConfig.DEFAULT_MAX_FILTER_SIZE))
           .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

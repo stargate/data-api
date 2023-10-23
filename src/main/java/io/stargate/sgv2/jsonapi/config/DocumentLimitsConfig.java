@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Positive;
 @StaticInitSafe
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
+
+  int DEFAULT_MAX_FILTER_SIZE = 64;
+
   /**
    * @return Defines the maximum document page size, defaults to {@code 1 meg} (1 million
    *     characters).
@@ -43,7 +46,7 @@ public interface DocumentLimitsConfig {
   int maxObjectProperties();
 
   @Positive
-  @WithDefault("64")
+  @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
   int maxFilterObjectProperties();
 
   /** @return Defines the maximum length of a single Number value (in characters). */
