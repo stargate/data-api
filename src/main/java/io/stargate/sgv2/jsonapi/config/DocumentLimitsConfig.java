@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Positive;
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
 
+  /** Defines the max size of filter fields, default is 64 fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
 
   /**
@@ -45,6 +46,11 @@ public interface DocumentLimitsConfig {
   @WithDefault("64")
   int maxObjectProperties();
 
+  /**
+   * @return Defines the max size of filter fields, defaults to {@code 64}, which is tha same as the
+   *     maximum number of properties of a single Json object. (note: this does not count the fields
+   *     in '$operation' such as $in, $all)
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
   int maxFilterObjectProperties();
