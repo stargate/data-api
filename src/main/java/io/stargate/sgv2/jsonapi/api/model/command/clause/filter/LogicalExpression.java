@@ -53,12 +53,11 @@ public class LogicalExpression {
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {
     // skip empty logic expression
-    if (logicalExpression.logicalExpressions.isEmpty()
-        && logicalExpression.comparisonExpressions.isEmpty()) {
+    if (logicalExpression.isEmpty()) {
       return;
     }
-    totalComparisonExpressionCount += logicalExpression.totalComparisonExpressionCount;
-    totalIdComparisonExpressionCount += logicalExpression.totalIdComparisonExpressionCount;
+    totalComparisonExpressionCount += logicalExpression.getTotalComparisonExpressionCount();
+    totalIdComparisonExpressionCount += logicalExpression.getTotalIdComparisonExpressionCount();
     logicalExpressions.add(logicalExpression);
   }
 
@@ -80,6 +79,10 @@ public class LogicalExpression {
 
   public int getTotalIdComparisonExpressionCount() {
     return totalIdComparisonExpressionCount;
+  }
+
+  public boolean isEmpty() {
+    return logicalExpressions.isEmpty() && comparisonExpressions.isEmpty();
   }
 
   public String toString() {

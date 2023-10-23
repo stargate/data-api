@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  */
 public class ComparisonExpression {
 
-  @NotBlank(message = "json node path can not be null in filter")
   private final String path;
 
   @Valid @NotEmpty private final List<FilterOperation<?>> filterOperations;
@@ -35,7 +34,9 @@ public class ComparisonExpression {
   }
 
   public ComparisonExpression(
-      String path, List<FilterOperation<?>> filterOperations, List<DBFilterBase> dbFilters) {
+      @NotBlank(message = "json node path can not be null in filter") String path,
+      List<FilterOperation<?>> filterOperations,
+      List<DBFilterBase> dbFilters) {
     this.path = path;
     this.filterOperations = filterOperations;
     this.dbFilters = dbFilters;

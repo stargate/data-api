@@ -40,9 +40,7 @@ public class FilterMatcher<T extends Command & Filterable> {
   public Optional<LogicalExpression> apply(T command) {
     FilterClause filter = command.filterClause();
     if (strategy == MatchStrategy.EMPTY) {
-      if (filter == null
-          || (filter.logicalExpression().logicalExpressions.isEmpty()
-              && filter.logicalExpression().comparisonExpressions.isEmpty())) {
+      if (filter == null || filter.logicalExpression().isEmpty()) {
         return Optional.of(LogicalExpression.and());
       } else {
         return Optional.empty();

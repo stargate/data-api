@@ -899,7 +899,7 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .isEqualTo(
-                        "Should be just have one _id filter, key cannot be restricted by more than one relation if it includes an Equal");
+                        "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal");
               });
     }
   }

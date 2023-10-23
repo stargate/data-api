@@ -145,7 +145,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       throw new JsonApiException(
           ErrorCode.INVALID_FILTER_EXPRESSION,
           String.format(
-              "Cannot filter on '%s' field within '%s'",
+              "Cannot filter on '%s' field within '%s', ID field can not be used with $or operator",
               DocumentConstants.Fields.DOC_ID, LogicalExpression.LogicalOperator.OR.getOperator()));
     }
 
