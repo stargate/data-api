@@ -241,6 +241,43 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(1));
     }
 
+    // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
+    @Test
+    public void byIdEmptySort() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                  "find": {
+                    "filter": {"username" : "user1"},
+                    "projection": {},
+                    "options": {},
+                    "sort": { }
+                  }
+                }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                {
+                    "_id": "doc1",
+                    "username": "user1",
+                    "active_user" : true,
+                    "date" : {"$date": 1672531200000}
+                }
+                """))
+          .body("data.documents", hasSize(1));
+    }
+
     @Test
     public void byDateId() {
       String json =
