@@ -25,18 +25,15 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
 
   public boolean hasVsearchClause() {
     return sortExpressions != null
-        && sortExpressions.stream()
-            .findFirst()
-            .get()
-            .path()
-            .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+        && !sortExpressions.isEmpty()
+        && sortExpressions.get(0).path().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
   }
 
   public boolean hasVectorizeSearchClause() {
     return sortExpressions != null
-        && sortExpressions.stream()
-            .findFirst()
-            .get()
+        && !sortExpressions.isEmpty()
+        && sortExpressions
+            .get(0)
             .path()
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
   }

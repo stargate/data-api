@@ -251,7 +251,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """
                 {
                   "find": {
-                    "filter" : {"_id" : "doc1"},
+                    "filter": {"username" : "user1"},
+                    "projection": {},
+                    "options": {},
                     "sort": { }
                   }
                 }
