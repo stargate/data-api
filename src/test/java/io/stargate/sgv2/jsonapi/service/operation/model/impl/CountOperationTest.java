@@ -14,6 +14,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -52,7 +54,8 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of(List.of(Values.of(5))));
 
-      CountOperation countOperation = new CountOperation(CONTEXT, List.of());
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
       Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
@@ -93,12 +96,16 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of(List.of(Values.of(2))));
 
-      CountOperation countOperation =
-          new CountOperation(
-              CONTEXT,
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      implicitAnd
+          .comparisonExpressions
+          .get(0)
+          .setDBFilters(
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")));
+      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
       Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
@@ -139,12 +146,17 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returning(List.of(List.of(Values.of(0))));
 
-      CountOperation countOperation =
-          new CountOperation(
-              CONTEXT,
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      implicitAnd
+          .comparisonExpressions
+          .get(0)
+          .setDBFilters(
               List.of(
                   new DBFilterBase.TextFilter(
                       "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")));
+
+      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
       Supplier<CommandResult> execute =
           countOperation
               .execute(queryExecutor)
@@ -185,7 +197,8 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .build()))
               .returningFailure(failure);
 
-      CountOperation countOperation = new CountOperation(CONTEXT, List.of());
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
       Throwable result =
           countOperation
               .execute(queryExecutor)

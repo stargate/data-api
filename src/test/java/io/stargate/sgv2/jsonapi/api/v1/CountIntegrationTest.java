@@ -189,6 +189,39 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
     }
 
     @Test
+    public void countBySimpleOr() {
+      String json =
+          """
+{
+    "countDocuments": {
+        "filter": {
+            "$or": [
+                {
+                    "username": "user1"
+                },
+                {
+                    "username": "user2"
+                }
+            ]
+        }
+    }
+}
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(2))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void withEqComparisonOperator() {
       String json =
           """
@@ -350,6 +383,46 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.count", is(1))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void withAllOperatorAnd() {
+      String json =
+          """
+                              {
+                                  "countDocuments": {
+                                      "filter": {
+                                          "$and": [
+                                              {
+                                                  "tags": {
+                                                      "$all": [
+                                                          "tag1",
+                                                          "tag2"
+                                                      ]
+                                                  }
+                                              },
+                                              {
+                                                  "active_user": {
+                                                      "$exists": true
+                                                  }
+                                              }
+                                          ]
+                                      }
+                                  }
+                              }
+                      """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(0))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
     }

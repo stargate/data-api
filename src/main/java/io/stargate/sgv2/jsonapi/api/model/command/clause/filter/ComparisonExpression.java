@@ -2,15 +2,13 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -19,9 +17,30 @@ import java.util.stream.Collectors;
  * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
  */
-public record ComparisonExpression(
-    @NotBlank(message = "json node path can not be null in filter") String path,
-    @Valid @NotEmpty List<FilterOperation<?>> filterOperations) {
+public class ComparisonExpression {
+
+  private final String path;
+
+  @Valid @NotEmpty private final List<FilterOperation<?>> filterOperations;
+
+  private List<DBFilterBase> dbFilters;
+
+  public List<DBFilterBase> getDbFilters() {
+    return dbFilters;
+  }
+
+  public List<FilterOperation<?>> getFilterOperations() {
+    return filterOperations;
+  }
+
+  public ComparisonExpression(
+      @NotBlank(message = "json node path can not be null in filter") String path,
+      List<FilterOperation<?>> filterOperations,
+      List<DBFilterBase> dbFilters) {
+    this.path = path;
+    this.filterOperations = filterOperations;
+    this.dbFilters = dbFilters;
+  }
 
   /**
    * Shortcut to create equals against a literal, mare condition cannot be added using add().
@@ -35,7 +54,8 @@ public record ComparisonExpression(
   public static ComparisonExpression eq(String path, Object value) {
     return new ComparisonExpression(
         path,
-        List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))));
+        List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))),
+        null);
   }
 
   /**
@@ -48,6 +68,10 @@ public record ComparisonExpression(
    */
   public void add(FilterOperator operator, Object value) {
     filterOperations.add(new ValueComparisonOperation<>(operator, getLiteral(value)));
+  }
+
+  public String getPath() {
+    return path;
   }
 
   /**
@@ -86,7 +110,7 @@ public record ComparisonExpression(
         String.format("Unsupported filter value type %s", value.getClass()));
   }
 
-  public List<FilterOperation> match(
+  public List<FilterOperation<?>> match(
       String matchPath, EnumSet<? extends FilterOperator> operator, JsonType type) {
     if ("*".equals(matchPath) || matchPath.equals(path)) {
       return filterOperations.stream()
@@ -95,5 +119,22 @@ public record ComparisonExpression(
     } else {
       return List.of();
     }
+  }
+
+  public void setDBFilters(List<DBFilterBase> dbFilters) {
+    this.dbFilters = dbFilters;
+  }
+
+  @Override
+  public String toString() {
+    return "ComparisonExpression{"
+        + "path='"
+        + path
+        + '\''
+        + ", filterOperations="
+        + filterOperations
+        + ", dbFilters="
+        + dbFilters
+        + '}';
   }
 }

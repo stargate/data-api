@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Applies a series of {@link FilterMatchRule}'s to either create an {@link Operation}
@@ -21,7 +23,7 @@ import java.util.function.BiFunction;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<List<DBFilterBase>>>> matchRules =
+  private final List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> matchRules =
       new ArrayList<>();
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
@@ -43,10 +45,10 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      BiFunction<CommandContext, CaptureGroups<T>, List<DBFilterBase>> resolveFunction,
+      Function<CaptureExpression, List<DBFilterBase>> resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
-        new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
+        new FilterMatchRule<T>(new FilterMatcher<T>(matchStrategy, resolveFunction));
     matchRules.add(rule);
     return rule;
   }
@@ -58,12 +60,12 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public List<DBFilterBase> apply(CommandContext commandContext, T command) {
+  public LogicalExpression apply(CommandContext commandContext, T command) {
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
-        .map(Optional::get) // unwraps the Optional from the resolver function.
-        .findFirst()
+        .map(Optional::get)
+        .findFirst() // unwraps the Optional from the resolver function.
         .orElseThrow(
             () ->
                 new JsonApiException(
@@ -72,7 +74,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   }
 
   @VisibleForTesting
-  protected List<BiFunction<CommandContext, T, Optional<List<DBFilterBase>>>> getMatchRules() {
+  protected List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> getMatchRules() {
     return matchRules;
   }
 }

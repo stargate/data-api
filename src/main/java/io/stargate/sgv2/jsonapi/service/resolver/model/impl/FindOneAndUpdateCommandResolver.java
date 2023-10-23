@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -9,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -82,7 +82,8 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
 
   private FindOperation getFindOperation(
       CommandContext commandContext, FindOneAndUpdateCommand command) {
-    List<DBFilterBase> filters = resolve(commandContext, command);
+    LogicalExpression logicalExpression = resolve(commandContext, command);
+
     final SortClause sortClause = command.sortClause();
 
     // vectorize sort clause
@@ -93,7 +94,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
-          filters,
+          logicalExpression,
           DocumentProjector.identityProjector(),
           ReadType.DOCUMENT,
           objectMapper,
@@ -105,7 +106,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     if (orderBy != null) {
       return FindOperation.sortedSingle(
           commandContext,
-          filters,
+          logicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),
@@ -121,7 +122,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     } else {
       return FindOperation.unsortedSingle(
           commandContext,
-          filters,
+          logicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path, hence pass identity projector.
           DocumentProjector.identityProjector(),

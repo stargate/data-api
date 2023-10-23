@@ -17,6 +17,8 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
@@ -122,14 +124,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     collectionReadCql =
-        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
     ValidatingStargateBridge.QueryAssert reReadQueryAssert =
         withQuery(
                 collectionReadCql,
-                Values.of("username " + new DocValueHasher().getHash("user1").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                Values.of("username " + new DocValueHasher().getHash("user1").hash()))
             .withPageSize(1)
             .withColumnSpec(
                 List.of(
@@ -215,12 +217,18 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
-    DBFilterBase.TextFilter filter =
-        new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    List<DBFilterBase> filters =
+        List.of(
+            new DBFilterBase.TextFilter(
+                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+    implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
     FindOperation findOperation =
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
-            List.of(filter),
+            implicitAnd,
             DocumentProjector.identityProjector(),
             ReadType.DOCUMENT,
             objectMapper);
@@ -318,14 +326,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     collectionReadCql =
-        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
     ValidatingStargateBridge.QueryAssert reReadQueryAssert =
         withQuery(
                 collectionReadCql,
-                Values.of("username " + new DocValueHasher().getHash("user1").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                Values.of("username " + new DocValueHasher().getHash("user1").hash()))
             .withPageSize(1)
             .withColumnSpec(
                 List.of(
@@ -411,12 +419,18 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
-    DBFilterBase.TextFilter filter =
-        new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    List<DBFilterBase> filters =
+        List.of(
+            new DBFilterBase.TextFilter(
+                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+    implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
     FindOperation findOperation =
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
-            List.of(filter),
+            implicitAnd,
             DocumentProjector.identityProjector(),
             ReadType.DOCUMENT,
             objectMapper);
@@ -522,14 +536,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc1))));
 
     collectionReadCql =
-        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 1"
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
     ValidatingStargateBridge.QueryAssert reReadQueryAssert =
         withQuery(
                 collectionReadCql,
-                Values.of("username " + new DocValueHasher().getHash("user1").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                Values.of("username " + new DocValueHasher().getHash("user1").hash()))
             .withPageSize(1)
             .withColumnSpec(
                 List.of(
@@ -615,12 +629,18 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
-    DBFilterBase.TextFilter filter =
-        new DBFilterBase.TextFilter("username", DBFilterBase.MapFilterBase.Operator.EQ, "user1");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    List<DBFilterBase> filters =
+        List.of(
+            new DBFilterBase.TextFilter(
+                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+    implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
     FindOperation findOperation =
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
-            List.of(filter),
+            implicitAnd,
             DocumentProjector.identityProjector(),
             ReadType.DOCUMENT,
             objectMapper);
@@ -753,14 +773,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc2))));
 
     collectionReadCql =
-        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 3"
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
     ValidatingStargateBridge.QueryAssert reReadFirstQueryAssert =
         withQuery(
                 collectionReadCql,
-                Values.of("status " + new DocValueHasher().getHash("active").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                Values.of("status " + new DocValueHasher().getHash("active").hash()))
             .withPageSize(3)
             .withColumnSpec(
                 List.of(
@@ -878,12 +898,18 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(true))));
 
-    DBFilterBase.TextFilter filter =
-        new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    List<DBFilterBase> filters =
+        List.of(
+            new DBFilterBase.TextFilter(
+                "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+    implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
     FindOperation findOperation =
         FindOperation.unsorted(
             COMMAND_CONTEXT,
-            List.of(filter),
+            implicitAnd,
             DocumentProjector.identityProjector(),
             null,
             3,
@@ -1022,14 +1048,14 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
                         Values.of(doc2))));
 
     collectionReadCql =
-        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? AND key = ? LIMIT 3"
+        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
     ValidatingStargateBridge.QueryAssert retrySelectQueryDoc1Assert =
         withQuery(
                 collectionReadCql,
-                Values.of("status " + new DocValueHasher().getHash("active").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
+                Values.of("status " + new DocValueHasher().getHash("active").hash()))
             .withPageSize(3)
             .withColumnSpec(
                 List.of(
@@ -1057,8 +1083,8 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
     ValidatingStargateBridge.QueryAssert retrySelectQueryDoc2Assert =
         withQuery(
                 collectionReadCql,
-                Values.of("status " + new DocValueHasher().getHash("active").hash()),
-                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
+                Values.of(CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
+                Values.of("status " + new DocValueHasher().getHash("active").hash()))
             .withPageSize(3)
             .withColumnSpec(
                 List.of(
@@ -1204,12 +1230,18 @@ public class ReadAndUpdateOperationRetryTest extends AbstractValidatingStargateB
             .withSerialConsistency(queriesConfig.serialConsistency())
             .returning(List.of(List.of(Values.of(false))));
 
-    DBFilterBase.TextFilter filter =
-        new DBFilterBase.TextFilter("status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+    List<DBFilterBase> filters =
+        List.of(
+            new DBFilterBase.TextFilter(
+                "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+    implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
     FindOperation findOperation =
         FindOperation.unsorted(
             COMMAND_CONTEXT,
-            List.of(filter),
+            implicitAnd,
             DocumentProjector.identityProjector(),
             null,
             3,
