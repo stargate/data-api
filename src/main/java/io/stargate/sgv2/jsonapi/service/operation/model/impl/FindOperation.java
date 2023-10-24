@@ -403,7 +403,7 @@ public record FindOperation(
     expressions.forEach(
         expression -> {
           Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          expression.collectK(conditions, Integer.MAX_VALUE);
+          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
           final List<Object> collect =
               conditions.stream()
                   .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
@@ -522,7 +522,7 @@ public record FindOperation(
     expressions.forEach(
         expression -> {
           Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          expression.collectK(conditions, Integer.MAX_VALUE);
+          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
           final List<Object> collect =
               conditions.stream()
                   .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())

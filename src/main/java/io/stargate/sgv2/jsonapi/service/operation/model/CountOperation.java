@@ -38,7 +38,8 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
     Set<BuiltCondition> conditions = new LinkedHashSet<>();
-    expressions.get(0).collectK(conditions, Integer.MAX_VALUE);
+    if (expressions != null && !expressions.isEmpty())
+      expressions.get(0).collectK(conditions, Integer.MAX_VALUE);
     final List<Object> collect =
         conditions.stream()
             .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
