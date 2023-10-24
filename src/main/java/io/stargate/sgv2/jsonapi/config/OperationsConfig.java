@@ -17,12 +17,16 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
+
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
+import javax.annotation.Nullable;
 
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
@@ -108,5 +112,42 @@ public interface OperationsConfig {
     @Positive
     @WithDefault("3")
     int retries();
+  }
+
+  /** Cassandra/AstraDB related configurations. */
+  @NotNull
+  @Valid
+  DatabaseConfig databaseConfig();
+
+  interface DatabaseConfig {
+
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault(CASSANDRA)
+    String type();
+
+    /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("cassandra")
+    String userName(); // TODO move to request info
+
+    /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("cassandra")
+    String password(); // TODO move to request info
+
+    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("127.0.0.1")
+    List<String> cassandraContactPoints();
+
+    /** AstraDB token (when type is <code>astra</code>) */
+    @Nullable
+    @WithDefault("token")
+    String token();
+
+    /** Secure connect bundle path (when type is <code>astra</code>) */
+    @Nullable
+    @WithDefault("secure-connect-database_name.zip")
+    String secureConnectBundlePath();
   }
 }

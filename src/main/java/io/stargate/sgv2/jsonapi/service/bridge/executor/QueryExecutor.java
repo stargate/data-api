@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -17,8 +18,10 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -30,6 +33,8 @@ public class QueryExecutor {
   private final QueriesConfig queriesConfig;
 
   private final StargateRequestInfo stargateRequestInfo;
+  /** CQLSession cache. */
+  @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
   public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
@@ -61,9 +66,27 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
-  public Uni<ResultSet> executeRead(
+  /**
+   * Execute read query with bound statement.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
+   *     subsequent pages
+   * @param pageSize - page size
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeRead(
       BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
-    return null; // TODO CQL
+    if (pagingState.isPresent()) {
+      boundStatement =
+          boundStatement
+              .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()))
+              .setPageSize(pageSize)
+              .setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
+    }
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession().executeAsync(boundStatement));
   }
 
   /**
@@ -87,8 +110,24 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
-  public Uni<ResultSet> executeWrite(BoundStatement boundStatement) {
-    return null; // TODO CQL
+  /**
+   * Execute write query with bound statement.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeWrite(BoundStatement boundStatement) {
+    return Uni.createFrom()
+        .completionStage(
+            cqlSessionCache
+                .getSession()
+                .executeAsync(
+                    boundStatement
+                        .setConsistencyLevel(
+                            getConsistencyLevel(queriesConfig.consistency().writes()))
+                        .setSerialConsistencyLevel(
+                            getConsistencyLevel(queriesConfig.serialConsistency()))));
   }
 
   /**
@@ -107,8 +146,21 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
+  /**
+   * Execute schema change query with bound statement.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
   public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
-    return null; // TODO CQL
+    return Uni.createFrom()
+        .completionStage(
+            cqlSessionCache
+                .getSession()
+                .executeAsync(
+                    boundStatement.setSerialConsistencyLevel(
+                        getConsistencyLevel(queriesConfig.consistency().schemaChanges()))));
   }
 
   private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
@@ -164,11 +216,74 @@ public class QueryExecutor {
             });
   }
 
+  /**
+   * Gets the schema for the provided namespace and collection name
+   *
+   * @param namespace - namespace
+   * @param collectionName - collection name
+   * @return TableMetadata
+   */
   protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
-    return null; // TODO CQL
+    Optional<KeyspaceMetadata> keyspaceMetadata;
+    if ((keyspaceMetadata = cqlSessionCache.getSession().getMetadata().getKeyspace(namespace))
+        .isPresent()) {
+      Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
+      if (tableMetadata.isPresent()) {
+        return Uni.createFrom().item(tableMetadata.get());
+      }
+    }
+    return Uni.createFrom().nullItem();
   }
 
   private static byte[] decodeBase64(String base64encoded) {
     return Base64.getDecoder().decode(base64encoded);
+  }
+
+  /**
+   * Gets the consistency level for the provided QueryOuterClass.Consistency
+   *
+   * @param consistency - QueryOuterClass.Consistency
+   * @return ConsistencyLevel
+   */
+  private ConsistencyLevel getConsistencyLevel(QueryOuterClass.Consistency consistency) {
+    switch (consistency) {
+      case ANY -> {
+        return ConsistencyLevel.ANY;
+      }
+      case ONE -> {
+        return ConsistencyLevel.ONE;
+      }
+      case TWO -> {
+        return ConsistencyLevel.TWO;
+      }
+      case THREE -> {
+        return ConsistencyLevel.THREE;
+      }
+      case QUORUM -> {
+        return ConsistencyLevel.QUORUM;
+      }
+      case ALL -> {
+        return ConsistencyLevel.ALL;
+      }
+      case LOCAL_QUORUM -> {
+        return ConsistencyLevel.LOCAL_QUORUM;
+      }
+      case EACH_QUORUM -> {
+        return ConsistencyLevel.EACH_QUORUM;
+      }
+      case SERIAL -> {
+        return ConsistencyLevel.SERIAL;
+      }
+      case LOCAL_SERIAL -> {
+        return ConsistencyLevel.LOCAL_SERIAL;
+      }
+      case LOCAL_ONE -> {
+        return ConsistencyLevel.LOCAL_ONE;
+      }
+      case UNRECOGNIZED -> {
+        throw new RuntimeException("Unrecognized consistency level : " + consistency);
+      }
+    }
+    throw new RuntimeException("Unrecognized consistency level : " + consistency);
   }
 }
