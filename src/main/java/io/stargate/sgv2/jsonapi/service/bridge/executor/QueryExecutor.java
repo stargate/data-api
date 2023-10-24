@@ -113,17 +113,17 @@ public class QueryExecutor {
   /**
    * Execute write query with bound statement.
    *
-   * @param boundStatement - Bound statement with query and parameters. The table name used in the
-   *     query must have keyspace prefixed.
+   * @param statement - Bound statement with query and parameters. The table name used in the query
+   *     must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeWrite(BoundStatement boundStatement) {
+  public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
                 .getSession()
                 .executeAsync(
-                    boundStatement
+                    statement
                         .setConsistencyLevel(
                             getConsistencyLevel(queriesConfig.consistency().writes()))
                         .setSerialConsistencyLevel(
