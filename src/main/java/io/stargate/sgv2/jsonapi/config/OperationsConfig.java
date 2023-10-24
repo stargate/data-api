@@ -17,6 +17,8 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
+
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.Valid;
@@ -120,18 +122,18 @@ public interface OperationsConfig {
   interface DatabaseConfig {
 
     /** Database type can be <code>cassandra</code> or <code>astra</code>. */
-    @WithDefault("cassandra")
+    @WithDefault(CASSANDRA)
     String type();
 
     /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String userName();
+    String userName(); // TODO move to request info
 
     /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String password();
+    String password(); // TODO move to request info
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable

@@ -14,21 +14,40 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
+`/**
+ * CQL session cache to reuse the session for the same tenant and token. The cache is configured to
+ * expire after <code>CACHE_TTL_SECONDS</code> of inactivity and to have a maximum size of <code>
+ * CACHE_TTL_SECONDS</code> sessions.
+ */
 @ApplicationScoped
 public class CQLSessionCache {
+  /** Configuration for the JSON API operations. */
   @Inject OperationsConfig operationsConfig;
 
+  /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
 
+  /** Time to live for CQLSession in cache in seconds. */
   private static final long CACHE_TTL_SECONDS = 300;
+  /** Maximum number of CQLSessions in cache. */
   private static final long CACHE_MAX_SIZE = 1000;
 
+  /** CQLSession cache. */
   private final Cache<String, CqlSession> sessionCache =
       Caffeine.newBuilder()
           .expireAfterAccess(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
           .build(cacheKey -> getNewSession());
 
+  public static final String ASTRA = "astra";
+  public static final String CASSANDRA = "cassandra";
+
+  /**
+   * Loader for new CQLSession.
+   *
+   * @return CQLSession
+   * @throws RuntimeException if database type is not supported
+   */
   private CqlSession getNewSession() {
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
@@ -37,18 +56,17 @@ public class CQLSessionCache {
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
-    if ("cassandra".equals(databaseConfig.type())) {
+    if (CASSANDRA.equals(databaseConfig.type())) {
       return CqlSession.builder()
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
           .build();
-    } else if ("astra".equals(databaseConfig.type())) {
+    } else if (ASTRA.equals(databaseConfig.type())) {
       return CqlSession.builder()
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials("token", Objects.requireNonNull(databaseConfig.token()))
-          // TODO CQL - remove secure connect bundle after integrating with non TLS router
           .withCloudSecureConnectBundle(
               Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))
           .build();
@@ -56,10 +74,20 @@ public class CQLSessionCache {
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
 
+  /**
+   * Get CQLSession from cache.
+   *
+   * @return CQLSession
+   */
   public CqlSession getSession() {
     return sessionCache.getIfPresent(getSessionCacheKey());
   }
 
+  /**
+   * Build key for CQLSession cache.
+   *
+   * @return key
+   */
   private String getSessionCacheKey() {
     return stargateRequestInfo.getTenantId() + ":" + stargateRequestInfo.getCassandraToken();
   }

@@ -32,7 +32,8 @@ public class QueryExecutor {
   private final QueriesConfig queriesConfig;
 
   private final StargateRequestInfo stargateRequestInfo;
-  @Inject private CQLSessionCache cqlSessionCache;
+  /** CQLSession cache. */
+  @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
   public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
@@ -66,16 +67,22 @@ public class QueryExecutor {
 
   /**
    * Execute read query with bound statement.
-   * @param boundStatement - Bound statement with query and parameters. The table name used in the query must have keyspace prefixed.
-   * @param pagingState - In case of pagination, the paging state needs to be passed to fetch subsequent pages
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
+   *     subsequent pages
    * @param pageSize - page size
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
       BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
-    if(pagingState.isPresent()){
-      boundStatement = boundStatement.setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()))
-              .setPageSize(pageSize).setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
+    if (pagingState.isPresent()) {
+      boundStatement =
+          boundStatement
+              .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()))
+              .setPageSize(pageSize)
+              .setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
         .completionStage(cqlSessionCache.getSession().executeAsync(boundStatement));
@@ -102,6 +109,13 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
+  /**
+   * Execute write query with bound statement.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
   public Uni<AsyncResultSet> executeWrite(BoundStatement boundStatement) {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().writes();
     boundStatement.setConsistencyLevel(getConsistencyLevel(consistency));
@@ -127,6 +141,13 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
+  /**
+   * Execute schema change query with bound statement.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
   public Uni<AsyncResultSet> executeSchemaChange(BoundStatement boundStatement) {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().schemaChanges();
     boundStatement.setSerialConsistencyLevel(getConsistencyLevel(consistency));
@@ -187,6 +208,13 @@ public class QueryExecutor {
             });
   }
 
+  /**
+   * Gets the schema for the provided namespace and collection name
+   *
+   * @param namespace - namespace
+   * @param collectionName - collection name
+   * @return TableMetadata
+   */
   protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
     Optional<KeyspaceMetadata> keyspaceMetadata;
     if ((keyspaceMetadata = cqlSessionCache.getSession().getMetadata().getKeyspace(namespace))
@@ -203,6 +231,12 @@ public class QueryExecutor {
     return Base64.getDecoder().decode(base64encoded);
   }
 
+  /**
+   * Gets the consistency level for the provided QueryOuterClass.Consistency
+   *
+   * @param consistency - QueryOuterClass.Consistency
+   * @return ConsistencyLevel
+   */
   private ConsistencyLevel getConsistencyLevel(QueryOuterClass.Consistency consistency) {
     switch (consistency) {
       case ANY -> {
