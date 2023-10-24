@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
-`/**
+/**
  * CQL session cache to reuse the session for the same tenant and token. The cache is configured to
  * expire after <code>CACHE_TTL_SECONDS</code> of inactivity and to have a maximum size of <code>
  * CACHE_TTL_SECONDS</code> sessions.
