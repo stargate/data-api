@@ -9,7 +9,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -34,8 +34,7 @@ public class CountCommandResolverTest {
           }
           """;
 
-    CountDocumentsCommands countCommand =
-        objectMapper.readValue(json, CountDocumentsCommands.class);
+    CountDocumentsCommand countCommand = objectMapper.readValue(json, CountDocumentsCommand.class);
     final CommandContext commandContext = new CommandContext("namespace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
     LogicalExpression implicitAnd = LogicalExpression.and();
@@ -61,8 +60,7 @@ public class CountCommandResolverTest {
                 }
                 """;
 
-    CountDocumentsCommands countCommand =
-        objectMapper.readValue(json, CountDocumentsCommands.class);
+    CountDocumentsCommand countCommand = objectMapper.readValue(json, CountDocumentsCommand.class);
     final CommandContext commandContext = new CommandContext("namespace", "collection");
     final Operation operation = countCommandResolver.resolveCommand(commandContext, countCommand);
 
