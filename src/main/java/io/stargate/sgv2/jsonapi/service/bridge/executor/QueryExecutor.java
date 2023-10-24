@@ -117,12 +117,16 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(BoundStatement boundStatement) {
-    QueryOuterClass.Consistency consistency = queriesConfig.consistency().writes();
-    boundStatement.setConsistencyLevel(getConsistencyLevel(consistency));
-    QueryOuterClass.Consistency serialConsistency = queriesConfig.serialConsistency();
-    boundStatement.setSerialConsistencyLevel(getConsistencyLevel(serialConsistency));
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(boundStatement));
+        .completionStage(
+            cqlSessionCache
+                .getSession()
+                .executeAsync(
+                    boundStatement
+                        .setConsistencyLevel(
+                            getConsistencyLevel(queriesConfig.consistency().writes()))
+                        .setSerialConsistencyLevel(
+                            getConsistencyLevel(queriesConfig.serialConsistency()))));
   }
 
   /**
@@ -149,10 +153,13 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeSchemaChange(BoundStatement boundStatement) {
-    QueryOuterClass.Consistency consistency = queriesConfig.consistency().schemaChanges();
-    boundStatement.setSerialConsistencyLevel(getConsistencyLevel(consistency));
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(boundStatement));
+        .completionStage(
+            cqlSessionCache
+                .getSession()
+                .executeAsync(
+                    boundStatement.setSerialConsistencyLevel(
+                        getConsistencyLevel(queriesConfig.consistency().schemaChanges()))));
   }
 
   private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
