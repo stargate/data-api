@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -59,10 +61,10 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
-  public Uni<ResultSet> executeRead(BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
-    return null;//TODO CQL
+  public Uni<ResultSet> executeRead(
+      BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
+    return null; // TODO CQL
   }
-
 
   /**
    * Runs the provided write document query, Updates the query with parameters
@@ -86,7 +88,7 @@ public class QueryExecutor {
   }
 
   public Uni<ResultSet> executeWrite(BoundStatement boundStatement) {
-    return null;//TODO CQL
+    return null; // TODO CQL
   }
 
   /**
@@ -105,8 +107,8 @@ public class QueryExecutor {
         QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
   }
 
-  public Uni<ResultSet> executeSchemaChange(BoundStatement boundStatement) {
-        return null;//TODO CQL
+  public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
+    return null; // TODO CQL
   }
 
   private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
@@ -163,7 +165,7 @@ public class QueryExecutor {
   }
 
   protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
-    return null;//TODO CQL
+    return null; // TODO CQL
   }
 
   private static byte[] decodeBase64(String base64encoded) {

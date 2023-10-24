@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -132,24 +134,39 @@ public record CreateCollectionOperation(
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
-    final Uni<QueryOuterClass.ResultSet> execute =
+    final Uni<AsyncResultSet> execute =
         queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
             .transformToUni(
                 res -> {
-                  final List<QueryOuterClass.Query> indexStatements =
-                      getIndexStatements(commandContext.namespace(), name);
-                  List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
-                  indexStatements.stream()
-                      .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                  return Uni.combine().all().unis(indexes).combinedWith(results -> true);
+                  if (res.wasApplied()) {
+                    final List<SimpleStatement> indexStatements =
+                        getIndexStatements(commandContext.namespace(), name);
+                    List<Uni<AsyncResultSet>> indexes = new ArrayList<>(10);
+                    indexStatements.stream()
+                        .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
+                    return Uni.combine()
+                        .all()
+                        .unis(indexes)
+                        .combinedWith(
+                            results -> {
+                              final Optional<?> first =
+                                  results.stream()
+                                      .filter(
+                                          indexRes -> !(((AsyncResultSet) indexRes).wasApplied()))
+                                      .findFirst();
+                              return first.isPresent() ? false : true;
+                            });
+                  } else {
+                    return Uni.createFrom().item(false);
+                  }
                 });
     return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
   }
 
-  protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
+  protected SimpleStatement getCreateTable(String keyspace, String table) {
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -171,9 +188,7 @@ public record CreateCollectionOperation(
       if (vectorize != null) {
         createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
       }
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(createTableWithVector, keyspace, table))
-          .build();
+      return SimpleStatement.newInstance(createTableWithVector);
     } else {
       String createTable =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -190,70 +205,47 @@ public record CreateCollectionOperation(
               + "    query_null_values   set<text>, "
               + "    PRIMARY KEY (key))";
 
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(createTable, keyspace, table))
-          .build();
+      return SimpleStatement.newInstance(createTable);
     }
   }
 
-  protected List<QueryOuterClass.Query> getIndexStatements(String keyspace, String table) {
-    List<QueryOuterClass.Query> statements = new ArrayList<>(10);
+  protected List<SimpleStatement> getIndexStatements(String keyspace, String table) {
+    List<SimpleStatement> statements = new ArrayList<>(10);
 
     String existKeys =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(existKeys, table, keyspace, table))
-            .build());
+
+    statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
 
     String arraySize =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(arraySize, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
 
     String arrayContains =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
     statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(arrayContains, table, keyspace, table))
-            .build());
+        SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
 
     String boolQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(boolQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
 
     String dblQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(dblQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
 
     String textQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(textQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
 
     String timestampQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
     statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(timestampQuery, table, keyspace, table))
-            .build());
+        SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
 
     String nullQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(nullQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
 
     if (vectorSearch) {
       String vectorSearch =
@@ -261,9 +253,7 @@ public record CreateCollectionOperation(
               + vectorFunction()
               + "'}";
       statements.add(
-          QueryOuterClass.Query.newBuilder()
-              .setCql(String.format(vectorSearch, table, keyspace, table))
-              .build());
+          SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
     }
     return statements;
   }
