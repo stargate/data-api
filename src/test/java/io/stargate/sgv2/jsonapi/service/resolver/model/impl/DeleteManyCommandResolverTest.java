@@ -68,7 +68,13 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
-                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(
+                                  find.logicalExpression()
+                                      .comparisonExpressions
+                                      .get(0)
+                                      .getDbFilters()
+                                      .get(0))
+                              .isEqualTo(filter);
                         });
               });
     }
@@ -104,7 +110,7 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
-                          assertThat(find.filters()).isEmpty();
+                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
               });
     }
@@ -145,7 +151,13 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pagingState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
-                          assertThat(find.filters()).singleElement().isEqualTo(filter);
+                          assertThat(
+                                  find.logicalExpression()
+                                      .comparisonExpressions
+                                      .get(0)
+                                      .getDbFilters()
+                                      .get(0))
+                              .isEqualTo(filter);
                         });
               });
     }

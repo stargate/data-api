@@ -6,10 +6,12 @@ which docker > /dev/null || (echoerr "Please ensure that docker is installed" &&
 cd -P -- "$(dirname -- "$0")" # switch to this dir
 
 CHANGELOG_FILE=CHANGELOG.md
-previous_version=$(head -5 $CHANGELOG_FILE | grep "##" | awk -F']' '{print $1}' | cut -c 5-)
+previous_version_line_number=$(awk '/##/ {print NR; exit}' "$CHANGELOG_FILE")
+previous_version=$(head -$previous_version_line_number $CHANGELOG_FILE | grep "##" | awk -F']' '{print $1}' | cut -c 5-)
+echo "previous_version: " $previous_version
 
 # Remove the header so we can append the additions
-tail -n +3 "$CHANGELOG_FILE" > "$CHANGELOG_FILE.tmp" && mv "$CHANGELOG_FILE.tmp" "$CHANGELOG_FILE"
+tail -n +$previous_version_line_number "$CHANGELOG_FILE" > "$CHANGELOG_FILE.tmp" && mv "$CHANGELOG_FILE.tmp" "$CHANGELOG_FILE"
 
 if [[ -z ${GITHUB_TOKEN-} ]]; then
   echo "**WARNING** GITHUB_TOKEN is not currently set" >&2

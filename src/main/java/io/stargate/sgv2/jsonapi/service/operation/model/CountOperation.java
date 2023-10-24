@@ -1,15 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
+import com.bpodgursky.jbool_expressions.Expression;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
-import java.util.ArrayList;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.ExpressionBuilder;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -17,7 +18,7 @@ import java.util.function.Supplier;
  * Operation that returns count of documents based on the filter condition. Written with the
  * assumption that all variables to be indexed.
  */
-public record CountOperation(CommandContext commandContext, List<DBFilterBase> filters)
+public record CountOperation(CommandContext commandContext, LogicalExpression logicalExpression)
     implements ReadOperation {
 
   @Override
@@ -29,16 +30,14 @@ public record CountOperation(CommandContext commandContext, List<DBFilterBase> f
   }
 
   private QueryOuterClass.Query buildSelectQuery() {
-    List<BuiltCondition> conditions = new ArrayList<>(filters.size());
-    for (DBFilterBase filter : filters) {
-      conditions.add(filter.get());
-    }
+    List<Expression<BuiltCondition>> expressions =
+        ExpressionBuilder.buildExpressions(logicalExpression, null);
     return new QueryBuilder()
         .select()
         .count()
         .as("count")
         .from(commandContext.namespace(), commandContext.collection())
-        .where(conditions)
+        .where(expressions.get(0)) // TODO count will assume no id filter query split?
         .build();
   }
 }

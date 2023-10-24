@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
-import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -13,4 +12,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     example = """
              {"name": "Aaron", "country": "US"}
               """)
-public record FilterClause(List<ComparisonExpression> comparisonExpressions) {}
+public record FilterClause(LogicalExpression logicalExpression) {}
+
+// public record FilterClause(List<ComparisonExpression> comparisonExpressions) {}

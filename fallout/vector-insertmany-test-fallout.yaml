@@ -1,0 +1,108 @@
+download_url:  Your zip secure bundle from AstraDB
+provider: ec2
+zone: us-west-2
+instance: m5.2xlarge
+token: token
+workload_duration: 25m
+keyspace: test
+workload_file: https://github.com/stargate/jsonapi/blob/hazel-nb-insertmany/fallout/vector-insertmany-test-fallout.yaml
+dataset: https://github.com/stargate/jsonapi/blob/main/nosqlbench/vector-dataset.txt
+client_count: 1
+docs_count: 1000
+#op_cycles: 1000
+#op_rate: 25
+#op_connections: 3
+#ops:
+#  - op: find-one-by-vector-projection
+#  - op: find-one-update-vector
+#  - op: delete-document
+---
+#  Template Params Explanation
+#  download_url:  Your zip secure bundle from AstraDB
+#  provider: ec2
+#  zone: us-west-2
+#  instance: desired instance type
+#  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
+#  workload_duration: workload duration time
+#  keyspace: Your existing AstraDB keyspace
+#  workload_file: workload_file is in JSON API repo
+#  dataset: dataset file is in JSON API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
+#  client_count: 1
+#  write_cycles: 600
+#  read_cycles: 600
+#  update_cycles: 600
+#  delete_cycles: 600
+#  threads: 20
+
+ensemble:
+  server:
+    node.count: 1
+    provisioner:
+      name: existing_astra
+      properties:
+        bundle_download_url: {{download_url}}
+        keyspace: {{keyspace}}
+        username: token
+        password: <<secret:{{token}}>>
+        token: <<secret:{{token}}>>
+
+  client:
+    node.count: {{client_count}}
+    provisioner:
+      name: ctool
+      properties:
+        cloud.provider: {{provider}}
+        cloud.region: {{zone}}
+        cloud.instance.type: {{instance}}
+    configuration_manager:
+      - name: nosqlbench_ssh
+        properties:
+          version: 5.17.3-release
+
+workload:
+  phases:
+    # set schema phase, ensures collection table is created from scratch (delete,create)
+    - schema-collection:
+        module: nosqlbench
+        properties:
+          client.size: 1
+          alias: schema-collection
+          service_type: stargate
+          args:
+            - driver=http
+            - yaml={{workload_file}}
+            - tags=block:schema-collection
+            - namespace={{keyspace}}
+            - protocol=https
+            - jsonapi_port=443
+            - path_prefix=/api/json
+            - threads=1
+            - errors=stop
+
+    # prepare phase that inserts desired amount of documents
+    # executed only on a single client, stopped on errors
+    - write:
+        module: nosqlbench
+        properties:
+          alias: write
+          service_type: stargate
+          cycles: {{docs_count}}
+          args:
+            - driver=http
+            - workload={{workload_file}}
+            - tags=block:write
+            - dataset={{dataset}}
+            - namespace={{keyspace}}
+            - protocol=https
+            - jsonapi_port=443
+            - path_prefix=/api/json
+            - docscount={{docs_count}}
+            - threads=100
+            - connections=100
+            - errors=stop
+  checkers:
+    verify_success:
+      checker: nofail
+  artifact_checkers:
+    generate_chart:
+      artifact_checker: hdrtool

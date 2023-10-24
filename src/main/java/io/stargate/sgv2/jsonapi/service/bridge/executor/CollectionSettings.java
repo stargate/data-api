@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,17 +83,8 @@ public record CollectionSettings(
       }
       final String comment = table.getOptionsOrDefault("comment", null);
       if (comment != null && !comment.isBlank()) {
-        try {
-          JsonNode vectorizeConfig = objectMapper.readTree(comment);
-          String vectorizeServiceName = vectorizeConfig.get("service").textValue();
-          final JsonNode optionsNode = vectorizeConfig.get("options");
-          String modelName = optionsNode.get("modelName").textValue();
-          return new CollectionSettings(
-              collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
-        } catch (JsonProcessingException e) {
-          // This should never happen
-          throw new RuntimeException(e);
-        }
+        return createCollectionSettingsFromJson(
+            collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
       } else {
         return new CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, null, null);
@@ -104,6 +97,54 @@ public record CollectionSettings(
           CollectionSettings.SimilarityFunction.UNDEFINED,
           null,
           null);
+    }
+  }
+
+  public static CollectionSettings getCollectionSettings(
+      String collectionName,
+      boolean vectorEnabled,
+      int vectorSize,
+      SimilarityFunction similarityFunction,
+      String vectorize,
+      ObjectMapper objectMapper) {
+    // parse vectorize to get vectorizeServiceName and modelName
+    if (vectorize != null && !vectorize.isBlank()) {
+      return createCollectionSettingsFromJson(
+          collectionName, vectorEnabled, vectorSize, similarityFunction, vectorize, objectMapper);
+    } else {
+      return new CollectionSettings(
+          collectionName, vectorEnabled, vectorSize, similarityFunction, null, null);
+    }
+  }
+
+  private static CollectionSettings createCollectionSettingsFromJson(
+      String collectionName,
+      boolean vectorEnabled,
+      int vectorSize,
+      SimilarityFunction function,
+      String vectorize,
+      ObjectMapper objectMapper) {
+    try {
+      JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
+      String vectorizeServiceName = vectorizeConfig.path("service").textValue();
+      JsonNode optionsNode = vectorizeConfig.path("options");
+      String modelName = optionsNode.path("modelName").textValue();
+      if (vectorizeServiceName != null
+          && !vectorizeServiceName.isEmpty()
+          && modelName != null
+          && !modelName.isEmpty()) {
+        return new CollectionSettings(
+            collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
+      } else {
+        // This should never happen, VectorizeConfig check null, unless it fails
+        throw new JsonApiException(
+            VECTORIZECONFIG_CHECK_FAIL,
+            "%s, please check 'vectorize' configuration."
+                .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+      }
+    } catch (JsonProcessingException e) {
+      // This should never happen, already check if vectorize is a valid JSON
+      throw new RuntimeException("Invalid json string, please check 'vectorize' configuration.", e);
     }
   }
 }
