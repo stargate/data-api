@@ -142,10 +142,12 @@ public interface OperationsConfig {
 
     /** AstraDB token (when type is <code>astra</code>) */
     @Nullable
+    @WithDefault("token")
     String token();
 
     /** Secure connect bundle path (when type is <code>astra</code>) */
     @Nullable
+    @WithDefault("secure-connect-database_name.zip")
     String secureConnectBundlePath();
   }
 }
