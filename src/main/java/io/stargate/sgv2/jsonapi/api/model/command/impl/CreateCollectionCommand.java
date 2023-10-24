@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import jakarta.validation.constraints.*;
@@ -46,6 +48,8 @@ public record CreateCollectionCommand(
                 description = "Dimension of the vector field",
                 type = SchemaType.INTEGER,
                 implementation = Integer.class)
+            @JsonProperty("dimension")
+            @JsonAlias("size") // old name
             Integer dimension,
         @Nullable
             @Pattern(
@@ -57,6 +61,8 @@ public record CreateCollectionCommand(
                 defaultValue = "cosine",
                 type = SchemaType.STRING,
                 implementation = String.class)
+            @JsonProperty("metric")
+            @JsonAlias("function") // old name
             String metric) {
       public VectorSearchConfig(Integer dimension, String metric) {
         this.dimension = dimension;
