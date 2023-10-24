@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -11,8 +12,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ExpressionBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Operation that returns count of documents based on the filter condition. Written with the
@@ -23,21 +28,31 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    QueryOuterClass.Query query = buildSelectQuery();
-    return countDocuments(queryExecutor, query)
+    SimpleStatement simpleStatement = buildSelectQuery();
+    return countDocuments(queryExecutor, simpleStatement)
         .onItem()
         .transform(docs -> new CountOperationPage(docs.count()));
   }
 
-  private QueryOuterClass.Query buildSelectQuery() {
+  private SimpleStatement buildSelectQuery() {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
-    return new QueryBuilder()
-        .select()
-        .count()
-        .as("count")
-        .from(commandContext.namespace(), commandContext.collection())
-        .where(expressions.get(0)) // TODO count will assume no id filter query split?
-        .build();
+    Set<BuiltCondition> conditions = new LinkedHashSet<>();
+    expressions.get(0).collectK(conditions, Integer.MAX_VALUE);
+    final List<Object> collect =
+        conditions.stream()
+            .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+            .collect(Collectors.toList());
+    final QueryOuterClass.Query query =
+        new QueryBuilder()
+            .select()
+            .count()
+            .as("count")
+            .from(commandContext.namespace(), commandContext.collection())
+            .where(expressions.get(0)) // TODO count will assume no id filter query split?
+            .build();
+
+    final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+    return simpleStatement.setPositionalValues(collect);
   }
 }
