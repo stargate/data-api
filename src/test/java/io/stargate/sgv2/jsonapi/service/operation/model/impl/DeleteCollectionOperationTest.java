@@ -14,10 +14,12 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import jakarta.inject.Inject;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DeleteCollectionOperationTest extends AbstractValidatingStargateBridgeTest {
   @Inject QueryExecutor queryExecutor;

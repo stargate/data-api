@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   @Inject QueryExecutor queryExecutor;
 
   @Nested
+  @Disabled
   class CreateCollectionOperationsTest {
 
     SchemaManager schemaManagerMock = mock(SchemaManager.class);

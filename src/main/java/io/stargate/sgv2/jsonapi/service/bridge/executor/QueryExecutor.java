@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.protobuf.ByteString;
@@ -152,7 +153,7 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeSchemaChange(BoundStatement boundStatement) {
+  public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
