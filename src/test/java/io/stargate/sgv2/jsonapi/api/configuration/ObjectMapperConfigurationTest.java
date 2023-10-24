@@ -365,8 +365,8 @@ class ObjectMapperConfigurationTest {
               "name": "some_name",
               "options": {
                 "vector": {
-                  "size": 5,
-                  "function": "cosine"
+                  "dimension": 5,
+                  "metric": "cosine"
                 }
               }
             }
@@ -383,8 +383,39 @@ class ObjectMapperConfigurationTest {
                 assertThat(name).isNotNull();
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
-                assertThat(createCollection.options().vector().size()).isEqualTo(5);
-                assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
+              });
+    }
+
+    @Test
+    public void happyPathVectorSearchLegacyNames() throws Exception {
+      Command result =
+          objectMapper.readValue(
+              """
+                  {
+                    "createCollection": {
+                      "name": "some_name",
+                      "options": {
+                        "vector": {
+                          "size": 5,
+                          "function": "cosine"
+                        }
+                      }
+                    }
+                  }
+                  """,
+              Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                assertThat(createCollection.name()).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().vector()).isNotNull();
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
               });
     }
 
@@ -397,8 +428,8 @@ class ObjectMapperConfigurationTest {
                   "name": "some_name",
                   "options": {
                     "vector": {
-                      "size": 5,
-                      "function": "cosine"
+                      "dimension": 5,
+                      "metric": "cosine"
                     },
                     "vectorize" : {
                       "service" : "my_service",
@@ -421,8 +452,8 @@ class ObjectMapperConfigurationTest {
                 assertThat(name).isNotNull();
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
-                assertThat(createCollection.options().vector().size()).isEqualTo(5);
-                assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
                 assertThat(createCollection.options().vectorize()).isNotNull();
                 assertThat(createCollection.options().vectorize().service())
                     .isEqualTo("my_service");
@@ -441,7 +472,7 @@ class ObjectMapperConfigurationTest {
               "name": "some_name",
               "options": {
                 "vector": {
-                  "size": 5
+                  "dimension": 5
                 }
               }
             }
@@ -458,8 +489,8 @@ class ObjectMapperConfigurationTest {
                 assertThat(name).isNotNull();
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
-                assertThat(createCollection.options().vector().size()).isEqualTo(5);
-                assertThat(createCollection.options().vector().function()).isEqualTo("cosine");
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
               });
     }
   }

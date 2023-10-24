@@ -89,7 +89,7 @@ blocks:
               "name": "<<collection:jsonapi_vector_crud_collection>>",
               "options": {
                           "vector": {
-                              "size": 1536
+                              "dimension": 1536
                           }
               }
             }

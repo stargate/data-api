@@ -387,8 +387,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "name": "events_vector",
                               "options": {
                                 "vector": {
-                                  "size": 2,
-                                  "function": "cosine"
+                                  "dimension": 2,
+                                  "metric": "cosine"
                                 }
                               }
                             }
