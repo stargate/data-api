@@ -1,15 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.bridge.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -209,7 +208,7 @@ public record ReadAndUpdateOperation(
 
   private Uni<DocumentId> updatedDocument(
       QueryExecutor queryExecutor, WritableShreddedDocument writableShreddedDocument) {
-    final QueryOuterClass.Query updateQuery =
+    final SimpleStatement updateQuery =
         bindUpdateValues(
             buildUpdateQuery(commandContext().isVectorEnabled()),
             writableShreddedDocument,
@@ -219,7 +218,7 @@ public record ReadAndUpdateOperation(
         .onItem()
         .transformToUni(
             result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
+              if (result.wasApplied()) {
                 return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
                 throw new LWTException(ErrorCode.CONCURRENCY_FAILURE);
@@ -227,7 +226,7 @@ public record ReadAndUpdateOperation(
             });
   }
 
-  private QueryOuterClass.Query buildUpdateQuery(boolean vectorEnabled) {
+  private String buildUpdateQuery(boolean vectorEnabled) {
     if (vectorEnabled) {
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -247,9 +246,7 @@ public record ReadAndUpdateOperation(
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
-          .build();
+      return String.format(update, commandContext.namespace(), commandContext.collection());
     } else {
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -268,56 +265,42 @@ public record ReadAndUpdateOperation(
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(update, commandContext.namespace(), commandContext.collection()))
-          .build();
+      return String.format(update, commandContext.namespace(), commandContext.collection());
     }
   }
 
-  protected static QueryOuterClass.Query bindUpdateValues(
-      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
+  protected static SimpleStatement bindUpdateValues(
+      String builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
     if (vectorEnabled) {
-      QueryOuterClass.Values.Builder values =
-          QueryOuterClass.Values.newBuilder()
-              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-              .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-              .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
-              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
-              .addValues(
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
-              .addValues(CustomValueSerializers.getVectorValue(doc.queryVectorValues()))
-              .addValues(Values.of(doc.docJson()))
-              .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-              .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
-      return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+      return SimpleStatement.newInstance(
+          builtQuery,
+          CQLBindValues.getSetValue(doc.existKeys()),
+          CQLBindValues.getIntegerMapValues(doc.arraySize()),
+          CQLBindValues.getStringSetValue(doc.arrayContains()),
+          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
+          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
+          CQLBindValues.getStringMapValues(doc.queryTextValues()),
+          CQLBindValues.getSetValue(doc.queryNullValues()),
+          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
+          CQLBindValues.getVectorValue(doc.queryVectorValues()),
+          doc.docJson(),
+          CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.txID());
     } else {
-      QueryOuterClass.Values.Builder values =
-          QueryOuterClass.Values.newBuilder()
-              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-              .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-              .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
-              .addValues(
-                  Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
-              .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
-              .addValues(
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())))
-              .addValues(Values.of(doc.docJson()))
-              .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-              .addValues(doc.txID() == null ? Values.NULL : Values.of(doc.txID()));
-      return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+      return SimpleStatement.newInstance(
+          builtQuery,
+          CQLBindValues.getSetValue(doc.existKeys()),
+          CQLBindValues.getIntegerMapValues(doc.arraySize()),
+          CQLBindValues.getStringSetValue(doc.arrayContains()),
+          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
+          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
+          CQLBindValues.getStringMapValues(doc.queryTextValues()),
+          CQLBindValues.getSetValue(doc.queryNullValues()),
+          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
+          doc.docJson(),
+          CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.txID());
     }
   }
 
