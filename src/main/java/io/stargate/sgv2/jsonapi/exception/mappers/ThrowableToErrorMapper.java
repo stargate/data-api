@@ -8,15 +8,19 @@ import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
  * implementation.
  */
 public final class ThrowableToErrorMapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThrowableToErrorMapper.class);
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
+        final boolean debugEnabled = LOGGER.isDebugEnabled();
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message);
@@ -24,7 +28,7 @@ public final class ThrowableToErrorMapper {
         // Override response error code
         if (throwable instanceof StatusRuntimeException sre) {
           Map<String, Object> fields =
-              Map.of("exceptionClass", throwable.getClass().getSimpleName());
+              debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
             return new CommandResult.Error(message, fields, Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
@@ -36,7 +40,8 @@ public final class ThrowableToErrorMapper {
           }
         }
         // add error code as error field
-        Map<String, Object> fields = Map.of("exceptionClass", throwable.getClass().getSimpleName());
+        Map<String, Object> fields =
+            debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         return new CommandResult.Error(message, fields, Response.Status.OK);
       };
 

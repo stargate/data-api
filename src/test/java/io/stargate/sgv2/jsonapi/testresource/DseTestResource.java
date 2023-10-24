@@ -28,6 +28,11 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
     }
+
+    // DEBUG mode for Integration Test
+    if (null == System.getProperty("quarkus.log.level")) {
+      System.setProperty("quarkus.log.level", "DEBUG");
+    }
   }
 
   @Override

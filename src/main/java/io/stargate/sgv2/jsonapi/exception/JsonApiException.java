@@ -6,6 +6,8 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.
@@ -15,6 +17,8 @@ import java.util.function.Supplier;
  * directly.
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiException.class);
 
   private final ErrorCode errorCode;
 
@@ -58,8 +62,14 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   public CommandResult.Error getCommandResultError(String message) {
-    Map<String, Object> fields =
-        Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
+    Map<String, Object> fields = null;
+    // only have exceptionClass in debug mode
+    if (LOGGER.isDebugEnabled()) {
+      fields =
+          Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
+    } else {
+      fields = Map.of("errorCode", errorCode.name());
+    }
     return new CommandResult.Error(message, fields, Response.Status.OK);
   }
 
