@@ -89,6 +89,16 @@ public class CQLSessionCache {
    * @return key
    */
   private String getSessionCacheKey() {
-    return stargateRequestInfo.getTenantId() + ":" + stargateRequestInfo.getCassandraToken();
+    if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
+      return stargateRequestInfo.getTenantId()
+          + ":"
+          + operationsConfig.databaseConfig().userName()
+          + ":"
+          + operationsConfig.databaseConfig().password();
+    } else if (ASTRA.equals(operationsConfig.databaseConfig().type())) {
+      return stargateRequestInfo.getTenantId() + ":" + stargateRequestInfo.getCassandraToken();
+    }
+    throw new RuntimeException(
+        "Unsupported database type: " + operationsConfig.databaseConfig().type());
   }
 }
