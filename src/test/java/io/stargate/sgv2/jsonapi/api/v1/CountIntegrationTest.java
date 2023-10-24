@@ -791,7 +791,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
   class Metrics {
     @Test
     public void checkMetrics() {
-      CountIntegrationTest.super.checkMetrics("CountDocumentsCommands");
+      CountIntegrationTest.super.checkMetrics("CountDocumentsCommand");
     }
   }
 }
