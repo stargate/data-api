@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -69,7 +68,7 @@ public class QueryExecutor {
   /**
    * Execute read query with bound statement.
    *
-   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
    *     query must have keyspace prefixed.
    * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
    *     subsequent pages
@@ -77,16 +76,16 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      BoundStatement boundStatement, Optional<String> pagingState, int pageSize) {
+      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
     if (pagingState.isPresent()) {
-      boundStatement =
-          boundStatement
+      simpleStatement =
+          simpleStatement
               .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()))
               .setPageSize(pageSize)
               .setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(boundStatement));
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
   }
 
   /**

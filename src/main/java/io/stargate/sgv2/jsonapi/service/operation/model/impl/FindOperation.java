@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,6 +19,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.bridge.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -312,7 +314,7 @@ public record FindOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        List<QueryOuterClass.Query> queries = buildSortedSelectQueries(additionalIdFilter);
+        List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
             queryExecutor,
             queries,
@@ -326,7 +328,7 @@ public record FindOperation(
             projection());
       }
       case DOCUMENT, KEY -> {
-        List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
+        List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
             queryExecutor,
             queries,
@@ -391,32 +393,37 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // in filter, but with empty values, find nothing
       return List.of();
     }
-    List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+    List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
+          Set<BuiltCondition> conditions = new LinkedHashSet<>();
+          expression.collectK(conditions, Integer.MAX_VALUE);
+          final List<Object> collect =
+              conditions.stream()
+                  .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+                  .collect(Collectors.toList());
           if (vector() == null) {
-            queries.add(
+            final QueryOuterClass.Query query =
                 new QueryBuilder()
                     .select()
                     .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
                     .from(commandContext.namespace(), commandContext.collection())
                     .where(expression)
                     .limit(limit)
-                    .build());
+                    .build();
+            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            queries.add(simpleStatement.setPositionalValues(collect));
           } else {
-            QueryOuterClass.Query builtQuery = getVectorSearchQueryByExpression(expression);
-            final List<QueryOuterClass.Value> valuesList =
-                builtQuery.getValuesOrBuilder().getValuesList();
-            final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
-            valuesList.forEach(builder::addValues);
-            builder.addValues(CustomValueSerializers.getVectorValue(vector()));
-            queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
+            QueryOuterClass.Query query = getVectorSearchQueryByExpression(expression);
+            collect.add(CQLBindValues.getVectorValue(vector()));
+            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            queries.add(simpleStatement.setPositionalValues(collect));
           }
         });
 
@@ -497,8 +504,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSortedSelectQueries(
-      DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) {
@@ -512,17 +518,27 @@ public record FindOperation(
       sortColumns.toArray(columns);
     }
     final String[] columnsToAdd = columns;
-    List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+    List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
-        expression ->
-            queries.add(
-                new QueryBuilder()
-                    .select()
-                    .column(columnsToAdd)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(expression)
-                    .limit(maxSortReadLimit())
-                    .build()));
+        expression -> {
+          Set<BuiltCondition> conditions = new LinkedHashSet<>();
+          expression.collectK(conditions, Integer.MAX_VALUE);
+          final List<Object> collect =
+              conditions.stream()
+                  .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+                  .collect(Collectors.toList());
+          final QueryOuterClass.Query query =
+              new QueryBuilder()
+                  .select()
+                  .column(columnsToAdd)
+                  .from(commandContext.namespace(), commandContext.collection())
+                  .where(expression)
+                  .limit(maxSortReadLimit())
+                  .build();
+          final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+          queries.add(simpleStatement.setPositionalValues(collect));
+        });
+
     return queries;
   }
 
