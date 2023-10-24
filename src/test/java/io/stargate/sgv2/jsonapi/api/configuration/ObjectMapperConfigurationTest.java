@@ -383,6 +383,37 @@ class ObjectMapperConfigurationTest {
     }
 
     @Test
+    public void happyPathVectorSearchLegacyNames() throws Exception {
+      Command result =
+          objectMapper.readValue(
+              """
+                  {
+                    "createCollection": {
+                      "name": "some_name",
+                      "options": {
+                        "vector": {
+                          "size": 5,
+                          "function": "cosine"
+                        }
+                      }
+                    }
+                  }
+                  """,
+              Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                assertThat(createCollection.name()).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().vector()).isNotNull();
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
+              });
+    }
+
+    @Test
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
