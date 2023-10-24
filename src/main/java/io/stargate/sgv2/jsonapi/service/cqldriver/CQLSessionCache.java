@@ -37,7 +37,7 @@ public class CQLSessionCache {
       Caffeine.newBuilder()
           .expireAfterAccess(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
-          .build(cacheKey -> getNewSession());
+          .build();
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
@@ -48,11 +48,11 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession() {
+  private CqlSession getNewSession(String cacheKey) {
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
         DriverConfigLoader.programmaticBuilder()
-            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(5))
+            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
@@ -80,7 +80,7 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    return sessionCache.getIfPresent(getSessionCacheKey());
+    return sessionCache.get(getSessionCacheKey(), this::getNewSession);
   }
 
   /**

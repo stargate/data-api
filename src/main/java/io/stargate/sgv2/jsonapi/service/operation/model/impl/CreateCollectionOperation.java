@@ -188,7 +188,7 @@ public record CreateCollectionOperation(
       if (vectorize != null) {
         createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
       }
-      return SimpleStatement.newInstance(createTableWithVector);
+      return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
     } else {
       String createTable =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -205,7 +205,7 @@ public record CreateCollectionOperation(
               + "    query_null_values   set<text>, "
               + "    PRIMARY KEY (key))";
 
-      return SimpleStatement.newInstance(createTable);
+      return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
     }
   }
 
