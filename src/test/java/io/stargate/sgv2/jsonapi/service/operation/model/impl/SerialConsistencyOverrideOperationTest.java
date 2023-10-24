@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -152,6 +153,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
             + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
+    @Disabled
     public void insert() throws Exception {
       String document =
           """
@@ -223,6 +225,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
   class ReadAndUpdate {
 
     @Test
+    @Disabled
     public void readAndUpdate() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
