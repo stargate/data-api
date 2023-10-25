@@ -10,7 +10,6 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -28,9 +27,9 @@ public class CQLSessionCache {
   @Inject StargateRequestInfo stargateRequestInfo;
 
   /** Time to live for CQLSession in cache in seconds. */
-  private static final long CACHE_TTL_SECONDS = 300;
+  private static final long CACHE_TTL_SECONDS = 60;
   /** Maximum number of CQLSessions in cache. */
-  private static final long CACHE_MAX_SIZE = 1000;
+  private static final long CACHE_MAX_SIZE = 100;
 
   /** CQLSession cache. */
   private final Cache<String, CqlSession> sessionCache =
@@ -57,18 +56,20 @@ public class CQLSessionCache {
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
     if (CASSANDRA.equals(databaseConfig.type())) {
-      return CqlSession.builder()
+      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(null))
+          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return CqlSession.builder()
+      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(null))
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials("token", Objects.requireNonNull(databaseConfig.token()))
-          .withCloudSecureConnectBundle(
-              Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))
+          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          /*.withCloudSecureConnectBundle(
+          Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))*/
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
