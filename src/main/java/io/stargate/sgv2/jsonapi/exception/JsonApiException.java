@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -64,7 +65,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     // enable debug mode for unit tests, since it can not be injected
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-    final boolean debugEnabled = debugModeConfig.enable();
+    final boolean debugEnabled = debugModeConfig.enabled();
     if (debugEnabled) {
       fields =
           Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());

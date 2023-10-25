@@ -4,7 +4,7 @@
 stargate:
 
   debug:
-    enable: false
+    enabled: false
 
   # disable all sgv2 exception mappers, handled differently
   exception-mappers:

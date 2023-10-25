@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.api.common.properties.datastore.DataStoreProperties;
-import io.stargate.sgv2.jsonapi.exception.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -24,7 +24,7 @@ public class JsonApiStartUp {
   }
 
   void onStart(@Observes StartupEvent ev) {
-    LOGGER.info(String.format("DEBUG mode Enabled: %s", config.enable()));
+    LOGGER.info(String.format("DEBUG mode Enabled: %s", config.enabled()));
     LOGGER.info(
         String.format("VectorSearch Enabled: %s", dataStoreProperties.vectorSearchEnabled()));
     LOGGER.info(

@@ -4,7 +4,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
@@ -22,7 +22,7 @@ public final class ThrowableToErrorMapper {
       (throwable, message) -> {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-        final boolean debugEnabled = debugModeConfig.enable();
+        final boolean debugEnabled = debugModeConfig.enabled();
 
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
