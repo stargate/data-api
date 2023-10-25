@@ -3,6 +3,9 @@
 
 stargate:
 
+  haha:
+    enabled: false
+
   # disable all sgv2 exception mappers, handled differently
   exception-mappers:
     enabled: false
@@ -33,6 +36,7 @@ stargate:
         # This can be `property` or `in-memory` to store Embedding service configuration
         store: property
       service:
+        enabled: true
         # Open AI embedding service configuration
         openai:
           enabled: false
