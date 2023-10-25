@@ -53,7 +53,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
             ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
       }
-      final int vectorSize = command.options().vector().size();
+      final int vectorSize = command.options().vector().dimension();
       if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
         throw new JsonApiException(
             ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG,
@@ -79,7 +79,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           schemaManager,
           command.name(),
           vectorSize,
-          command.options().vector().function(),
+          command.options().vector().metric(),
           vectorize);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(

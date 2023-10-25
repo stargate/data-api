@@ -63,8 +63,8 @@ class CreateCollectionCommandResolverTest {
                 "name" : "my_collection",
                 "options": {
                   "vector": {
-                    "size": 4,
-                    "function": "cosine"
+                    "dimension": 4,
+                    "metric": "cosine"
                   }
                 }
               }
@@ -95,8 +95,8 @@ class CreateCollectionCommandResolverTest {
               "name" : "my_collection",
               "options": {
                 "vector": {
-                  "size": 4,
-                  "function": "cosine"
+                  "dimension": 4,
+                  "metric": "cosine"
                 },
                 "vectorize": {
                   "service" : "openai",
@@ -136,7 +136,7 @@ class CreateCollectionCommandResolverTest {
             "name" : "my_collection",
             "options": {
               "vector": {
-                "size": 4
+                "dimension": 4
               }
             }
           }

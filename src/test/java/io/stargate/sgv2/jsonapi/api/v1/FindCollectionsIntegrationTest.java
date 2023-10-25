@@ -88,8 +88,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   "name": "%s",
                   "options": {
                     "vector": {
-                      "size": 5,
-                      "function": "cosine"
+                      "dimension": 5,
+                      "metric": "cosine"
                     }
                   }
                 }
@@ -120,8 +120,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   "name": "%s",
                   "options": {
                     "vector": {
-                      "size": 5,
-                      "function": "cosine"
+                      "dimension": 5,
+                      "metric": "cosine"
                     }
                   }
                 }
