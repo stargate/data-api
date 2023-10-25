@@ -149,5 +149,9 @@ public interface OperationsConfig {
     @Nullable
     @WithDefault("secure-connect-database_name.zip")
     String secureConnectBundlePath();
+
+    @NotNull
+    @WithDefault("datacenter1")
+    String localDatacenter();
   }
 }
