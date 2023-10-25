@@ -11,9 +11,6 @@ import org.eclipse.microprofile.config.spi.Converter;
 @ConfigMapping(prefix = "stargate.jsonapi.embedding.service")
 public interface PropertyBasedEmbeddingServiceConfig {
 
-  @WithDefault("false")
-  boolean enabled();
-
   @Nullable
   OpenaiConfig openai();
 

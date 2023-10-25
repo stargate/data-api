@@ -30,8 +30,8 @@ public class DseTestResource extends StargateTestResource {
     }
 
     // DEBUG mode for Integration Test
-    if (null == System.getProperty("stargate.debug.enabled")) {
-      System.setProperty("stargate.debug.enabled", "true");
+    if (null == System.getProperty("quarkus.log.level")) {
+      System.setProperty("quarkus.log.level", "DEBUG");
     }
   }
 

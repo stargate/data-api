@@ -2,42 +2,25 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.quarkus.logging.Log;
-import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingServiceConfig;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
  * implementation.
  */
 public final class ThrowableToErrorMapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThrowableToErrorMapper.class);
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
-        SmallRyeConfig c1 = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        PropertyBasedEmbeddingServiceConfig hah =
-            c1.getConfigMapping(PropertyBasedEmbeddingServiceConfig.class);
-        Log.error(hah.enabled());
-
-          SmallRyeConfig c2 = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-          JsonApiMetricsConfig hah1 =
-                  c2.getConfigMapping(JsonApiMetricsConfig.class);
-          Log.error(hah1.errorClass());
-        Log.error("??1");
-
-
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-        final boolean debugEnabled = debugModeConfig.enabled();
+        final boolean debugEnabled = LOGGER.isDebugEnabled();
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message);

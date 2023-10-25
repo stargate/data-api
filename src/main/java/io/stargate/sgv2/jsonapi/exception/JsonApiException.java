@@ -1,14 +1,13 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import io.quarkus.logging.Log;
-import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.
@@ -18,6 +17,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * directly.
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiException.class);
+
   private final ErrorCode errorCode;
 
   public JsonApiException(ErrorCode errorCode) {
@@ -62,11 +64,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message) {
     Map<String, Object> fields = null;
     // only have exceptionClass in debug mode
-    Log.error("??2");
-    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-    DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-    final boolean debugEnabled = debugModeConfig.enabled();
-    if (debugEnabled) {
+    if (LOGGER.isDebugEnabled()) {
       fields =
           Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
     } else {
