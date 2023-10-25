@@ -139,6 +139,7 @@ public interface ReadOperation extends Operation {
             });
   }
 
+  byte true_byte = (byte) 1;
   /**
    * This method reads upto system fixed limit
    *
@@ -219,9 +220,10 @@ public interface ReadOperation extends Operation {
                   }
                   // boolean value
                   columnCounter++;
-                  Boolean boolValue = row.getBoolean(columnCounter);
-                  if (boolValue) {
-                    sortValues.add(nodeFactory.booleanNode(boolValue));
+                  Byte boolValue = row.getByte(columnCounter);
+                  if (boolValue != null) {
+                    sortValues.add(
+                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue) == 0));
                     continue;
                   }
                   // null value
