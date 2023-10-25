@@ -119,7 +119,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.of(key)),
               Predicate.EQ,
-              new JsonTerm(value));
+              new JsonTerm(key, value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -149,11 +149,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /** Filters db documents based on a boolean field value */
-  public static class BoolFilter extends MapFilterBase<Byte> {
+  public static class BoolFilter extends MapFilterBase<Boolean> {
     private final boolean boolValue;
 
     public BoolFilter(String path, Operator operator, Boolean value) {
-      super("query_bool_values", path, operator, value ? (byte) 1 : (byte) 0);
+      super("query_bool_values", path, operator, value);
       this.boolValue = value;
     }
 

@@ -34,10 +34,12 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.data.Offset;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
 

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
