@@ -73,7 +73,8 @@ public class CQLSessionCache {
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(null))
           .withConfigLoader(driverConfigLoaderBuilder.build())
-          .withAuthCredentials("token", Objects.requireNonNull(databaseConfig.token()))
+          .withAuthCredentials(
+              "token", Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElse(null)))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           /*.withCloudSecureConnectBundle(
           Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))*/
