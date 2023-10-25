@@ -2,25 +2,28 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
  * implementation.
  */
 public final class ThrowableToErrorMapper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ThrowableToErrorMapper.class);
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
-        final boolean debugEnabled = LOGGER.isDebugEnabled();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
+        final boolean debugEnabled = debugModeConfig.enable();
+
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message);

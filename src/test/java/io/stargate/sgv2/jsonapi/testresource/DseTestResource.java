@@ -28,11 +28,6 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
     }
-
-    // DEBUG mode for Integration Test
-    if (null == System.getProperty("quarkus.log.level")) {
-      System.setProperty("quarkus.log.level", "DEBUG");
-    }
   }
 
   @Override
@@ -44,6 +39,7 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.service.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
+    propsBuilder.put("stargate.debug.enabled", "true");
     return propsBuilder.build();
   }
 }

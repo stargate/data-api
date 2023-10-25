@@ -8,6 +8,3 @@ stargate:
 quarkus:
   http:
     test-port: 9080
-  log:
-# DEBUG mode for unit tests
-    level: DEBUG
