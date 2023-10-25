@@ -2,12 +2,15 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
@@ -22,9 +25,12 @@ public final class ThrowableToErrorMapper {
           return jae.getCommandResultError(message);
         }
         // Override response error code
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
+        final boolean debugEnabled = debugModeConfig.enabled();
         if (throwable instanceof StatusRuntimeException sre) {
           Map<String, Object> fields =
-              Map.of("exceptionClass", throwable.getClass().getSimpleName());
+              debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
             return new CommandResult.Error(message, fields, Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
@@ -36,7 +42,8 @@ public final class ThrowableToErrorMapper {
           }
         }
         // add error code as error field
-        Map<String, Object> fields = Map.of("exceptionClass", throwable.getClass().getSimpleName());
+        Map<String, Object> fields =
+            debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         return new CommandResult.Error(message, fields, Response.Status.OK);
       };
 
