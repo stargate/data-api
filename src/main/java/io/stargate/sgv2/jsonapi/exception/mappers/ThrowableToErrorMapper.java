@@ -20,15 +20,14 @@ public final class ThrowableToErrorMapper {
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-        final boolean debugEnabled = debugModeConfig.enabled();
-
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message);
         }
         // Override response error code
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
+        final boolean debugEnabled = debugModeConfig.enabled();
         if (throwable instanceof StatusRuntimeException sre) {
           Map<String, Object> fields =
               debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
