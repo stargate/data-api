@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -20,14 +20,13 @@ public record DropNamespaceOperation(String name) implements Operation {
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    QueryOuterClass.Query query =
-        QueryOuterClass.Query.newBuilder().setCql(DROP_KEYSPACE_CQL.formatted(name)).build();
-
+    SimpleStatement deleteStatement =
+        SimpleStatement.newInstance(DROP_KEYSPACE_CQL.formatted(name));
     // execute
     return queryExecutor
-        .executeSchemaChange(query)
+        .executeSchemaChange(deleteStatement)
 
         // if we have a result always respond positively
-        .map(any -> new SchemaChangeResult(true));
+        .map(any -> new SchemaChangeResult(any.wasApplied()));
   }
 }
