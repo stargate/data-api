@@ -57,6 +57,7 @@ public class CQLSessionCache {
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
         DriverConfigLoader.programmaticBuilder()
+            .withString(DefaultDriverOption.PROTOCOL_VERSION, "V4")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
