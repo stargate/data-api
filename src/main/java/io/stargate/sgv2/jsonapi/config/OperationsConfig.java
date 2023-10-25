@@ -140,11 +140,6 @@ public interface OperationsConfig {
     @WithDefault("127.0.0.1")
     List<String> cassandraContactPoints();
 
-    /** AstraDB token (when type is <code>astra</code>) */
-    @Nullable
-    @WithDefault("token")
-    String token();
-
     /** Secure connect bundle path (when type is <code>astra</code>) */
     @Nullable
     @WithDefault("secure-connect-database_name.zip")
