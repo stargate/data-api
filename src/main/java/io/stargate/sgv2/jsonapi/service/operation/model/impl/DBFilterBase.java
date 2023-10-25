@@ -117,7 +117,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case MAP_EQUALS:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.of(key)),
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
               Predicate.EQ,
               new JsonTerm(key, value));
         default:
