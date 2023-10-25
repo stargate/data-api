@@ -2,6 +2,11 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +55,48 @@ public record CollectionSettings(
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
       };
+    }
+  }
+
+  // TODO:need debug
+  public static CollectionSettings getCollectionSettings(
+      TableMetadata table, ObjectMapper objectMapper) {
+    String collectionName = table.getName().asCql(true);
+    final Optional<ColumnMetadata> vectorColumn =
+        table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+
+    boolean vectorEnabled = vectorColumn.isPresent();
+    if (vectorEnabled) {
+      final int vectorSize =
+          ((VectorType) vectorColumn.get().getType()).getDimensions();
+      final IndexMetadata vectorIndex =
+          table
+              .getIndexes()
+              .get(CqlIdentifier.fromCql(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME));
+      CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
+
+      if (vectorIndex != null) {
+        final String functionName =
+            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+        if (functionName != null)
+          function = CollectionSettings.SimilarityFunction.fromString(functionName);
+      }
+      final String comment = (String) table.getOptions().get("comment");
+      if (comment != null && !comment.isBlank()) {
+        return createCollectionSettingsFromJson(
+            collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
+      } else {
+        return new CollectionSettings(
+            collectionName, vectorEnabled, vectorSize, function, null, null);
+      }
+    } else {
+      return new CollectionSettings(
+          collectionName,
+          vectorEnabled,
+          0,
+          CollectionSettings.SimilarityFunction.UNDEFINED,
+          null,
+          null);
     }
   }
 
