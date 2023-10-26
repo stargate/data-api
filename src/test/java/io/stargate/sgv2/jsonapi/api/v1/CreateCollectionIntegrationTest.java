@@ -314,7 +314,10 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               is(
-                  "Too many collections:  number of Collections cannot exceed "+MAX_DBS+", already have "+MAX_DBS))
+                  "Too many collections:  number of Collections cannot exceed "
+                      + MAX_DBS
+                      + ", already have "
+                      + MAX_DBS))
           .body("errors[0].errorCode", is("TOO_MANY_COLLECTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
