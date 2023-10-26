@@ -271,6 +271,56 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
   @Nested
   @Order(2)
+  class TooManyCollections {
+    @Test
+    public void enforceMaxCollections() {
+      // Don't use auto-generated namespace that rest of the test uses
+      final String NS = "ns_too_many_collections";
+      final String createTemplate =
+          """
+              {
+                "createCollection": {
+                  "name": "tooMany_%d"
+                }
+              }
+              """;
+
+      int i = 1;
+      for (; i <= 5; ++i) {
+        String json = createTemplate.formatted(i);
+        given()
+            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .contentType(ContentType.JSON)
+            .body(json)
+            .when()
+            .post(NamespaceResource.BASE_PATH, NS)
+            .then()
+            .statusCode(200)
+            .body("status.ok", is(1));
+      }
+      // And then failure
+      String json = createTemplate.formatted(i);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, NS)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              is(
+                  "The provided collection name 'simple_collection' already exists with a non-vector setting."))
+          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+  }
+
+  @Nested
+  @Order(99)
   class Metrics {
     @Test
     public void checkMetrics() {

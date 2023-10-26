@@ -154,7 +154,14 @@ public record CreateCollectionOperation(
   }
 
   void verifyLimits(List<Schema.CqlTable> tables) {
-    // TODO: add actual validation
+    final int MAX_COLLECTIONS = 5;
+    if (tables.size() > MAX_COLLECTIONS) {
+      throw new JsonApiException(
+          ErrorCode.TOO_MANY_COLLECTIONS,
+          String.format(
+              "%s:  number of Collections cannot exceed %d, already have %d",
+              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
+    }
   }
 
   Schema.CqlTable findTableOrNull(List<Schema.CqlTable> tables, String name) {
