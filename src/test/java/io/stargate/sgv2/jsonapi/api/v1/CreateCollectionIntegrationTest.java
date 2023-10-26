@@ -274,6 +274,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   class TooManyCollections {
     @Test
     public void enforceMaxCollections() {
+      final int MAX_DBS = 5; // !!! TODO from config
       // Don't use auto-generated namespace that rest of the test uses
       final String NS = "ns_too_many_collections";
       createNamespace(NS);
@@ -286,8 +287,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
               """;
 
-      int i = 1;
-      for (; i <= 5; ++i) {
+      for (int i = 1; i <= MAX_DBS; ++i) {
         String json = createTemplate.formatted(i);
         given()
             .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -300,7 +300,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
             .body("status.ok", is(1));
       }
       // And then failure
-      String json = createTemplate.formatted(i);
+      String json = createTemplate.formatted(99);
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -314,8 +314,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               is(
-                  "The provided collection name 'simple_collection' already exists with a non-vector setting."))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+                  "Too many collections:  number of Collections cannot exceed "+MAX_DBS+", already have "+MAX_DBS))
+          .body("errors[0].errorCode", is("TOO_MANY_COLLECTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }

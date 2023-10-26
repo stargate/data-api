@@ -155,7 +155,7 @@ public record CreateCollectionOperation(
 
   void verifyLimits(List<Schema.CqlTable> tables) {
     final int MAX_COLLECTIONS = 5;
-    if (tables.size() > MAX_COLLECTIONS) {
+    if (tables.size() >= MAX_COLLECTIONS) {
       throw new JsonApiException(
           ErrorCode.TOO_MANY_COLLECTIONS,
           String.format(
