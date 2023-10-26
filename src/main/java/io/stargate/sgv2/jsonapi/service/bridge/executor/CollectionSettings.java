@@ -59,7 +59,6 @@ public record CollectionSettings(
     }
   }
 
-  // TODO:need debug
   public static CollectionSettings getCollectionSettings(
       TableMetadata table, ObjectMapper objectMapper) {
     String collectionName = table.getName().asCql(true);
