@@ -17,11 +17,13 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.constraints.Positive;
 
 /** Configuration for limits that apply to Databases. */
+@StaticInitSafe
 @ConfigMapping(prefix = "stargate.database.limits")
 public interface DatabaseLimitsConfig {
   // Constant we need to access from Integration tests
