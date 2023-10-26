@@ -276,6 +276,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void enforceMaxCollections() {
       // Don't use auto-generated namespace that rest of the test uses
       final String NS = "ns_too_many_collections";
+      createNamespace(NS);
       final String createTemplate =
           """
               {
