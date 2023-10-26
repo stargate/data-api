@@ -69,7 +69,11 @@ public record CreateCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return schemaManager
-        .getTable(commandContext.namespace(), name, MISSING_KEYSPACE_FUNCTION)
+        .getTables(commandContext.namespace(), MISSING_KEYSPACE_FUNCTION)
+        .collect()
+        .asList()
+        .invoke(tables -> verifyLimits(tables))
+        .map(tables -> findTableOrNull(tables, name))
         .onItem()
         .transformToUni(
             table -> {
@@ -147,6 +151,14 @@ public record CreateCollectionOperation(
                   return Uni.combine().all().unis(indexes).combinedWith(results -> true);
                 });
     return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
+  }
+
+  void verifyLimits(List<Schema.CqlTable> tables) {
+    // TODO: add actual validation
+  }
+
+  Schema.CqlTable findTableOrNull(List<Schema.CqlTable> tables, String name) {
+    return tables.stream().filter(table -> table.getName().equals(name)).findFirst().orElse(null);
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
