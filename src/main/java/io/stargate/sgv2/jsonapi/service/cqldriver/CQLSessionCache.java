@@ -100,13 +100,15 @@ public class CQLSessionCache {
    */
   private String getSessionCacheKey() {
     if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId()
+      return stargateRequestInfo.getTenantId().orElse(null)
           + ":"
           + operationsConfig.databaseConfig().userName()
           + ":"
           + operationsConfig.databaseConfig().password();
     } else if (ASTRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId() + ":" + stargateRequestInfo.getCassandraToken();
+      return stargateRequestInfo.getTenantId().orElseThrow()
+          + ":"
+          + stargateRequestInfo.getCassandraToken().orElseThrow();
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
