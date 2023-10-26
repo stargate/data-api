@@ -2,10 +2,6 @@
 # please keep properties in the alphabetical order
 
 stargate:
-  database:
-    limits:
-      maxCollections: 5
-
   debug:
     enabled: false
 
