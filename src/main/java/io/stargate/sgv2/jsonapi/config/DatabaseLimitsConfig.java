@@ -24,6 +24,7 @@ import jakarta.validation.constraints.Positive;
 /** Configuration for limits that apply to Databases. */
 @ConfigMapping(prefix = "stargate.database.limits")
 public interface DatabaseLimitsConfig {
+  // Constant we need to access from Integration tests
   int DEFAULT_MAX_COLLECTIONS = 5;
 
   /**
