@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -220,10 +221,10 @@ public interface ReadOperation extends Operation {
                   }
                   // boolean value
                   columnCounter++;
-                  Byte boolValue = row.getByte(columnCounter);
+                  ByteBuffer boolValue = row.getBytesUnsafe(columnCounter);
                   if (boolValue != null) {
                     sortValues.add(
-                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue) == 0));
+                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue.get(0)) == 0));
                     continue;
                   }
                   // null value

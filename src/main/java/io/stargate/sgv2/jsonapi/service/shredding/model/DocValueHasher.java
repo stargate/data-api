@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -197,8 +198,8 @@ public class DocValueHasher {
       return numberValue((BigDecimal) value).hash();
     } else if (value instanceof Boolean) {
       return booleanValue((Boolean) value).hash();
-    } else if (value instanceof Date) {
-      return timestampValue((Date) value).hash();
+    } else if (value instanceof Instant) {
+      return timestampValue(new Date(((Instant) value).toEpochMilli())).hash();
     } else if (value instanceof List) {
       return arrayHash((List<Object>) value);
     } else if (value instanceof Map) {

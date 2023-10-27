@@ -404,7 +404,7 @@ public record FindOperation(
         expression -> {
           Set<BuiltCondition> conditions = new LinkedHashSet<>();
           if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          final List<Object> collect =
+          List<Object> collect =
               conditions.stream()
                   .flatMap(
                       builtCondition -> {
@@ -430,6 +430,12 @@ public record FindOperation(
             QueryOuterClass.Query query = getVectorSearchQueryByExpression(expression);
             collect.add(CQLBindValues.getVectorValue(vector()));
             final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            if (projection().doIncludeSimilarityScore()) {
+              List<Object> appendedCollect = new ArrayList<>();
+              appendedCollect.add(collect.get(collect.size() - 1));
+              appendedCollect.addAll(collect);
+              collect = appendedCollect;
+            }
             queries.add(simpleStatement.setPositionalValues(collect));
           }
         });
