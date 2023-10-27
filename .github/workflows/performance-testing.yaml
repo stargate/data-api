@@ -49,7 +49,7 @@ jobs:
             docker-image: 'jsonapi'
 
           - type: native
-            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
+            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.native.additional-build-args="--initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager"'
             docker-flags: '-n'
             docker-image: 'jsonapi-native'
 

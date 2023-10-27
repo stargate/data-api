@@ -114,7 +114,7 @@ jobs:
       - name: Build and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.native.additional-build-args='--initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager' ${{ matrix.profile }}
 
       #
       # build and push Astra image to Amazon ECR

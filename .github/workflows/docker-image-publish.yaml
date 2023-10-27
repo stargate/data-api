@@ -66,7 +66,7 @@ jobs:
 
       - name: Build and push (Amazon ECR)
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' -Dquarkus.native.additional-build-args='--initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager' ${{ matrix.profile }}
 
   # signs docker image with cosign
   sign:
