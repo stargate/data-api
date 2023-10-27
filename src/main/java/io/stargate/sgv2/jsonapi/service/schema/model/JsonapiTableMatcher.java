@@ -5,10 +5,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.bridge.proto.QueryOuterClass.TypeSpec.Basic;
-import io.stargate.bridge.proto.Schema;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,31 +20,95 @@ public class JsonapiTableMatcher implements Predicate<TableMetadata> {
   private final Predicate<ColumnMetadata> columnsPredicateVector;
 
   public JsonapiTableMatcher() {
-    primaryKeyPredicate = new CqlColumnMatcher.Tuple("key", new PrimitiveType(ProtocolConstants.DataType.TINYINT), new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+    primaryKeyPredicate =
+        new CqlColumnMatcher.Tuple(
+            "key",
+            new PrimitiveType(ProtocolConstants.DataType.TINYINT),
+            new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
     columnsPredicate =
-        new CqlColumnMatcher.BasicType("tx_id", new PrimitiveType(ProtocolConstants.DataType.TIMEUUID))
-            .or(new CqlColumnMatcher.BasicType("doc_json", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Set("exist_keys", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("array_size", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.INT)))
-            .or(new CqlColumnMatcher.Set("array_contains", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("query_bool_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR),new PrimitiveType(ProtocolConstants.DataType.TINYINT)))
-            .or(new CqlColumnMatcher.Map("query_dbl_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
-            .or(new CqlColumnMatcher.Map("query_text_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("query_timestamp_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.TIMESTAMP)))
-            .or(new CqlColumnMatcher.Set("query_null_values",new PrimitiveType(ProtocolConstants.DataType.VARCHAR)));
+        new CqlColumnMatcher.BasicType(
+                "tx_id", new PrimitiveType(ProtocolConstants.DataType.TIMEUUID))
+            .or(
+                new CqlColumnMatcher.BasicType(
+                    "doc_json", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "exist_keys", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "array_size",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.INT)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "array_contains", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_bool_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.TINYINT)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_dbl_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_text_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_timestamp_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.TIMESTAMP)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "query_null_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)));
 
     columnsPredicateVector =
-        new CqlColumnMatcher.BasicType("tx_id",  new PrimitiveType(ProtocolConstants.DataType.TIMEUUID))
-            .or(new CqlColumnMatcher.BasicType("doc_json", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Set("exist_keys", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("array_size", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.INT)))
-            .or(new CqlColumnMatcher.Set("array_contains", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("query_bool_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.TINYINT)))
-            .or(new CqlColumnMatcher.Map("query_dbl_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
-            .or(new CqlColumnMatcher.Map("query_text_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.Map("query_timestamp_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR), new PrimitiveType(ProtocolConstants.DataType.TIMESTAMP)))
-            .or(new CqlColumnMatcher.Set("query_null_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
-            .or(new CqlColumnMatcher.BasicType("query_vector_value", new PrimitiveType(ProtocolConstants.DataType.CUSTOM)));
+        new CqlColumnMatcher.BasicType(
+                "tx_id", new PrimitiveType(ProtocolConstants.DataType.TIMEUUID))
+            .or(
+                new CqlColumnMatcher.BasicType(
+                    "doc_json", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "exist_keys", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "array_size",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.INT)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "array_contains", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_bool_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.TINYINT)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_dbl_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_text_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.Map(
+                    "query_timestamp_values",
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+                    new PrimitiveType(ProtocolConstants.DataType.TIMESTAMP)))
+            .or(
+                new CqlColumnMatcher.Set(
+                    "query_null_values", new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.BasicType(
+                    "query_vector_value", new PrimitiveType(ProtocolConstants.DataType.CUSTOM)));
   }
 
   /**
