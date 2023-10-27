@@ -2,6 +2,11 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +15,7 @@ import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -50,6 +56,52 @@ public record CollectionSettings(
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
       };
+    }
+  }
+
+  public static CollectionSettings getCollectionSettings(
+      TableMetadata table, ObjectMapper objectMapper) {
+    String collectionName = table.getName().asCql(true);
+    // get vector column
+    final Optional<ColumnMetadata> vectorColumn =
+        table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+    boolean vectorEnabled = vectorColumn.isPresent();
+    // if vector column exist
+    if (vectorEnabled) {
+      final int vectorSize = ((VectorType) vectorColumn.get().getType()).getDimensions();
+      // get vector index
+      IndexMetadata vectorIndex = null;
+      Map<CqlIdentifier, IndexMetadata> indexMap = table.getIndexes();
+      for (CqlIdentifier key : indexMap.keySet()) {
+        if (key.asInternal().contains(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
+          vectorIndex = indexMap.get(key);
+          break;
+        }
+      }
+      // default function
+      CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
+      if (vectorIndex != null) {
+        final String functionName =
+            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+        if (functionName != null)
+          function = CollectionSettings.SimilarityFunction.fromString(functionName);
+      }
+      final String comment = (String) table.getOptions().get("comment");
+      if (comment != null && !comment.isBlank()) {
+        return createCollectionSettingsFromJson(
+            collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
+      } else {
+        return new CollectionSettings(
+            collectionName, vectorEnabled, vectorSize, function, null, null);
+      }
+    } else { // if not vector collection
+      return new CollectionSettings(
+          collectionName,
+          vectorEnabled,
+          0,
+          CollectionSettings.SimilarityFunction.UNDEFINED,
+          null,
+          null);
     }
   }
 

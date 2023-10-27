@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ExpressionBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,11 +39,18 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
     Set<BuiltCondition> conditions = new LinkedHashSet<>();
-    if (expressions != null && !expressions.isEmpty())
+    if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null)
       expressions.get(0).collectK(conditions, Integer.MAX_VALUE);
     final List<Object> collect =
         conditions.stream()
-            .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+            .flatMap(
+                builtCondition -> {
+                  JsonTerm term = ((JsonTerm) builtCondition.value());
+                  List<Object> values = new ArrayList<>();
+                  if (term.getKey() != null) values.add(term.getKey());
+                  values.add(term.getValue());
+                  return values.stream();
+                })
             .collect(Collectors.toList());
     final QueryOuterClass.Query query =
         new QueryBuilder()

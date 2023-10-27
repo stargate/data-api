@@ -186,6 +186,8 @@ public class DocValueHasher {
     return DocValueHash.constructBoundedHash(DocValueType.OBJECT, sb.toString());
   }
 
+  private static final byte true_byte = (byte) 1;
+
   public DocValueHash getHash(Object value) {
     if (value == null) {
       return nullValue().hash();
@@ -201,6 +203,8 @@ public class DocValueHasher {
       return arrayHash((List<Object>) value);
     } else if (value instanceof Map) {
       return objectHash((Map<String, Object>) value);
+    } else if (value instanceof Byte b) {
+      return booleanValue(Byte.compare(true_byte, b) == 0).hash();
     }
     throw new JsonApiException(
         ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

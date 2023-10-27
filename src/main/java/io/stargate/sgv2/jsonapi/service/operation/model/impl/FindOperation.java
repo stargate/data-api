@@ -406,7 +406,14 @@ public record FindOperation(
           if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
           final List<Object> collect =
               conditions.stream()
-                  .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+                  .flatMap(
+                      builtCondition -> {
+                        JsonTerm term = ((JsonTerm) builtCondition.value());
+                        List<Object> values = new ArrayList<>();
+                        if (term.getKey() != null) values.add(term.getKey());
+                        values.add(term.getValue());
+                        return values.stream();
+                      })
                   .collect(Collectors.toList());
           if (vector() == null) {
             final QueryOuterClass.Query query =
@@ -525,7 +532,14 @@ public record FindOperation(
           if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
           final List<Object> collect =
               conditions.stream()
-                  .map(builtCondition -> ((JsonTerm) builtCondition.value()).get())
+                  .flatMap(
+                      builtCondition -> {
+                        JsonTerm term = ((JsonTerm) builtCondition.value());
+                        List<Object> values = new ArrayList<>();
+                        if (term.getKey() != null) values.add(term.getKey());
+                        values.add(term.getValue());
+                        return values.stream();
+                      })
                   .collect(Collectors.toList());
           final QueryOuterClass.Query query =
               new QueryBuilder()

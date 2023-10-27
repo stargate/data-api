@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -8,11 +9,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -187,32 +185,24 @@ public class QueryExecutor {
    * @param collectionName
    * @return
    */
-  protected Uni<Optional<Schema.CqlTable>> getSchema(String namespace, String collectionName) {
-    Schema.DescribeKeyspaceQuery describeKeyspaceQuery =
-        Schema.DescribeKeyspaceQuery.newBuilder().setKeyspaceName(namespace).build();
-    final Uni<Schema.CqlKeyspaceDescribe> cqlKeyspaceDescribeUni =
-        stargateRequestInfo.getStargateBridge().describeKeyspace(describeKeyspaceQuery);
-    return cqlKeyspaceDescribeUni
-        .onItemOrFailure()
-        .transformToUni(
-            (cqlKeyspaceDescribe, error) -> {
-              if (error != null
-                  && (error instanceof StatusRuntimeException sre
-                      && sre.getStatus().getCode() == Status.Code.NOT_FOUND)) {
-                return Uni.createFrom()
-                    .failure(
-                        new RuntimeException(
-                            new JsonApiException(
-                                ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                                "The provided namespace does not exist: " + namespace)));
-              }
-              Schema.CqlTable cqlTable = null;
-              return Uni.createFrom()
-                  .item(
-                      cqlKeyspaceDescribe.getTablesList().stream()
-                          .filter(table -> table.getName().equals(collectionName))
-                          .findFirst());
-            });
+  protected Uni<Optional<TableMetadata>> getSchema(String namespace, String collectionName) {
+    KeyspaceMetadata keyspaceMetadata =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql(namespace));
+    // if namespace does not exist, throw error
+    if (keyspaceMetadata == null) {
+      return Uni.createFrom()
+          .failure(
+              new RuntimeException(
+                  new JsonApiException(
+                      ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                      "The provided namespace does not exist: " + namespace)));
+    }
+    // else get the table
+    return Uni.createFrom().item(keyspaceMetadata.getTable(collectionName));
   }
 
   /**
