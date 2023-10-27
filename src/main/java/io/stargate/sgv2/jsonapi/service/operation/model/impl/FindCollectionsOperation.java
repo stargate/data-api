@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
@@ -12,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.util.List;
@@ -33,6 +36,7 @@ public record FindCollectionsOperation(
     boolean explain,
     ObjectMapper objectMapper,
     SchemaManager schemaManager,
+    CQLSessionCache cqlSessionCache,
     JsonapiTableMatcher tableMatcher,
     CommandContext commandContext)
     implements Operation {
@@ -53,14 +57,26 @@ public record FindCollectionsOperation(
       boolean explain,
       ObjectMapper objectMapper,
       SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       CommandContext commandContext) {
-    this(explain, objectMapper, schemaManager, TABLE_MATCHER, commandContext);
+    this(explain, objectMapper, schemaManager, cqlSessionCache, TABLE_MATCHER, commandContext);
   }
 
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     String namespace = commandContext.namespace();
+
+//    Map<CqlIdentifier, TableMetadata> collectionMap =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql(namespace))
+            .getTables().values()
+                .stream()
+                .filter(tableMatcher);
+//                .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper));
 
     // get all valid tables
     // get all tables
