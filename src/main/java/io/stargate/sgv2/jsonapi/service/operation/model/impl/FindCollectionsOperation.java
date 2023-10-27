@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
@@ -65,36 +64,29 @@ public record FindCollectionsOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    String namespace = commandContext.namespace();
-
-//    Map<CqlIdentifier, TableMetadata> collectionMap =
-        cqlSessionCache
-            .getSession()
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromCql(namespace))
-            .getTables().values()
-                .stream()
-                .filter(tableMatcher);
-//                .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper));
-
-    // get all valid tables
-    // get all tables
-    return schemaManager
-        .getTables(namespace, MISSING_KEYSPACE_FUNCTION)
-
-        // filter for valid collections
-        .filter(tableMatcher)
-
-        // map to name
-        .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
-
-        // get as list
-        .collect()
-        .asList()
-
-        // wrap into command result
-        .map(properties -> new Result(explain, properties));
+    return Uni.createFrom()
+        .item(
+            () -> {
+              String namespace = commandContext.namespace();
+              List<CollectionSettings> properties =
+                  cqlSessionCache
+                      .getSession()
+                      .getMetadata()
+                      .getKeyspaces()
+                      .get(CqlIdentifier.fromCql(namespace))
+                      // get all tables
+                      .getTables()
+                      .values()
+                      .stream()
+                      // filter for valid collections
+                      .filter(tableMatcher)
+                      // map to name
+                      .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
+                      // get as list
+                      .toList();
+              // Wrap the properties list into a command result
+              return new Result(explain, properties);
+            });
   }
 
   // simple result wrapper
