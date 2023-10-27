@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -20,6 +21,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   private final ObjectMapper objectMapper;
   private final SchemaManager schemaManager;
+  @Inject CQLSessionCache cqlSessionCache;
   private final DataStoreConfig dataStoreConfig;
 
   private final DocumentLimitsConfig documentLimitsConfig;
@@ -28,16 +30,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
       SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig) {
     this.objectMapper = objectMapper;
     this.schemaManager = schemaManager;
+    this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null);
+    this(null, null, null, null, null);
   }
 
   @Override
@@ -76,14 +80,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       return CreateCollectionOperation.withVectorSearch(
           ctx,
           objectMapper,
-          schemaManager,
+          cqlSessionCache,
           command.name(),
           vectorSize,
           command.options().vector().function(),
           vectorize);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
-          ctx, objectMapper, schemaManager, command.name());
+          ctx, objectMapper, cqlSessionCache, command.name());
     }
   }
 }
