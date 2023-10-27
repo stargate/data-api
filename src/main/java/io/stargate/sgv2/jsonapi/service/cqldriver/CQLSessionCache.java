@@ -35,6 +35,13 @@ public class CQLSessionCache {
   private static final long CACHE_TTL_SECONDS = 60;
   /** Maximum number of CQLSessions in cache. */
   private static final long CACHE_MAX_SIZE = 100;
+  /**
+   * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
+   * request
+   */
+  private static final String DEFAULT_TENANT = "default_tenant";
+  /** CQL username to be used when the backend is AstraDB */
+  private static final String TOKEN = "token";
 
   /** CQLSession cache. */
   private final Cache<String, CqlSession> sessionCache =
@@ -53,17 +60,19 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(String cacheKey) {
-    LOGGER.info("Creating new session for " + cacheKey.split(":", -1)[0]);
+    LOGGER.info("Creating new session for : {}", cacheKey.split(":", -1)[0]);
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
         DriverConfigLoader.programmaticBuilder()
+            .withString(DefaultDriverOption.PROTOCOL_VERSION, "V4")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
-    LOGGER.info("Database type: " + databaseConfig.type());
+    LOGGER.info("Database type: {}", databaseConfig.type());
     if (CASSANDRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(null))
+      return new TenantAwareCqlSessionBuilder(
+              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
@@ -71,10 +80,10 @@ public class CQLSessionCache {
               Objects.requireNonNull(databaseConfig.password()))
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(null))
+      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
-              "token", Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElse(null)))
+              TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           /*.withCloudSecureConnectBundle(
           Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))*/
@@ -93,19 +102,26 @@ public class CQLSessionCache {
   }
 
   /**
-   * Build key for CQLSession cache.
+   * Build key for CQLSession cache in below formats <br>
+   * If backend is OSS cassandra: {tenantId}:{username}:{password} <br>
+   * If backend is OSS cassandra when tenant id is not passed :
+   * <b>default_tenant</b>:{username}:{password} <br>
+   * If backend is AstraDB: {tenantId}:{token} <br>
+   * If backend is AstraDB when tenant or token is not passed : throws exception
    *
-   * @return key
+   * @return key for CQLSession cache
    */
   private String getSessionCacheKey() {
     if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId()
+      return stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT)
           + ":"
           + operationsConfig.databaseConfig().userName()
           + ":"
           + operationsConfig.databaseConfig().password();
     } else if (ASTRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId() + ":" + stargateRequestInfo.getCassandraToken();
+      return stargateRequestInfo.getTenantId().orElseThrow()
+          + ":"
+          + stargateRequestInfo.getCassandraToken().orElseThrow();
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
