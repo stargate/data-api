@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.Schema;
-import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -22,19 +21,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Find collection operation. Uses {@link SchemaManager} to fetch all valid jsonapi tables for a
+ * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
  * namespace. The schema check against the table is done in the {@link JsonapiTableMatcher}.
  *
  * @param explain - returns collection options if `true`; returns only collection names if `false`
  * @param objectMapper {@link ObjectMapper}
- * @param schemaManager {@link SchemaManager}
+ * @param cqlSessionCache {@link CQLSessionCache}
  * @param tableMatcher {@link JsonapiTableMatcher}
  * @param commandContext {@link CommandContext}
  */
 public record FindCollectionsOperation(
     boolean explain,
     ObjectMapper objectMapper,
-    SchemaManager schemaManager,
     CQLSessionCache cqlSessionCache,
     JsonapiTableMatcher tableMatcher,
     CommandContext commandContext)
@@ -55,10 +53,9 @@ public record FindCollectionsOperation(
   public FindCollectionsOperation(
       boolean explain,
       ObjectMapper objectMapper,
-      SchemaManager schemaManager,
       CQLSessionCache cqlSessionCache,
       CommandContext commandContext) {
-    this(explain, objectMapper, schemaManager, cqlSessionCache, TABLE_MATCHER, commandContext);
+    this(explain, objectMapper, cqlSessionCache, TABLE_MATCHER, commandContext);
   }
 
   /** {@inheritDoc} */
