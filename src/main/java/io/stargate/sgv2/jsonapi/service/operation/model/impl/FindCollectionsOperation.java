@@ -3,13 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -17,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -37,15 +33,6 @@ public record FindCollectionsOperation(
     JsonapiTableMatcher tableMatcher,
     CommandContext commandContext)
     implements Operation {
-
-  // missing keyspace function
-  private static final Function<String, Uni<? extends Schema.CqlKeyspaceDescribe>>
-      MISSING_KEYSPACE_FUNCTION =
-          keyspace -> {
-            String message = "Unknown namespace %s, you must create it first.".formatted(keyspace);
-            Exception exception = new JsonApiException(ErrorCode.NAMESPACE_DOES_NOT_EXIST, message);
-            return Uni.createFrom().failure(exception);
-          };
 
   // shared table matcher instance
   private static final JsonapiTableMatcher TABLE_MATCHER = new JsonapiTableMatcher();
