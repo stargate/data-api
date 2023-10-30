@@ -275,7 +275,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void enforceMaxCollections() {
       // Cannot @Inject configs into ITs so rely on constant for default values:
-      final int MAX_DBS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
+      final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
       // Don't use auto-generated namespace that rest of the test uses
       final String NS = "ns_too_many_collections";
       createNamespace(NS);
@@ -288,7 +288,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
               """;
 
-      for (int i = 1; i <= MAX_DBS; ++i) {
+      // First create maximum number of collections
+      for (int i = 1; i <= MAX_COLLECTIONS; ++i) {
         String json = createTemplate.formatted(i);
         given()
             .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -315,12 +316,24 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               is(
-                  "Too many collections:  number of Collections cannot exceed "
-                      + MAX_DBS
+                  "Too many collections: number of collections in database cannot exceed "
+                      + MAX_COLLECTIONS
                       + ", already have "
-                      + MAX_DBS))
+                      + MAX_COLLECTIONS))
           .body("errors[0].errorCode", is("TOO_MANY_COLLECTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      // But then verify that re-creating an existing one should still succeed
+      // (if using same settings)
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createTemplate.formatted(MAX_COLLECTIONS))
+          .when()
+          .post(NamespaceResource.BASE_PATH, NS)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
     }
   }
 

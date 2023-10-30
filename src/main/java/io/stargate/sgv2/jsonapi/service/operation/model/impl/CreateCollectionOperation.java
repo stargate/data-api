@@ -77,8 +77,7 @@ public record CreateCollectionOperation(
         .getTables(commandContext.namespace(), MISSING_KEYSPACE_FUNCTION)
         .collect()
         .asList()
-        .invoke(tables -> verifyLimits(tables))
-        .map(tables -> findTableOrNull(tables, name))
+        .map(tables -> findTableAndValidateLimits(tables, name))
         .onItem()
         .transformToUni(
             table -> {
@@ -158,7 +157,18 @@ public record CreateCollectionOperation(
     return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
   }
 
-  void verifyLimits(List<Schema.CqlTable> tables) {
+  /**
+   * Method for finding existing table with given name, if one exists and returning that table; or
+   * if not, verify maximum table limit and return null.
+   *
+   * @return Existing table with given name, if any; {@code null} if not
+   */
+  Schema.CqlTable findTableAndValidateLimits(List<Schema.CqlTable> tables, String name) {
+    for (Schema.CqlTable table : tables) {
+      if (table.getName().equals(name)) {
+        return table;
+      }
+    }
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (tables.size() >= MAX_COLLECTIONS) {
       throw new JsonApiException(
@@ -167,10 +177,7 @@ public record CreateCollectionOperation(
               "%s: number of collections in database cannot exceed %d, already have %d",
               ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
     }
-  }
-
-  Schema.CqlTable findTableOrNull(List<Schema.CqlTable> tables, String name) {
-    return tables.stream().filter(table -> table.getName().equals(name)).findFirst().orElse(null);
+    return null;
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
