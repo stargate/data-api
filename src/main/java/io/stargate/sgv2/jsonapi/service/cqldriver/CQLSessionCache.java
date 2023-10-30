@@ -1,9 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -80,13 +77,6 @@ public class CQLSessionCache {
       LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
-    ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
-        DriverConfigLoader.programmaticBuilder()
-            .withString(DefaultDriverOption.PROTOCOL_VERSION, "V4")
-            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
-            .startProfile("slow")
-            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
-            .endProfile();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Database type: {}", databaseConfig.type());
     }
@@ -94,14 +84,12 @@ public class CQLSessionCache {
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
-          .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
