@@ -27,7 +27,7 @@ public class CQLSessionCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
 
   /** Configuration for the JSON API operations. */
-  @Inject OperationsConfig operationsConfig;
+  private final OperationsConfig operationsConfig;
 
   /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
@@ -46,7 +46,9 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
 
-  public CQLSessionCache() {
+  @Inject
+  public CQLSessionCache(OperationsConfig operationsConfig) {
+    this.operationsConfig = operationsConfig;
     sessionCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
