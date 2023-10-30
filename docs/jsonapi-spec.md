@@ -536,14 +536,40 @@ Creates a new collection in the current namespace.
 ```json
 {
   "createCollection": {
-    "name": "purchase"
+    "name": "default_collection",
+    "options" : {
+      "vector" : {
+      "dimension" : 5,
+      "metric" : "cosine"
+      }
+    }
   }
 }
 ```
 
 #### createCollection Command Options
 
-The `createCollection` command does not support any options.
+The `createCollection` command supports the following options.
+
+| Request Elements | Description                                  |
+| ---------------- | ---------------------------------------------|
+| `vector`         | Used to define a vector-enabled collection.  |
+| `dimension`      | The size or dimension of the vector.         |
+| `metric`         | One of: dot_notation, euclidean, consine.    |
+
+Metrics details follow.
+
+##### *dot_notation*
+
+TODO provide details - already in docs.
+
+##### *euclidean*
+
+TODO provide details - already in docs.
+
+##### *cosine*
+
+TODO provide details - already in docs.
 
 #### createCollection Multi Document Failure Modes
 
