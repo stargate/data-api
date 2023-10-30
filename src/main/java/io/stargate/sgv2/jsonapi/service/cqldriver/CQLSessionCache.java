@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -51,6 +52,19 @@ public class CQLSessionCache {
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
             .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+            .evictionListener(
+                (RemovalListener<SessionCacheKey, CqlSession>)
+                    (sessionCacheKey, session, cause) -> {
+                      if (sessionCacheKey != null) {
+                        if (LOGGER.isDebugEnabled()) {
+                          LOGGER.debug(
+                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
+                        }
+                      }
+                      if (session != null) {
+                        session.close();
+                      }
+                    })
             .build();
     LOGGER.info("CQLSessionCache initialized");
   }
@@ -62,7 +76,9 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
-    LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
+    }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
         DriverConfigLoader.programmaticBuilder()
@@ -71,7 +87,9 @@ public class CQLSessionCache {
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
-    LOGGER.debug("Database type: {}", databaseConfig.type());
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Database type: {}", databaseConfig.type());
+    }
     if (CASSANDRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
