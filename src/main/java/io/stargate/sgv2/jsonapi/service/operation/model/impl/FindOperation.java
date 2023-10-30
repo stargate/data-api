@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
+import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
@@ -20,7 +21,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.bridge.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -404,7 +404,7 @@ public record FindOperation(
         expression -> {
           Set<BuiltCondition> conditions = new LinkedHashSet<>();
           if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          final List<Object> collect =
+          List<Object> collect =
               conditions.stream()
                   .flatMap(
                       builtCondition -> {
@@ -430,6 +430,12 @@ public record FindOperation(
             QueryOuterClass.Query query = getVectorSearchQueryByExpression(expression);
             collect.add(CQLBindValues.getVectorValue(vector()));
             final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            if (projection().doIncludeSimilarityScore()) {
+              List<Object> appendedCollect = new ArrayList<>();
+              appendedCollect.add(collect.get(collect.size() - 1));
+              appendedCollect.addAll(collect);
+              collect = appendedCollect;
+            }
             queries.add(simpleStatement.setPositionalValues(collect));
           }
         });
@@ -451,8 +457,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityCosine(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
@@ -464,8 +469,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityEuclidean(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
@@ -477,8 +481,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityDotProduct(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
