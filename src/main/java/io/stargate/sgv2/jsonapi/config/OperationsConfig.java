@@ -145,8 +145,17 @@ public interface OperationsConfig {
     @WithDefault("secure-connect-database_name.zip")
     String secureConnectBundlePath();
 
+    /** Local datacenter that the driver must be configured with */
     @NotNull
     @WithDefault("datacenter1")
     String localDatacenter();
+
+    /** Time to live for CQLSession in cache in seconds. */
+    @WithDefault("60")
+    long sessionCacheTtlSeconds();
+
+    /** Maximum number of CQLSessions in cache. */
+    @WithDefault("100")
+    long sessionCacheMaxSize();
   }
 }

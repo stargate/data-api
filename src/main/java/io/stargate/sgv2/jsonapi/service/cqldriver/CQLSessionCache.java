@@ -31,10 +31,6 @@ public class CQLSessionCache {
   /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
 
-  /** Time to live for CQLSession in cache in seconds. */
-  private static final long CACHE_TTL_SECONDS = 60;
-  /** Maximum number of CQLSessions in cache. */
-  private static final long CACHE_MAX_SIZE = 100;
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
    * request
@@ -44,14 +40,20 @@ public class CQLSessionCache {
   private static final String TOKEN = "token";
 
   /** CQLSession cache. */
-  private final Cache<String, CqlSession> sessionCache =
-      Caffeine.newBuilder()
-          .expireAfterAccess(Duration.ofSeconds(CACHE_TTL_SECONDS))
-          .maximumSize(CACHE_MAX_SIZE)
-          .build();
+  private final Cache<String, CqlSession> sessionCache;
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
+
+  public CQLSessionCache() {
+    sessionCache =
+        Caffeine.newBuilder()
+            .expireAfterAccess(
+                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
+            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+            .build();
+    LOGGER.info("CQLSessionCache initialized");
+  }
 
   /**
    * Loader for new CQLSession.
