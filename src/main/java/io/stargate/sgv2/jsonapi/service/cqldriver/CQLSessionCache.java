@@ -1,12 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -35,10 +32,6 @@ public class CQLSessionCache {
   /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
 
-  /** Time to live for CQLSession in cache in seconds. */
-  private static final long CACHE_TTL_SECONDS = 60;
-  /** Maximum number of CQLSessions in cache. */
-  private static final long CACHE_MAX_SIZE = 100;
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
    * request
@@ -48,19 +41,33 @@ public class CQLSessionCache {
   private static final String TOKEN = "token";
 
   /** CQLSession cache. */
-  private final Cache<String, CqlSession> sessionCache =
-      Caffeine.newBuilder()
-          .expireAfterAccess(Duration.ofSeconds(CACHE_TTL_SECONDS))
-          .maximumSize(CACHE_MAX_SIZE)
-          .evictionListener(
-              (String cacheKey, CqlSession session, RemovalCause cause) -> {
-                LOGGER.info("Removing session from cache: {}", cacheKey);
-                session.close();
-              })
-          .build();
+  private final Cache<SessionCacheKey, CqlSession> sessionCache;
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
+
+  public CQLSessionCache() {
+    sessionCache =
+        Caffeine.newBuilder()
+            .expireAfterAccess(
+                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
+            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+            .evictionListener(
+                (RemovalListener<SessionCacheKey, CqlSession>)
+                    (sessionCacheKey, session, cause) -> {
+                      if (sessionCacheKey != null) {
+                        if (LOGGER.isDebugEnabled()) {
+                          LOGGER.debug(
+                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
+                        }
+                      }
+                      if (session != null) {
+                        session.close();
+                      }
+                    })
+            .build();
+    LOGGER.info("CQLSessionCache initialized");
+  }
 
   /**
    * Loader for new CQLSession.
@@ -68,17 +75,14 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(String cacheKey) {
-    LOGGER.info("Creating new session for : {}", cacheKey.split(":", -1)[0]);
+  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
+    }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
-    ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
-        DriverConfigLoader.programmaticBuilder()
-            .withString(DefaultDriverOption.PROTOCOL_VERSION, "V4")
-            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
-            .startProfile("slow")
-            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
-            .endProfile();
-    LOGGER.info("Database type: {}", databaseConfig.type());
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Database type: {}", databaseConfig.type());
+    }
     if (CASSANDRA.equals(databaseConfig.type())) {
       List<InetSocketAddress> seeds =
           operationsConfig.databaseConfig().cassandraEndPoints().stream()
@@ -87,18 +91,17 @@ public class CQLSessionCache {
                       new InetSocketAddress(
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
+
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
-          .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
-          .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
@@ -119,28 +122,54 @@ public class CQLSessionCache {
   }
 
   /**
-   * Build key for CQLSession cache in below formats <br>
-   * If backend is OSS cassandra: {tenantId}:{username}:{password} <br>
-   * If backend is OSS cassandra when tenant id is not passed :
-   * <b>default_tenant</b>:{username}:{password} <br>
-   * If backend is AstraDB: {tenantId}:{token} <br>
-   * If backend is AstraDB when tenant or token is not passed : throws exception
+   * Build key for CQLSession cache from tenant and token if the database type is AstraDB or from
+   * tenant, username and password if the database type is OSS cassandra.
    *
    * @return key for CQLSession cache
    */
-  private String getSessionCacheKey() {
-    if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT)
-          + ":"
-          + operationsConfig.databaseConfig().userName()
-          + ":"
-          + operationsConfig.databaseConfig().password();
-    } else if (ASTRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId().orElseThrow()
-          + ":"
-          + stargateRequestInfo.getCassandraToken().orElseThrow();
+  private SessionCacheKey getSessionCacheKey() {
+    switch (operationsConfig.databaseConfig().type()) {
+      case CASSANDRA -> {
+        return new SessionCacheKey(
+            stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+            new UsernamePasswordCredentials(
+                operationsConfig.databaseConfig().userName(),
+                operationsConfig.databaseConfig().password()));
+      }
+      case ASTRA -> {
+        return new SessionCacheKey(
+            stargateRequestInfo.getTenantId().orElseThrow(),
+            new TokenCredentials(stargateRequestInfo.getCassandraToken().orElseThrow()));
+      }
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
   }
+
+  /**
+   * Key for CQLSession cache.
+   *
+   * @param tenantId tenant id
+   * @param credentials credentials (username/password or token)
+   */
+  private record SessionCacheKey(String tenantId, Credentials credentials) {}
+
+  /**
+   * Credentials for CQLSession cache when username and password is provided.
+   *
+   * @param userName
+   * @param password
+   */
+  private record UsernamePasswordCredentials(String userName, String password)
+      implements Credentials {}
+
+  /**
+   * Credentials for CQLSession cache when token is provided.
+   *
+   * @param token
+   */
+  private record TokenCredentials(String token) implements Credentials {}
+
+  /** A marker interface for credentials. */
+  private interface Credentials {}
 }
