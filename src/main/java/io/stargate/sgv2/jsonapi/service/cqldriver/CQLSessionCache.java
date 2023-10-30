@@ -40,7 +40,7 @@ public class CQLSessionCache {
   private static final String TOKEN = "token";
 
   /** CQLSession cache. */
-  private final Cache<String, CqlSession> sessionCache;
+  private final Cache<SessionCacheKey, CqlSession> sessionCache;
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
@@ -61,8 +61,8 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(String cacheKey) {
-    LOGGER.info("Creating new session for : {}", cacheKey.split(":", -1)[0]);
+  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+    LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     ProgrammaticDriverConfigLoaderBuilder driverConfigLoaderBuilder =
         DriverConfigLoader.programmaticBuilder()
@@ -71,7 +71,7 @@ public class CQLSessionCache {
             .startProfile("slow")
             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
             .endProfile();
-    LOGGER.info("Database type: {}", databaseConfig.type());
+    LOGGER.debug("Database type: {}", databaseConfig.type());
     if (CASSANDRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
@@ -104,28 +104,51 @@ public class CQLSessionCache {
   }
 
   /**
-   * Build key for CQLSession cache in below formats <br>
-   * If backend is OSS cassandra: {tenantId}:{username}:{password} <br>
-   * If backend is OSS cassandra when tenant id is not passed :
-   * <b>default_tenant</b>:{username}:{password} <br>
-   * If backend is AstraDB: {tenantId}:{token} <br>
-   * If backend is AstraDB when tenant or token is not passed : throws exception
+   * Build key for CQLSession cache from tenant and token if the database type is AstraDB or from
+   * tenant, username and password if the database type is OSS cassandra.
    *
    * @return key for CQLSession cache
    */
-  private String getSessionCacheKey() {
+  private SessionCacheKey getSessionCacheKey() {
     if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT)
-          + ":"
-          + operationsConfig.databaseConfig().userName()
-          + ":"
-          + operationsConfig.databaseConfig().password();
+      return new SessionCacheKey(
+          stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+          new UsernamePasswordCredentials(
+              operationsConfig.databaseConfig().userName(),
+              operationsConfig.databaseConfig().password()));
     } else if (ASTRA.equals(operationsConfig.databaseConfig().type())) {
-      return stargateRequestInfo.getTenantId().orElseThrow()
-          + ":"
-          + stargateRequestInfo.getCassandraToken().orElseThrow();
+      return new SessionCacheKey(
+          stargateRequestInfo.getTenantId().orElseThrow(),
+          new TokenCredentials(stargateRequestInfo.getCassandraToken().orElseThrow()));
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
   }
+
+  /**
+   * Key for CQLSession cache.
+   *
+   * @param tenantId tenant id
+   * @param credentials credentials (username/password or token)
+   */
+  private record SessionCacheKey(String tenantId, Credentials credentials) {}
+
+  /**
+   * Credentials for CQLSession cache when username and password is provided.
+   *
+   * @param userName
+   * @param password
+   */
+  private record UsernamePasswordCredentials(String userName, String password)
+      implements Credentials {}
+
+  /**
+   * Credentials for CQLSession cache when token is provided.
+   *
+   * @param token
+   */
+  private record TokenCredentials(String token) implements Credentials {}
+
+  /** A marker interface for credentials. */
+  private interface Credentials {}
 }
