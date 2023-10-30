@@ -59,6 +59,8 @@ public enum ErrorCode {
 
   INVALID_COLLECTION_NAME("Invalid collection name "),
 
+  TOO_MANY_COLLECTIONS("Too many collections"),
+
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
