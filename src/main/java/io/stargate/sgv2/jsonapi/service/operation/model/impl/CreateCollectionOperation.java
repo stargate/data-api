@@ -164,7 +164,7 @@ public record CreateCollectionOperation(
       throw new JsonApiException(
           ErrorCode.TOO_MANY_COLLECTIONS,
           String.format(
-              "%s:  number of Collections cannot exceed %d, already have %d",
+              "%s: number of collections in database cannot exceed %d, already have %d",
               ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
     }
   }
