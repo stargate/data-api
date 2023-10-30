@@ -87,7 +87,7 @@ public class CQLSessionCache {
     }
     if (CASSANDRA.equals(databaseConfig.type())) {
       List<InetSocketAddress> seeds =
-          operationsConfig.databaseConfig().cassandraEndPoints().stream()
+          Objects.requireNonNull(operationsConfig.databaseConfig().cassandraEndPoints()).stream()
               .map(
                   host ->
                       new InetSocketAddress(
@@ -125,13 +125,19 @@ public class CQLSessionCache {
 
   /**
    * Build key for CQLSession cache from tenant and token if the database type is AstraDB or from
-   * tenant, username and password if the database type is OSS cassandra.
+   * tenant, username and password if the database type is OSS cassandra (also, if token is present
+   * in the request, that will be given priority for the cache key).
    *
    * @return key for CQLSession cache
    */
   private SessionCacheKey getSessionCacheKey() {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
+        if (stargateRequestInfo.getCassandraToken().isPresent()) {
+          return new SessionCacheKey(
+              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+              new TokenCredentials(stargateRequestInfo.getCassandraToken().orElseThrow()));
+        }
         return new SessionCacheKey(
             stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
             new UsernamePasswordCredentials(
