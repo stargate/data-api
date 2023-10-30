@@ -9,8 +9,11 @@ import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +27,7 @@ public class CQLSessionCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
 
   /** Configuration for the JSON API operations. */
-  @Inject OperationsConfig operationsConfig;
+  private final OperationsConfig operationsConfig;
 
   /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
@@ -43,7 +46,9 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
 
-  public CQLSessionCache() {
+  @Inject
+  public CQLSessionCache(OperationsConfig operationsConfig) {
+    this.operationsConfig = operationsConfig;
     sessionCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
@@ -81,9 +86,18 @@ public class CQLSessionCache {
       LOGGER.debug("Database type: {}", databaseConfig.type());
     }
     if (CASSANDRA.equals(databaseConfig.type())) {
+      List<InetSocketAddress> seeds =
+          operationsConfig.databaseConfig().cassandraEndPoints().stream()
+              .map(
+                  host ->
+                      new InetSocketAddress(
+                          host, operationsConfig.databaseConfig().cassandraPort()))
+              .collect(Collectors.toList());
+
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          .addContactPoints(seeds)
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
