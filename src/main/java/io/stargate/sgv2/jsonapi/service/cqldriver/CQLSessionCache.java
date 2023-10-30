@@ -6,13 +6,17 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +52,11 @@ public class CQLSessionCache {
       Caffeine.newBuilder()
           .expireAfterAccess(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
+          .evictionListener(
+              (String cacheKey, CqlSession session, RemovalCause cause) -> {
+                LOGGER.info("Removing session from cache: {}", cacheKey);
+                session.close();
+              })
           .build();
 
   public static final String ASTRA = "astra";
@@ -71,9 +80,17 @@ public class CQLSessionCache {
             .endProfile();
     LOGGER.info("Database type: {}", databaseConfig.type());
     if (CASSANDRA.equals(databaseConfig.type())) {
+      List<InetSocketAddress> seeds =
+          operationsConfig.databaseConfig().cassandraEndPoints().stream()
+              .map(
+                  host ->
+                      new InetSocketAddress(
+                          host, operationsConfig.databaseConfig().cassandraPort()))
+              .collect(Collectors.toList());
       return new TenantAwareCqlSessionBuilder(
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          .addContactPoints(seeds)
           .withConfigLoader(driverConfigLoaderBuilder.build())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
