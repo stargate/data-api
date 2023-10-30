@@ -102,3 +102,5 @@ quarkus:
   # adapt path of the open api definitions
   smallrye-openapi:
     path: /api/json/openapi
+  native:
+    additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
