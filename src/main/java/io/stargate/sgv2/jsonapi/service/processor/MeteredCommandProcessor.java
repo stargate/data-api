@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
@@ -109,13 +110,18 @@ public class MeteredCommandProcessor {
     if (null != result.errors() && !result.errors().isEmpty()) {
       errorTag = errorTrue;
       String errorClass =
-          (String) result.errors().get(0).fields().getOrDefault("exceptionClass", UNKNOWN_VALUE);
+          (String)
+              result
+                  .errors()
+                  .get(0)
+                  .fieldsForMetricsTag()
+                  .getOrDefault("exceptionClass", UNKNOWN_VALUE);
       errorClassTag = Tag.of(jsonApiMetricsConfig.errorClass(), errorClass);
       String errorCode =
-          (String) result.errors().get(0).fields().getOrDefault("errorCode", UNKNOWN_VALUE);
+          (String)
+              result.errors().get(0).fieldsForMetricsTag().getOrDefault("errorCode", UNKNOWN_VALUE);
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
-
     Tag vectorEnabled =
         commandContext.isVectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
