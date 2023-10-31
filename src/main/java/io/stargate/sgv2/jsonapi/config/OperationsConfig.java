@@ -138,15 +138,29 @@ public interface OperationsConfig {
     /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("127.0.0.1")
-    List<String> cassandraContactPoints();
+    List<String> cassandraEndPoints();
+
+    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    @Nullable
+    @WithDefault("9042")
+    int cassandraPort();
 
     /** Secure connect bundle path (when type is <code>astra</code>) */
     @Nullable
     @WithDefault("secure-connect-database_name.zip")
     String secureConnectBundlePath();
 
+    /** Local datacenter that the driver must be configured with */
     @NotNull
     @WithDefault("datacenter1")
     String localDatacenter();
+
+    /** Time to live for CQLSession in cache in seconds. */
+    @WithDefault("60")
+    long sessionCacheTtlSeconds();
+
+    /** Maximum number of CQLSessions in cache. */
+    @WithDefault("100")
+    long sessionCacheMaxSize();
   }
 }
