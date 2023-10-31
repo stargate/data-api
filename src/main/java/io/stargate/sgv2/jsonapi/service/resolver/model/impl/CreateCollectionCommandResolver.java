@@ -6,6 +6,7 @@ import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -23,21 +24,24 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DataStoreConfig dataStoreConfig;
 
   private final DocumentLimitsConfig documentLimitsConfig;
+  private final DatabaseLimitsConfig dbLimitsConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
       SchemaManager schemaManager,
       DataStoreConfig dataStoreConfig,
-      DocumentLimitsConfig documentLimitsConfig) {
+      DocumentLimitsConfig documentLimitsConfig,
+      DatabaseLimitsConfig dbLimitsConfig) {
     this.objectMapper = objectMapper;
     this.schemaManager = schemaManager;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
+    this.dbLimitsConfig = dbLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null);
+    this(null, null, null, null, null);
   }
 
   @Override
@@ -75,6 +79,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
       return CreateCollectionOperation.withVectorSearch(
           ctx,
+          dbLimitsConfig,
           objectMapper,
           schemaManager,
           command.name(),
@@ -83,7 +88,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           vectorize);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
-          ctx, objectMapper, schemaManager, command.name());
+          ctx, dbLimitsConfig, objectMapper, schemaManager, command.name());
     }
   }
 }
