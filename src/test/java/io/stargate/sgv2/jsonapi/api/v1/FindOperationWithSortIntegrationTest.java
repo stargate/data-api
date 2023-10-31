@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.ArrayList;

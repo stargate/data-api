@@ -6,6 +6,7 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -39,7 +40,7 @@ public class ErrorChallengeSender implements ChallengeSender {
     // create the response
     String message =
         "Role unauthorized for operation: Missing token, expecting one in the %s header."
-            .formatted(headerName);
+            .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
     CommandResult.Error error =
         new CommandResult.Error(message, Collections.emptyMap(), Response.Status.UNAUTHORIZED);
     commandResult = new CommandResult(List.of(error));

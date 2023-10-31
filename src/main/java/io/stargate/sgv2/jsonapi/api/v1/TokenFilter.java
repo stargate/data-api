@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.stargate.sgv2.api.common.config.constants.HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME;
 
-import io.quarkus.logging.Log;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.RequestScoped;
@@ -17,9 +16,9 @@ public class TokenFilter {
         rc -> {
           MultiMap headers = rc.request().headers();
           if (headers.contains("Token")) {
-            headers.add(AUTHENTICATION_TOKEN_HEADER_NAME, headers.get("Token"));
+            headers.add(DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME, headers.get("Token"));
           } else if (headers.contains("token")) {
-            headers.add(AUTHENTICATION_TOKEN_HEADER_NAME, headers.get("token"));
+            headers.add(DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME, headers.get("token"));
           }
           rc.next();
         },
