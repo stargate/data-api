@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -45,6 +46,13 @@ public class CQLSessionCache {
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
+  /** Default token property name which will be used by the integration tests */
+  public static final String FIXED_TOKEN_PROPERTY_NAME = "fixed_token";
+  /**
+   * Default token which will be used by the integration tests. If this property is set, then the
+   * token from the request will be compared with this to perform authentication.
+   */
+  public static final String FIXED_TOKEN = System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
@@ -120,6 +128,10 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
+    if (FIXED_TOKEN != null
+        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(FIXED_TOKEN)) {
+      throw new UnauthorizedException("Unauthorized");
+    }
     return sessionCache.get(getSessionCacheKey(), this::getNewSession);
   }
 
