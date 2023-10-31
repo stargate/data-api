@@ -35,16 +35,16 @@ public final class ThrowableToErrorMapper {
               Map.of("exceptionClass", throwable.getClass().getSimpleName());
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
             return new CommandResult.Error(
-                message, fields, fieldsForMetricsTag, Response.Status.UNAUTHORIZED);
+                message, fieldsForMetricsTag, fields, Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
             return new CommandResult.Error(
-                message, fields, fieldsForMetricsTag, Response.Status.INTERNAL_SERVER_ERROR);
+                message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
           } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
             return new CommandResult.Error(
-                message, fields, fieldsForMetricsTag, Response.Status.BAD_GATEWAY);
+                message, fieldsForMetricsTag, fields, Response.Status.BAD_GATEWAY);
           } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
             return new CommandResult.Error(
-                message, fields, fieldsForMetricsTag, Response.Status.GATEWAY_TIMEOUT);
+                message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
           }
         }
         // add error code as error field
@@ -52,7 +52,7 @@ public final class ThrowableToErrorMapper {
             debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         Map<String, Object> fieldsForMetricsTag =
             Map.of("exceptionClass", throwable.getClass().getSimpleName());
-        return new CommandResult.Error(message, fields, fieldsForMetricsTag, Response.Status.OK);
+        return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =
