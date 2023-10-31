@@ -11,6 +11,12 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 * `quarkus.grpc.clients.bridge` - property group for defining the Bridge gRPC client (see [gRPC Client configuration](https://quarkus.io/guides/grpc-service-consumption#client-configuration) for all options)
 * `quarkus.cache.caffeine.keyspace-cache` - property group  for defining the keyspace cache used by [SchemaManager](../sgv2-quarkus-common/src/main/java/io/stargate/sgv2/api/common/schema/SchemaManager.java) (see [Caffeine cache configuration](https://quarkus.io/guides/cache#caffeine-configuration-properties) for all options)
 
+## Database limits configuration
+*Configuration for document limits, defined by [DatabaseLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DatabaseLimitsConfig.java).*
+
+| Property                                    | Type  | Default | Description                                                                          |
+|---------------------------------------------|-------|---------|--------------------------------------------------------------------------------------|
+| `stargate.database.limits.max-collections`  | `int` | `5`     | The maximum number of Collections allowed to be created per Database: defaults to 5. |
 
 ## Document limits configuration
 *Configuration for document limits, defined by [DocumentLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DocumentLimitsConfig.java).*

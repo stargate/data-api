@@ -38,6 +38,10 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   @BeforeAll
   public void createNamespace() {
+    createNamespace(namespaceName);
+  }
+
+  protected void createNamespace(String nsToCreate) {
     String json =
         """
         {
@@ -46,7 +50,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
           }
         }
         """
-            .formatted(namespaceName);
+            .formatted(nsToCreate);
 
     given()
         .port(getTestPort())

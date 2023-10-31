@@ -7,6 +7,7 @@ import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
@@ -19,6 +20,7 @@ import java.util.function.Supplier;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
+    DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     SchemaManager schemaManager,
     String name,
@@ -40,6 +42,7 @@ public record CreateCollectionOperation(
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
+      DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       SchemaManager schemaManager,
       String name,
@@ -48,6 +51,7 @@ public record CreateCollectionOperation(
       String vectorize) {
     return new CreateCollectionOperation(
         commandContext,
+        dbLimitsConfig,
         objectMapper,
         schemaManager,
         name,
@@ -59,17 +63,21 @@ public record CreateCollectionOperation(
 
   public static CreateCollectionOperation withoutVectorSearch(
       CommandContext commandContext,
+      DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       SchemaManager schemaManager,
       String name) {
     return new CreateCollectionOperation(
-        commandContext, objectMapper, schemaManager, name, false, 0, null, null);
+        commandContext, dbLimitsConfig, objectMapper, schemaManager, name, false, 0, null, null);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return schemaManager
-        .getTable(commandContext.namespace(), name, MISSING_KEYSPACE_FUNCTION)
+        .getTables(commandContext.namespace(), MISSING_KEYSPACE_FUNCTION)
+        .collect()
+        .asList()
+        .map(tables -> findTableAndValidateLimits(tables, name))
         .onItem()
         .transformToUni(
             table -> {
@@ -147,6 +155,29 @@ public record CreateCollectionOperation(
                   return Uni.combine().all().unis(indexes).combinedWith(results -> true);
                 });
     return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
+  }
+
+  /**
+   * Method for finding existing table with given name, if one exists and returning that table; or
+   * if not, verify maximum table limit and return null.
+   *
+   * @return Existing table with given name, if any; {@code null} if not
+   */
+  Schema.CqlTable findTableAndValidateLimits(List<Schema.CqlTable> tables, String name) {
+    for (Schema.CqlTable table : tables) {
+      if (table.getName().equals(name)) {
+        return table;
+      }
+    }
+    final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
+    if (tables.size() >= MAX_COLLECTIONS) {
+      throw new JsonApiException(
+          ErrorCode.TOO_MANY_COLLECTIONS,
+          String.format(
+              "%s: number of collections in database cannot exceed %d, already have %d",
+              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
+    }
+    return null;
   }
 
   protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
