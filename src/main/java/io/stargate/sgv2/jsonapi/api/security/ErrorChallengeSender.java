@@ -34,8 +34,7 @@ public class ErrorChallengeSender implements ChallengeSender {
   @Inject
   public ErrorChallengeSender(
       @ConfigProperty(name = "stargate.auth.header-based.header-name", defaultValue = "")
-          String headerName,
-      ObjectMapper objectMapper) {
+          ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     // create the response
     String message =
