@@ -109,13 +109,18 @@ public class MeteredCommandProcessor {
     if (null != result.errors() && !result.errors().isEmpty()) {
       errorTag = errorTrue;
       String errorClass =
-          (String) result.errors().get(0).fields().getOrDefault("exceptionClass", UNKNOWN_VALUE);
+          (String)
+              result
+                  .errors()
+                  .get(0)
+                  .fieldsForMetricsTag()
+                  .getOrDefault("exceptionClass", UNKNOWN_VALUE);
       errorClassTag = Tag.of(jsonApiMetricsConfig.errorClass(), errorClass);
       String errorCode =
-          (String) result.errors().get(0).fields().getOrDefault("errorCode", UNKNOWN_VALUE);
+          (String)
+              result.errors().get(0).fieldsForMetricsTag().getOrDefault("errorCode", UNKNOWN_VALUE);
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
-
     Tag vectorEnabled =
         commandContext.isVectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")

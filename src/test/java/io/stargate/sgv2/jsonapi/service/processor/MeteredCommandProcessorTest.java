@@ -98,7 +98,8 @@ public class MeteredCommandProcessorTest {
       CommandContext commandContext = new CommandContext("namespace", "collection");
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
-      CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
+      CommandResult.Error error =
+          new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -151,7 +152,8 @@ public class MeteredCommandProcessorTest {
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");
-      CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
+      CommandResult.Error error =
+          new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));

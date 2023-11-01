@@ -37,7 +37,8 @@ public class ErrorChallengeSender implements ChallengeSender {
         "Role unauthorized for operation: Missing token, expecting one in the %s header."
             .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
     CommandResult.Error error =
-        new CommandResult.Error(message, Collections.emptyMap(), Response.Status.UNAUTHORIZED);
+        new CommandResult.Error(
+            message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
     commandResult = new CommandResult(List.of(error));
   }
 
