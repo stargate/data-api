@@ -10,6 +10,8 @@ public enum ErrorCode {
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
+  COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
+
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),

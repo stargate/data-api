@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.time.Duration;
 
 /** Caches the vector enabled status for the namespace */
@@ -41,14 +42,23 @@ public class NamespaceCache {
           .transformToUni(
               (result, error) -> {
                 if (null != error) {
+                  // collection does not exist
+                  if (error instanceof RuntimeException rte
+                      && rte.getMessage()
+                          .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage())) {
+                    return Uni.createFrom()
+                        .failure(
+                            new JsonApiException(
+                                ErrorCode.COLLECTION_NOT_EXIST,
+                                ErrorCode.COLLECTION_NOT_EXIST
+                                    .getMessage()
+                                    .concat(collectionName)));
+                  }
                   // ignoring the error and return false. This will be handled while trying to
                   //  execute the query
                   if ((error instanceof StatusRuntimeException sre
-                          && (sre.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND
-                              || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))
-                      || (error instanceof RuntimeException rte
-                          && rte.getMessage()
-                              .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage()))) {
+                      && (sre.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND
+                          || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))) {
                     return Uni.createFrom()
                         .item(new CollectionSettings(collectionName, false, 0, null, null, null));
                   }
