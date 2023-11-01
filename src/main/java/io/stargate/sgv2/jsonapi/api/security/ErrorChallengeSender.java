@@ -33,7 +33,6 @@ public class ErrorChallengeSender implements ChallengeSender {
   @Inject
   public ErrorChallengeSender(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
-    // create the response
     String message =
         "Role unauthorized for operation: Missing token, expecting one in the %s header."
             .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
