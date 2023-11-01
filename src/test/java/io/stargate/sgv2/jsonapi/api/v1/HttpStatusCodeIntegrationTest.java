@@ -89,7 +89,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               endsWith(
                   "INVALID_ARGUMENT: table %s.%s does not exist"
                       .formatted(namespaceName, "badCollection")),
-              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")),endsWith("Collection does not exist, collection name: %s".formatted("badCollection")));
+              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -101,7 +101,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
     }
 
     @Test
