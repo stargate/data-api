@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +31,7 @@ public class ErrorChallengeSender implements ChallengeSender {
   private final CommandResult commandResult;
 
   @Inject
-  public ErrorChallengeSender(
-      @ConfigProperty(name = "stargate.auth.header-based.header-name", defaultValue = "")
-          String headerName,
-      ObjectMapper objectMapper) {
+  public ErrorChallengeSender(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     // create the response
     String message =
