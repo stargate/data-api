@@ -64,10 +64,8 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             """;
       AnyOf<String> anyOf =
           AnyOf.anyOf(
-              endsWith(
-                  "INVALID_ARGUMENT: table %s.%s does not exist"
-                      .formatted(namespaceName, "badCollection")),
-              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")));
+              endsWith("table %s.%s does not exist".formatted(namespaceName, "badCollection")),
+              endsWith("table %s does not exist".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -79,7 +77,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
+          .body("errors[0].exceptionClass", is("InvalidQueryException"));
     }
 
     @Test
