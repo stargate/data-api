@@ -167,6 +167,8 @@ public class MeteredCommandProcessor {
   }
 
   /** Enable histogram buckets for a specific timer */
+  private static final String HISTOGRAM_METRICS_NAME = "http.server.requests";
+
   @Produces
   @Singleton
   public MeterFilter enableHistogram() {
@@ -174,7 +176,8 @@ public class MeteredCommandProcessor {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
-        if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())) {
+        if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
+            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)) {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
