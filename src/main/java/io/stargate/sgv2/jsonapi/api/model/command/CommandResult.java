@@ -171,6 +171,7 @@ public record CommandResult(
       })
   public record Error(
       String message,
+      @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
       @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
       // Http status to be used in the response, defaulted to 200
       @JsonIgnore Response.Status status) {

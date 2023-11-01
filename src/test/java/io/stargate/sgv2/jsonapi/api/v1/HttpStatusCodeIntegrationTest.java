@@ -51,6 +51,28 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     @Test
+    public void unauthenticatedNamespaceResource() {
+      String json =
+          """
+                {
+                    "createNamespace": {
+                        "name": "unAuthenticated"
+                    }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(401)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
+    }
+
+    @Test
     public void regularError() {
       String json =
           """
