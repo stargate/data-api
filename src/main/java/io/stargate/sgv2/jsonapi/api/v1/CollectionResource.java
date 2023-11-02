@@ -5,7 +5,7 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
@@ -85,7 +85,7 @@ public class CollectionResource {
               schema =
                   @Schema(
                       anyOf = {
-                        CountDocumentsCommands.class,
+                        CountDocumentsCommand.class,
                         DeleteOneCommand.class,
                         DeleteManyCommand.class,
                         FindOneCommand.class,

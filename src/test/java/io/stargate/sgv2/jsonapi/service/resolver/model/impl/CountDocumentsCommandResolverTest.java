@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -39,7 +39,7 @@ class CountDocumentsCommandResolverTest {
             }
             """;
 
-      CountDocumentsCommands command = objectMapper.readValue(json, CountDocumentsCommands.class);
+      CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
       Operation result = resolver.resolveCommand(context, command);
 
       assertThat(result)
@@ -64,7 +64,7 @@ class CountDocumentsCommandResolverTest {
             }
             """;
 
-      CountDocumentsCommands command = objectMapper.readValue(json, CountDocumentsCommands.class);
+      CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
       Operation result = resolver.resolveCommand(context, command);
 
       assertThat(result)

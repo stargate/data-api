@@ -229,5 +229,5 @@ The extension setups the health endpoints under `/stargate/health`.
 
 The OpenAPI definitions are generated and available under `/api/json/openapi` endpoint.
 The [StargateJsonApi](src/main/java/io/stargate/sgv2/jsonapi/StargateJsonApi.java) class defines the `@OpenAPIDefinition` annotation.
-This definition defines the default *SecurityScheme* named `Token`, which expects the header based authentication with the HTTP Header `X-Cassandra-Token`.
+This definition defines the default *SecurityScheme* named `Token`, which expects the header based authentication with the HTTP Header `Token`.
 The `info` portions of the Open API definitions are set using the `quarkus.smallrye-openapi.info-` configuration properties.

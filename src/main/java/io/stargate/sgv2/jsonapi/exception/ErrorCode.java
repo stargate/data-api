@@ -9,7 +9,7 @@ public enum ErrorCode {
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-
+  COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
@@ -23,6 +23,8 @@ public enum ErrorCode {
 
   FILTER_MULTIPLE_ID_FILTER(
       "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+
+  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
@@ -56,6 +58,8 @@ public enum ErrorCode {
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   INVALID_COLLECTION_NAME("Invalid collection name "),
+
+  TOO_MANY_COLLECTIONS("Too many collections"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 

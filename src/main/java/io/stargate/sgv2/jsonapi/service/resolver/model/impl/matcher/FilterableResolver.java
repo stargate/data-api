@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -38,6 +39,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+  @Inject DocumentLimitsConfig docLimits;
 
   @Inject
   public FilterableResolver() {
@@ -87,7 +89,17 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
-    return matchRules.apply(commandContext, command);
+    LogicalExpression filter = matchRules.apply(commandContext, command);
+    if (filter.getTotalComparisonExpressionCount() > docLimits.maxFilterObjectProperties()) {
+      throw new JsonApiException(
+          ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
+          String.format(
+              "%s: filter has %d fields, exceeds maximum allowed %s",
+              ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
+              filter.getTotalComparisonExpressionCount(),
+              docLimits.maxFilterObjectProperties()));
+    }
+    return filter;
   }
 
   public static List<DBFilterBase> findById(CaptureExpression captureExpression) {

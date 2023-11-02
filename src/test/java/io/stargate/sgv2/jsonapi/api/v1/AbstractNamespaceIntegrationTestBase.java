@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -38,6 +38,10 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   @BeforeAll
   public void createNamespace() {
+    createNamespace(namespaceName);
+  }
+
+  protected void createNamespace(String nsToCreate) {
     String json =
         """
         {
@@ -46,7 +50,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
           }
         }
         """
-            .formatted(namespaceName);
+            .formatted(nsToCreate);
 
     given()
         .port(getTestPort())
