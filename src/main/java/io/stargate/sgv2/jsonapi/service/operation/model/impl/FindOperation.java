@@ -89,7 +89,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pageState paging state to use
+   * @param pageState page state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
@@ -160,7 +160,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pageState paging state to use
+   * @param pageState page state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
@@ -239,7 +239,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pageState paging state to use
+   * @param pageState page state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size for in memory sorting
    * @param readType type of the read

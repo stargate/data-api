@@ -10,7 +10,7 @@ import java.util.function.Supplier;
  * FindOperation response implementing the {@link CommandResult}.
  *
  * @param docs list of documents
- * @param pageState paging state
+ * @param pageState page state
  * @param singleResponse if the response data should be a single document response
  */
 public record ReadOperationPage(List<ReadDocument> docs, String pageState, boolean singleResponse)

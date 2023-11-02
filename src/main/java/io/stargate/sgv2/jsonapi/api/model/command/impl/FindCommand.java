@@ -34,7 +34,7 @@ public record FindCommand(
       @Positive(message = "limit should be greater than `0`")
           @Schema(
               description =
-                  "Maximum number of document that can be fetched for the command. If value is higher than the default page size, amount of returned documents will be limited to the default page size and paging state will be returned in the response, so a caller can to continue paging through documents.",
+                  "Maximum number of document that can be fetched for the command. If value is higher than the default page size, amount of returned documents will be limited to the default page size and page state will be returned in the response, so a caller can to continue paging through documents.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           Integer limit,
@@ -47,7 +47,7 @@ public record FindCommand(
               implementation = Integer.class)
           Integer skip,
 
-      // paging state for pagination
+      // page state for pagination
       @Schema(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,

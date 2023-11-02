@@ -40,7 +40,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
-    // limit and paging state defaults
+    // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
     String pageState = null;

@@ -36,7 +36,7 @@ public class QueryExecutor {
    * Runs the provided read document query, Updates the query with parameters
    *
    * @param query read query to be executed
-   * @param pageState read paging state provided for subsequent pages
+   * @param pageState read page state provided for subsequent pages
    * @param pageSize request page size
    * @return proto result set
    */

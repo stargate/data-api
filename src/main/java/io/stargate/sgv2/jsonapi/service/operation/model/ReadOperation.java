@@ -124,10 +124,10 @@ public interface ReadOperation extends Operation {
                 }
               } else {
                 // pagination is handled only when single query is run(non `in` filter), so here
-                // paging state of the last query is returned
+                // page state of the last query is returned
                 for (FindResponse response : list) {
                   documents.addAll(response.docs());
-                  // picking the last paging state
+                  // picking the last page state
                   tempPageState = response.pageState();
                 }
               }
