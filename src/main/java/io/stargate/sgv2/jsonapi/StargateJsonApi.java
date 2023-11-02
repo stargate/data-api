@@ -115,7 +115,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                              "projection": {"tags":0},
                              "sort" : {"location" : 1},
-                             "options": {"limit" : 1000, "pagingState" : "Next paging state got from previous page call"}
+                             "options": {"limit" : 1000, "pageState" : "Next paging state got from previous page call"}
                         }
                       }
                       """),

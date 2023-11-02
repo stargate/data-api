@@ -49,7 +49,7 @@ public interface ReadOperation extends Operation {
    *
    * @param queryExecutor
    * @param queries - Multiple queries only in case of `in` condition on `_id` field
-   * @param pagingState
+   * @param pageState
    * @param readDocument This flag is set to false if the read is done to just identify the document
    *     id and tx_id to perform another DML operation
    * @param objectMapper
@@ -60,7 +60,7 @@ public interface ReadOperation extends Operation {
   default Uni<FindResponse> findDocument(
       QueryExecutor queryExecutor,
       List<QueryOuterClass.Query> queries,
-      String pagingState,
+      String pageState,
       int pageSize,
       boolean readDocument,
       ObjectMapper objectMapper,
@@ -71,7 +71,7 @@ public interface ReadOperation extends Operation {
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query -> queryExecutor.executeRead(query, Optional.ofNullable(pagingState), pageSize))
+            query -> queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize))
         .onItem()
         .transform(
             rSet -> {
@@ -103,7 +103,7 @@ public interface ReadOperation extends Operation {
                 }
                 documents.add(document);
               }
-              return new FindResponse(documents, extractPagingStateFromResultSet(rSet));
+              return new FindResponse(documents, extractPageStateFromResultSet(rSet));
             })
         .collect()
         .asList()
@@ -112,7 +112,7 @@ public interface ReadOperation extends Operation {
             list -> {
               // Merge all find responses
               List<ReadDocument> documents = new ArrayList<>();
-              String tempPagingState = null;
+              String tempPageState = null;
               if (limit == 1) {
                 // In case of findOne limit will be 1 return one document. Need to do it to support
                 // `in` operator
@@ -128,10 +128,10 @@ public interface ReadOperation extends Operation {
                 for (FindResponse response : list) {
                   documents.addAll(response.docs());
                   // picking the last paging state
-                  tempPagingState = response.pagingState();
+                  tempPageState = response.pageState();
                 }
               }
-              return new FindResponse(documents, tempPagingState);
+              return new FindResponse(documents, tempPageState);
             });
   }
 
@@ -177,11 +177,11 @@ public interface ReadOperation extends Operation {
                           return queryExecutor
                               .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
                               .onItem()
-                              .invoke(rs -> stateRef.set(extractPagingStateFromResultSet(rs)));
+                              .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                         })
-                    // Read document while pagingState exists, limit for read is set at updateLimit
+                    // Read document while pageState exists, limit for read is set at updateLimit
                     // +1
-                    .whilst(resultSet -> extractPagingStateFromResultSet(resultSet) != null))
+                    .whilst(resultSet -> extractPageStateFromResultSet(resultSet) != null))
         .onItem()
         .transformToUniAndMerge(
             resultSet -> {
@@ -305,7 +305,7 @@ public interface ReadOperation extends Operation {
     return DocumentId.fromDatabase(typeId, documentIdAsText);
   }
 
-  private String extractPagingStateFromResultSet(QueryOuterClass.ResultSet rSet) {
+  private String extractPageStateFromResultSet(QueryOuterClass.ResultSet rSet) {
     if (rSet.hasPagingState()) {
       return BytesValues.toBase64(rSet.getPagingState());
     }
@@ -332,7 +332,7 @@ public interface ReadOperation extends Operation {
             });
   }
 
-  record FindResponse(List<ReadDocument> docs, String pagingState) {}
+  record FindResponse(List<ReadDocument> docs, String pageState) {}
 
   record CountResponse(int count) {}
 

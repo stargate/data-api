@@ -38,7 +38,7 @@ public record FindOperation(
      * to avoid projection from getting applied before updates.
      */
     DocumentProjector projection,
-    String pagingState,
+    String pageState,
     int limit,
     int pageSize,
     ReadType readType,
@@ -89,7 +89,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pagingState paging state to use
+   * @param pageState paging state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
@@ -100,7 +100,7 @@ public record FindOperation(
       CommandContext commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
-      String pagingState,
+      String pageState,
       int limit,
       int pageSize,
       ReadType readType,
@@ -109,7 +109,7 @@ public record FindOperation(
         commandContext,
         logicalExpression,
         projection,
-        pagingState,
+        pageState,
         limit,
         pageSize,
         readType,
@@ -160,7 +160,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pagingState paging state to use
+   * @param pageState paging state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
@@ -171,7 +171,7 @@ public record FindOperation(
       CommandContext commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
-      String pagingState,
+      String pageState,
       int limit,
       int pageSize,
       ReadType readType,
@@ -181,7 +181,7 @@ public record FindOperation(
         commandContext,
         logicalExpression,
         projection,
-        pagingState,
+        pageState,
         limit,
         pageSize,
         readType,
@@ -239,7 +239,7 @@ public record FindOperation(
    * @param commandContext command context
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
-   * @param pagingState paging state to use
+   * @param pageState paging state to use
    * @param limit limit of rows to fetch
    * @param pageSize page size for in memory sorting
    * @param readType type of the read
@@ -253,7 +253,7 @@ public record FindOperation(
       CommandContext commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
-      String pagingState,
+      String pageState,
       int limit,
       int pageSize,
       ReadType readType,
@@ -265,7 +265,7 @@ public record FindOperation(
         commandContext,
         logicalExpression,
         projection,
-        pagingState,
+        pageState,
         limit,
         pageSize,
         readType,
@@ -289,10 +289,10 @@ public record FindOperation(
                       + commandContext().collection()));
     }
     // get FindResponse
-    return getDocuments(queryExecutor, pagingState(), null)
+    return getDocuments(queryExecutor, pageState(), null)
 
         // map the response to result
-        .map(docs -> new ReadOperationPage(docs.docs(), docs.pagingState(), singleResponse));
+        .map(docs -> new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse));
   }
 
   /**
@@ -300,13 +300,13 @@ public record FindOperation(
    * used by other commands which needs a document to be read.
    *
    * @param queryExecutor
-   * @param pagingState
+   * @param pageState
    * @param additionalIdFilter Used if a additional id filter need to be added to already available
    *     filters
    * @return
    */
   public Uni<FindResponse> getDocuments(
-      QueryExecutor queryExecutor, String pagingState, DBFilterBase.IDFilter additionalIdFilter) {
+      QueryExecutor queryExecutor, String pageState, DBFilterBase.IDFilter additionalIdFilter) {
 
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
@@ -330,7 +330,7 @@ public record FindOperation(
         return findDocument(
             queryExecutor,
             queries,
-            pagingState,
+            pageState,
             pageSize,
             ReadType.DOCUMENT == readType,
             objectMapper,

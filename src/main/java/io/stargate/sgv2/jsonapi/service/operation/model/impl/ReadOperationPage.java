@@ -10,10 +10,10 @@ import java.util.function.Supplier;
  * FindOperation response implementing the {@link CommandResult}.
  *
  * @param docs list of documents
- * @param pagingState paging state
+ * @param pageState paging state
  * @param singleResponse if the response data should be a single document response
  */
-public record ReadOperationPage(List<ReadDocument> docs, String pagingState, boolean singleResponse)
+public record ReadOperationPage(List<ReadDocument> docs, String pageState, boolean singleResponse)
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
@@ -28,7 +28,7 @@ public record ReadOperationPage(List<ReadDocument> docs, String pagingState, boo
       for (ReadDocument doc : docs) {
         jsonNodes.add(doc.document());
       }
-      return new CommandResult(new CommandResult.MultiResponseData(jsonNodes, pagingState));
+      return new CommandResult(new CommandResult.MultiResponseData(jsonNodes, pageState));
     }
   }
 }

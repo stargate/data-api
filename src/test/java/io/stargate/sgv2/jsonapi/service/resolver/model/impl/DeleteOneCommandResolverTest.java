@@ -65,7 +65,7 @@
 //                          assertThat(find.commandContext()).isEqualTo(commandContext);
 //                          assertThat(find.pageSize()).isEqualTo(1);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
 //                          assertThat(
 //                                  find.logicalExpression()
@@ -107,7 +107,7 @@
 //                          assertThat(find.commandContext()).isEqualTo(commandContext);
 //                          assertThat(find.pageSize()).isEqualTo(1);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
 //                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
 //                          assertThat(find.singleResponse()).isTrue();
@@ -148,7 +148,7 @@
 //                          assertThat(find.commandContext()).isEqualTo(commandContext);
 //                          assertThat(find.pageSize()).isEqualTo(1);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
 //                          assertThat(
 //                                  find.logicalExpression()
@@ -196,7 +196,7 @@
 //                          assertThat(find.commandContext()).isEqualTo(commandContext);
 //                          assertThat(find.pageSize()).isEqualTo(100);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
 //                          assertThat(
 //                                  find.logicalExpression()
@@ -249,7 +249,7 @@
 //                          assertThat(find.commandContext()).isEqualTo(commandContext);
 //                          assertThat(find.pageSize()).isEqualTo(1);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
 //                          assertThat(
 //                                  find.logicalExpression()
@@ -304,7 +304,7 @@
 //                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
 //                          assertThat(find.pageSize()).isEqualTo(1);
 //                          assertThat(find.limit()).isEqualTo(1);
-//                          assertThat(find.pagingState()).isNull();
+//                          assertThat(find.pageState()).isNull();
 //                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
 //                          assertThat(
 //                                  find.logicalExpression()

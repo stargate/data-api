@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,7 +52,9 @@ public record FindCommand(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)
-          String pagingState,
+      @JsonProperty("pageState")
+      @JsonAlias("pageState")
+          String pageState,
 
       // include similarity function score
       @Schema(
