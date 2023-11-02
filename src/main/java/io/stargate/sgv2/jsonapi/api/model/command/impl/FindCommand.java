@@ -52,8 +52,8 @@ public record FindCommand(
               description = "Next page state for pagination.",
               type = SchemaType.STRING,
               implementation = String.class)
-      @JsonProperty("pageState")
-      @JsonAlias("pageState")
+          @JsonProperty("pageState")
+          @JsonAlias("pageState")
           String pageState,
 
       // include similarity function score
