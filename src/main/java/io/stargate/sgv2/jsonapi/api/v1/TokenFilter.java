@@ -3,16 +3,14 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME;
 
 import io.quarkus.vertx.http.runtime.filters.Filters;
-import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.event.Observes;
 
 /**
- * Request based, filtering out authentication token and add correct header
- * Coordinator needs X-Cassandra-Token as token name
- * JSON API requires Token as token name
- * Also supports X-Cassandra-Token for backward compatibility
+ * Request based, filtering out authentication token and add correct header Coordinator needs
+ * X-Cassandra-Token as token name JSON API requires Token as token name Also supports
+ * X-Cassandra-Token for backward compatibility
  */
 @RequestScoped
 public class TokenFilter {
