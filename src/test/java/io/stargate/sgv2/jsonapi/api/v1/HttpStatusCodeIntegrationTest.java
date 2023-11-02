@@ -89,7 +89,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               endsWith("table %s.%s does not exist".formatted(namespaceName, "badCollection")),
               endsWith("table %s does not exist".formatted("badCollection")),
               endsWith(
-                      "Collection does not exist, collection name: %s".formatted("badCollection")));
+                  "Collection does not exist, collection name: %s".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
