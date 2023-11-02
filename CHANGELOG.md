@@ -1,5 +1,49 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...HEAD)
+
+**Closed issues:**
+
+- Replace `X-Cassandra-Token` with `Token` [\#569](https://github.com/stargate/jsonapi/issues/569)
+
+## [v1.0.0-BETA-3](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-3) (2023-11-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-2...v1.0.0-BETA-3)
+
+**Implemented enhancements:**
+
+- Improve JSON API error messages with more informative help and \(where possible\) suggested user action [\#552](https://github.com/stargate/jsonapi/issues/552)
+
+**Fixed bugs:**
+
+- UNAUTHENTICATED: Invalid token msg is override because of Metrics tag exception [\#603](https://github.com/stargate/jsonapi/issues/603)
+
+**Closed issues:**
+
+- Misleading error message on nonexisting table when implying vector-enabled [\#609](https://github.com/stargate/jsonapi/issues/609)
+- Remove extra trailing white space from text aggregated for text search [\#602](https://github.com/stargate/jsonapi/issues/602)
+- Native Image build failure [\#597](https://github.com/stargate/jsonapi/issues/597)
+- ExceptionClass exposure in error message [\#578](https://github.com/stargate/jsonapi/issues/578)
+- Enforce limit of maximum 5 Collections per ---database--- namespace [\#577](https://github.com/stargate/jsonapi/issues/577)
+- Fully rely on List\<Expression\<BuildCondition\>\> for build where clause [\#543](https://github.com/stargate/jsonapi/issues/543)
+- SPEC - Document using $slice in projections  [\#130](https://github.com/stargate/jsonapi/issues/130)
+
+**Merged pull requests:**
+
+- fix collection not exist [\#612](https://github.com/stargate/jsonapi/pull/612) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- \Revert "fix collection not exist" \(accidental push to main\) [\#611](https://github.com/stargate/jsonapi/pull/611) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- token header name "X-Casssandra-Token" -\> "Token" [\#607](https://github.com/stargate/jsonapi/pull/607) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- fix error mapping  [\#604](https://github.com/stargate/jsonapi/pull/604) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- ensure JVM heap memory settings applied in Java-based image [\#599](https://github.com/stargate/jsonapi/pull/599) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix native image building with datastax driver dependency [\#598](https://github.com/stargate/jsonapi/pull/598) ([kathirsvn](https://github.com/kathirsvn))
+- Verify max 5 collections creation \(per namespace\) [\#595](https://github.com/stargate/jsonapi/pull/595) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update dse-next reference for ITs to latest one as well [\#592](https://github.com/stargate/jsonapi/pull/592) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- provide additional detail on swagger docs for insertMany [\#591](https://github.com/stargate/jsonapi/pull/591) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Bumping version for next jsonapi release [\#590](https://github.com/stargate/jsonapi/pull/590) ([github-actions[bot]](https://github.com/apps/github-actions))
+- expose ExceptionClass only in debug mode [\#584](https://github.com/stargate/jsonapi/pull/584) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.0-BETA-2](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-2) (2023-10-24)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-1...v1.0.0-BETA-2)
