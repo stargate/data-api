@@ -42,7 +42,10 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof StatusRuntimeException sre) {
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
             return new CommandResult.Error(
-                message, fieldsForMetricsTag, fields, Response.Status.UNAUTHORIZED);
+                "UNAUTHENTICATED: Invalid token",
+                fieldsForMetricsTag,
+                fields,
+                Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
             return new CommandResult.Error(
                 message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
