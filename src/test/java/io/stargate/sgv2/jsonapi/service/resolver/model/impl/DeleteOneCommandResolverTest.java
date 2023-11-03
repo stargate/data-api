@@ -1,28 +1,28 @@
- package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
+package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
- import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
- import com.fasterxml.jackson.databind.ObjectMapper;
- import io.quarkus.test.junit.QuarkusTest;
- import io.quarkus.test.junit.TestProfile;
- import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
- import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
- import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
- import io.stargate.sgv2.jsonapi.config.OperationsConfig;
- import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
- import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
- import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
- import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
- import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
- import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
- import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
- import jakarta.inject.Inject;
- import org.junit.jupiter.api.Nested;
- import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
+import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
- @QuarkusTest
- @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
- public class DeleteOneCommandResolverTest {
+@QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+public class DeleteOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject DeleteOneCommandResolver resolver;
@@ -321,4 +321,4 @@
               });
     }
   }
- }
+}
