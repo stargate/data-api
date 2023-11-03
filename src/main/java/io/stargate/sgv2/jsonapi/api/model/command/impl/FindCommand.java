@@ -53,7 +53,7 @@ public record FindCommand(
               type = SchemaType.STRING,
               implementation = String.class)
           @JsonProperty("pageState")
-          @JsonAlias("pageState")
+          @JsonAlias("pagingState") // old name, 1.0.0-BETA-3 and prior
           String pageState,
 
       // include similarity function score
