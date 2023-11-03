@@ -18,6 +18,9 @@ public class ConstraintViolationExceptionMapper {
   public static final Map<String, Object> ERROR_FIELDS =
       Map.of("exceptionClass", ConstraintViolationException.class.getSimpleName());
 
+  public static final Map<String, Object> ERROR_FIELDS_METRICS_TAG =
+      Map.of("exceptionClass", ConstraintViolationException.class.getSimpleName());
+
   @ServerExceptionMapper
   public RestResponse<CommandResult> constraintViolationException(
       ConstraintViolationException exception) {
@@ -35,6 +38,6 @@ public class ConstraintViolationExceptionMapper {
     String message = violation.getMessage();
     Path propertyPath = violation.getPropertyPath();
     String msg = "Request invalid, the field %s not valid: %s.".formatted(propertyPath, message);
-    return new CommandResult.Error(msg, ERROR_FIELDS, Response.Status.OK);
+    return new CommandResult.Error(msg, ERROR_FIELDS, ERROR_FIELDS_METRICS_TAG, Response.Status.OK);
   }
 }

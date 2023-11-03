@@ -11,7 +11,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.hamcrest.core.AnyOf;
 import org.junit.jupiter.api.MethodOrderer;
@@ -51,6 +51,28 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     @Test
+    public void unauthenticatedNamespaceResource() {
+      String json =
+          """
+                {
+                    "createNamespace": {
+                        "name": "unAuthenticated"
+                    }
+                }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(401)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
+    }
+
+    @Test
     public void regularError() {
       String json =
           """
@@ -67,7 +89,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               endsWith(
                   "INVALID_ARGUMENT: table %s.%s does not exist"
                       .formatted(namespaceName, "badCollection")),
-              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")));
+              endsWith("INVALID_ARGUMENT: table %s does not exist".formatted("badCollection")),
+              endsWith(
+                  "Collection does not exist, collection name: %s".formatted("badCollection")));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -79,7 +103,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors", is(notNullValue()))
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("StatusRuntimeException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test

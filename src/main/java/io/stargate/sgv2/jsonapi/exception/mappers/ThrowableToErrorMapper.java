@@ -31,20 +31,28 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof StatusRuntimeException sre) {
           Map<String, Object> fields =
               debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
+          Map<String, Object> fieldsForMetricsTag =
+              Map.of("exceptionClass", throwable.getClass().getSimpleName());
           if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
-            return new CommandResult.Error(message, fields, Response.Status.UNAUTHORIZED);
+            return new CommandResult.Error(
+                message, fieldsForMetricsTag, fields, Response.Status.UNAUTHORIZED);
           } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
-            return new CommandResult.Error(message, fields, Response.Status.INTERNAL_SERVER_ERROR);
+            return new CommandResult.Error(
+                message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
           } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-            return new CommandResult.Error(message, fields, Response.Status.BAD_GATEWAY);
+            return new CommandResult.Error(
+                message, fieldsForMetricsTag, fields, Response.Status.BAD_GATEWAY);
           } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
-            return new CommandResult.Error(message, fields, Response.Status.GATEWAY_TIMEOUT);
+            return new CommandResult.Error(
+                message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
           }
         }
         // add error code as error field
         Map<String, Object> fields =
             debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
-        return new CommandResult.Error(message, fields, Response.Status.OK);
+        Map<String, Object> fieldsForMetricsTag =
+            Map.of("exceptionClass", throwable.getClass().getSimpleName());
+        return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =
