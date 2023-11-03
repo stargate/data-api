@@ -64,7 +64,8 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process")
+                      line.startsWith("command_processor_process_seconds_")
+                          && !line.contains("seconds_bucket")
                           && line.contains("error=\"false\""))
               .toList();
 
@@ -114,7 +115,8 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process")
+                      line.startsWith("command_processor_process_seconds_")
+                          && !line.contains("seconds_bucket")
                           && line.contains("error=\"true\"")
                           && line.contains("command=\"FindCommand\""))
               .toList();
@@ -168,7 +170,8 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process")
+                      line.startsWith("command_processor_process_seconds_")
+                          && !line.contains("seconds_bucket")
                           && line.contains("error=\"true\"")
                           && line.contains("command=\"CountDocumentsCommand\""))
               .toList();
