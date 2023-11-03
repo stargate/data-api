@@ -6,10 +6,10 @@ name: Continuous Integration
 # * manual trigger
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "native_cql_changes" ]
 
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "native_cql_changes" ]
     paths:
       - 'src/**'
       - 'pom.xml'
