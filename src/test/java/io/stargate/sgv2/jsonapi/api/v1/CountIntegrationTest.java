@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.startsWith;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -791,7 +791,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
   class Metrics {
     @Test
     public void checkMetrics() {
-      CountIntegrationTest.super.checkMetrics("CountDocumentsCommands");
+      CountIntegrationTest.super.checkMetrics("CountDocumentsCommand");
     }
   }
 }

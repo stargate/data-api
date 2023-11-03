@@ -8,8 +8,8 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -44,8 +44,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           "name" : "my_collection",
                           "options": {
                             "vector": {
-                              "size": 5,
-                              "function": "cosine"
+                              "dimension": 5,
+                              "metric": "cosine"
                             }
                           }
                         }
@@ -71,7 +71,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                 "name" : "my_collection_default_function",
                 "options": {
                   "vector": {
-                    "size": 5
+                    "dimension": 5
                   }
                 }
               }
@@ -105,8 +105,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                 "name" : "TooBigVectorCollection",
                 "options": {
                   "vector": {
-                    "size": %d,
-                    "function": "cosine"
+                    "dimension": %d,
+                    "metric": "cosine"
                   }
                 }
               }
@@ -1776,8 +1776,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                                 "name" : "%s",
                                 "options": {
                                   "vector": {
-                                    "size": %d,
-                                    "function": "cosine"
+                                    "dimension": %d,
+                                    "metric": "cosine"
                                   }
                                 }
                               }

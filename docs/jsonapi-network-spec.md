@@ -150,7 +150,7 @@ The HTTP API provides two types of endpoints:
 Both endpoints follow these rules:
 
 1.  All requests **must** use a HTTP `POST` verb.
-2.  Requests **must** supply a `Cassandra-Token` header **TODO:** Why
+2.  Requests **must** supply a `Token` header **TODO:** Why
     not just Authorization, current rest API is X-Cassandra-Token, using
     X is deprecated
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers

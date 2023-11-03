@@ -13,6 +13,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
   @Inject ObjectMapper objectMapper;
   @Inject SchemaManager schemaManager;
   @Inject QueryExecutor queryExecutor;
+  @Inject DatabaseLimitsConfig dbLimitsConfig;
 
   @Nested
   @Disabled
@@ -50,7 +52,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
 
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContext, objectMapper, schemaManagerMock, COLLECTION_NAME);
+              commandContext, dbLimitsConfig, objectMapper, schemaManagerMock, COLLECTION_NAME);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -73,7 +75,11 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
-              commandContextUpper, objectMapper, schemaManagerMock, COLLECTION_NAME.toUpperCase());
+              commandContextUpper,
+              dbLimitsConfig,
+              objectMapper,
+              schemaManagerMock,
+              COLLECTION_NAME.toUpperCase());
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -93,7 +99,14 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       when(schemaManagerMock.getKeyspaces()).thenReturn(null);
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
-              commandContext, objectMapper, schemaManagerMock, COLLECTION_NAME, 4, "cosine", null);
+              commandContext,
+              dbLimitsConfig,
+              objectMapper,
+              schemaManagerMock,
+              COLLECTION_NAME,
+              4,
+              "cosine",
+              null);
 
       final Supplier<CommandResult> execute =
           createCollectionOperation.execute(queryExecutor).subscribeAsCompletionStage().get();
@@ -120,6 +133,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,
+              dbLimitsConfig,
               objectMapper,
               schemaManagerMock,
               COLLECTION_NAME,
@@ -146,6 +160,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,
+              dbLimitsConfig,
               objectMapper,
               schemaManagerMock,
               COLLECTION_NAME,
