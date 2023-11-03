@@ -173,12 +173,11 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process_seconds_")
-                          && !line.contains("seconds_bucket")
+                      line.startsWith("command_processor_process_")
                           && line.contains("error=\"true\"")
                           && !line.startsWith("command_processor_process_seconds_bucket")
                           && !line.contains("quantile")
-                          && line.contains("command=\"CountDocumentsCommands\""))
+                          && line.contains("command=\"CountDocumentsCommand\""))
               .toList();
 
       assertThat(httpMetrics)
