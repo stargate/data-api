@@ -367,12 +367,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
-          .body("errors", hasSize(2))
+          .body("errors", hasSize(1))
           .body("errors[0].message", startsWith("Command accepts no options: InsertOneCommand"))
-          .body("errors[0].exceptionClass", is("JsonMappingException"))
-          .body("errors[1].message", startsWith("Command accepts no options: InsertOneCommand"))
-          .body("errors[1].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
