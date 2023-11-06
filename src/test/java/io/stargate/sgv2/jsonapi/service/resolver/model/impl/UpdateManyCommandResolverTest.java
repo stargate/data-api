@@ -91,7 +91,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
@@ -150,7 +150,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
@@ -208,7 +208,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
@@ -276,7 +276,7 @@ public class UpdateManyCommandResolverTest {
                               .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
                           assertThat(find.pageSize()).isEqualTo(20);
                           assertThat(find.limit()).isEqualTo(21);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
@@ -337,7 +337,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
