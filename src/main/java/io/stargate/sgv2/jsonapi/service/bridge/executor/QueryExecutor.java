@@ -202,7 +202,7 @@ public class QueryExecutor {
                       "The provided namespace does not exist: " + namespace)));
     }
     // else get the table
-    return Uni.createFrom().item(keyspaceMetadata.getTable(collectionName));
+    return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));
   }
 
   /**
