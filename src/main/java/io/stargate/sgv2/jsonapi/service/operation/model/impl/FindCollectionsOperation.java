@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -48,15 +51,25 @@ public record FindCollectionsOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    KeyspaceMetadata keyspaceMetadata =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+    if (keyspaceMetadata == null) {
+      return Uni.createFrom()
+          .failure(
+              new JsonApiException(
+                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                  "Unknown namespace %s, you must create it first."
+                      .formatted(commandContext.namespace())));
+    }
     return Uni.createFrom()
         .item(
             () -> {
               List<CollectionSettings> properties =
-                  cqlSessionCache
-                      .getSession()
-                      .getMetadata()
-                      .getKeyspaces()
-                      .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""))
+                  keyspaceMetadata
                       // get all tables
                       .getTables()
                       .values()
