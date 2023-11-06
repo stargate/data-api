@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -65,15 +66,21 @@ public record CreateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    List<TableMetadata> allTables =
-        new ArrayList<>(
-            cqlSessionCache
-                .getSession()
-                .getMetadata()
-                .getKeyspaces()
-                .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""))
-                .getTables()
-                .values());
+    KeyspaceMetadata keyspaceMetadata =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+    if (keyspaceMetadata == null) {
+      return Uni.createFrom()
+          .failure(
+              new JsonApiException(
+                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                  "Unknown namespace %s, you must create it first."
+                      .formatted(commandContext.namespace())));
+    }
+    List<TableMetadata> allTables = new ArrayList<>(keyspaceMetadata.getTables().values());
     TableMetadata table = findTableAndValidateLimits(allTables, name);
 
     // table doesn't exist, continue
