@@ -191,7 +191,7 @@ public class QueryExecutor {
             .getSession()
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromCql(namespace));
+            .get(CqlIdentifier.fromCql("\"" + namespace + "\""));
     // if namespace does not exist, throw error
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
