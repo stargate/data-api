@@ -36,7 +36,8 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.BasicType matcher =
           new CqlColumnMatcher.BasicType(
-              "column", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -54,7 +55,8 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.BasicType matcher =
           new CqlColumnMatcher.BasicType(
-              "column", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -75,7 +77,8 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.BasicType matcher =
           new CqlColumnMatcher.BasicType(
-              "column", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -93,7 +96,8 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.BasicType matcher =
           new CqlColumnMatcher.BasicType(
-              "wrong", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -118,7 +122,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Tuple matcher =
           new CqlColumnMatcher.Tuple(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -141,7 +145,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Tuple matcher =
           new CqlColumnMatcher.Tuple(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.INT),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
@@ -163,7 +167,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Tuple matcher =
-          new CqlColumnMatcher.Tuple("column", new PrimitiveType(ProtocolConstants.DataType.INT));
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -180,7 +186,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Tuple matcher =
-          new CqlColumnMatcher.Tuple("column", new PrimitiveType(ProtocolConstants.DataType.INT));
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -201,7 +209,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Tuple matcher =
           new CqlColumnMatcher.Tuple(
-              "wrong",
+              CqlIdentifier.fromInternal("wrong"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -227,7 +235,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Map matcher =
           new CqlColumnMatcher.Map(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -249,7 +257,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Map matcher =
           new CqlColumnMatcher.Map(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.FLOAT));
       boolean result = matcher.test(spec);
@@ -271,7 +279,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Map matcher =
           new CqlColumnMatcher.Map(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.INT),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -292,7 +300,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Map matcher =
           new CqlColumnMatcher.Map(
-              "column",
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -314,7 +322,7 @@ class CqlColumnMatcherTest {
 
       CqlColumnMatcher.Map matcher =
           new CqlColumnMatcher.Map(
-              "wrong",
+              CqlIdentifier.fromInternal("wrong"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
@@ -337,7 +345,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Set matcher =
-          new CqlColumnMatcher.Set("column", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -354,7 +364,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Set matcher =
-          new CqlColumnMatcher.Set("column", new PrimitiveType(ProtocolConstants.DataType.INT));
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -371,7 +383,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Set matcher =
-          new CqlColumnMatcher.Set("column", new PrimitiveType(ProtocolConstants.DataType.INT));
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -388,7 +402,9 @@ class CqlColumnMatcherTest {
               false);
 
       CqlColumnMatcher.Set matcher =
-          new CqlColumnMatcher.Set("wrong", new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();

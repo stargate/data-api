@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.schema.model;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.MapType;
-import com.datastax.oss.driver.api.core.type.SetType;
-import com.datastax.oss.driver.api.core.type.TupleType;
+import com.datastax.oss.driver.api.core.type.*;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -13,7 +11,7 @@ import java.util.function.Predicate;
 public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
 
   /** @return Column name for the matcher. */
-  String name();
+  CqlIdentifier name();
 
   /** @return If column type is matching. */
   boolean typeMatches(ColumnMetadata columnSpec);
@@ -28,7 +26,7 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
    * @param name column name
    * @param type basic type
    */
-  record BasicType(String name, DataType type) implements CqlColumnMatcher {
+  record BasicType(CqlIdentifier name, DataType type) implements CqlColumnMatcher {
 
     @Override
     public boolean typeMatches(ColumnMetadata columnSpec) {
@@ -43,7 +41,7 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
    * @param keyType map key type
    * @param valueType map value type
    */
-  record Map(String name, DataType keyType, DataType valueType) implements CqlColumnMatcher {
+  record Map(CqlIdentifier name, DataType keyType, DataType valueType) implements CqlColumnMatcher {
 
     @Override
     public boolean typeMatches(ColumnMetadata columnSpec) {
@@ -64,7 +62,7 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
    * @param name column name
    * @param elements types of elements in the tuple
    */
-  record Tuple(String name, DataType... elements) implements CqlColumnMatcher {
+  record Tuple(CqlIdentifier name, DataType... elements) implements CqlColumnMatcher {
 
     @Override
     public boolean typeMatches(ColumnMetadata columnSpec) {
@@ -85,7 +83,7 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
    * @param name column name
    * @param elementType type of elements in the set
    */
-  record Set(String name, DataType elementType) implements CqlColumnMatcher {
+  record Set(CqlIdentifier name, DataType elementType) implements CqlColumnMatcher {
 
     @Override
     public boolean typeMatches(ColumnMetadata columnSpec) {
@@ -96,6 +94,19 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
 
       SetType set = (SetType) type;
       return Objects.equals(set.getElementType(), elementType);
+    }
+  }
+
+  record Vector(CqlIdentifier name, DataType subtype) implements CqlColumnMatcher {
+    @Override
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      DataType type = columnSpec.getType();
+      if (!(type instanceof VectorType)) {
+        return false;
+      }
+
+      VectorType vector = (VectorType) type;
+      return Objects.equals(vector.getElementType(), subtype);
     }
   }
 }
