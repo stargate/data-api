@@ -51,13 +51,12 @@ public record FindCollectionsOperation(
     return Uni.createFrom()
         .item(
             () -> {
-              String namespace = commandContext.namespace();
               List<CollectionSettings> properties =
                   cqlSessionCache
                       .getSession()
                       .getMetadata()
                       .getKeyspaces()
-                      .get(CqlIdentifier.fromCql(namespace))
+                      .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""))
                       // get all tables
                       .getTables()
                       .values()
