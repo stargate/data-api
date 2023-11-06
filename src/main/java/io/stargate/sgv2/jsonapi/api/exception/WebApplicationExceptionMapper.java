@@ -13,7 +13,12 @@ public class WebApplicationExceptionMapper {
 
   @ServerExceptionMapper
   public RestResponse<CommandResult> webApplicationExceptionMapper(WebApplicationException e) {
-    Throwable toReport = null != e.getCause() ? e.getCause() : e;
+    // 06-Nov-2023, tatu: Let's dig the innermost root cause; needed f.ex for [jsonapi#448]
+    //    to get to StreamConstraintsException
+    Throwable toReport = e;
+    while (toReport.getCause() != null) {
+      toReport = toReport.getCause();
+    }
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
     // Return 405 for method not allowed and 404 for not found
     if (e instanceof NotAllowedException) {

@@ -595,13 +595,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors", hasSize(2))
+          .body("errors", hasSize(1))
           .body(
               "errors[0].message", startsWith("Number length (60) exceeds the maximum length (50)"))
-          .body("errors[0].exceptionClass", is("JsonMappingException"))
-          .body(
-              "errors[1].message", startsWith("Number length (60) exceeds the maximum length (50)"))
-          .body("errors[1].exceptionClass", is("StreamConstraintsException"));
+          .body("errors[0].exceptionClass", is("StreamConstraintsException"));
     }
   }
 
