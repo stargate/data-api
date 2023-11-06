@@ -16,7 +16,7 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.7-336cdd7405ee");
+          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-45d4657e507e");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
@@ -49,6 +49,7 @@ public class DseTestResource extends StargateTestResource {
     if (defaultToken != null) {
       propsBuilder.put(FIXED_TOKEN_PROPERTY_NAME, defaultToken);
     }
+    propsBuilder.put("stargate.debug.enabled", "true");
     return propsBuilder.build();
   }
 }

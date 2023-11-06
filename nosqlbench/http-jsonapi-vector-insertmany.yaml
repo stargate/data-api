@@ -46,7 +46,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
@@ -61,7 +61,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
@@ -76,7 +76,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         #        vector mush be enabled when creating collection
@@ -102,7 +102,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_vector_crud_namespace>>/<<collection:jsonapi_vector_crud_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2

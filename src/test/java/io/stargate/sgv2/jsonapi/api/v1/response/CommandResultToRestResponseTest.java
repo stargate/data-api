@@ -32,7 +32,10 @@ public class CommandResultToRestResponseTest {
           new CommandResult(
               List.of(
                   new CommandResult.Error(
-                      "My message.", Map.of("field", "value"), Response.Status.OK)));
+                      "My message.",
+                      Map.of("field", "value"),
+                      Map.of("field", "value"),
+                      Response.Status.OK)));
       final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
@@ -43,7 +46,10 @@ public class CommandResultToRestResponseTest {
           new CommandResult(
               List.of(
                   new CommandResult.Error(
-                      "My message.", Map.of("field", "value"), Response.Status.UNAUTHORIZED)));
+                      "My message.",
+                      Map.of("field", "value"),
+                      Map.of("field", "value"),
+                      Response.Status.UNAUTHORIZED)));
       final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
@@ -55,7 +61,10 @@ public class CommandResultToRestResponseTest {
           new CommandResult(
               List.of(
                   new CommandResult.Error(
-                      "My message.", Map.of("field", "value"), Response.Status.BAD_GATEWAY)));
+                      "My message.",
+                      Map.of("field", "value"),
+                      Map.of("field", "value"),
+                      Response.Status.BAD_GATEWAY)));
       final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.BAD_GATEWAY.getStatusCode());
@@ -69,6 +78,7 @@ public class CommandResultToRestResponseTest {
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
+                      Map.of("field", "value"),
                       Response.Status.INTERNAL_SERVER_ERROR)));
       final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
@@ -81,7 +91,10 @@ public class CommandResultToRestResponseTest {
           new CommandResult(
               List.of(
                   new CommandResult.Error(
-                      "My message.", Map.of("field", "value"), Response.Status.GATEWAY_TIMEOUT)));
+                      "My message.",
+                      Map.of("field", "value"),
+                      Map.of("field", "value"),
+                      Response.Status.GATEWAY_TIMEOUT)));
       final RestResponse mappedResult = result.map();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.GATEWAY_TIMEOUT.getStatusCode());

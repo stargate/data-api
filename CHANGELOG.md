@@ -1,8 +1,158 @@
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-13...HEAD)
+# Changelog
+
+## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...HEAD)
+
+**Closed issues:**
+
+- Replace `X-Cassandra-Token` with `Token` [\#569](https://github.com/stargate/jsonapi/issues/569)
+
+## [v1.0.0-BETA-3](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-3) (2023-11-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-2...v1.0.0-BETA-3)
+
+**Implemented enhancements:**
+
+- Improve JSON API error messages with more informative help and \(where possible\) suggested user action [\#552](https://github.com/stargate/jsonapi/issues/552)
+
+**Fixed bugs:**
+
+- UNAUTHENTICATED: Invalid token msg is override because of Metrics tag exception [\#603](https://github.com/stargate/jsonapi/issues/603)
+
+**Closed issues:**
+
+- Misleading error message on nonexisting table when implying vector-enabled [\#609](https://github.com/stargate/jsonapi/issues/609)
+- Remove extra trailing white space from text aggregated for text search [\#602](https://github.com/stargate/jsonapi/issues/602)
+- Native Image build failure [\#597](https://github.com/stargate/jsonapi/issues/597)
+- ExceptionClass exposure in error message [\#578](https://github.com/stargate/jsonapi/issues/578)
+- Enforce limit of maximum 5 Collections per ---database--- namespace [\#577](https://github.com/stargate/jsonapi/issues/577)
+- Fully rely on List\<Expression\<BuildCondition\>\> for build where clause [\#543](https://github.com/stargate/jsonapi/issues/543)
+- SPEC - Document using $slice in projections  [\#130](https://github.com/stargate/jsonapi/issues/130)
+
+**Merged pull requests:**
+
+- fix collection not exist [\#612](https://github.com/stargate/jsonapi/pull/612) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- \Revert "fix collection not exist" \(accidental push to main\) [\#611](https://github.com/stargate/jsonapi/pull/611) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- token header name "X-Casssandra-Token" -\> "Token" [\#607](https://github.com/stargate/jsonapi/pull/607) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- fix error mapping  [\#604](https://github.com/stargate/jsonapi/pull/604) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- ensure JVM heap memory settings applied in Java-based image [\#599](https://github.com/stargate/jsonapi/pull/599) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix native image building with datastax driver dependency [\#598](https://github.com/stargate/jsonapi/pull/598) ([kathirsvn](https://github.com/kathirsvn))
+- Verify max 5 collections creation \(per namespace\) [\#595](https://github.com/stargate/jsonapi/pull/595) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update dse-next reference for ITs to latest one as well [\#592](https://github.com/stargate/jsonapi/pull/592) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- provide additional detail on swagger docs for insertMany [\#591](https://github.com/stargate/jsonapi/pull/591) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Bumping version for next jsonapi release [\#590](https://github.com/stargate/jsonapi/pull/590) ([github-actions[bot]](https://github.com/apps/github-actions))
+- expose ExceptionClass only in debug mode [\#584](https://github.com/stargate/jsonapi/pull/584) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
+## [v1.0.0-BETA-2](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-2) (2023-10-24)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-1...v1.0.0-BETA-2)
+
+**Fixed bugs:**
+
+- Performance tests returning bad status code errors [\#422](https://github.com/stargate/jsonapi/issues/422)
+
+**Closed issues:**
+
+- CountDocumentsCommands should be CountDocumentsCommand [\#583](https://github.com/stargate/jsonapi/issues/583)
+- Add `isEmpty\(\)` method in `JsonFieldExtractor` [\#579](https://github.com/stargate/jsonapi/issues/579)
+- Add validation of path expression configuration for Field Extractor \(in `json-api-analyzer-filter`\) [\#574](https://github.com/stargate/jsonapi/issues/574)
+- Allow passing of empty JSON Object \(`{ }`\) for `sort` for `find` and `findOne` Commands [\#572](https://github.com/stargate/jsonapi/issues/572)
+- Vector options name change [\#567](https://github.com/stargate/jsonapi/issues/567)
+- Add simple micro-benchmarking of Field Extractor for `json-api-analyzer-filter` [\#564](https://github.com/stargate/jsonapi/issues/564)
+- Add ability to "JSON detect" input given to Field Extractor [\#563](https://github.com/stargate/jsonapi/issues/563)
+- includeSimilarity option doesn't seem to work with `findOne\(\)` [\#558](https://github.com/stargate/jsonapi/issues/558)
+- Implement efficient JSON document filtering to be used by "JSON analyzer" for $text indexing [\#554](https://github.com/stargate/jsonapi/issues/554)
+- Provide a way to display collection options [\#550](https://github.com/stargate/jsonapi/issues/550)
+- Limit number of filtering fields in find commands [\#548](https://github.com/stargate/jsonapi/issues/548)
+- support $and, $or [\#547](https://github.com/stargate/jsonapi/issues/547)
+- Handling of createCollection command [\#546](https://github.com/stargate/jsonapi/issues/546)
+- Json api messaging if namespace is not found. [\#545](https://github.com/stargate/jsonapi/issues/545)
+- Add NoSQLBench test for insertMany [\#541](https://github.com/stargate/jsonapi/issues/541)
+- revisit jsonapi native image build and publish process [\#494](https://github.com/stargate/jsonapi/issues/494)
+- Limit number of documents to count [\#431](https://github.com/stargate/jsonapi/issues/431)
+- Decide on system and non-jsonapi namespace handling [\#341](https://github.com/stargate/jsonapi/issues/341)
+- Implement `$in` support [\#291](https://github.com/stargate/jsonapi/issues/291)
+
+**Merged pull requests:**
+
+- Update to latest dse-db-all [\#587](https://github.com/stargate/jsonapi/pull/587) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- typo fix: CountDocumentsCommands -\> CountDocumentsCommand [\#585](https://github.com/stargate/jsonapi/pull/585) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update Jackson to latest release, 2.15.3 [\#580](https://github.com/stargate/jsonapi/pull/580) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#572: add ITs to verify empty JSON Object is valid for `sort` of `find`/`findOne`, fix as necessary [\#576](https://github.com/stargate/jsonapi/pull/576) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changes for create collection option names [\#575](https://github.com/stargate/jsonapi/pull/575) ([maheshrajamani](https://github.com/maheshrajamani))
+- Use Stargate v2.1.0-BETA-2 [\#573](https://github.com/stargate/jsonapi/pull/573) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Limit number of filtering fields in find commands [\#570](https://github.com/stargate/jsonapi/pull/570) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- fix changelog [\#568](https://github.com/stargate/jsonapi/pull/568) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add error message in createCollection\(\) [\#566](https://github.com/stargate/jsonapi/pull/566) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Support and or [\#565](https://github.com/stargate/jsonapi/pull/565) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Vertex AI embedding client fix [\#561](https://github.com/stargate/jsonapi/pull/561) ([maheshrajamani](https://github.com/maheshrajamani))
+- Return create collection options as part of findCollections response [\#559](https://github.com/stargate/jsonapi/pull/559) ([maheshrajamani](https://github.com/maheshrajamani))
+- Handle error when the namespace doesn't exist [\#557](https://github.com/stargate/jsonapi/pull/557) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update `dse-next` dependency to latest \(4.0.11-669ae5e3994d\) [\#556](https://github.com/stargate/jsonapi/pull/556) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add NosqlBench insertmany test [\#555](https://github.com/stargate/jsonapi/pull/555) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- update base image to smaller runtime version [\#553](https://github.com/stargate/jsonapi/pull/553) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Use Stargate v2.1.0-BETA-1 [\#551](https://github.com/stargate/jsonapi/pull/551) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Update Docker base images to address Python vuln/CVE [\#549](https://github.com/stargate/jsonapi/pull/549) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#544](https://github.com/stargate/jsonapi/pull/544) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.0-BETA-1](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-1) (2023-09-27)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-14...v1.0.0-BETA-1)
+
+**Closed issues:**
+
+- \[Vectorize\] Make vectorize\(\) method call run on worker thread [\#537](https://github.com/stargate/jsonapi/issues/537)
+- \[Vectorize\] Add validation for update clause [\#533](https://github.com/stargate/jsonapi/issues/533)
+- \[Vectorize\] Remove $vectorize field in the document  [\#532](https://github.com/stargate/jsonapi/issues/532)
+- Add metrics tagging for vector functionality [\#526](https://github.com/stargate/jsonapi/issues/526)
+- \[Vectorize\] Implement embedding service call [\#524](https://github.com/stargate/jsonapi/issues/524)
+- pricing investigation for JSON API [\#523](https://github.com/stargate/jsonapi/issues/523)
+- JSON API should allow hyphens \(`-`\) in document property names \(but should not allow empty String\) [\#521](https://github.com/stargate/jsonapi/issues/521)
+- findOneAndDelete by vector has NPE issue in concurrent situation [\#517](https://github.com/stargate/jsonapi/issues/517)
+- findOne filtering by `$vector` returns no results [\#516](https://github.com/stargate/jsonapi/issues/516)
+- User-friendly notification of unsupported features [\#389](https://github.com/stargate/jsonapi/issues/389)
+
+**Merged pull requests:**
+
+- Vectorize update validation [\#542](https://github.com/stargate/jsonapi/pull/542) ([maheshrajamani](https://github.com/maheshrajamani))
+- Run operation resolver on worker thread [\#540](https://github.com/stargate/jsonapi/pull/540) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add metrics for sort type and vector enabled [\#539](https://github.com/stargate/jsonapi/pull/539) ([maheshrajamani](https://github.com/maheshrajamani))
+- ensure password is masked on ecr login [\#538](https://github.com/stargate/jsonapi/pull/538) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Use Stargate v2.1.0-ALPHA-11 [\#536](https://github.com/stargate/jsonapi/pull/536) ([github-actions[bot]](https://github.com/apps/github-actions))
+- In support [\#535](https://github.com/stargate/jsonapi/pull/535) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update dse-db-all dependency to latest \(same as Stargate\) [\#534](https://github.com/stargate/jsonapi/pull/534) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix update vector [\#531](https://github.com/stargate/jsonapi/pull/531) ([maheshrajamani](https://github.com/maheshrajamani))
+- update to beta [\#530](https://github.com/stargate/jsonapi/pull/530) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fixed JSON API Documentation url [\#529](https://github.com/stargate/jsonapi/pull/529) ([kathirsvn](https://github.com/kathirsvn))
+- Add embedding support api [\#528](https://github.com/stargate/jsonapi/pull/528) ([maheshrajamani](https://github.com/maheshrajamani))
+- Use Stargate v2.1.0-ALPHA-10 [\#527](https://github.com/stargate/jsonapi/pull/527) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#521: allow hyphen in names, prevent empty String [\#522](https://github.com/stargate/jsonapi/pull/522) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Stargate v2.1.0-ALPHA-9 [\#520](https://github.com/stargate/jsonapi/pull/520) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fixes \#516: add validation to fail on attempts to filter on $vector \(except with $exists\) [\#519](https://github.com/stargate/jsonapi/pull/519) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix NPE when concurrent delete [\#518](https://github.com/stargate/jsonapi/pull/518) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- add fallout configuration and fallout nosqlbench workload [\#515](https://github.com/stargate/jsonapi/pull/515) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bumping version for next jsonapi release [\#514](https://github.com/stargate/jsonapi/pull/514) ([github-actions[bot]](https://github.com/apps/github-actions))
+- add nb test cases for vector search jsonapi [\#512](https://github.com/stargate/jsonapi/pull/512) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
+## [v1.0.0-ALPHA-14](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-14) (2023-08-21)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-ALPHA-13...v1.0.0-ALPHA-14)
 
 **Closed issues:**
 
 - Reduce index columns [\#505](https://github.com/stargate/jsonapi/issues/505)
+- IT cases for vector size validations [\#497](https://github.com/stargate/jsonapi/issues/497)
+- Create APP using JSON API [\#465](https://github.com/stargate/jsonapi/issues/465)
+- \[Design Revisit\] Projection handling of $vector [\#461](https://github.com/stargate/jsonapi/issues/461)
+
+**Merged pull requests:**
+
+- Use Stargate v2.1.0-ALPHA-7 [\#513](https://github.com/stargate/jsonapi/pull/513) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Swagger vector search [\#511](https://github.com/stargate/jsonapi/pull/511) ([maheshrajamani](https://github.com/maheshrajamani))
+- User friendly unsupported feature notification [\#510](https://github.com/stargate/jsonapi/pull/510) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bumping version for next jsonapi release [\#507](https://github.com/stargate/jsonapi/pull/507) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Create integration test for vector unmatched size\(insert/find\) [\#503](https://github.com/stargate/jsonapi/pull/503) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.0-ALPHA-13](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-13) (2023-08-16)
 

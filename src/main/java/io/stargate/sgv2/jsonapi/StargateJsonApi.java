@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
-import io.stargate.sgv2.api.common.config.constants.HttpConstants;
 import io.stargate.sgv2.api.common.grpc.SourceApiQualifier;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Application;
@@ -387,8 +387,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "name": "events_vector",
                               "options": {
                                 "vector": {
-                                  "size": 2,
-                                  "function": "cosine"
+                                  "dimension": 2,
+                                  "metric": "cosine"
                                 }
                               }
                             }

@@ -12,7 +12,7 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommands;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -47,8 +47,8 @@ public class MeteredCommandProcessorTest {
           }
           """;
 
-      CountDocumentsCommands countCommand =
-          objectMapper.readValue(json, CountDocumentsCommands.class);
+      CountDocumentsCommand countCommand =
+          objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext commandContext = new CommandContext("namespace", "collection");
       CommandResult commandResult = new CommandResult(Collections.emptyList());
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
@@ -65,6 +65,8 @@ public class MeteredCommandProcessorTest {
               .filter(
                   line ->
                       line.startsWith("command_processor_process")
+                          && !line.startsWith("command_processor_process_seconds_bucket")
+                          && !line.contains("quantile")
                           && line.contains("error=\"false\""))
               .toList();
 
@@ -74,7 +76,7 @@ public class MeteredCommandProcessorTest {
                 assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("command=\"CountDocumentsCommands\"");
+                      assertThat(line).contains("command=\"CountDocumentsCommand\"");
                       assertThat(line).contains("tenant=\"test-tenant\"");
                       assertThat(line).contains("error=\"false\"");
                       assertThat(line).contains("error_code=\"NA\"");
@@ -98,7 +100,8 @@ public class MeteredCommandProcessorTest {
       CommandContext commandContext = new CommandContext("namespace", "collection");
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
-      CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
+      CommandResult.Error error =
+          new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -113,8 +116,11 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process")
+                      line.startsWith("command_processor_process_seconds_")
+                          && !line.contains("seconds_bucket")
                           && line.contains("error=\"true\"")
+                          && !line.startsWith("command_processor_process_seconds_bucket")
+                          && !line.contains("quantile")
                           && line.contains("command=\"FindCommand\""))
               .toList();
 
@@ -145,13 +151,14 @@ public class MeteredCommandProcessorTest {
           }
           """;
 
-      CountDocumentsCommands countCommand =
-          objectMapper.readValue(json, CountDocumentsCommands.class);
+      CountDocumentsCommand countCommand =
+          objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext commandContext = new CommandContext("namespace", "collection");
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");
-      CommandResult.Error error = new CommandResult.Error("message", fields, Response.Status.OK);
+      CommandResult.Error error =
+          new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -166,9 +173,11 @@ public class MeteredCommandProcessorTest {
               .lines()
               .filter(
                   line ->
-                      line.startsWith("command_processor_process")
+                      line.startsWith("command_processor_process_")
                           && line.contains("error=\"true\"")
-                          && line.contains("command=\"CountDocumentsCommands\""))
+                          && !line.startsWith("command_processor_process_seconds_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("command=\"CountDocumentsCommand\""))
               .toList();
 
       assertThat(httpMetrics)
@@ -177,7 +186,7 @@ public class MeteredCommandProcessorTest {
                 assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("command=\"CountDocumentsCommands\"");
+                      assertThat(line).contains("command=\"CountDocumentsCommand\"");
                       assertThat(line).contains("tenant=\"test-tenant\"");
                       assertThat(line).contains("error=\"true\"");
                       assertThat(line).contains("error_code=\"TestErrorCode\"");
