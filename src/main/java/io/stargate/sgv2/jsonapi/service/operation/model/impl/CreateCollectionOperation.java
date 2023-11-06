@@ -65,135 +65,73 @@ public record CreateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-      Optional<TableMetadata> tableMetadata =
-              cqlSessionCache
-                      .getSession()
-                      .getMetadata()
-                      .getKeyspaces()
-                      .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""))
-                      .getTable(name);
-      // table doesn't exist, continue
-      if (tableMetadata.isEmpty()) {
-          return executeCollectionCreation(queryExecutor);
-      }
-      // if table exist:
-      TableMetadata table = tableMetadata.get();
-      // get collection settings from the existing collection
-      CollectionSettings collectionSettings =
-              CollectionSettings.getCollectionSettings(table, objectMapper);
-      // get collection settings from user input
-      CollectionSettings collectionSettings_cur =
-              CollectionSettings.getCollectionSettings(
-                      name,
-                      vectorSearch,
-                      vectorSize,
-                      CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-                      vectorize,
-                      objectMapper);
-      // if table exists and user want to create a vector collection with the same name
-      if (vectorSearch) {
-          // if existing collection is a vector collection
-          if (collectionSettings.vectorEnabled()) {
-              if (collectionSettings.equals(collectionSettings_cur)) {
-                  // if settings are equal, no error
-                  return executeCollectionCreation(queryExecutor);
-              } else {
-                  // if settings are not equal, error out
-                  return Uni.createFrom()
-                          .failure(
-                                  new JsonApiException(
-                                          ErrorCode.INVALID_COLLECTION_NAME,
-                                          "The provided collection name '%s' already exists with a different vector setting."
-                                                  .formatted(name)));
-              }
-          } else {
-              // if existing collection is a non-vector collection, error out
-              return Uni.createFrom()
-                      .failure(
-                              new JsonApiException(
-                                      ErrorCode.INVALID_COLLECTION_NAME,
-                                      "The provided collection name '%s' already exists with a non-vector setting."
-                                              .formatted(name)));
-          }
-      } else { // if table exists and user want to create a non-vector collection
-          // if existing table is vector enabled, error out
-          if (collectionSettings.vectorEnabled()) {
-              return Uni.createFrom()
-                      .failure(
-                              new JsonApiException(
-                                      ErrorCode.INVALID_COLLECTION_NAME,
-                                      "The provided collection name '%s' already exists with a vector setting."
-                                              .formatted(name)));
-          } else {
-              // if existing table is a non-vector collection, continue
-              return executeCollectionCreation(queryExecutor);
-          }
-      }
+    List<TableMetadata> allTables =
+        new ArrayList<>(
+            cqlSessionCache
+                .getSession()
+                .getMetadata()
+                .getKeyspaces()
+                .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""))
+                .getTables()
+                .values());
+    TableMetadata table = findTableAndValidateLimits(allTables, name);
 
-    return schemaManager
-        .getTables(commandContext.namespace(), MISSING_KEYSPACE_FUNCTION)
-        .collect()
-        .asList()
-        .map(tables -> findTableAndValidateLimits(tables, name))
-        .onItem()
-        .transformToUni(
-            table -> {
-              // table doesn't exist
-              if (table == null) {
-                return executeCollectionCreation(queryExecutor);
-              }
-              // get collection settings from the existing collection
-              CollectionSettings collectionSettings =
-                  CollectionSettings.getCollectionSettings(table, objectMapper);
-              // get collection settings from user input
-              CollectionSettings collectionSettings_cur =
-                  CollectionSettings.getCollectionSettings(
-                      name,
-                      vectorSearch,
-                      vectorSize,
-                      CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-                      vectorize,
-                      objectMapper);
-              // if table exists and user want to create a vector collection with the same name
-              if (vectorSearch) {
-                // if existing collection is a vector collection
-                if (collectionSettings.vectorEnabled()) {
-                  if (collectionSettings.equals(collectionSettings_cur)) {
-                    // if settings are equal, no error
-                    return executeCollectionCreation(queryExecutor);
-                  } else {
-                    // if settings are not equal, error out
-                    return Uni.createFrom()
-                        .failure(
-                            new JsonApiException(
-                                ErrorCode.INVALID_COLLECTION_NAME,
-                                "The provided collection name '%s' already exists with a different vector setting."
-                                    .formatted(name)));
-                  }
-                } else {
-                  // if existing collection is a non-vector collection, error out
-                  return Uni.createFrom()
-                      .failure(
-                          new JsonApiException(
-                              ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection name '%s' already exists with a non-vector setting."
-                                  .formatted(name)));
-                }
-              } else { // if table exists and user want to create a non-vector collection
-                // if existing table is vector enabled, error out
-                if (collectionSettings.vectorEnabled()) {
-                  return Uni.createFrom()
-                      .failure(
-                          new JsonApiException(
-                              ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection name '%s' already exists with a vector setting."
-                                  .formatted(name)));
-                } else {
-                  // if existing table is a non-vector collection, continue
-                  return executeCollectionCreation(queryExecutor);
-                }
-              }
-            });
+    // table doesn't exist, continue
+    if (table == null) {
+      return executeCollectionCreation(queryExecutor);
+    }
+    // if table exist:
+    // get collection settings from the existing collection
+    CollectionSettings collectionSettings =
+        CollectionSettings.getCollectionSettings(table, objectMapper);
+    // get collection settings from user input
+    CollectionSettings collectionSettings_cur =
+        CollectionSettings.getCollectionSettings(
+            name,
+            vectorSearch,
+            vectorSize,
+            CollectionSettings.SimilarityFunction.fromString(vectorFunction),
+            vectorize,
+            objectMapper);
+    // if table exists and user want to create a vector collection with the same name
+    if (vectorSearch) {
+      // if existing collection is a vector collection
+      if (collectionSettings.vectorEnabled()) {
+        if (collectionSettings.equals(collectionSettings_cur)) {
+          // if settings are equal, no error
+          return executeCollectionCreation(queryExecutor);
+        } else {
+          // if settings are not equal, error out
+          return Uni.createFrom()
+              .failure(
+                  new JsonApiException(
+                      ErrorCode.INVALID_COLLECTION_NAME,
+                      "The provided collection name '%s' already exists with a different vector setting."
+                          .formatted(name)));
+        }
+      } else {
+        // if existing collection is a non-vector collection, error out
+        return Uni.createFrom()
+            .failure(
+                new JsonApiException(
+                    ErrorCode.INVALID_COLLECTION_NAME,
+                    "The provided collection name '%s' already exists with a non-vector setting."
+                        .formatted(name)));
+      }
+    } else { // if table exists and user want to create a non-vector collection
+      // if existing table is vector enabled, error out
+      if (collectionSettings.vectorEnabled()) {
+        return Uni.createFrom()
+            .failure(
+                new JsonApiException(
+                    ErrorCode.INVALID_COLLECTION_NAME,
+                    "The provided collection name '%s' already exists with a vector setting."
+                        .formatted(name)));
+      } else {
+        // if existing table is a non-vector collection, continue
+        return executeCollectionCreation(queryExecutor);
+      }
+    }
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
@@ -226,7 +164,7 @@ public record CreateCollectionOperation(
                     return Uni.createFrom().item(false);
                   }
                 });
-    return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
+    return indexResult.onItem().transform(SchemaChangeResult::new);
   }
 
   /**
@@ -235,9 +173,9 @@ public record CreateCollectionOperation(
    *
    * @return Existing table with given name, if any; {@code null} if not
    */
-  Schema.CqlTable findTableAndValidateLimits(List<Schema.CqlTable> tables, String name) {
-    for (Schema.CqlTable table : tables) {
-      if (table.getName().equals(name)) {
+  TableMetadata findTableAndValidateLimits(List<TableMetadata> tables, String name) {
+    for (TableMetadata table : tables) {
+      if (table.getName().equals(CqlIdentifier.fromCql("\"" + name + "\""))) {
         return table;
       }
     }
