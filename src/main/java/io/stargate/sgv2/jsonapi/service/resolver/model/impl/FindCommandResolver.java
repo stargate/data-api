@@ -40,10 +40,10 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
     final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
-    // limit and paging state defaults
+    // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
-    String pagingState = null;
+    String pageState = null;
     boolean includeSimilarity = false;
 
     // update if options provided
@@ -55,7 +55,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
       if (null != options.skip()) {
         skip = options.skip();
       }
-      pagingState = options.pagingState();
+      pageState = options.pageState();
       includeSimilarity = options.includeSimilarity();
     }
 
@@ -76,7 +76,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           commandContext,
           resolvedLogicalExpression,
           command.buildProjector(includeSimilarity),
-          pagingState,
+          pageState,
           limit,
           operationsConfig.defaultPageSize(),
           ReadType.DOCUMENT,
@@ -91,7 +91,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           commandContext,
           resolvedLogicalExpression,
           command.buildProjector(),
-          pagingState,
+          pageState,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
           Math.min(limit, operationsConfig.defaultPageSize()),
@@ -107,7 +107,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           commandContext,
           resolvedLogicalExpression,
           command.buildProjector(),
-          pagingState,
+          pageState,
           limit,
           operationsConfig.defaultPageSize(),
           ReadType.DOCUMENT,
