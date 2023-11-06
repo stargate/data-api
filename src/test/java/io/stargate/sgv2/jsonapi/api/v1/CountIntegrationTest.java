@@ -764,7 +764,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
           .body("errors[0].message", startsWith("Unsupported filter operator $ne"));
     }
 
