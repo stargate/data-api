@@ -1247,7 +1247,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("errors", hasSize(1))
           .body("errors[0].message", startsWith("Unsupported filter operator $ne"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"));
     }
 
     @Test
