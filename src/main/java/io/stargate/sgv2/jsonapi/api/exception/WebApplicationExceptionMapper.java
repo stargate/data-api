@@ -12,7 +12,7 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 public class WebApplicationExceptionMapper {
 
   @ServerExceptionMapper
-  public RestResponse<CommandResult> genericExceptionMapper(WebApplicationException e) {
+  public RestResponse<CommandResult> webApplicationExceptionMapper(WebApplicationException e) {
     Throwable toReport = null != e.getCause() ? e.getCause() : e;
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
     // Return 405 for method not allowed and 404 for not found
