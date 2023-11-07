@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.FIXED_TOKEN_PROPERTY_NAME;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.common.IntegrationTestUtils;
 import io.stargate.sgv2.common.testresource.StargateTestResource;
 import java.util.Map;
@@ -42,7 +43,10 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.service.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
+
+    Log.error("cassandra -> cql port " + Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP)) ;
     int port = Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
+    Log.error("stargate -> cql port " + port) ;
     propsBuilder.put(
         "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
