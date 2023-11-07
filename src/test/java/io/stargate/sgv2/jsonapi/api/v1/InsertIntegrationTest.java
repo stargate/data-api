@@ -530,6 +530,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
@@ -563,6 +564,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
@@ -596,10 +598,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body(
-              "errors[0].message", startsWith("Number length (60) exceeds the maximum length (50)"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
-          .body("errors[0].exceptionClass", is("StreamConstraintsException"));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document size limitation violated: Number length (60) exceeds the maximum length (50)"));
     }
   }
 
