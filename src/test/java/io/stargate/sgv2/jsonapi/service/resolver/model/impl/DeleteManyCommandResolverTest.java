@@ -66,7 +66,7 @@ public class DeleteManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
                           assertThat(
                                   find.logicalExpression()
@@ -108,7 +108,7 @@ public class DeleteManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
@@ -149,7 +149,7 @@ public class DeleteManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
-                          assertThat(find.pagingState()).isNull();
+                          assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.KEY);
                           assertThat(
                                   find.logicalExpression()

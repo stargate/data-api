@@ -43,19 +43,19 @@ public class QueryExecutor {
    * Runs the provided read document query, Updates the query with parameters
    *
    * @param query read query to be executed
-   * @param pagingState read paging state provided for subsequent pages
+   * @param pageState read page state provided for subsequent pages
    * @param pageSize request page size
    * @return proto result set
    */
   public Uni<QueryOuterClass.ResultSet> executeRead(
-      QueryOuterClass.Query query, Optional<String> pagingState, int pageSize) {
+      QueryOuterClass.Query query, Optional<String> pageState, int pageSize) {
     QueryOuterClass.Consistency consistency = queriesConfig.consistency().reads();
     QueryOuterClass.ConsistencyValue.Builder consistencyValue =
         QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
     QueryOuterClass.QueryParameters.Builder params =
         QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
-    if (pagingState.isPresent()) {
-      params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pagingState.get()))));
+    if (pageState.isPresent()) {
+      params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pageState.get()))));
     }
 
     params.setPageSize(Int32Value.of(pageSize));
