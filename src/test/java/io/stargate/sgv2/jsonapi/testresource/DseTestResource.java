@@ -42,7 +42,7 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.service.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
-    int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+    int port = Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
     propsBuilder.put(
         "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
