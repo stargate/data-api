@@ -655,9 +655,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
+          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
     }
 
     @Test
@@ -684,9 +685,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
+          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
     }
 
     @Test
@@ -830,9 +832,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
+          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
     }
 
     @Test
@@ -857,9 +860,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
+          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
     }
 
     // Vector columns can only use ANN, not regular filtering
@@ -884,10 +888,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body(
-              "errors[1].message",
+              "errors[0].message",
               is(
                   "Cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
     }
