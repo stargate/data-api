@@ -13,12 +13,15 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
@@ -502,14 +505,29 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(2)
-  class InsertOneConstraintFailures {
+  class InsertOneConstraintChecking {
+    private final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final int MAX_ARRAY_LENGTH = DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH;
+
+    @Test
+    public void insertBiggestValidArray() {
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithBigArray");
+      ArrayNode arr = doc.putArray("arr");
+      for (int i = 0; i < MAX_ARRAY_LENGTH; ++i) {
+        arr.add(i);
+      }
+      _verifyInsert("docWithBigArray", doc);
+    }
+
     @Test
     public void tryInsertTooBigArray() {
-      final ObjectMapper mapper = new ObjectMapper();
       // Max array elements allowed is 100; add a few more
-      ObjectNode doc = mapper.createObjectNode();
+      ObjectNode doc = MAPPER.createObjectNode();
       ArrayNode arr = doc.putArray("arr");
-      for (int i = 0; i < 500; ++i) {
+      final int ARRAY_LEN = MAX_ARRAY_LENGTH + 10;
+      for (int i = 0; i < ARRAY_LEN; ++i) {
         arr.add(i);
       }
       final String json =
@@ -535,17 +553,35 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an Array has (500) exceeds maximum allowed (100)"));
+                  "Document size limitation violated: number of elements an Array has ("
+                      + ARRAY_LEN
+                      + ") exceeds maximum allowed (100)"));
+    }
+
+    @Test
+    public void insertLongestValidName() {
+      final String LONGEST_NAME = "a".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongName");
+      // Max property name: 48 characters
+      doc.put(LONGEST_NAME, "stuff");
+      _verifyInsert("docWithLongName", doc);
+
+      // But let's also ensure nested names longer than this are allowed
+      final String LONGEST_NAME2 =
+          "b".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
+      doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNestedName");
+      ObjectNode rootProp = doc.putObject(LONGEST_NAME);
+      rootProp.put(LONGEST_NAME2, 123);
+      _verifyInsert("docWithLongNestedName", doc);
     }
 
     @Test
     public void tryInsertTooLongName() {
-      final ObjectMapper mapper = new ObjectMapper();
-      // Max property name: 48 characters, let's try 100
-      ObjectNode doc = mapper.createObjectNode();
-      doc.put(
-          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789",
-          72);
+      // Max property name: 48 characters, let's try 50
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put("prop_12345_123456789_123456789_123456789_123456789", 72);
       final String json =
           """
                   {
@@ -569,7 +605,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: Property name length (100) exceeds maximum allowed (48)"));
+                  "Document size limitation violated: Property name length (50) exceeds maximum allowed (48)"));
     }
 
     @Test
@@ -604,6 +640,50 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "errors[0].message",
               startsWith(
                   "Document size limitation violated: Number length (60) exceeds the maximum length (50)"));
+    }
+
+    private void _verifyInsert(String docId, JsonNode doc) {
+      final String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": %s
+                    }
+                  }
+                  """
+              .formatted(doc);
+      // Insert has to succeed
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(docId))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // But let's also verify doc can be fetched and is what we inserted
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter": {"_id" : "%s"}
+                        }
+                      }
+                      """
+                  .formatted(docId))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(doc.toString()));
     }
   }
 
