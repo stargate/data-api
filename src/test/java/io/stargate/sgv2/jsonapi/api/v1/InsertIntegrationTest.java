@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.math.BigInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -606,6 +607,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "errors[0].message",
               is(
                   "Document size limitation violated: Property name length (50) exceeds maximum allowed (48)"));
+    }
+
+    @Test
+    public void insertLongestValidNumber() {
+      final String LONGEST_NUM = "9".repeat(DocumentLimitsConfig.DEFAULT_MAX_NUMBER_LENGTH);
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNumber");
+      doc.put("num", new BigInteger(LONGEST_NUM));
+      _verifyInsert("docWithLongNumber", doc);
     }
 
     @Test

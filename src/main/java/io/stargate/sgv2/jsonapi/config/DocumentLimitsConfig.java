@@ -22,6 +22,9 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum length (in elements) of a single Array value */
   int DEFAULT_MAX_ARRAY_LENGTH = 100;
 
+  /** Defines the default maximum length of a single Number value (in characters) */
+  int DEFAULT_MAX_NUMBER_LENGTH = 50;
+
   /** Defines the maximum length of property names in JSON documents */
   int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 48;
 
@@ -68,7 +71,7 @@ public interface DocumentLimitsConfig {
 
   /** @return Defines the maximum length of a single Number value (in characters). */
   @Positive
-  @WithDefault("50")
+  @WithDefault("" + DEFAULT_MAX_NUMBER_LENGTH)
   int maxNumberLength();
 
   /** @return Defines the maximum length of a single String value. */
