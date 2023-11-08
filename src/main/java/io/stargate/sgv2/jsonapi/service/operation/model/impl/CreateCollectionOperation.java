@@ -77,7 +77,7 @@ public record CreateCollectionOperation(
           .failure(
               new JsonApiException(
                   ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "Unknown namespace %s, you must create it first."
+                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
                       .formatted(commandContext.namespace())));
     }
     List<TableMetadata> allTables = new ArrayList<>(keyspaceMetadata.getTables().values());
