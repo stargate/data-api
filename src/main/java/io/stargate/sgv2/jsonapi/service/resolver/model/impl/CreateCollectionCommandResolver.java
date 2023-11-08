@@ -29,19 +29,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
-      CQLSessionCache cqlSessionCache,
       DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig) {
     this.objectMapper = objectMapper;
-    this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null);
+    this(null, null, null, null);
   }
 
   @Override

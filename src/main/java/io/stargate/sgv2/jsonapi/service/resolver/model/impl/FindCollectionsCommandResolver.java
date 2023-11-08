@@ -17,9 +17,7 @@ public class FindCollectionsCommandResolver implements CommandResolver<FindColle
   @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
-  public FindCollectionsCommandResolver(
-      CQLSessionCache cqlSessionCache, ObjectMapper objectMapper) {
-    this.cqlSessionCache = cqlSessionCache;
+  public FindCollectionsCommandResolver(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

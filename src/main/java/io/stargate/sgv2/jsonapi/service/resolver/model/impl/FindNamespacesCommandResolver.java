@@ -15,10 +15,7 @@ public class FindNamespacesCommandResolver implements CommandResolver<FindNamesp
 
   @Inject CQLSessionCache cqlSessionCache;
 
-  @Inject
-  public FindNamespacesCommandResolver(CQLSessionCache cqlSessionCache) {
-    this.cqlSessionCache = cqlSessionCache;
-  }
+  public FindNamespacesCommandResolver() {}
 
   /** {@inheritDoc} */
   @Override
