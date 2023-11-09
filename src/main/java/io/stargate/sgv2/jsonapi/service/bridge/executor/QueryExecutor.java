@@ -186,12 +186,17 @@ public class QueryExecutor {
    * @return
    */
   protected Uni<Optional<TableMetadata>> getSchema(String namespace, String collectionName) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession()
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromCql("\"" + namespace + "\""));
+    KeyspaceMetadata keyspaceMetadata;
+    try {
+      keyspaceMetadata =
+          cqlSessionCache
+              .getSession()
+              .getMetadata()
+              .getKeyspaces()
+              .get(CqlIdentifier.fromCql("\"" + namespace + "\""));
+    } catch (Exception e) {
+      return Uni.createFrom().failure(e);
+    }
     // if namespace does not exist, throw error
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
