@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.io.IOException;
 import java.math.BigInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -652,6 +653,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   "Document size limitation violated: Number length (60) exceeds the maximum length (50)"));
     }
 
+    @Test
+    public void insertLongButNotTooLongDoc() throws Exception {
+      JsonNode bigDoc =
+          this.createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
+      _verifyInsert("bigValidDoc", bigDoc);
+    }
+
     private void _verifyInsert(String docId, JsonNode doc) {
       final String json =
           """
@@ -694,6 +702,40 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(doc.toString()));
+    }
+
+    private JsonNode createBigDoc(String docId, int minDocSize) throws IOException {
+      // While it'd be cleaner to build JsonNode representation, checking for
+      // size much more expensive so go low-tech instead
+      StringBuilder sb = new StringBuilder(minDocSize + 1000);
+      sb.append("{\"_id\":\"").append(docId).append('"');
+
+      boolean bigEnough = false;
+
+      // Since we add one property before loop, reduce max by 1
+      final int MAX_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
+      final String TEXT_512 = "abc ".repeat(128); // 512 chars
+
+      // Use double loop to create a document with a lot of properties, 2-level nesting
+      for (int i = 0; i < MAX_PROPS && !bigEnough; ++i) {
+        sb.append(",\n\"root").append(i).append("\":{");
+        // Add one short entry to simplify following loop
+        sb.append("\n \"subCount\":").append(MAX_PROPS);
+        for (int j = 0; j < MAX_PROPS && !bigEnough; ++j) {
+          sb.append(",\n \"sub").append(j).append("\":{");
+          // Add bit over 1k of content; 2 long text fields, number, boolean, null
+          sb.append("\n \"subId\":" + j + ",\n");
+          sb.append("\n \"text1\":\"").append(TEXT_512).append("1\",\n");
+          sb.append("\n \"text2\":\"").append(TEXT_512).append("2\",\n");
+          sb.append("\n \"enabled\":true\n");
+          sb.append("\n }");
+          bigEnough = sb.length() >= minDocSize;
+        }
+        sb.append("\n}");
+      }
+      sb.append("\n}");
+
+      return MAPPER.readTree(sb.toString());
     }
   }
 

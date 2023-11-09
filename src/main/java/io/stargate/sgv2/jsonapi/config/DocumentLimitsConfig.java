@@ -22,6 +22,11 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum length (in elements) of a single Array value */
   int DEFAULT_MAX_ARRAY_LENGTH = 100;
 
+  /**
+   * Defines the default maximum number of properties any single Object in JSON document can contain
+   */
+  int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
+
   /** Defines the default maximum length of a single Number value (in characters) */
   int DEFAULT_MAX_NUMBER_LENGTH = 50;
 
@@ -57,7 +62,7 @@ public interface DocumentLimitsConfig {
    *     whole document, only on individual main or sub-document)
    */
   @Positive
-  @WithDefault("64")
+  @WithDefault("" + DEFAULT_MAX_OBJECT_PROPERTIES)
   int maxObjectProperties();
 
   /**
