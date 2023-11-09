@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,9 +19,7 @@ public class ExpressionBuilder {
       LogicalExpression logicalExpression, DBFilterBase.IDFilter additionalIdFilter) {
     // an empty filter should find everything
     if (logicalExpression.isEmpty() && additionalIdFilter == null) {
-      ArrayList<Expression<BuiltCondition>> list = new ArrayList<>();
-      list.add(null);
-      return list;
+      return Collections.singletonList(null);
     }
     // after validate in FilterClauseDeserializer,
     // partition key column key will not be nested under OR operator
@@ -98,7 +97,7 @@ public class ExpressionBuilder {
     }
 
     boolean hasInFilterThisLevel = false;
-    boolean InFilterThisLevelWithEmptyArray = true;
+    boolean inFilterThisLevelWithEmptyArray = true;
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
@@ -106,7 +105,7 @@ public class ExpressionBuilder {
           hasInFilterThisLevel = true;
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
-            InFilterThisLevelWithEmptyArray = false;
+            inFilterThisLevelWithEmptyArray = false;
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
             conditionExpressions.add(ExpressionUtils.orOf(inConditionsVariables));
@@ -128,7 +127,7 @@ public class ExpressionBuilder {
     // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
     // nothing
     if (hasInFilterThisLevel
-        && InFilterThisLevelWithEmptyArray
+        && inFilterThisLevelWithEmptyArray
         && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
       return null;
     }
