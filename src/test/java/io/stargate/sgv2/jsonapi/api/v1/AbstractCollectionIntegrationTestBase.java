@@ -100,27 +100,26 @@ public abstract class AbstractCollectionIntegrationTestBase
         .statusCode(200);
   }
 
-
   /** Utility to insert many docs to the test collection. */
   protected void insertManyDocs(String docsJson, int docsAmount) {
     String doc =
-            """
+        """
                 {
                   "insertMany": {
                     "documents": %s
                   }
                 }
                 """
-                    .formatted(docsJson);
+            .formatted(docsJson);
 
     given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-            .contentType(ContentType.JSON)
-            .body(doc)
-            .when()
-            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-            .then()
-            .body("status.insertedIds", hasSize(docsAmount))
-            .statusCode(200);
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(doc)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .body("status.insertedIds", hasSize(docsAmount))
+        .statusCode(200);
   }
 }
