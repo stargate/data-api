@@ -236,7 +236,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, "system")
+          .post(NamespaceResource.BASE_PATH, "data_endpoint_auth")
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(0));
