@@ -77,12 +77,13 @@ public class QueryExecutor {
    */
   public Uni<AsyncResultSet> executeRead(
       SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+    simpleStatement =
+        simpleStatement
+            .setPageSize(pageSize)
+            .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()));
     if (pagingState.isPresent()) {
       simpleStatement =
-          simpleStatement
-              .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()))
-              .setPageSize(pageSize)
-              .setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
+          simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
         .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
