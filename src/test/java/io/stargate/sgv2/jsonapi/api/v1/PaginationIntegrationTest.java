@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.logging.Log;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -80,7 +79,6 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
               .extract()
               .path("data.nextPageState");
 
-      Log.error("nex " + nextPageState);
       String json1 =
           """
                             {
