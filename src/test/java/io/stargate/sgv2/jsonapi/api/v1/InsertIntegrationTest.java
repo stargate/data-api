@@ -658,6 +658,56 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       JsonNode bigDoc =
           this.createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
       _verifyInsert("bigValidDoc", bigDoc);
+
+      // But in this case, let's also verify that we can find it via nested properties
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "find": {
+                              "filter" : {"root0.sub0.subId": 0}
+                            }
+                          }
+                          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(bigDoc));
+    }
+
+    @Test
+    public void tryInsertTooLongDoc() throws Exception {
+      JsonNode bigDoc =
+          this.createBigDoc(
+              "bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
+      String json =
+          """
+                        {
+                          "insertOne": {
+                            "document": %s
+                          }
+                        }
+                        """
+              .formatted(bigDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Document size limitation violated: document size (1089511 chars) exceeds maximum allowed (1000000)"));
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {
@@ -724,11 +774,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
         for (int j = 0; j < MAX_PROPS && !bigEnough; ++j) {
           sb.append(",\n \"sub").append(j).append("\":{");
           // Add bit over 1k of content; 2 long text fields, number, boolean, null
-          sb.append("\n \"subId\":" + j + ",\n");
-          sb.append("\n \"text1\":\"").append(TEXT_512).append("1\",\n");
-          sb.append("\n \"text2\":\"").append(TEXT_512).append("2\",\n");
-          sb.append("\n \"enabled\":true\n");
-          sb.append("\n }");
+          sb.append("\n\"subId\":" + j + ",\n");
+          sb.append("\n\"text1\":\"").append(TEXT_512).append("1\",\n");
+          sb.append("\n\"text2\":\"").append(TEXT_512).append("2\",\n");
+          sb.append("\n\"enabled\":true\n");
+          sb.append("\n}");
           bigEnough = sb.length() >= minDocSize;
         }
         sb.append("\n}");
