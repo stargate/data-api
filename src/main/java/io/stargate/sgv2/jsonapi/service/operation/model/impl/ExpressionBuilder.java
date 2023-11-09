@@ -17,7 +17,7 @@ public class ExpressionBuilder {
   public static List<Expression<BuiltCondition>> buildExpressions(
       LogicalExpression logicalExpression, DBFilterBase.IDFilter additionalIdFilter) {
     // an empty filter should find everything
-    if (logicalExpression.isEmpty()) {
+    if (logicalExpression.isEmpty() && additionalIdFilter == null) {
       ArrayList<Expression<BuiltCondition>> list = new ArrayList<>();
       list.add(null);
       return list;
