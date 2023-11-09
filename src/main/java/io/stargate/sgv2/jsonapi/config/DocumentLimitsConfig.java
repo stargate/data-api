@@ -13,15 +13,34 @@ import jakarta.validation.constraints.Positive;
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
 
-  /** Defines the max size of filter fields, default is 64 fields. */
+  /** Defines the default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
 
+  /** Defines the default maximum document size. */
+  int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
+
+  /** Defines the default maximum length (in elements) of a single Array value */
+  int DEFAULT_MAX_ARRAY_LENGTH = 100;
+
   /**
-   * @return Defines the maximum document page size, defaults to {@code 1 meg} (1 million
-   *     characters).
+   * Defines the default maximum number of properties any single Object in JSON document can contain
+   */
+  int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
+
+  /** Defines the default maximum length of a single Number value (in characters) */
+  int DEFAULT_MAX_NUMBER_LENGTH = 50;
+
+  /** Defines the maximum length of property names in JSON documents */
+  int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 48;
+
+  /** Defines the default maximum length of a single String value */
+  int DEFAULT_MAX_STRING_LENGTH = 16_000;
+
+  /**
+   * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
    */
   @Positive
-  @WithDefault("1000000")
+  @WithDefault("" + DEFAULT_MAX_DOCUMENT_SIZE)
   int maxSize();
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
@@ -34,7 +53,7 @@ public interface DocumentLimitsConfig {
    *     characters} (note: length is for individual name segments; full dotted names can be longer)
    */
   @Positive
-  @WithDefault("48")
+  @WithDefault("" + DEFAULT_MAX_PROPERTY_NAME_LENGTH)
   int maxPropertyNameLength();
 
   /**
@@ -43,7 +62,7 @@ public interface DocumentLimitsConfig {
    *     whole document, only on individual main or sub-document)
    */
   @Positive
-  @WithDefault("64")
+  @WithDefault("" + DEFAULT_MAX_OBJECT_PROPERTIES)
   int maxObjectProperties();
 
   /**
@@ -57,17 +76,17 @@ public interface DocumentLimitsConfig {
 
   /** @return Defines the maximum length of a single Number value (in characters). */
   @Positive
-  @WithDefault("50")
+  @WithDefault("" + DEFAULT_MAX_NUMBER_LENGTH)
   int maxNumberLength();
 
   /** @return Defines the maximum length of a single String value. */
   @Positive
-  @WithDefault("16000")
+  @WithDefault("" + DEFAULT_MAX_STRING_LENGTH)
   int maxStringLength();
 
   /** @return Maximum length of an array. */
   @Positive
-  @WithDefault("100")
+  @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();
 
   /**
