@@ -439,9 +439,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("$in operator must have `ARRAY`"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$in operator must have `ARRAY`"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -802,9 +803,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[1].message", is("$exists operator supports only true"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$exists operator supports only true"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -1242,7 +1244,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[1].message", startsWith("Unsupported filter operator $ne"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", startsWith("Unsupported filter operator $ne"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"));
     }
 
     @Test
