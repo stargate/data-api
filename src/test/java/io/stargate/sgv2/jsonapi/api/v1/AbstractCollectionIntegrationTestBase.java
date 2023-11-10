@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -100,6 +97,29 @@ public abstract class AbstractCollectionIntegrationTestBase
         .then()
         // Sanity check: let's look for non-empty inserted id
         .body("status.insertedIds[0]", not(emptyString()))
+        .statusCode(200);
+  }
+
+  /** Utility to insert many docs to the test collection. */
+  protected void insertManyDocs(String docsJson, int docsAmount) {
+    String doc =
+        """
+                {
+                  "insertMany": {
+                    "documents": %s
+                  }
+                }
+                """
+            .formatted(docsJson);
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(doc)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .body("status.insertedIds", hasSize(docsAmount))
         .statusCode(200);
   }
 }
