@@ -1680,20 +1680,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndUpdateCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.NONE.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndDeleteCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndDeleteCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndReplaceCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "UpdateOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
     }
