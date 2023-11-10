@@ -132,12 +132,14 @@ public class DocumentProjector {
     private Boolean idInclusion = null;
 
     /** Whether similarity score is needed. */
-    private boolean includeSimilarityScore;
+    private final boolean includeSimilarityScore;
 
-    private PathCollector() {}
+    private PathCollector(boolean includeSimilarityScore) {
+      this.includeSimilarityScore = includeSimilarityScore;
+    }
 
     static PathCollector collectPaths(JsonNode def, boolean includeSimilarity) {
-      return new PathCollector().collectFromObject(def, null, includeSimilarity);
+      return new PathCollector(includeSimilarity).collectFromObject(def, null);
     }
 
     public DocumentProjector buildProjector() {
@@ -171,7 +173,7 @@ public class DocumentProjector {
       return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
     }
 
-    PathCollector collectFromObject(JsonNode ob, String parentPath, boolean includeSimilarity) {
+    PathCollector collectFromObject(JsonNode ob, String parentPath) {
       var it = ob.fields();
       while (it.hasNext()) {
         var entry = it.next();
@@ -185,8 +187,7 @@ public class DocumentProjector {
         }
         if (path.charAt(0) == '$'
             && !(path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
-                || DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD.equals(path))) {
+                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
           // First: no operators allowed at root level
           if (parentPath == null) {
             throw new JsonApiException(
@@ -208,20 +209,6 @@ public class DocumentProjector {
           addSlice(parentPath, entry.getValue());
           continue;
         }
-        // This `or` is needed because the method is called in loop
-        includeSimilarityScore = includeSimilarityScore || includeSimilarity;
-        if (parentPath == null
-            && DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD.equals(path)) {
-          JsonNode value = entry.getValue();
-          if (BigDecimal.ZERO.equals(value.decimalValue()) && includeSimilarity) {
-            throw new JsonApiException(
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
-                ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                    + ": Cannot exclude $similarity when `includeSimilarity` option is set `true`");
-          } else {
-            includeSimilarityScore = true;
-          }
-        }
 
         if (parentPath != null) {
           path = parentPath + "." + path;
@@ -242,7 +229,7 @@ public class DocumentProjector {
           }
         } else if (value.isObject()) {
           // Nested definitions allowed, too
-          collectFromObject(value, path, includeSimilarity);
+          collectFromObject(value, path);
         } else {
           // Unknown JSON node type; error
           throw new JsonApiException(
