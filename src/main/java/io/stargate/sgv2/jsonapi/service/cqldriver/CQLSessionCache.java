@@ -128,11 +128,29 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    if (FIXED_TOKEN != null
-        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(FIXED_TOKEN)) {
+    if (isFixedTenant()
+        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(getFixedTenant())) {
       throw new UnauthorizedException("Unauthorized");
     }
     return sessionCache.get(getSessionCacheKey(), this::getNewSession);
+  }
+
+  /**
+   * Check if the tenant is fixed.
+   *
+   * @return true if the tenant is fixed
+   */
+  private boolean isFixedTenant() {
+    return FIXED_TOKEN != null;
+  }
+
+  /*
+   * Get fixed tenant.
+   *
+   * @return fixed tenant
+   */
+  private String getFixedTenant() {
+    return FIXED_TOKEN;
   }
 
   /**
