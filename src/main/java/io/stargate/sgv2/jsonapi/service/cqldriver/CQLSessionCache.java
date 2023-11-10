@@ -76,7 +76,10 @@ public class CQLSessionCache {
                       }
                     })
             .build();
-    LOGGER.info("CQLSessionCache initialized");
+    LOGGER.info(
+        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+        operationsConfig.databaseConfig().sessionCacheMaxSize());
   }
 
   /**
