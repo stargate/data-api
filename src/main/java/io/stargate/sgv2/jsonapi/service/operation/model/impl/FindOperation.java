@@ -394,7 +394,7 @@ public record FindOperation(
   private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    if (expressions == null) { // in filter, but with empty values, find nothing
+    if (expressions == null) { // find nothing
       return List.of();
     }
     List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
@@ -501,7 +501,7 @@ public record FindOperation(
       DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    if (expressions == null) {
+    if (expressions == null) { // find nothing
       return List.of();
     }
     String[] columns = sortedDataColumns;

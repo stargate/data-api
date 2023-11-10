@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +17,10 @@ public class ExpressionBuilder {
 
   public static List<Expression<BuiltCondition>> buildExpressions(
       LogicalExpression logicalExpression, DBFilterBase.IDFilter additionalIdFilter) {
+    // an empty filter should find everything
+    if (logicalExpression.isEmpty() && additionalIdFilter == null) {
+      return Collections.singletonList(null);
+    }
     // after validate in FilterClauseDeserializer,
     // partition key column key will not be nested under OR operator
     // so we can collect all id_conditions, then do a combination to generate separate queries
@@ -43,8 +48,7 @@ public class ExpressionBuilder {
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
-        expressionsWithId.add(null); // should find everything
-        return expressionsWithId;
+        return null; // should find nothing
       } else {
         return List.of(expressionWithoutId);
       }
@@ -91,12 +95,17 @@ public class ExpressionBuilder {
       }
       conditionExpressions.add(subExpressionCondition);
     }
+
+    boolean hasInFilterThisLevel = false;
+    boolean inFilterThisLevelWithEmptyArray = true;
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
         if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
+          hasInFilterThisLevel = true;
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
+            inFilterThisLevelWithEmptyArray = false;
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
             conditionExpressions.add(ExpressionUtils.orOf(inConditionsVariables));
@@ -115,6 +124,14 @@ public class ExpressionBuilder {
     if (conditionExpressions.isEmpty()) {
       return null;
     }
+    // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
+    // nothing
+    if (hasInFilterThisLevel
+        && inFilterThisLevelWithEmptyArray
+        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
+      return null;
+    }
+
     return ExpressionUtils.buildExpression(
         conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
   }
