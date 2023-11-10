@@ -201,10 +201,9 @@ public class QueryExecutor {
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
-              new RuntimeException(
-                  new JsonApiException(
-                      ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                      "The provided namespace does not exist: " + namespace)));
+              new JsonApiException(
+                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                  "The provided namespace does not exist: " + namespace));
     }
     // else get the table
     return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));

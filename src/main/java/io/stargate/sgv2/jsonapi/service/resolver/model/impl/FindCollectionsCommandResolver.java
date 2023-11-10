@@ -14,11 +14,13 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class FindCollectionsCommandResolver implements CommandResolver<FindCollectionsCommand> {
   private final ObjectMapper objectMapper;
-  @Inject CQLSessionCache cqlSessionCache;
+  private final CQLSessionCache cqlSessionCache;
 
   @Inject
-  public FindCollectionsCommandResolver(ObjectMapper objectMapper) {
+  public FindCollectionsCommandResolver(
+      ObjectMapper objectMapper, CQLSessionCache cqlSessionCache) {
     this.objectMapper = objectMapper;
+    this.cqlSessionCache = cqlSessionCache;
   }
 
   /** {@inheritDoc} */

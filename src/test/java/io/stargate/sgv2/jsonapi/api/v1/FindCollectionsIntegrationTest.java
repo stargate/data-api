@@ -221,7 +221,11 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
     @Test
     @Order(4)
-    public void systemKeyspace() {
+    /**
+     * The keyspace that exists when database is created, and check if there is no collection in
+     * this default keyspace.
+     */
+    public void checkNamespaceHasNoCollections() {
       // then find
       String json =
           """

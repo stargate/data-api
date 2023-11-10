@@ -47,8 +47,6 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, false, 0, null, null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
 
-      //      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
-
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
               commandContext, dbLimitsConfig, objectMapper, cqlSessionCache, COLLECTION_NAME);
@@ -71,7 +69,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       queries.stream().forEach(query -> withQuery(query).returningNothing());
       CommandContext commandContextUpper =
           new CommandContext(KEYSPACE_NAME.toUpperCase(), COLLECTION_NAME.toUpperCase());
-      //      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
+
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withoutVectorSearch(
               commandContextUpper,
@@ -95,7 +93,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
       List<String> queries =
           getAllQueryString(KEYSPACE_NAME, COLLECTION_NAME, true, 4, "cosine", null);
       queries.stream().forEach(query -> withQuery(query).returningNothing());
-      //      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
+
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,
@@ -128,7 +126,7 @@ public class CreateCollectionOperationTest extends AbstractValidatingStargateBri
               "cosine",
               "{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}");
       queries.stream().forEach(query -> withQuery(query).returningNothing());
-      //      when(schemaManagerMock.getKeyspaces()).thenReturn(null);
+
       CreateCollectionOperation createCollectionOperation =
           CreateCollectionOperation.withVectorSearch(
               commandContext,

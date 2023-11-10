@@ -65,7 +65,6 @@ class JsonapiTableMatcherTest {
                   QueryOuterClass.ColumnSpec.newBuilder().setName("key2").build())
               .build();
 
-      //      boolean result = tableMatcher.test(table);
       boolean result = tableMatcher.test(null);
 
       assertThat(result).isFalse();
@@ -79,7 +78,6 @@ class JsonapiTableMatcherTest {
                   QueryOuterClass.ColumnSpec.newBuilder().setName("cluster").build())
               .build();
 
-      //      boolean result = tableMatcher.test(table);
       boolean result = tableMatcher.test(null);
 
       assertThat(result).isFalse();
@@ -94,7 +92,6 @@ class JsonapiTableMatcherTest {
       }
       Schema.CqlTable table = tableBuilder.build();
 
-      //      boolean result = tableMatcher.test(table);
       boolean result = tableMatcher.test(null);
 
       assertThat(result).isFalse();
@@ -109,7 +106,6 @@ class JsonapiTableMatcherTest {
       }
       Schema.CqlTable table = tableBuilder.build();
 
-      //      boolean result = tableMatcher.test(table);
       boolean result = tableMatcher.test(null);
 
       assertThat(result).isFalse();
@@ -124,7 +120,6 @@ class JsonapiTableMatcherTest {
       }
       Schema.CqlTable table = tableBuilder.build();
 
-      //      boolean result = tableMatcher.test(table);
       boolean result = tableMatcher.test(null);
 
       assertThat(result).isFalse();
