@@ -150,6 +150,24 @@ public class DocumentProjectorTest {
       assertThat(proj2)
           .isNotEqualTo(DocumentProjector.createFromDefinition(objectMapper.readTree(defStr1)));
     }
+
+    // [jsonapi#633]: Do not allow $similarity in projection
+    @Test
+    public void verifyNoDollarSimilarity() throws Exception {
+      JsonNode def =
+          objectMapper.readTree(
+              """
+                      { "_id": 1,
+                        "$similarity": 1
+                      }
+                      """);
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: path cannot start with '$' (no root-level operators)");
+    }
   }
 
   @Nested
@@ -321,53 +339,15 @@ public class DocumentProjectorTest {
               objectMapper.readTree(
                   """
                 { "value2" : 1,
-                  "$vector": 1,
-                  "$similarity": 1
+                  "$vector": 1
                 }
-                """));
+                """),
+              true);
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc, 0.25f);
       assertThat(doc.get("value2")).isNotNull();
       assertThat(doc.get("$vector")).isNotNull();
       assertThat(doc.get("$similarity").floatValue()).isEqualTo(0.25f);
-    }
-
-    @Test
-    public void testOptionWithSimilarityZero() throws Exception {
-      final JsonNode doc =
-          objectMapper.readTree(
-              """
-                    { "_id" : 1,
-                       "value1" : true,
-                       "value2" : false,
-                       "nested" : {
-                          "x": 3,
-                          "y": 4,
-                          "z": -1
-                       },
-                       "nested2" : {
-                          "z": 5
-                       },
-                       "$vector" : [0.11, 0.22, 0.33, 0.44]
-                    }
-                    """);
-      Throwable t =
-          catchThrowable(
-              () ->
-                  DocumentProjector.createFromDefinition(
-                      objectMapper.readTree(
-                          """
-                    { "value2" : 1,
-                      "$vector": 1,
-                      "$similarity": 0
-                    }
-                    """),
-                      true));
-      assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
-          .hasMessageStartingWith(
-              "Unsupported projection parameter: Cannot exclude $similarity when `includeSimilarity` option is set `true`");
     }
 
     @Test
