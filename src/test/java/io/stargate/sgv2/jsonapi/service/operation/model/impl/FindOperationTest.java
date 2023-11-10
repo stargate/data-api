@@ -2609,20 +2609,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                   "$vector": [0.35, 0.35, 0.35, 0.35]
                 }
                 """;
-      String doc1Projection =
-          """
-                {
-                  "_id": "doc1",
-                  "$similarity": 0.75
-                }
-                """;
-      String doc2Projection =
-          """
-                {
-                  "_id": "doc2",
-                  "$similarity": 0.5
-                }
-                """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
                   collectionReadCql,
@@ -2729,20 +2715,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               "_id": "doc2",
               "username": "user1",
               "$vector": [0.35, 0.35, 0.35, 0.35]
-            }
-            """;
-      String doc1Projection =
-          """
-            {
-              "_id": "doc1",
-              "$similarity": 0.75
-            }
-            """;
-      String doc2Projection =
-          """
-            {
-              "_id": "doc2",
-              "$similarity": 0.5
             }
             """;
       ValidatingStargateBridge.QueryAssert candidatesAssert =
