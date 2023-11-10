@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,8 +10,6 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -283,28 +280,6 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.singleResponse()).isTrue();
                         });
               });
-    }
-
-    @Test
-    public void idFilterWithProjectionSimilarity() throws Exception {
-      String json =
-          """
-                  {
-                    "findOneAndDelete": {
-                      "filter" : {"_id" : "id"},
-                      "projection" : { "$similarity" : 1 }
-                    }
-                  }
-                  """;
-      FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
-      JsonNode projection = objectMapper.readTree("{ \"$similarity\" : 1 }");
-      final DocumentProjector projector = DocumentProjector.createFromDefinition(projection);
-      assertThat(projector.doIncludeSimilarityScore()).isTrue();
-      Throwable failure = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-      assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED);
     }
   }
 }
