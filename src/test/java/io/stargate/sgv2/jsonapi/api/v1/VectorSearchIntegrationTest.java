@@ -1527,7 +1527,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   class VectorSearchSimilarityProjection {
 
     @Test
-    @Order(2)
+    @Order(1)
     public void findOneSimilarityOption() {
       insertVectorDocuments();
       String json =
@@ -1554,7 +1554,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(4)
+    @Order(2)
     public void findSimilarityOption() {
       insertVectorDocuments();
       String json =
