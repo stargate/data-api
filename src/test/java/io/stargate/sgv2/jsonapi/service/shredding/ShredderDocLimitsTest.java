@@ -143,6 +143,36 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
+    public void catchTooManyDocProps() {
+      // Max allowed 1000, create one with ~1200
+      final ObjectNode doc = docWithNestedProps(40, 30);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " total number of properties (1241) in document exceeds maximum allowed ("
+                  + docLimits.maxDocumentProperties()
+                  + ")");
+    }
+
+    private ObjectNode docWithNestedProps(int rootCount, int leafCount) {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+
+      for (int i = 0; i < rootCount; ++i) {
+        ObjectNode branch = doc.putObject("root" + i);
+        for (int j = 0; j < leafCount; ++j) {
+          branch.put("prop" + j, j);
+        }
+      }
+      return doc;
+    }
+
+    @Test
     public void allowDocWithManyArrayElements() {
       // Max allowed 100, add 90
       final ObjectNode doc = docWithNArrayElems("arr", 90);
