@@ -682,8 +682,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void tryInsertTooLongDoc() throws Exception {
       JsonNode bigDoc =
-          this.createBigDoc(
-              "bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
+          createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
       String json =
           """
                         {
@@ -708,6 +707,46 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message", startsWith("Document size limitation violated: document size ("))
           .body("errors[0].message", endsWith(") exceeds maximum allowed (1000000)"));
+    }
+
+    @Test
+    public void tryInsertDocWithTooManyProps() {
+      final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
+      tooManyPropsDoc.put("_id", 123);
+
+      // About 1200, just needs to be above 1000
+      for (int i = 0; i < 40; ++i) {
+        ObjectNode branch = tooManyPropsDoc.putObject("root" + i);
+        for (int j = 0; j < 30; ++j) {
+          branch.put("prop" + j, j);
+        }
+      }
+
+      String json =
+          """
+                            {
+                              "insertOne": {
+                                "document": %s
+                              }
+                            }
+                            """
+              .formatted(tooManyPropsDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: total number of properties ("))
+          .body("errors[0].message", endsWith(" in document exceeds maximum allowed (1000)"));
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {
