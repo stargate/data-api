@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
@@ -214,22 +215,40 @@ public class Shredder {
     }
 
     // Second: traverse to check for other constraints
-    validateObjectValue(limits, null, doc, 0);
+    AtomicInteger totalProperties = new AtomicInteger(0);
+    validateObjectValue(limits, null, doc, 0, totalProperties);
+    if (totalProperties.get() > limits.maxDocumentProperties()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: total number of properties (%d) in document exceeds maximum allowed (%d)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              totalProperties.get(),
+              limits.maxDocumentProperties()));
+    }
   }
 
   private void validateDocValue(
-      DocumentLimitsConfig limits, String referringPropertyName, JsonNode value, int depth) {
+      DocumentLimitsConfig limits,
+      String referringPropertyName,
+      JsonNode value,
+      int depth,
+      AtomicInteger totalProperties) {
     if (value.isObject()) {
-      validateObjectValue(limits, referringPropertyName, value, depth);
+      validateObjectValue(limits, referringPropertyName, value, depth, totalProperties);
     } else if (value.isArray()) {
-      validateArrayValue(limits, referringPropertyName, value, depth);
+      validateArrayValue(limits, referringPropertyName, value, depth, totalProperties);
     } else if (value.isTextual()) {
       validateStringValue(limits, value);
     }
   }
 
   private void validateArrayValue(
-      DocumentLimitsConfig limits, String referringPropertyName, JsonNode arrayValue, int depth) {
+      DocumentLimitsConfig limits,
+      String referringPropertyName,
+      JsonNode arrayValue,
+      int depth,
+      AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
 
@@ -258,16 +277,21 @@ public class Shredder {
     }
 
     for (JsonNode element : arrayValue) {
-      validateDocValue(limits, null, element, depth);
+      validateDocValue(limits, null, element, depth, totalProperties);
     }
   }
 
   private void validateObjectValue(
-      DocumentLimitsConfig limits, String referringPropertyName, JsonNode objectValue, int depth) {
+      DocumentLimitsConfig limits,
+      String referringPropertyName,
+      JsonNode objectValue,
+      int depth,
+      AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
 
-    if (objectValue.size() > limits.maxObjectProperties()) {
+    final int propCount = objectValue.size();
+    if (propCount > limits.maxObjectProperties()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
@@ -276,12 +300,13 @@ public class Shredder {
               objectValue.size(),
               limits.maxObjectProperties()));
     }
+    totalProperties.addAndGet(propCount);
 
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
       validateObjectKey(limits, entry.getKey(), entry.getValue(), depth);
-      validateDocValue(limits, entry.getKey(), entry.getValue(), depth);
+      validateDocValue(limits, entry.getKey(), entry.getValue(), depth, totalProperties);
     }
   }
 
