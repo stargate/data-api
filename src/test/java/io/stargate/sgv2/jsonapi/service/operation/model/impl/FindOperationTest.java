@@ -117,10 +117,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(doc2))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
@@ -1537,10 +1533,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -1755,10 +1747,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(1672531600000L))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -1954,10 +1942,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -2151,10 +2135,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -2551,10 +2531,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(doc2))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
@@ -2671,9 +2647,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                                         }
                                         """));
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
           FindOperation.vsearch(
@@ -2793,10 +2766,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                             }
                             """));
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.vsearch(
               VECTOR_DOT_PRODUCT_COMMAND_CONTEXT,

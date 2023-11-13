@@ -69,11 +69,11 @@ public record DeleteOperation(
                   findOperation().getDocuments(queryExecutor, stateRef.get(), null);
               return docsToDelete
                   .onItem()
-                  .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
+                  .invoke(findResponse -> stateRef.set(findResponse.pageState()));
             })
 
-        // Documents read until pagingState available, max records read is deleteLimit + 1
-        .whilst(findResponse -> findResponse.pagingState() != null)
+        // Documents read until pageState available, max records read is deleteLimit + 1
+        .whilst(findResponse -> findResponse.pageState() != null)
 
         // Get the deleteLimit # of documents to be delete and set moreData flag true if extra
         // document is read.

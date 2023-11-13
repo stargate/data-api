@@ -68,10 +68,10 @@ public record ReadAndUpdateOperation(
                   findOperation().getDocuments(queryExecutor, stateRef.get(), null);
               return docsToUpdate
                   .onItem()
-                  .invoke(findResponse -> stateRef.set(findResponse.pagingState()));
+                  .invoke(findResponse -> stateRef.set(findResponse.pageState()));
             })
-        // Read document while pagingState exists, limit for read is set at updateLimit +1
-        .whilst(findResponse -> findResponse.pagingState() != null)
+        // Read document while pageState exists, limit for read is set at updateLimit +1
+        .whilst(findResponse -> findResponse.pageState() != null)
         // Transform to get only the updateLimit records, if more set `moreData` to true
         .onItem()
         .transformToMulti(

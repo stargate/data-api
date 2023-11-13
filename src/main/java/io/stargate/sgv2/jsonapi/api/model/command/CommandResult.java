@@ -124,7 +124,7 @@ public record CommandResult(
    * responses.
    *
    * @param documents Documents.
-   * @param nextPageState Optional next paging state.
+   * @param nextPageState Optional next page state.
    */
   @Schema(description = "Response data for multiple documents commands.")
   public record MultiResponseData(
@@ -140,7 +140,7 @@ public record CommandResult(
       implements ResponseData {
 
     /**
-     * Constructor that sets documents without next paging state.
+     * Constructor that sets documents without next page state.
      *
      * @param documents Documents, must not be <code>null</code>.
      */

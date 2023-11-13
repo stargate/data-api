@@ -409,9 +409,10 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[1].message", startsWith("$vectorize search needs to be text value"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", startsWith("$vectorize search needs to be text value"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 
@@ -496,9 +497,10 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[1].message", is(ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage()));
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage()));
     }
   }
 

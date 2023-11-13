@@ -163,7 +163,7 @@ public class FindCommandTest {
     }
 
     @Test
-    public void invalidOptionsPagingStateWithSort() throws Exception {
+    public void invalidOptionsPageStateWithSort() throws Exception {
       String json =
           """
           {
@@ -171,7 +171,7 @@ public class FindCommandTest {
               "filter" : {"username" : "user1"},
               "sort" : {"username" : 1},
               "options" : {
-                "pagingState" : "someState"
+                "pageState" : "someState"
               }
             }
           }
@@ -183,7 +183,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("pagingState is not supported with sort clause");
+          .contains("pageState is not supported with sort clause");
     }
 
     @Test

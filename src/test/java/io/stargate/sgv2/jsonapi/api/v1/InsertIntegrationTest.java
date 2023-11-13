@@ -13,14 +13,19 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.io.IOException;
+import java.math.BigInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -367,12 +372,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
-          .body("errors", hasSize(2))
+          .body("errors", hasSize(1))
           .body("errors[0].message", startsWith("Command accepts no options: InsertOneCommand"))
-          .body("errors[0].exceptionClass", is("JsonMappingException"))
-          .body("errors[1].message", startsWith("Command accepts no options: InsertOneCommand"))
-          .body("errors[1].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[1].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -504,14 +507,29 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(2)
-  class InsertOneConstraintFailures {
+  class InsertOneConstraintChecking {
+    private final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final int MAX_ARRAY_LENGTH = DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH;
+
+    @Test
+    public void insertBiggestValidArray() {
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithBigArray");
+      ArrayNode arr = doc.putArray("arr");
+      for (int i = 0; i < MAX_ARRAY_LENGTH; ++i) {
+        arr.add(i);
+      }
+      _verifyInsert("docWithBigArray", doc);
+    }
+
     @Test
     public void tryInsertTooBigArray() {
-      final ObjectMapper mapper = new ObjectMapper();
       // Max array elements allowed is 100; add a few more
-      ObjectNode doc = mapper.createObjectNode();
+      ObjectNode doc = MAPPER.createObjectNode();
       ArrayNode arr = doc.putArray("arr");
-      for (int i = 0; i < 500; ++i) {
+      final int ARRAY_LEN = MAX_ARRAY_LENGTH + 10;
+      for (int i = 0; i < ARRAY_LEN; ++i) {
         arr.add(i);
       }
       final String json =
@@ -531,21 +549,41 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an Array has (500) exceeds maximum allowed (100)"));
+                  "Document size limitation violated: number of elements an Array has ("
+                      + ARRAY_LEN
+                      + ") exceeds maximum allowed (100)"));
+    }
+
+    @Test
+    public void insertLongestValidName() {
+      final String LONGEST_NAME = "a".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongName");
+      // Max property name: 48 characters
+      doc.put(LONGEST_NAME, "stuff");
+      _verifyInsert("docWithLongName", doc);
+
+      // But let's also ensure nested names longer than this are allowed
+      final String LONGEST_NAME2 =
+          "b".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
+      doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNestedName");
+      ObjectNode rootProp = doc.putObject(LONGEST_NAME);
+      rootProp.put(LONGEST_NAME2, 123);
+      _verifyInsert("docWithLongNestedName", doc);
     }
 
     @Test
     public void tryInsertTooLongName() {
-      final ObjectMapper mapper = new ObjectMapper();
-      // Max property name: 48 characters, let's try 100
-      ObjectNode doc = mapper.createObjectNode();
-      doc.put(
-          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789",
-          72);
+      // Max property name: 48 characters, let's try 50
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put("prop_12345_123456789_123456789_123456789_123456789", 72);
       final String json =
           """
                   {
@@ -563,11 +601,22 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: Property name length (100) exceeds maximum allowed (48)"));
+                  "Document size limitation violated: Property name length (50) exceeds maximum allowed (48)"));
+    }
+
+    @Test
+    public void insertLongestValidNumber() {
+      final String LONGEST_NUM = "9".repeat(DocumentLimitsConfig.DEFAULT_MAX_NUMBER_LENGTH);
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNumber");
+      doc.put("num", new BigInteger(LONGEST_NUM));
+      _verifyInsert("docWithLongNumber", doc);
     }
 
     @Test
@@ -595,13 +644,148 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors", hasSize(2))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
-              "errors[0].message", startsWith("Number length (60) exceeds the maximum length (50)"))
-          .body("errors[0].exceptionClass", is("JsonMappingException"))
+              "errors[0].message",
+              startsWith(
+                  "Document size limitation violated: Number length (60) exceeds the maximum length (50)"));
+    }
+
+    @Test
+    public void insertLongButNotTooLongDoc() throws Exception {
+      JsonNode bigDoc =
+          this.createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
+      _verifyInsert("bigValidDoc", bigDoc);
+
+      // But in this case, let's also verify that we can find it via nested properties
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
           .body(
-              "errors[1].message", startsWith("Number length (60) exceeds the maximum length (50)"))
-          .body("errors[1].exceptionClass", is("StreamConstraintsException"));
+              """
+                          {
+                            "find": {
+                              "filter" : {"root0.sub0.subId": 0}
+                            }
+                          }
+                          """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(bigDoc));
+    }
+
+    @Test
+    public void tryInsertTooLongDoc() throws Exception {
+      JsonNode bigDoc =
+          this.createBigDoc(
+              "bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
+      String json =
+          """
+                        {
+                          "insertOne": {
+                            "document": %s
+                          }
+                        }
+                        """
+              .formatted(bigDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Document size limitation violated: document size (1089511 chars) exceeds maximum allowed (1000000)"));
+    }
+
+    private void _verifyInsert(String docId, JsonNode doc) {
+      final String json =
+          """
+                  {
+                    "insertOne": {
+                      "document": %s
+                    }
+                  }
+                  """
+              .formatted(doc);
+      // Insert has to succeed
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(docId))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // But let's also verify doc can be fetched and is what we inserted
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter": {"_id" : "%s"}
+                        }
+                      }
+                      """
+                  .formatted(docId))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(doc.toString()));
+    }
+
+    private JsonNode createBigDoc(String docId, int minDocSize) throws IOException {
+      // While it'd be cleaner to build JsonNode representation, checking for
+      // size much more expensive so go low-tech instead
+      StringBuilder sb = new StringBuilder(minDocSize + 1000);
+      sb.append("{\"_id\":\"").append(docId).append('"');
+
+      boolean bigEnough = false;
+
+      // Since we add one property before loop, reduce max by 1
+      final int MAX_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
+      final String TEXT_512 = "abc ".repeat(128); // 512 chars
+
+      // Use double loop to create a document with a lot of properties, 2-level nesting
+      for (int i = 0; i < MAX_PROPS && !bigEnough; ++i) {
+        sb.append(",\n\"root").append(i).append("\":{");
+        // Add one short entry to simplify following loop
+        sb.append("\n \"subCount\":").append(MAX_PROPS);
+        for (int j = 0; j < MAX_PROPS && !bigEnough; ++j) {
+          sb.append(",\n \"sub").append(j).append("\":{");
+          // Add bit over 1k of content; 2 long text fields, number, boolean, null
+          sb.append("\n\"subId\":" + j + ",\n");
+          sb.append("\n\"text1\":\"").append(TEXT_512).append("1\",\n");
+          sb.append("\n\"text2\":\"").append(TEXT_512).append("2\",\n");
+          sb.append("\n\"enabled\":true\n");
+          sb.append("\n}");
+          bigEnough = sb.length() >= minDocSize;
+        }
+        sb.append("\n}");
+      }
+      sb.append("\n}");
+
+      return MAPPER.readTree(sb.toString());
     }
   }
 

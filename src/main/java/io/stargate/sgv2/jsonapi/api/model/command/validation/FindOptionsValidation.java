@@ -56,10 +56,10 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (options.pagingState() != null && value.sortClause() != null) {
+    if (options.pageState() != null && value.sortClause() != null) {
       context
-          .buildConstraintViolationWithTemplate("pagingState is not supported with sort clause")
-          .addPropertyNode("options.pagingState")
+          .buildConstraintViolationWithTemplate("pageState is not supported with sort clause")
+          .addPropertyNode("options.pageState")
           .addConstraintViolation();
       return false;
     }

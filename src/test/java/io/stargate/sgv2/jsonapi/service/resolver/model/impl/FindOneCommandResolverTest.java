@@ -58,7 +58,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.limit()).isEqualTo(1);
                 assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pagingState()).isNull();
+                assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(
                         op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
@@ -95,7 +95,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.limit()).isEqualTo(1);
                 assertThat(op.pageSize()).isEqualTo(100);
-                assertThat(op.pagingState()).isNull();
+                assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
                 assertThat(
                         op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
@@ -139,7 +139,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pagingState()).isNull();
+                assertThat(find.pageState()).isNull();
                 assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
@@ -182,7 +182,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pagingState()).isNull();
+                assertThat(find.pageState()).isNull();
                 assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
@@ -227,7 +227,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.projection()).isEqualTo(projector);
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pagingState()).isNull();
+                assertThat(find.pageState()).isNull();
                 assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
@@ -271,7 +271,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.projection()).isEqualTo(projector);
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pagingState()).isNull();
+                assertThat(find.pageState()).isNull();
                 assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
@@ -305,7 +305,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.limit()).isEqualTo(1);
                 assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pagingState()).isNull();
+                assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
@@ -334,7 +334,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.limit()).isEqualTo(1);
                 assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pagingState()).isNull();
+                assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
@@ -367,7 +367,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.limit()).isEqualTo(1);
                 assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pagingState()).isNull();
+                assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(ReadType.DOCUMENT);
                 assertThat(
                         op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
