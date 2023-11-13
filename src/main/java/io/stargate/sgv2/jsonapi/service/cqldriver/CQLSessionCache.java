@@ -48,11 +48,6 @@ public class CQLSessionCache {
   public static final String CASSANDRA = "cassandra";
   /** Default token property name which will be used by the integration tests */
   public static final String FIXED_TOKEN_PROPERTY_NAME = "fixed_token";
-  /**
-   * Default token which will be used by the integration tests. If this property is set, then the
-   * token from the request will be compared with this to perform authentication.
-   */
-  public static final String FIXED_TOKEN = System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
@@ -131,29 +126,20 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    if (isFixedTenant()
-        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(getFixedTenant())) {
+    String fixedToken;
+    if ((fixedToken = getFixedToken()) != null
+        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
     return sessionCache.get(getSessionCacheKey(), this::getNewSession);
   }
 
   /**
-   * Check if the tenant is fixed.
-   *
-   * @return true if the tenant is fixed
+   * Default token which will be used by the integration tests. If this property is set, then the
+   * token from the request will be compared with this to perform authentication.
    */
-  private boolean isFixedTenant() {
-    return FIXED_TOKEN != null;
-  }
-
-  /*
-   * Get fixed tenant.
-   *
-   * @return fixed tenant
-   */
-  private String getFixedTenant() {
-    return FIXED_TOKEN;
+  private String getFixedToken() {
+    return System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
   }
 
   /**
