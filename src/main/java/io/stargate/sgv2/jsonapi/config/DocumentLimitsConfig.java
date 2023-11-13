@@ -27,6 +27,12 @@ public interface DocumentLimitsConfig {
    */
   int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
 
+  /**
+   * Defines the default maximum number of properties the whole JSON document can contain (including
+   * Object- and Array-valued properties).
+   */
+  int DEFAULT_MAX_DOC_PROPERTIES = 1000;
+
   /** Defines the default maximum length of a single Number value (in characters) */
   int DEFAULT_MAX_NUMBER_LENGTH = 50;
 
@@ -64,6 +70,14 @@ public interface DocumentLimitsConfig {
   @Positive
   @WithDefault("" + DEFAULT_MAX_OBJECT_PROPERTIES)
   int maxObjectProperties();
+
+  /**
+   * @return Defines the maximum number of properties the whole JSON document can contain, defaults
+   *     to {@code 1000}, including Object- and Array-valued properties.
+   */
+  @Positive
+  @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
+  int maxDocumentProperties();
 
   /**
    * @return Defines the max size of filter fields, defaults to {@code 64}, which is tha same as the

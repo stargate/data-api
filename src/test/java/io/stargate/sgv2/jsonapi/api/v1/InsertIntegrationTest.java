@@ -6,6 +6,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -656,7 +657,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void insertLongButNotTooLongDoc() throws Exception {
       JsonNode bigDoc =
-          this.createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
+          createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
       _verifyInsert("bigValidDoc", bigDoc);
 
       // But in this case, let's also verify that we can find it via nested properties
@@ -667,7 +668,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
                           {
                             "find": {
-                              "filter" : {"root0.sub0.subId": 0}
+                              "filter" : {"root8.subId": 8}
                             }
                           }
                           """)
@@ -681,8 +682,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void tryInsertTooLongDoc() throws Exception {
       JsonNode bigDoc =
-          this.createBigDoc(
-              "bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
+          createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
       String json =
           """
                         {
@@ -705,9 +705,48 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
+              "errors[0].message", startsWith("Document size limitation violated: document size ("))
+          .body("errors[0].message", endsWith(") exceeds maximum allowed (1000000)"));
+    }
+
+    @Test
+    public void tryInsertDocWithTooManyProps() {
+      final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
+      tooManyPropsDoc.put("_id", 123);
+
+      // About 1200, just needs to be above 1000
+      for (int i = 0; i < 40; ++i) {
+        ObjectNode branch = tooManyPropsDoc.putObject("root" + i);
+        for (int j = 0; j < 30; ++j) {
+          branch.put("prop" + j, j);
+        }
+      }
+
+      String json =
+          """
+                            {
+                              "insertOne": {
+                                "document": %s
+                              }
+                            }
+                            """
+              .formatted(tooManyPropsDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
               "errors[0].message",
-              is(
-                  "Document size limitation violated: document size (1089511 chars) exceeds maximum allowed (1000000)"));
+              startsWith("Document size limitation violated: total number of properties ("))
+          .body("errors[0].message", endsWith(" in document exceeds maximum allowed (1000)"));
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {
@@ -763,22 +802,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       boolean bigEnough = false;
 
       // Since we add one property before loop, reduce max by 1
-      final int MAX_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
-      final String TEXT_512 = "abc ".repeat(128); // 512 chars
+      final int ROOT_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
+      final int LEAF_PROPS = 30;
+      final String TEXT_2K = "abcd123 ".repeat(250); // 2000 chars
 
       // Use double loop to create a document with a lot of properties, 2-level nesting
-      for (int i = 0; i < MAX_PROPS && !bigEnough; ++i) {
+      // But keep total number of props under 1000
+      for (int i = 0; i < ROOT_PROPS && !bigEnough; ++i) {
         sb.append(",\n\"root").append(i).append("\":{");
         // Add one short entry to simplify following loop
-        sb.append("\n \"subCount\":").append(MAX_PROPS);
-        for (int j = 0; j < MAX_PROPS && !bigEnough; ++j) {
-          sb.append(",\n \"sub").append(j).append("\":{");
-          // Add bit over 1k of content; 2 long text fields, number, boolean, null
-          sb.append("\n\"subId\":" + j + ",\n");
-          sb.append("\n\"text1\":\"").append(TEXT_512).append("1\",\n");
-          sb.append("\n\"text2\":\"").append(TEXT_512).append("2\",\n");
-          sb.append("\n\"enabled\":true\n");
-          sb.append("\n}");
+        sb.append("\n \"subId\":").append(i);
+        for (int j = 0; j < LEAF_PROPS && !bigEnough; ++j) {
+          sb.append(",\n \"sub").append(j).append("\":");
+          sb.append('"').append(TEXT_2K).append('"');
           bigEnough = sb.length() >= minDocSize;
         }
         sb.append("\n}");
