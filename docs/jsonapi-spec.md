@@ -539,8 +539,8 @@ Creates a new collection in the current namespace.
     "name": "some_collection",
     "options" : {
       "vector" : {
-      "dimension" : 5,
-      "metric" : "cosine"
+        "dimension" : 5,
+        "metric" : "cosine"
       }
     }
   }
@@ -551,15 +551,15 @@ Creates a new collection in the current namespace.
 
 The `createCollection` command supports the following options.
 
-| Request Elements | Description                                          |
-| ---------------- | -----------------------------------------------------|
-| `vector`         | Used to define a vector-enabled collection.          |
-| `dimension`      | The size or dimension of the vector.                 |
-| `metric`         | One of: `dot_notation`, `euclidean`, or `cosine`.    |
+| Request Elements    | Description                                          |
+| ------------------- | -----------------------------------------------------|
+| `vector`            | Used to define a vector-enabled collection.          |
+| `vector.dimension`  | The size or dimension of the vector.                 |
+| `vector.metric`     | One of: `dot_product`, `euclidean`, or `cosine`.     |
 
 Metrics details follow.
 
-##### *dot_notation*
+##### *dot_product*
 
 When the `createCollection` vector metric is set to `dot_product`, the term refers to a fundamental operation in vector algebra.
 
@@ -602,7 +602,7 @@ In the context of a vector-enabled Astra DB database:
 
 * **Distance Between Vectors**: When you want to find how "close" two vectors are, you can use various metrics. The Euclidean distance is one of the most intuitive and commonly used metrics. If two vectors have a small Euclidean distance between them, they are close in the vector space; if they have a large Euclidean distance, they are far apart.
 
-* **Querying and Operations**: When you set "metric": "euclidean" in the JSON API createCollection command, Astra DB can use the Euclidean distance as the metric for any operations that require comparing vectors. For instance, if you’re performing a nearest neighbor search, the Astra DB database will return vectors that have the smallest Euclidean distance to the query vector.
+* **Querying and Operations**: When you set the vector metric to `euclidean` in the JSON API `createCollection` command, Astra DB can use the Euclidean distance as the metric for any operations that require comparing vectors. For instance, if you’re performing a nearest neighbor search, the Astra DB database will return vectors that have the smallest Euclidean distance to the query vector.
 
 ##### *cosine*
 
