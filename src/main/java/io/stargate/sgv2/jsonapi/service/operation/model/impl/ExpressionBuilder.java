@@ -137,8 +137,8 @@ public class ExpressionBuilder {
   }
 
   /**
-   * Get all positional cql values from express recursively
-   * result order is in consistent of the expression structure
+   * Get all positional cql values from express recursively. Result order is in consistent of the
+   * expression structure
    */
   public static List<Object> getExpressionValuesInOrder(Expression<BuiltCondition> expression) {
     List<Object> values = new ArrayList<>();
