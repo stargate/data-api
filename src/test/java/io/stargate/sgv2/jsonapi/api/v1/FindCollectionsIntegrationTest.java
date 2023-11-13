@@ -221,7 +221,11 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
     @Test
     @Order(4)
-    public void systemKeyspace() {
+    /**
+     * The keyspace that exists when database is created, and check if there is no collection in
+     * this default keyspace.
+     */
+    public void checkNamespaceHasNoCollections() {
       // then find
       String json =
           """
@@ -236,7 +240,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, "system")
+          .post(NamespaceResource.BASE_PATH, "data_endpoint_auth")
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(0));

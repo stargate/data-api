@@ -48,11 +48,6 @@ public class CQLSessionCache {
   public static final String CASSANDRA = "cassandra";
   /** Default token property name which will be used by the integration tests */
   public static final String FIXED_TOKEN_PROPERTY_NAME = "fixed_token";
-  /**
-   * Default token which will be used by the integration tests. If this property is set, then the
-   * token from the request will be compared with this to perform authentication.
-   */
-  public static final String FIXED_TOKEN = System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
@@ -76,7 +71,10 @@ public class CQLSessionCache {
                       }
                     })
             .build();
-    LOGGER.info("CQLSessionCache initialized");
+    LOGGER.info(
+        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+        operationsConfig.databaseConfig().sessionCacheMaxSize());
   }
 
   /**
@@ -128,11 +126,20 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    if (FIXED_TOKEN != null
-        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(FIXED_TOKEN)) {
+    String fixedToken;
+    if ((fixedToken = getFixedToken()) != null
+        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
     return sessionCache.get(getSessionCacheKey(), this::getNewSession);
+  }
+
+  /**
+   * Default token which will be used by the integration tests. If this property is set, then the
+   * token from the request will be compared with this to perform authentication.
+   */
+  private String getFixedToken() {
+    return System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
   }
 
   /**

@@ -9,9 +9,13 @@ import com.datastax.oss.protocol.internal.util.collection.NullAllowingImmutableM
 import java.util.Map;
 
 public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
+  private static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
   private final String tenantId;
 
   public TenantAwareCqlSessionBuilder(String tenantId) {
+    if (tenantId == null || tenantId.isEmpty()) {
+      throw new RuntimeException("Tenant ID cannot be null or empty");
+    }
     this.tenantId = tenantId;
   }
 
@@ -34,13 +38,10 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
 
     @Override
     protected Map<String, String> buildStartupOptions() {
-      if (tenantId == null || tenantId.isEmpty()) {
-        return super.buildStartupOptions();
-      }
       Map<String, String> existing = super.buildStartupOptions();
       return NullAllowingImmutableMap.<String, String>builder(existing.size() + 1)
           .putAll(existing)
-          .put("TENANT_ID", tenantId)
+          .put(TENANT_ID_PROPERTY_KEY, tenantId)
           .build();
     }
   }

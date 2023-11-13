@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.Schema;
-import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -12,39 +12,30 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Find collection operation. Uses {@link SchemaManager} to fetch all valid jsonapi tables for a
+ * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
  * namespace. The schema check against the table is done in the {@link JsonapiTableMatcher}.
  *
  * @param explain - returns collection options if `true`; returns only collection names if `false`
  * @param objectMapper {@link ObjectMapper}
- * @param schemaManager {@link SchemaManager}
+ * @param cqlSessionCache {@link CQLSessionCache}
  * @param tableMatcher {@link JsonapiTableMatcher}
  * @param commandContext {@link CommandContext}
  */
 public record FindCollectionsOperation(
     boolean explain,
     ObjectMapper objectMapper,
-    SchemaManager schemaManager,
+    CQLSessionCache cqlSessionCache,
     JsonapiTableMatcher tableMatcher,
     CommandContext commandContext)
     implements Operation {
-
-  // missing keyspace function
-  private static final Function<String, Uni<? extends Schema.CqlKeyspaceDescribe>>
-      MISSING_KEYSPACE_FUNCTION =
-          keyspace -> {
-            String message = "Unknown namespace %s, you must create it first.".formatted(keyspace);
-            Exception exception = new JsonApiException(ErrorCode.NAMESPACE_DOES_NOT_EXIST, message);
-            return Uni.createFrom().failure(exception);
-          };
 
   // shared table matcher instance
   private static final JsonapiTableMatcher TABLE_MATCHER = new JsonapiTableMatcher();
@@ -52,33 +43,46 @@ public record FindCollectionsOperation(
   public FindCollectionsOperation(
       boolean explain,
       ObjectMapper objectMapper,
-      SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       CommandContext commandContext) {
-    this(explain, objectMapper, schemaManager, TABLE_MATCHER, commandContext);
+    this(explain, objectMapper, cqlSessionCache, TABLE_MATCHER, commandContext);
   }
 
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    String namespace = commandContext.namespace();
-
-    // get all valid tables
-    // get all tables
-    return schemaManager
-        .getTables(namespace, MISSING_KEYSPACE_FUNCTION)
-
-        // filter for valid collections
-        .filter(tableMatcher)
-
-        // map to name
-        .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
-
-        // get as list
-        .collect()
-        .asList()
-
-        // wrap into command result
-        .map(properties -> new Result(explain, properties));
+    KeyspaceMetadata keyspaceMetadata =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+    if (keyspaceMetadata == null) {
+      return Uni.createFrom()
+          .failure(
+              new JsonApiException(
+                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                  "Unknown namespace %s, you must create it first."
+                      .formatted(commandContext.namespace())));
+    }
+    return Uni.createFrom()
+        .item(
+            () -> {
+              List<CollectionSettings> properties =
+                  keyspaceMetadata
+                      // get all tables
+                      .getTables()
+                      .values()
+                      .stream()
+                      // filter for valid collections
+                      .filter(tableMatcher)
+                      // map to name
+                      .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
+                      // get as list
+                      .toList();
+              // Wrap the properties list into a command result
+              return new Result(explain, properties);
+            });
   }
 
   // simple result wrapper

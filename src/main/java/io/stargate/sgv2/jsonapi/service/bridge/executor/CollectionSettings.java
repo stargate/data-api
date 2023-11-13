@@ -2,14 +2,18 @@ package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.bridge.proto.Schema;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,34 +58,33 @@ public record CollectionSettings(
   }
 
   public static CollectionSettings getCollectionSettings(
-      Schema.CqlTable table, ObjectMapper objectMapper) {
-    String collectionName = table.getName();
-    final Optional<QueryOuterClass.ColumnSpec> first =
-        table.getColumnsList().stream()
-            .filter(
-                c -> c.getName().equals(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME))
-            .findFirst();
-    boolean vectorEnabled = first.isPresent();
+      TableMetadata table, ObjectMapper objectMapper) {
+    String collectionName = table.getName().asCql(true);
+    // get vector column
+    final Optional<ColumnMetadata> vectorColumn =
+        table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+    boolean vectorEnabled = vectorColumn.isPresent();
+    // if vector column exist
     if (vectorEnabled) {
-      final int vectorSize = first.get().getType().getVector().getSize();
-      final Optional<Schema.CqlIndex> vectorIndex =
-          table.getIndexesList().stream()
-              .filter(
-                  i ->
-                      i.getColumnName()
-                          .equals(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME))
-              .findFirst();
+      final int vectorSize = ((VectorType) vectorColumn.get().getType()).getDimensions();
+      // get vector index
+      IndexMetadata vectorIndex = null;
+      Map<CqlIdentifier, IndexMetadata> indexMap = table.getIndexes();
+      for (CqlIdentifier key : indexMap.keySet()) {
+        if (key.asInternal().endsWith(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
+          vectorIndex = indexMap.get(key);
+          break;
+        }
+      }
+      // default function
       CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
-      if (vectorIndex.isPresent()) {
+      if (vectorIndex != null) {
         final String functionName =
-            vectorIndex
-                .get()
-                .getOptionsMap()
-                .get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
         if (functionName != null)
           function = CollectionSettings.SimilarityFunction.fromString(functionName);
       }
-      final String comment = table.getOptionsOrDefault("comment", null);
+      final String comment = (String) table.getOptions().get(CqlIdentifier.fromCql("comment"));
       if (comment != null && !comment.isBlank()) {
         return createCollectionSettingsFromJson(
             collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
@@ -89,7 +92,7 @@ public record CollectionSettings(
         return new CollectionSettings(
             collectionName, vectorEnabled, vectorSize, function, null, null);
       }
-    } else {
+    } else { // if not vector collection
       return new CollectionSettings(
           collectionName,
           vectorEnabled,
