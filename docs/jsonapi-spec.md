@@ -551,14 +551,93 @@ Creates a new collection in the current namespace.
 ```json
 {
   "createCollection": {
-    "name": "purchase"
+    "name": "some_collection",
+    "options" : {
+      "vector" : {
+        "dimension" : 5,
+        "metric" : "cosine"
+      }
+    }
   }
 }
 ```
 
 #### createCollection Command Options
 
-The `createCollection` command does not support any options.
+The `createCollection` command supports the following options.
+
+| Request Elements    | Description                                          |
+| ------------------- | -----------------------------------------------------|
+| `vector`            | Used to define a vector-enabled collection.          |
+| `vector.dimension`  | The size or dimension of the vector.                 |
+| `vector.metric`     | One of: `dot_product`, `euclidean`, or `cosine`.     |
+
+Metrics details follow.
+
+##### *dot_product*
+
+When the `createCollection` vector metric is set to `dot_product`, the term refers to a fundamental operation in vector algebra.
+
+The dot product gives a scalar (single number) result. It has important geometric implications: if the dot product is zero, the two vectors are orthogonal (perpendicular) to each other. When normalized vectors are used, the dot product represents the cosine of the angle between the two vectors. Given two vectors:
+
+![Two vectors](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/given-two-vectors.png)
+
+In an n-dimensional space, their dot product is calculated as:
+
+![dot product calculation](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/dot-product-calculation.png)
+
+In the context of a vector-enabled Astra DB database, the dot product can be used for similarity searches. Here’s why:
+
+* In high-dimensional vector spaces, such as those produced by embedding algorithms or neural networks, similar items are represented by vectors that are close to each other.
+* The cosine similarity between two vectors is a measure of their directional similarity, regardless of their magnitude. If you compute the dot product of two normalized vectors, you get the cosine similarity.
+
+Thus, by computing the dot product between a query vector and the vectors in the Astra DB database, you can efficiently find items in the database that are directionally similar to the query. With dot_product metric set in the JSON API createCollection command, Astra DB can use the dot product as a measure of similarity between vectors.
+
+##### *euclidean*
+
+When the `createCollection` vector metric is set to `euclidean`, the term refers to the Euclidean distance, which is the most common way of measuring the "ordinary" straight-line distance between two points in Euclidean space.
+
+Given two points P and Q in an n-dimensional space with the following coordinates:
+
+![P and Q coordinates](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/p-q-coordinates.png)
+
+The Euclidean distance between these two points is defined by the following formula:
+
+![Distance formula](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/euclidean-distance-formula.png)
+
+Here’s the formula that calculates how the Euclidean distance (the result of the formula above) is then used to determine the Euclidean similarity value:
+
+![Formula for Euclidean similarity value](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/sim-eucl-from-distance-eucl-formula.png)
+
+For a 2-dimensional space (like a flat plane), it’s the direct straight-line distance between two points. For a 3-dimensional space (like the space we live in), it’s the direct straight-line distance between two points in that space. The formula generalizes this concept to any number of dimensions.
+
+In the context of a vector-enabled Astra DB database:
+
+* **Vectors as Points**: Each vector in the database can be thought of as a point in some high-dimensional space.
+
+* **Distance Between Vectors**: When you want to find how "close" two vectors are, you can use various metrics. The Euclidean distance is one of the most intuitive and commonly used metrics. If two vectors have a small Euclidean distance between them, they are close in the vector space; if they have a large Euclidean distance, they are far apart.
+
+* **Querying and Operations**: When you set the vector metric to `euclidean` in the JSON API `createCollection` command, Astra DB can use the Euclidean distance as the metric for any operations that require comparing vectors. For instance, if you’re performing a nearest neighbor search, the Astra DB database will return vectors that have the smallest Euclidean distance to the query vector.
+
+##### *cosine*
+
+When the `createCollection` vector metric is set to `cosine`, it refers to the cosine similarity measure, which is a metric used to determine how similar two vectors are. Cosine similarity is commonly used in high-dimensional spaces and is widely used in applications like text analysis, recommendation systems, and more.
+
+Given two vectors A and B, the cosine similarity is computed as the dot product of the vectors divided by the product of their magnitudes (or lengths). The formula for cosine similarity sim(A,B) is:
+
+![cosine simularity formula](https://docs.datastax.com/en/astra-serverless/docs/develop/_images/sim-astra-cosine.png)
+
+Where:
+
+* A⋅B is the dot product of vectors A and B.
+* ∥A∥ is the magnitude (or length) of vector A.
+* ∥B∥ is the magnitude (or length) of vector B.
+
+When returned by Astra DB, the result will always be normalized as between 0 and 1:
+
+* A value of 0 indicates that the vectors are diametrically opposed.
+* A value of 0.5 suggests the vectors are orthogonal (or perpendicular) and have no match.
+* A value of 1 indicates that the vectors are identical in direction.
 
 #### createCollection Multi Document Failure Modes
 
