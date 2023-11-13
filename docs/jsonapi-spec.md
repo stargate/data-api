@@ -389,6 +389,21 @@ The maximum length of a [field name](#json-document-field-names) is 48 character
 
 The maximum number of fields allowed in a single JSON object is 64.
 
+The maximum number of fields allowed in a single JSON document is 1000.
+This includes intermediate fields as well as leaf fields so that document like:
+
+```json
+{
+  "root": {
+    "branch": {
+      "leaf": 42
+    }
+  }
+}
+```
+
+has 3 fields: `root`, `root.branch`, and `root.branch.leaf`, for purposes of this limit.
+
 #### Document Value Limits
 
 The maximum size of field values are:
