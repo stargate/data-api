@@ -129,9 +129,10 @@ blocks:
           {
             "find": {
               "sort" : {"$vector" : {vector_json}},
-              "projection" : {"$vector" : 1, "$similarity" : 1},
+              "projection" : {"$vector" : 1},
               "options" : {
-                  "limit" : 100
+                  "limit" : 100,
+                  "includeSimilarity" : true
               }
             }
           }

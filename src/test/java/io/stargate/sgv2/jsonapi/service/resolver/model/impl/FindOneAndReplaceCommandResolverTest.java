@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
@@ -13,15 +11,12 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
@@ -682,30 +677,6 @@ public class FindOneAndReplaceCommandResolverTest {
                           assertThat(find.singleResponse()).isTrue();
                         });
               });
-    }
-
-    @Test
-    public void idFilterWithProjectionSimilarity() throws Exception {
-      String json =
-          """
-              {
-                "findOneAndReplace": {
-                  "filter" : {"_id" : "id"},
-                  "projection" : { "$similarity" : 1 },
-                  "replacement" : {"col1" : "val1", "col2" : "val2"}
-                }
-              }
-              """;
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      JsonNode projection = objectMapper.readTree("{ \"$similarity\" : 1 }");
-      final DocumentProjector projector = DocumentProjector.createFromDefinition(projection);
-      assertThat(projector.doIncludeSimilarityScore()).isTrue();
-      Throwable failure = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-      assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED);
     }
   }
 }

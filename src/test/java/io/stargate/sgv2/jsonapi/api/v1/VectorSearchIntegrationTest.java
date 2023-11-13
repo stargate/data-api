@@ -1525,35 +1525,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   @Order(7)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class VectorSearchSimilarityProjection {
+
     @Test
     @Order(1)
-    public void findOne() {
-      insertVectorDocuments();
-      String json =
-          """
-        {
-          "findOne": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "projection" : {"_id" : 1, "$similarity" : 1}
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("data.document._id", is("3"))
-          .body("data.document.$similarity", notNullValue())
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    @Order(2)
     public void findOneSimilarityOption() {
       insertVectorDocuments();
       String json =
@@ -1580,39 +1554,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(3)
-    public void find() {
-      insertVectorDocuments();
-      String json =
-          """
-        {
-          "find": {
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "projection" : {"_id" : 1, "$similarity" : 1}
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(3))
-          .body("data.documents[0]._id", is("3"))
-          .body("data.documents[0].$similarity", notNullValue())
-          .body("data.documents[1]._id", is("2"))
-          .body("data.documents[1].$similarity", notNullValue())
-          .body("data.documents[2]._id", is("1"))
-          .body("data.documents[2].$similarity", notNullValue());
-    }
-
-    @Test
-    @Order(4)
+    @Order(2)
     public void findSimilarityOption() {
       insertVectorDocuments();
       String json =
@@ -1641,131 +1583,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.documents[1].$similarity", notNullValue())
           .body("data.documents[2]._id", is("1"))
           .body("data.documents[2].$similarity", notNullValue());
-    }
-
-    @Test
-    @Order(5)
-    public void findSimilarityInvalidProjection() {
-      insertVectorDocuments();
-      String json =
-          """
-              {
-                "find": {
-                  "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-                  "projection" : {"_id" : 1, "$similarity" : 0},
-                  "options" : {"includeSimilarity" : true}
-                }
-              }
-              """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body(
-              "errors[0].message",
-              is(
-                  ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                      + ": Cannot exclude $similarity when `includeSimilarity` option is set `true`"));
-    }
-
-    @Test
-    @Order(6)
-    public void findOneAndUpdate() {
-      String json =
-          """
-      {
-        "findOneAndUpdate": {
-          "filter" : {"_id" : "1"},
-          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-          "update" : {"$set" : {"name" : "Vision Vector Frame"}},
-          "projection" : {"_id" : 1, "$similarity" : 1}
-        }
-      }
-      """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
-          .body(
-              "errors[0].message",
-              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
-    }
-
-    @Test
-    @Order(7)
-    public void findOneAndDelete() {
-      String json =
-          """
-        {
-          "findOneAndDelete": {
-            "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "projection" : {"_id" : 1, "$similarity" : 1}
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
-          .body(
-              "errors[0].message",
-              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
-    }
-
-    @Test
-    @Order(8)
-    public void findOneAndReplace() {
-      String json =
-          """
-        {
-          "findOneAndReplace": {
-            "filter" : {"_id" : "1"},
-            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-            "replacement" : {"_id" : "1", "name" : "Vision Vector Frame"},
-            "projection" : {"_id" : 1, "$similarity" : 1}
-          }
-        }
-        """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED"))
-          .body(
-              "errors[0].message",
-              is(ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage()));
     }
   }
 
@@ -1863,20 +1680,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndUpdateCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.NONE.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndDeleteCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndDeleteCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
-      VectorSearchIntegrationTest.checkVectorMetrics(
-          "FindOneAndReplaceCommand",
-          JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "UpdateOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
     }
