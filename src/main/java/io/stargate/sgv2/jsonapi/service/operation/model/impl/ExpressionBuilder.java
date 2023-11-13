@@ -138,7 +138,7 @@ public class ExpressionBuilder {
 
   public static List<Object> getExpressionValuesInOrder(Expression<BuiltCondition> expression) {
     List<Object> values = new ArrayList<>();
-    if(expression!=null) {
+    if (expression != null) {
       populateValuesRecursive(values, expression);
     }
     return values;
