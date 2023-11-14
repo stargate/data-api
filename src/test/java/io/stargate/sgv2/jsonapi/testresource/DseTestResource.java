@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.FIXED_TOKEN_PROPERTY_NAME;
-
 import io.stargate.sgv2.common.IntegrationTestUtils;
 import java.util.Map;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
@@ -52,7 +50,7 @@ public class DseTestResource extends StargateTestResource {
 
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
     if (defaultToken != null) {
-      propsBuilder.put(FIXED_TOKEN_PROPERTY_NAME, defaultToken);
+      propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
     }
     propsBuilder.put("stargate.debug.enabled", "true");
     return propsBuilder.build();

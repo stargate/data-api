@@ -135,6 +135,10 @@ public interface OperationsConfig {
     @WithDefault("cassandra")
     String password(); // TODO move to request info
 
+    /** Fixed Token used for Integration Test authentication */
+    @Nullable
+    String fixedToken();
+
     /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("127.0.0.1")

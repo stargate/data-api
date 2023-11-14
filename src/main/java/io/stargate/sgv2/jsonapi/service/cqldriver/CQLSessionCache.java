@@ -139,7 +139,7 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
+    return operationsConfig.databaseConfig().fixedToken();
   }
 
   /**
