@@ -47,8 +47,6 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
   /** Default token property name which will be used by the integration tests */
-  public static final String FIXED_TOKEN_PROPERTY_NAME = "fixed_token";
-
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
     this.operationsConfig = operationsConfig;
@@ -127,7 +125,7 @@ public class CQLSessionCache {
    */
   public CqlSession getSession() {
     String fixedToken;
-    if ((fixedToken = getFixedToken()) != null
+    if (!(fixedToken = getFixedToken()).equals("not in test")
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
