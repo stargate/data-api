@@ -519,8 +519,6 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
           List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           final QueryOuterClass.Query query =
               new QueryBuilder()

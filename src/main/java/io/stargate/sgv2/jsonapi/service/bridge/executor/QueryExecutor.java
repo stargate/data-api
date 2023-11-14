@@ -6,9 +6,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
-import com.google.protobuf.Int32Value;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
@@ -40,30 +37,6 @@ public class QueryExecutor {
   }
 
   /**
-   * Runs the provided read document query, Updates the query with parameters
-   *
-   * @param query read query to be executed
-   * @param pageState read page state provided for subsequent pages
-   * @param pageSize request page size
-   * @return proto result set
-   */
-  public Uni<QueryOuterClass.ResultSet> executeRead(
-      QueryOuterClass.Query query, Optional<String> pageState, int pageSize) {
-    QueryOuterClass.Consistency consistency = queriesConfig.consistency().reads();
-    QueryOuterClass.ConsistencyValue.Builder consistencyValue =
-        QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
-    QueryOuterClass.QueryParameters.Builder params =
-        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
-    if (pageState.isPresent()) {
-      params.setPagingState(BytesValue.of(ByteString.copyFrom(decodeBase64(pageState.get()))));
-    }
-
-    params.setPageSize(Int32Value.of(pageSize));
-    return queryBridge(
-        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
-  }
-
-  /**
    * Execute read query with bound statement.
    *
    * @param simpleStatement - Simple statement with query and parameters. The table name used in the
@@ -88,27 +61,6 @@ public class QueryExecutor {
   }
 
   /**
-   * Runs the provided write document query, Updates the query with parameters
-   *
-   * @param query write query to be executed
-   * @return proto result set
-   */
-  public Uni<QueryOuterClass.ResultSet> executeWrite(QueryOuterClass.Query query) {
-    QueryOuterClass.Consistency consistency = queriesConfig.consistency().writes();
-    QueryOuterClass.ConsistencyValue.Builder consistencyValue =
-        QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
-    QueryOuterClass.Consistency serialConsistency = queriesConfig.serialConsistency();
-    QueryOuterClass.ConsistencyValue.Builder serialConsistencyValue =
-        QueryOuterClass.ConsistencyValue.newBuilder().setValue(serialConsistency);
-    QueryOuterClass.QueryParameters.Builder params =
-        QueryOuterClass.QueryParameters.newBuilder()
-            .setConsistency(consistencyValue)
-            .setSerialConsistency(serialConsistencyValue);
-    return queryBridge(
-        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
-  }
-
-  /**
    * Execute write query with bound statement.
    *
    * @param statement - Bound statement with query and parameters. The table name used in the query
@@ -129,22 +81,6 @@ public class QueryExecutor {
   }
 
   /**
-   * Runs the provided schema change query like create collection, Updates the query with parameters
-   *
-   * @param query schema change query to be executed
-   * @return proto result set
-   */
-  public Uni<QueryOuterClass.ResultSet> executeSchemaChange(QueryOuterClass.Query query) {
-    QueryOuterClass.Consistency consistency = queriesConfig.consistency().schemaChanges();
-    QueryOuterClass.ConsistencyValue.Builder consistencyValue =
-        QueryOuterClass.ConsistencyValue.newBuilder().setValue(consistency);
-    QueryOuterClass.QueryParameters.Builder params =
-        QueryOuterClass.QueryParameters.newBuilder().setConsistency(consistencyValue);
-    return queryBridge(
-        QueryOuterClass.Query.newBuilder(query).setParameters(params).buildPartial());
-  }
-
-  /**
    * Execute schema change query with bound statement.
    *
    * @param boundStatement - Bound statement with query and parameters. The table name used in the
@@ -159,24 +95,6 @@ public class QueryExecutor {
                 .executeAsync(
                     boundStatement.setSerialConsistencyLevel(
                         getConsistencyLevel(queriesConfig.consistency().schemaChanges()))));
-  }
-
-  private Uni<QueryOuterClass.ResultSet> queryBridge(QueryOuterClass.Query query) {
-
-    // execute
-    return stargateRequestInfo
-        .getStargateBridge()
-        .executeQuery(query)
-        .map(
-            response -> {
-              QueryOuterClass.ResultSet resultSet = response.getResultSet();
-              return resultSet;
-            })
-        .onFailure()
-        .invoke(
-            failure -> {
-              logger.error("Error on bridge ", failure);
-            });
   }
 
   /**
