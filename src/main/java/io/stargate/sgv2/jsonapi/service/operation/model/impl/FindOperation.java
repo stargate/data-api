@@ -402,19 +402,7 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          List<Object> collect =
-              conditions.stream()
-                  .flatMap(
-                      builtCondition -> {
-                        JsonTerm term = ((JsonTerm) builtCondition.value());
-                        List<Object> values = new ArrayList<>();
-                        if (term.getKey() != null) values.add(term.getKey());
-                        values.add(term.getValue());
-                        return values.stream();
-                      })
-                  .collect(Collectors.toList());
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           if (vector() == null) {
             final QueryOuterClass.Query query =
                 new QueryBuilder()
@@ -533,17 +521,7 @@ public record FindOperation(
         expression -> {
           Set<BuiltCondition> conditions = new LinkedHashSet<>();
           if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          final List<Object> collect =
-              conditions.stream()
-                  .flatMap(
-                      builtCondition -> {
-                        JsonTerm term = ((JsonTerm) builtCondition.value());
-                        List<Object> values = new ArrayList<>();
-                        if (term.getKey() != null) values.add(term.getKey());
-                        values.add(term.getValue());
-                        return values.stream();
-                      })
-                  .collect(Collectors.toList());
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           final QueryOuterClass.Query query =
               new QueryBuilder()
                   .select()

@@ -663,6 +663,35 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void inConditionWithDuplicateValues() {
+      String json =
+          """
+                            {
+                              "find": {
+                                  "filter" : {
+                                       "username" : {"$in" : ["user1", "user1"]},
+                                       "_id" : {"$in" : ["doc1", "???"]}
+                                  }
+                                }
+                            }
+                          """;
+      String expected1 =
+          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(1))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected1));
+    }
+
+    @Test
     public void byIdWithProjection() {
       String json =
           """
