@@ -266,6 +266,25 @@ public class DocumentProjectorTest {
 
   @Nested
   class ProjectorApplyInclusions {
+    // [json-api#634]: empty Object same as "include all"
+    @Test
+    public void testIncludeWithEmptyProject() throws Exception {
+      final JsonNode doc =
+          objectMapper.readTree(
+              """
+                              {
+                                 "_id" : 1,
+                                 "value1": 42
+                              }
+                              """);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ }"));
+      // Technically considered "Exclusion" but one that excludes nothing
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(doc);
+    }
+
     @Test
     public void testSimpleIncludeWithId() throws Exception {
       final JsonNode doc =

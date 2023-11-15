@@ -13,7 +13,7 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-45d4657e507e");
+          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-49a1eecaf3e4");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
