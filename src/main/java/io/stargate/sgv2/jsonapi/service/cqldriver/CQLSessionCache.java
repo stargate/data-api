@@ -59,8 +59,8 @@ public class CQLSessionCache {
                 (RemovalListener<SessionCacheKey, CqlSession>)
                     (sessionCacheKey, session, cause) -> {
                       if (sessionCacheKey != null) {
-                        if (LOGGER.isDebugEnabled()) {
-                          LOGGER.debug(
+                        if (LOGGER.isTraceEnabled()) {
+                          LOGGER.trace(
                               "Removing session for tenant : {}", sessionCacheKey.tenantId);
                         }
                       }
@@ -82,12 +82,12 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Database type: {}", databaseConfig.type());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Database type: {}", databaseConfig.type());
     }
     if (CASSANDRA.equals(databaseConfig.type())) {
       List<InetSocketAddress> seeds =
