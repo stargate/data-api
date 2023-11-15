@@ -135,7 +135,9 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return operationsConfig.databaseConfig().fixedToken();
+    return operationsConfig.databaseConfig().fixedToken().isPresent()
+        ? operationsConfig.databaseConfig().fixedToken().get()
+        : null;
   }
 
   /**
