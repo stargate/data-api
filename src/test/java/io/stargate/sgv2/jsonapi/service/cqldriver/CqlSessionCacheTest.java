@@ -26,18 +26,26 @@ public class CqlSessionCacheTest {
 
   @Inject OperationsConfig operationsConfig;
 
-  // TODO @Kathir, what is the difference of this class and FixedTokenTests
+  @Test
+  public void testOSSCxCQLSessionCacheDefaultTenant()
+      throws NoSuchFieldException, IllegalAccessException {
+    StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
+    when(stargateRequestInfo.getCassandraToken())
+        .thenReturn(Optional.ofNullable(operationsConfig.databaseConfig().fixedToken()));
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    Field stargateRequestInfoField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
+    stargateRequestInfoField.setAccessible(true);
+    stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    assertThat(
+            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+                .getStartupOptions()
+                .get(TENANT_ID_PROPERTY_KEY))
+        .isEqualTo("default_tenant");
+  }
+
   @Test
   public void testOSSCxCQLSessionCache() throws NoSuchFieldException, IllegalAccessException {
-
-    //    @Kathir
-    //    CqlSession cqlSession = cqlSessionCache.getSession();
-    //    assertThat(
-    //            ((DefaultDriverContext) cqlSession.getContext())
-    //                .getStartupOptions()
-    //                .get(TENANT_ID_PROPERTY_KEY))
-    //        .isEqualTo("default_tenant");
-
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken())
