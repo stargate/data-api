@@ -5,6 +5,8 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
+import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -26,12 +28,16 @@ public class QueryExecutor {
 
   private final StargateRequestInfo stargateRequestInfo;
   /** CQLSession cache. */
-  @Inject CQLSessionCache cqlSessionCache;
+  private final CQLSessionCache cqlSessionCache;
 
   @Inject
-  public QueryExecutor(OperationsConfig operationsConfig, StargateRequestInfo stargateRequestInfo) {
+  public QueryExecutor(
+      OperationsConfig operationsConfig,
+      StargateRequestInfo stargateRequestInfo,
+      CQLSessionCache cqlSessionCache) {
     this.operationsConfig = operationsConfig;
     this.stargateRequestInfo = stargateRequestInfo;
+    this.cqlSessionCache = cqlSessionCache;
   }
 
   /**
@@ -55,7 +61,12 @@ public class QueryExecutor {
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement))
+        .onFailure(ReadTimeoutException.class)
+        .retry()
+        // because it's already run twice before this
+        // check.
+        .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
   /**
@@ -75,7 +86,12 @@ public class QueryExecutor {
                         .setConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().serialConsistency())));
+                            operationsConfig.queriesConfig().serialConsistency())))
+        .onFailure(WriteTimeoutException.class)
+        .retry()
+        // because it's already run twice before this
+        // check.
+        .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
   /**
@@ -92,7 +108,12 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     boundStatement.setSerialConsistencyLevel(
-                        operationsConfig.queriesConfig().consistency().schemaChanges())));
+                        operationsConfig.queriesConfig().consistency().schemaChanges())))
+        .onFailure(WriteTimeoutException.class)
+        .retry()
+        // because it's already run twice before this
+        // check.
+        .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
   /**

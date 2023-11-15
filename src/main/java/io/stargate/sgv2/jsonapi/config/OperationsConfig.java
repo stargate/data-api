@@ -164,6 +164,12 @@ public interface OperationsConfig {
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("100")
     long sessionCacheMaxSize();
+
+    /** @return Defines the maximum retry for query timeouts <code>3</code>. */
+    @Max(5)
+    @Positive
+    @WithDefault("3")
+    int timeoutRetries();
   }
 
   /** Query consistency related configs. */
