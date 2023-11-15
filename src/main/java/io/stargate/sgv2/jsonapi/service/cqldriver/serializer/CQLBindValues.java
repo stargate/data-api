@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.bridge.serializer;
+package io.stargate.sgv2.jsonapi.service.cqldriver.serializer;
 
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.data.TupleValue;

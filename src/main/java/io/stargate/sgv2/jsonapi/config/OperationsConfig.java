@@ -19,7 +19,9 @@ package io.stargate.sgv2.jsonapi.config;
 
 import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -128,12 +130,17 @@ public interface OperationsConfig {
     /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String userName(); // TODO move to request info
+    String userName();
 
     /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String password(); // TODO move to request info
+    String password();
+
+    /** Fixed Token used for Integration Test authentication */
+    @Nullable
+    @WithDefault("not in tests")
+    String fixedToken();
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable
@@ -145,22 +152,56 @@ public interface OperationsConfig {
     @WithDefault("9042")
     int cassandraPort();
 
-    /** Secure connect bundle path (when type is <code>astra</code>) */
-    @Nullable
-    @WithDefault("secure-connect-database_name.zip")
-    String secureConnectBundlePath();
-
     /** Local datacenter that the driver must be configured with */
     @NotNull
     @WithDefault("datacenter1")
     String localDatacenter();
 
     /** Time to live for CQLSession in cache in seconds. */
-    @WithDefault("60")
+    @WithDefault("300")
     long sessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("100")
     long sessionCacheMaxSize();
+  }
+
+  /** Query consistency related configs. */
+  @NotNull
+  @Valid
+  QueriesConfig queriesConfig();
+
+  interface QueriesConfig {
+
+    /** @return Settings for the consistency level. */
+    @Valid
+    ConsistencyConfig consistency();
+
+    /** @return Serial Consistency for queries. */
+    @WithDefault("SERIAL")
+    @WithConverter(ConsistencyLevelConverter.class)
+    ConsistencyLevel serialConsistency();
+
+    /** @return Settings for the consistency level. */
+    interface ConsistencyConfig {
+
+      /** @return Consistency for queries making schema changes. */
+      @WithDefault("LOCAL_QUORUM")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel schemaChanges();
+
+      /** @return Consistency for queries writing the data. */
+      @WithDefault("LOCAL_QUORUM")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel writes();
+
+      /** @return Consistency for queries reading the data. */
+      @WithDefault("LOCAL_QUORUM")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel reads();
+    }
   }
 }

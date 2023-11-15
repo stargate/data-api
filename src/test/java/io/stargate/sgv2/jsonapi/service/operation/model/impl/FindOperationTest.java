@@ -18,9 +18,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -119,10 +118,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(doc2))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.unsorted(
               COMMAND_CONTEXT,
@@ -1539,10 +1534,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -1757,10 +1748,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(1672531600000L))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -1956,10 +1943,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -2153,10 +2136,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.NULL)));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.sorted(
               COMMAND_CONTEXT,
@@ -2553,10 +2532,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                           Values.of(doc2))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       FindOperation operation =
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
@@ -2584,250 +2559,6 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
-      assertThat(result.errors()).isNullOrEmpty();
-    }
-
-    @Test
-    public void vectorSearchWithSimilarityProjection() throws Exception {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json, SIMILARITY_COSINE(query_vector_value, ?) FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      String doc1 =
-          """
-                {
-                  "_id": "doc1",
-                  "username": "user1",
-                  "$vector": [0.25, 0.25, 0.25, 0.25]
-                }
-                """;
-      String doc2 =
-          """
-                {
-                  "_id": "doc2",
-                  "username": "user1",
-                  "$vector": [0.35, 0.35, 0.35, 0.35]
-                }
-                """;
-      String doc1Projection =
-          """
-                {
-                  "_id": "doc1",
-                  "$similarity": 0.75
-                }
-                """;
-      String doc2Projection =
-          """
-                {
-                  "_id": "doc2",
-                  "$similarity": 0.5
-                }
-                """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}),
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("SIMILARITY_COSINE(query_vector_value)")
-                          .setType(TypeSpecs.FLOAT)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of(0.75f)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of(0.50f))));
-
-      DocumentProjector projection =
-          DocumentProjector.createFromDefinition(
-              objectMapper.readTree(
-                  """
-                                        { "_id" : 1,
-                                          "$similarity": 1
-                                        }
-                                        """));
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
-      FindOperation operation =
-          FindOperation.vsearch(
-              VECTOR_COMMAND_CONTEXT,
-              implicitAnd,
-              projection,
-              null,
-              2,
-              2,
-              ReadType.DOCUMENT,
-              objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
-
-      Supplier<CommandResult> execute =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      // then result
-      CommandResult result = execute.get();
-      assertThat(result.data().getResponseDocuments()).hasSize(2);
-      assertThat(result.data().getResponseDocuments().get(0).get("$similarity").floatValue())
-          .isCloseTo(0.75f, Offset.offset(0.001f));
-      assertThat(result.data().getResponseDocuments().get(1).get("$similarity").floatValue())
-          .isCloseTo(0.5f, Offset.offset(0.001f));
-      assertThat(result.status()).isNullOrEmpty();
-      assertThat(result.errors()).isNullOrEmpty();
-    }
-
-    @Test
-    public void vectorSearchWithSimilarityProjectionDotProduct() throws Exception {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json, SIMILARITY_DOT_PRODUCT(query_vector_value, ?) FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      String doc1 =
-          """
-            {
-              "_id": "doc1",
-              "username": "user1",
-              "$vector": [0.25, 0.25, 0.25, 0.25]
-            }
-            """;
-      String doc2 =
-          """
-            {
-              "_id": "doc2",
-              "username": "user1",
-              "$vector": [0.35, 0.35, 0.35, 0.35]
-            }
-            """;
-      String doc1Projection =
-          """
-            {
-              "_id": "doc1",
-              "$similarity": 0.75
-            }
-            """;
-      String doc2Projection =
-          """
-            {
-              "_id": "doc2",
-              "$similarity": 0.5
-            }
-            """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}),
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("SIMILARITY_DOT_PRODUCT(query_vector_value)")
-                          .setType(TypeSpecs.FLOAT)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of(0.75f)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of(0.50f))));
-
-      DocumentProjector projection =
-          DocumentProjector.createFromDefinition(
-              objectMapper.readTree(
-                  """
-                            { "_id" : 1,
-                              "$similarity": 1
-                            }
-                            """));
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of();
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
-      FindOperation operation =
-          FindOperation.vsearch(
-              VECTOR_DOT_PRODUCT_COMMAND_CONTEXT,
-              implicitAnd,
-              projection,
-              null,
-              2,
-              2,
-              ReadType.DOCUMENT,
-              objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
-
-      Supplier<CommandResult> execute =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      // then result
-      CommandResult result = execute.get();
-      assertThat(result.data().getResponseDocuments()).hasSize(2);
-      assertThat(result.data().getResponseDocuments().get(0).get("$similarity").floatValue())
-          .isCloseTo(0.75f, Offset.offset(0.001f));
-      assertThat(result.data().getResponseDocuments().get(1).get("$similarity").floatValue())
-          .isCloseTo(0.5f, Offset.offset(0.001f));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }

@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.Optional;

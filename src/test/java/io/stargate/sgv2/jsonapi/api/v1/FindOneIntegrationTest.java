@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -347,9 +348,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[1].message", is("$in operator must have `ARRAY`"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$in operator must have `ARRAY`"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -545,9 +547,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[1].message", is("$exists operator supports only true"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$exists operator supports only true"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -643,9 +646,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[1].message", is("$all operator must have `ARRAY` value"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$all operator must have `ARRAY` value"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test
@@ -718,9 +722,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[1].message", is("$size operator must have integer"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$size operator must have integer"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
   }
 

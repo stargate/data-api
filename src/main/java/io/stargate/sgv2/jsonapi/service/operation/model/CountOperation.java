@@ -9,16 +9,12 @@ import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ExpressionBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Operation that returns count of documents based on the filter condition. Written with the
@@ -38,20 +34,10 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
   private SimpleStatement buildSelectQuery() {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
-    Set<BuiltCondition> conditions = new LinkedHashSet<>();
-    if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null)
-      expressions.get(0).collectK(conditions, Integer.MAX_VALUE);
-    final List<Object> collect =
-        conditions.stream()
-            .flatMap(
-                builtCondition -> {
-                  JsonTerm term = ((JsonTerm) builtCondition.value());
-                  List<Object> values = new ArrayList<>();
-                  if (term.getKey() != null) values.add(term.getKey());
-                  values.add(term.getValue());
-                  return values.stream();
-                })
-            .collect(Collectors.toList());
+    List<Object> collect = new ArrayList<>();
+    if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null) {
+      collect = ExpressionBuilder.getExpressionValuesInOrder(expressions.get(0));
+    }
     final QueryOuterClass.Query query =
         new QueryBuilder()
             .select()

@@ -19,8 +19,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -396,25 +396,13 @@ public record FindOperation(
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    if (expressions == null) { // in filter, but with empty values, find nothing
+    if (expressions == null) { // find nothing
       return List.of();
     }
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          List<Object> collect =
-              conditions.stream()
-                  .flatMap(
-                      builtCondition -> {
-                        JsonTerm term = ((JsonTerm) builtCondition.value());
-                        List<Object> values = new ArrayList<>();
-                        if (term.getKey() != null) values.add(term.getKey());
-                        values.add(term.getValue());
-                        return values.stream();
-                      })
-                  .collect(Collectors.toList());
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           if (vector() == null) {
             final QueryOuterClass.Query query =
                 new QueryBuilder()
@@ -517,7 +505,7 @@ public record FindOperation(
   private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    if (expressions == null) {
+    if (expressions == null) { // find nothing
       return List.of();
     }
     String[] columns = sortedDataColumns;
@@ -531,19 +519,7 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          Set<BuiltCondition> conditions = new LinkedHashSet<>();
-          if (expression != null) expression.collectK(conditions, Integer.MAX_VALUE);
-          final List<Object> collect =
-              conditions.stream()
-                  .flatMap(
-                      builtCondition -> {
-                        JsonTerm term = ((JsonTerm) builtCondition.value());
-                        List<Object> values = new ArrayList<>();
-                        if (term.getKey() != null) values.add(term.getKey());
-                        values.add(term.getValue());
-                        return values.stream();
-                      })
-                  .collect(Collectors.toList());
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           final QueryOuterClass.Query query =
               new QueryBuilder()
                   .select()

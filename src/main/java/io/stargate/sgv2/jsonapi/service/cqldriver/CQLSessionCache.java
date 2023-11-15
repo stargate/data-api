@@ -47,13 +47,6 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
   /** Default token property name which will be used by the integration tests */
-  public static final String FIXED_TOKEN_PROPERTY_NAME = "fixed_token";
-  /**
-   * Default token which will be used by the integration tests. If this property is set, then the
-   * token from the request will be compared with this to perform authentication.
-   */
-  public static final String FIXED_TOKEN = System.getProperty(FIXED_TOKEN_PROPERTY_NAME);
-
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
     this.operationsConfig = operationsConfig;
@@ -66,8 +59,8 @@ public class CQLSessionCache {
                 (RemovalListener<SessionCacheKey, CqlSession>)
                     (sessionCacheKey, session, cause) -> {
                       if (sessionCacheKey != null) {
-                        if (LOGGER.isDebugEnabled()) {
-                          LOGGER.debug(
+                        if (LOGGER.isTraceEnabled()) {
+                          LOGGER.trace(
                               "Removing session for tenant : {}", sessionCacheKey.tenantId);
                         }
                       }
@@ -76,7 +69,10 @@ public class CQLSessionCache {
                       }
                     })
             .build();
-    LOGGER.info("CQLSessionCache initialized");
+    LOGGER.info(
+        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+        operationsConfig.databaseConfig().sessionCacheMaxSize());
   }
 
   /**
@@ -86,12 +82,12 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Creating new session for tenant : {}", cacheKey.tenantId);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Database type: {}", databaseConfig.type());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Database type: {}", databaseConfig.type());
     }
     if (CASSANDRA.equals(databaseConfig.type())) {
       List<InetSocketAddress> seeds =
@@ -115,8 +111,6 @@ public class CQLSessionCache {
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          /*.withCloudSecureConnectBundle(
-          Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))*/
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
@@ -128,11 +122,20 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    if (FIXED_TOKEN != null
-        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(FIXED_TOKEN)) {
+    String fixedToken;
+    if (!(fixedToken = getFixedToken()).equals("not in test")
+        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
     return sessionCache.get(getSessionCacheKey(), this::getNewSession);
+  }
+
+  /**
+   * Default token which will be used by the integration tests. If this property is set, then the
+   * token from the request will be compared with this to perform authentication.
+   */
+  private String getFixedToken() {
+    return operationsConfig.databaseConfig().fixedToken();
   }
 
   /**

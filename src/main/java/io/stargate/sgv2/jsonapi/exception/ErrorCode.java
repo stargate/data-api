@@ -106,9 +106,6 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
 
-  VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED(
-      "$similarity projection is not supported for this command"),
-
   VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 

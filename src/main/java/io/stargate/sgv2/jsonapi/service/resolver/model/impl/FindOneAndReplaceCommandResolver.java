@@ -6,8 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -49,11 +47,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     FindOperation findOperation = getFindOperation(commandContext, command);
 
     final DocumentProjector documentProjector = command.buildProjector();
-    if (documentProjector.doIncludeSimilarityScore()) {
-      throw new JsonApiException(
-          ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED,
-          ErrorCode.VECTOR_SEARCH_SIMILARITY_PROJECTION_NOT_SUPPORTED.getMessage());
-    }
     // Vectorize replacement document
     commandContext.tryVectorize(
         objectMapper.getNodeFactory(), List.of(command.replacementDocument()));
