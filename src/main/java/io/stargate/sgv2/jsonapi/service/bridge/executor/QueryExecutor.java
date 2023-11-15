@@ -1,15 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.bridge.executor;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
-import io.stargate.sgv2.api.common.config.QueriesConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -24,15 +22,15 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
-  private final QueriesConfig queriesConfig;
+  private final OperationsConfig operationsConfig;
 
   private final StargateRequestInfo stargateRequestInfo;
   /** CQLSession cache. */
   @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
-  public QueryExecutor(QueriesConfig queriesConfig, StargateRequestInfo stargateRequestInfo) {
-    this.queriesConfig = queriesConfig;
+  public QueryExecutor(OperationsConfig operationsConfig, StargateRequestInfo stargateRequestInfo) {
+    this.operationsConfig = operationsConfig;
     this.stargateRequestInfo = stargateRequestInfo;
   }
 
@@ -51,7 +49,7 @@ public class QueryExecutor {
     simpleStatement =
         simpleStatement
             .setPageSize(pageSize)
-            .setConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()));
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
@@ -75,9 +73,9 @@ public class QueryExecutor {
                 .executeAsync(
                     statement
                         .setConsistencyLevel(
-                            getConsistencyLevel(queriesConfig.consistency().writes()))
+                            operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
-                            getConsistencyLevel(queriesConfig.serialConsistency()))));
+                            operationsConfig.queriesConfig().serialConsistency())));
   }
 
   /**
@@ -94,7 +92,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     boundStatement.setSerialConsistencyLevel(
-                        getConsistencyLevel(queriesConfig.consistency().schemaChanges()))));
+                        operationsConfig.queriesConfig().consistency().schemaChanges())));
   }
 
   /**
@@ -149,53 +147,5 @@ public class QueryExecutor {
 
   private static byte[] decodeBase64(String base64encoded) {
     return Base64.getDecoder().decode(base64encoded);
-  }
-
-  /**
-   * Gets the consistency level for the provided QueryOuterClass.Consistency
-   *
-   * @param consistency - QueryOuterClass.Consistency
-   * @return ConsistencyLevel
-   */
-  private ConsistencyLevel getConsistencyLevel(QueryOuterClass.Consistency consistency) {
-    switch (consistency) {
-      case ANY -> {
-        return ConsistencyLevel.ANY;
-      }
-      case ONE -> {
-        return ConsistencyLevel.ONE;
-      }
-      case TWO -> {
-        return ConsistencyLevel.TWO;
-      }
-      case THREE -> {
-        return ConsistencyLevel.THREE;
-      }
-      case QUORUM -> {
-        return ConsistencyLevel.QUORUM;
-      }
-      case ALL -> {
-        return ConsistencyLevel.ALL;
-      }
-      case LOCAL_QUORUM -> {
-        return ConsistencyLevel.LOCAL_QUORUM;
-      }
-      case EACH_QUORUM -> {
-        return ConsistencyLevel.EACH_QUORUM;
-      }
-      case SERIAL -> {
-        return ConsistencyLevel.SERIAL;
-      }
-      case LOCAL_SERIAL -> {
-        return ConsistencyLevel.LOCAL_SERIAL;
-      }
-      case LOCAL_ONE -> {
-        return ConsistencyLevel.LOCAL_ONE;
-      }
-      case UNRECOGNIZED -> {
-        throw new RuntimeException("Unrecognized consistency level : " + consistency);
-      }
-    }
-    throw new RuntimeException("Unrecognized consistency level : " + consistency);
   }
 }
