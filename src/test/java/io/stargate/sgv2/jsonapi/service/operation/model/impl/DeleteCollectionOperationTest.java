@@ -10,7 +10,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import jakarta.inject.Inject;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;

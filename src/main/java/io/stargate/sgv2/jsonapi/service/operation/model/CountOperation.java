@@ -9,7 +9,7 @@ import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CountOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ExpressionBuilder;
 import java.util.ArrayList;

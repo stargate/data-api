@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.bridge.executor;
+package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
 

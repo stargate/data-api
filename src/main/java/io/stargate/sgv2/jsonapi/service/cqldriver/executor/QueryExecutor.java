@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.bridge.executor;
+package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
