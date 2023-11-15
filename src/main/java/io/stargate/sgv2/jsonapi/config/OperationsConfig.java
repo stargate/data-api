@@ -139,7 +139,6 @@ public interface OperationsConfig {
 
     /** Fixed Token used for Integration Test authentication */
     @Nullable
-    @WithDefault("not in tests")
     String fixedToken();
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */

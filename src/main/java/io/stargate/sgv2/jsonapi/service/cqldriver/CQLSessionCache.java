@@ -123,7 +123,7 @@ public class CQLSessionCache {
    */
   public CqlSession getSession() {
     String fixedToken;
-    if (!(fixedToken = getFixedToken()).equals("not in test")
+    if ((fixedToken = getFixedToken()) != null
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
