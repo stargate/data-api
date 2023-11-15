@@ -64,8 +64,6 @@ public class QueryExecutor {
         .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement))
         .onFailure(ReadTimeoutException.class)
         .retry()
-        // because it's already run twice before this
-        // check.
         .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
@@ -89,8 +87,6 @@ public class QueryExecutor {
                             operationsConfig.queriesConfig().serialConsistency())))
         .onFailure(WriteTimeoutException.class)
         .retry()
-        // because it's already run twice before this
-        // check.
         .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
@@ -111,8 +107,6 @@ public class QueryExecutor {
                         operationsConfig.queriesConfig().consistency().schemaChanges())))
         .onFailure(WriteTimeoutException.class)
         .retry()
-        // because it's already run twice before this
-        // check.
         .atMost(operationsConfig.databaseConfig().timeoutRetries());
   }
 
