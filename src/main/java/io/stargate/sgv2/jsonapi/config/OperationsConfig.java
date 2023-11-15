@@ -161,7 +161,7 @@ public interface OperationsConfig {
     String localDatacenter();
 
     /** Time to live for CQLSession in cache in seconds. */
-    @WithDefault("60")
+    @WithDefault("300")
     long sessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
