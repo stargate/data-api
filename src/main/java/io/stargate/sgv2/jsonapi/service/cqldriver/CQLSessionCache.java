@@ -111,8 +111,6 @@ public class CQLSessionCache {
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          /*.withCloudSecureConnectBundle(
-          Path.of(Objects.requireNonNull(databaseConfig.secureConnectBundlePath())))*/
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());

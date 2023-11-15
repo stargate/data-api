@@ -128,12 +128,12 @@ public interface OperationsConfig {
     /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String userName(); // TODO move to request info
+    String userName();
 
     /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
-    String password(); // TODO move to request info
+    String password();
 
     /** Fixed Token used for Integration Test authentication */
     @Nullable
@@ -149,11 +149,6 @@ public interface OperationsConfig {
     @Nullable
     @WithDefault("9042")
     int cassandraPort();
-
-    /** Secure connect bundle path (when type is <code>astra</code>) */
-    @Nullable
-    @WithDefault("secure-connect-database_name.zip")
-    String secureConnectBundlePath();
 
     /** Local datacenter that the driver must be configured with */
     @NotNull
