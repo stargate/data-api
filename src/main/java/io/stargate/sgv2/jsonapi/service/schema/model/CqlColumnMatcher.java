@@ -1,20 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.schema.model;
 
-import io.stargate.bridge.proto.QueryOuterClass;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.type.*;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
 
 /** Interface for matching a CQL column name and type. */
-public interface CqlColumnMatcher extends Predicate<QueryOuterClass.ColumnSpec> {
+public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
 
   /** @return Column name for the matcher. */
-  String name();
+  CqlIdentifier name();
 
   /** @return If column type is matching. */
-  boolean typeMatches(QueryOuterClass.ColumnSpec columnSpec);
+  boolean typeMatches(ColumnMetadata columnSpec);
 
-  default boolean test(QueryOuterClass.ColumnSpec columnSpec) {
+  default boolean test(ColumnMetadata columnSpec) {
     return Objects.equals(columnSpec.getName(), name()) && typeMatches(columnSpec);
   }
 
@@ -24,11 +26,11 @@ public interface CqlColumnMatcher extends Predicate<QueryOuterClass.ColumnSpec> 
    * @param name column name
    * @param type basic type
    */
-  record BasicType(String name, QueryOuterClass.TypeSpec.Basic type) implements CqlColumnMatcher {
+  record BasicType(CqlIdentifier name, DataType type) implements CqlColumnMatcher {
 
     @Override
-    public boolean typeMatches(QueryOuterClass.ColumnSpec columnSpec) {
-      return Objects.equals(columnSpec.getType().getBasic(), type);
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      return Objects.equals(columnSpec.getType(), type);
     }
   }
 
@@ -39,20 +41,18 @@ public interface CqlColumnMatcher extends Predicate<QueryOuterClass.ColumnSpec> 
    * @param keyType map key type
    * @param valueType map value type
    */
-  record Map(
-      String name, QueryOuterClass.TypeSpec.Basic keyType, QueryOuterClass.TypeSpec.Basic valueType)
-      implements CqlColumnMatcher {
+  record Map(CqlIdentifier name, DataType keyType, DataType valueType) implements CqlColumnMatcher {
 
     @Override
-    public boolean typeMatches(QueryOuterClass.ColumnSpec columnSpec) {
-      QueryOuterClass.TypeSpec type = columnSpec.getType();
-      if (!type.hasMap()) {
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      DataType type = columnSpec.getType();
+      if (!(type instanceof MapType)) {
         return false;
       }
 
-      QueryOuterClass.TypeSpec.Map map = type.getMap();
-      return Objects.equals(map.getKey().getBasic(), keyType)
-          && Objects.equals(map.getValue().getBasic(), valueType);
+      MapType map = (MapType) type;
+      return Objects.equals(map.getKeyType(), keyType)
+          && Objects.equals(map.getValueType(), valueType);
     }
   }
 
@@ -62,19 +62,17 @@ public interface CqlColumnMatcher extends Predicate<QueryOuterClass.ColumnSpec> 
    * @param name column name
    * @param elements types of elements in the tuple
    */
-  record Tuple(String name, QueryOuterClass.TypeSpec.Basic... elements)
-      implements CqlColumnMatcher {
+  record Tuple(CqlIdentifier name, DataType... elements) implements CqlColumnMatcher {
 
     @Override
-    public boolean typeMatches(QueryOuterClass.ColumnSpec columnSpec) {
-      QueryOuterClass.TypeSpec type = columnSpec.getType();
-      if (!type.hasTuple()) {
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      DataType type = columnSpec.getType();
+      if (!(type instanceof TupleType)) {
         return false;
       }
 
-      QueryOuterClass.TypeSpec.Tuple map = type.getTuple();
-      java.util.List<QueryOuterClass.TypeSpec.Basic> elementTypes =
-          map.getElementsList().stream().map(QueryOuterClass.TypeSpec::getBasic).toList();
+      TupleType tuple = (TupleType) type;
+      java.util.List<DataType> elementTypes = tuple.getComponentTypes();
       return Objects.equals(elementTypes, Arrays.asList(elements));
     }
   }
@@ -85,17 +83,30 @@ public interface CqlColumnMatcher extends Predicate<QueryOuterClass.ColumnSpec> 
    * @param name column name
    * @param elementType type of elements in the set
    */
-  record Set(String name, QueryOuterClass.TypeSpec.Basic elementType) implements CqlColumnMatcher {
+  record Set(CqlIdentifier name, DataType elementType) implements CqlColumnMatcher {
 
     @Override
-    public boolean typeMatches(QueryOuterClass.ColumnSpec columnSpec) {
-      QueryOuterClass.TypeSpec type = columnSpec.getType();
-      if (!type.hasSet()) {
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      DataType type = columnSpec.getType();
+      if (!(type instanceof SetType)) {
         return false;
       }
 
-      QueryOuterClass.TypeSpec.Set set = type.getSet();
-      return Objects.equals(set.getElement().getBasic(), elementType);
+      SetType set = (SetType) type;
+      return Objects.equals(set.getElementType(), elementType);
+    }
+  }
+
+  record Vector(CqlIdentifier name, DataType subtype) implements CqlColumnMatcher {
+    @Override
+    public boolean typeMatches(ColumnMetadata columnSpec) {
+      DataType type = columnSpec.getType();
+      if (!(type instanceof VectorType)) {
+        return false;
+      }
+
+      VectorType vector = (VectorType) type;
+      return Objects.equals(vector.getElementType(), subtype);
     }
   }
 }

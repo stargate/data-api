@@ -1,17 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -56,7 +55,7 @@ public record DeleteOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
-    final QueryOuterClass.Query delete = buildDeleteQuery();
+    final String delete = buildDeleteQuery();
     AtomicInteger totalCount = new AtomicInteger(0);
     final int retryAttempt = retryLimit - 2;
     // Read the required records to be deleted
@@ -148,11 +147,9 @@ public record DeleteOperation(
     return document;
   }
 
-  private QueryOuterClass.Query buildDeleteQuery() {
+  private String buildDeleteQuery() {
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
-    return QueryOuterClass.Query.newBuilder()
-        .setCql(String.format(delete, commandContext.namespace(), commandContext.collection()))
-        .build();
+    return String.format(delete, commandContext.namespace(), commandContext.collection());
   }
 
   /**
@@ -177,8 +174,7 @@ public record DeleteOperation(
    *     LWT failure. ReadDocument is the document that was deleted.
    */
   private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query, ReadDocument doc)
-      throws JsonApiException {
+      QueryExecutor queryExecutor, String query, ReadDocument doc) throws JsonApiException {
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`
@@ -188,14 +184,14 @@ public record DeleteOperation(
               if (document == null) {
                 return Uni.createFrom().item(Tuple2.of(false, document));
               } else {
-                QueryOuterClass.Query boundQuery = bindDeleteQuery(query, document);
+                SimpleStatement deleteStatement = bindDeleteQuery(query, document);
                 return queryExecutor
-                    .executeWrite(boundQuery)
+                    .executeWrite(deleteStatement)
                     .onItem()
                     .transform(
                         result -> {
                           // LWT returns `true` for successful transaction, false on failure.
-                          if (result.getRows(0).getValues(0).getBoolean()) {
+                          if (result.wasApplied()) {
                             // In case of successful document delete
                             return Tuple2.of(true, document);
                           } else {
@@ -228,12 +224,9 @@ public record DeleteOperation(
             });
   }
 
-  private static QueryOuterClass.Query bindDeleteQuery(
-      QueryOuterClass.Query builtQuery, ReadDocument doc) {
-    QueryOuterClass.Values.Builder values =
-        QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-            .addValues(Values.of(doc.txnId()));
-    return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
+  private static SimpleStatement bindDeleteQuery(String query, ReadDocument doc) {
+    SimpleStatement deleteStatement =
+        SimpleStatement.newInstance(query, CQLBindValues.getDocumentIdValue(doc.id()), doc.txnId());
+    return deleteStatement;
   }
 }

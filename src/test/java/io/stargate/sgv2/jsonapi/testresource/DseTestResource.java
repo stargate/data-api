@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
-import io.stargate.sgv2.common.testresource.StargateTestResource;
+import io.stargate.sgv2.common.IntegrationTestUtils;
 import java.util.Map;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
@@ -39,6 +39,19 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.service.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
+    if (this.containerNetworkId.isPresent()) {
+      String host = System.getProperty("quarkus.grpc.clients.bridge.host");
+      propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
+    } else {
+      int port = Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
+      propsBuilder.put(
+          "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
+    }
+
+    String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
+    if (defaultToken != null) {
+      propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+    }
     propsBuilder.put("stargate.debug.enabled", "true");
     return propsBuilder.build();
   }

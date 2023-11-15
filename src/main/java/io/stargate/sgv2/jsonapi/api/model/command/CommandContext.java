@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.List;

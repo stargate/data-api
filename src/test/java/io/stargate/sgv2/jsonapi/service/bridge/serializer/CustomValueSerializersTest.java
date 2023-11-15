@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonPath;
 import java.math.BigDecimal;
 import java.util.Date;

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.ArrayList;
 import java.util.List;
 

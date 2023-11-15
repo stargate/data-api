@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.TupleValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,16 +11,19 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.grpc.BytesValues;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
@@ -59,7 +66,7 @@ public interface ReadOperation extends Operation {
    */
   default Uni<FindResponse> findDocument(
       QueryExecutor queryExecutor,
-      List<QueryOuterClass.Query> queries,
+      List<SimpleStatement> queries,
       String pageState,
       int pageSize,
       boolean readDocument,
@@ -75,19 +82,17 @@ public interface ReadOperation extends Operation {
         .onItem()
         .transform(
             rSet -> {
-              int remaining = rSet.getRowsCount();
-              int colCount = rSet.getColumnsCount();
+              int remaining = rSet.remaining();
               List<ReadDocument> documents = new ArrayList<>(remaining);
-              Iterator<QueryOuterClass.Row> rowIterator = rSet.getRowsList().stream().iterator();
+              Iterator<Row> rowIterator = rSet.currentPage().iterator();
               while (--remaining >= 0 && rowIterator.hasNext()) {
-                QueryOuterClass.Row row = rowIterator.next();
+                Row row = rowIterator.next();
                 ReadDocument document = null;
                 try {
-                  JsonNode root =
-                      readDocument ? objectMapper.readTree(Values.string(row.getValues(2))) : null;
+                  JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
                     if (projection.doIncludeSimilarityScore()) {
-                      float score = Values.float_(row.getValues(3)); // similarity_score
+                      float score = row.getFloat(3); // similarity_score
                       projection.applyProjection(root, score);
                     } else {
                       projection.applyProjection(root);
@@ -95,8 +100,8 @@ public interface ReadOperation extends Operation {
                   }
                   document =
                       ReadDocument.from(
-                          getDocumentId(row.getValues(0)), // key
-                          Values.uuid(row.getValues(1)), // tx_id
+                          getDocumentId(row.getTupleValue(0)), // key
+                          row.getUuid(1), // tx_id
                           root);
                 } catch (JsonProcessingException e) {
                   throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
@@ -135,6 +140,7 @@ public interface ReadOperation extends Operation {
             });
   }
 
+  byte true_byte = (byte) 1;
   /**
    * This method reads upto system fixed limit
    *
@@ -153,7 +159,7 @@ public interface ReadOperation extends Operation {
    */
   default Uni<FindResponse> findOrderDocument(
       QueryExecutor queryExecutor,
-      List<QueryOuterClass.Query> queries,
+      List<SimpleStatement> queries,
       int pageSize,
       ObjectMapper objectMapper,
       Comparator<ReadDocument> comparator,
@@ -185,15 +191,14 @@ public interface ReadOperation extends Operation {
         .onItem()
         .transformToUniAndMerge(
             resultSet -> {
-              Iterator<QueryOuterClass.Row> rowIterator =
-                  resultSet.getRowsList().stream().iterator();
-              int remaining = resultSet.getRowsCount();
+              Iterator<Row> rowIterator = resultSet.currentPage().iterator();
+              int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
               if (count == errorLimit) throw new JsonApiException(ErrorCode.DATASET_TOO_BIG);
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 ReadDocument document = null;
-                QueryOuterClass.Row row = rowIterator.next();
+                Row row = rowIterator.next();
                 List<JsonNode> sortValues = new ArrayList<>(numberOfOrderByColumn);
                 for (int sortColumnCount = 0;
                     sortColumnCount < numberOfOrderByColumn;
@@ -202,37 +207,38 @@ public interface ReadOperation extends Operation {
                       SORTED_DATA_COLUMNS + ((sortColumnCount) * SORT_INDEX_COLUMNS_SIZE);
 
                   // text value
-                  QueryOuterClass.Value value = row.getValues(columnCounter);
-                  if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.textNode(Values.string(value)));
+                  String value = row.getString(columnCounter);
+                  if (value != null) {
+                    sortValues.add(nodeFactory.textNode(value));
                     continue;
                   }
                   // number value
                   columnCounter++;
-                  value = row.getValues(columnCounter);
-                  if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.numberNode(Values.decimal(value)));
+                  BigDecimal bdValue = row.getBigDecimal(columnCounter);
+                  if (bdValue != null) {
+                    sortValues.add(nodeFactory.numberNode(bdValue));
                     continue;
                   }
                   // boolean value
                   columnCounter++;
-                  value = row.getValues(columnCounter);
-                  if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.booleanNode(Values.int_(value) == 1));
+                  ByteBuffer boolValue = row.getBytesUnsafe(columnCounter);
+                  if (boolValue != null) {
+                    sortValues.add(
+                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue.get(0)) == 0));
                     continue;
                   }
                   // null value
                   columnCounter++;
-                  value = row.getValues(columnCounter);
-                  if (!value.hasNull()) {
+                  value = row.getString(columnCounter);
+                  if (value != null) {
                     sortValues.add(nodeFactory.nullNode());
                     continue;
                   }
                   // date value
                   columnCounter++;
-                  value = row.getValues(columnCounter);
-                  if (!value.hasNull()) {
-                    sortValues.add(nodeFactory.pojoNode(new Date(Values.bigint(value))));
+                  Instant instantValue = row.getInstant(columnCounter);
+                  if (instantValue != null) {
+                    sortValues.add(nodeFactory.pojoNode(new Date(instantValue.toEpochMilli())));
                     continue;
                   }
                   // missing value
@@ -242,10 +248,10 @@ public interface ReadOperation extends Operation {
                 // values
                 document =
                     ReadDocument.from(
-                        getDocumentId(row.getValues(0)), // key
-                        Values.uuid(row.getValues(1)),
+                        getDocumentId(row.getTupleValue(0)), // key
+                        row.getUuid(1),
                         new DocJsonValue(
-                            objectMapper, row.getValues(2)), // Deserialized value of doc_json
+                            objectMapper, row.getString(2)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
               }
@@ -305,9 +311,15 @@ public interface ReadOperation extends Operation {
     return DocumentId.fromDatabase(typeId, documentIdAsText);
   }
 
-  private String extractPageStateFromResultSet(QueryOuterClass.ResultSet rSet) {
-    if (rSet.hasPagingState()) {
-      return BytesValues.toBase64(rSet.getPagingState());
+  default DocumentId getDocumentId(TupleValue value) {
+    int typeId = value.get(0, Byte.class);
+    String documentIdAsText = value.get(1, String.class);
+    return DocumentId.fromDatabase(typeId, documentIdAsText);
+  }
+
+  private String extractPageStateFromResultSet(AsyncResultSet rSet) {
+    if (rSet.hasMorePages()) {
+      return Base64.getEncoder().encodeToString(rSet.getExecutionInfo().getPagingState().array());
     }
     return null;
   }
@@ -315,32 +327,31 @@ public interface ReadOperation extends Operation {
    * Default implementation to run count query and parse the result set
    *
    * @param queryExecutor
-   * @param query
+   * @param simpleStatement
    * @return
    */
   default Uni<CountResponse> countDocuments(
-      QueryExecutor queryExecutor, QueryOuterClass.Query query) {
+      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
     return queryExecutor
-        .executeRead(query, Optional.empty(), 1)
+        .executeRead(simpleStatement, Optional.empty(), 1)
         .onItem()
         .transform(
             rSet -> {
-              QueryOuterClass.Row row = rSet.getRows(0); // For count there will be only one row
-              int count =
-                  Values.int_(row.getValues(0)); // Count value will be the first column value
+              Row row = rSet.one(); // For count there will be only one row
+              long count = row.getLong(0); // Count value will be the first column value
               return new CountResponse(count);
             });
   }
 
   record FindResponse(List<ReadDocument> docs, String pageState) {}
 
-  record CountResponse(int count) {}
+  record CountResponse(long count) {}
 
-  record DocJsonValue(ObjectMapper objectMapper, QueryOuterClass.Value docJsonValue)
+  record DocJsonValue(ObjectMapper objectMapper, String docJsonValue)
       implements Supplier<JsonNode> {
     public JsonNode get() {
       try {
-        return objectMapper.readTree(Values.string(docJsonValue));
+        return objectMapper.readTree(docJsonValue);
       } catch (JsonProcessingException e) {
         // These are data stored in the DB so the error should never happen
         throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);

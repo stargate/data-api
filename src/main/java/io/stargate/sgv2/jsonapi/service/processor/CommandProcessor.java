@@ -1,13 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -63,8 +62,6 @@ public class CommandProcessor {
               return Uni.createFrom().item(operation);
             })
 
-        // run on worker thread pool since operation hsa blocking code for vectorize
-        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
         //  execute the operation
         .flatMap(operation -> operation.execute(queryExecutor))
 

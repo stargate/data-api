@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
+import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
@@ -17,8 +19,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -312,7 +314,7 @@ public record FindOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        List<QueryOuterClass.Query> queries = buildSortedSelectQueries(additionalIdFilter);
+        List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
             queryExecutor,
             queries,
@@ -326,7 +328,7 @@ public record FindOperation(
             projection());
       }
       case DOCUMENT, KEY -> {
-        List<QueryOuterClass.Query> queries = buildSelectQueries(additionalIdFilter);
+        List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
             queryExecutor,
             queries,
@@ -391,32 +393,38 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();
     }
-    List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+    List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
           if (vector() == null) {
-            queries.add(
+            final QueryOuterClass.Query query =
                 new QueryBuilder()
                     .select()
                     .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
                     .from(commandContext.namespace(), commandContext.collection())
                     .where(expression)
                     .limit(limit)
-                    .build());
+                    .build();
+            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            queries.add(simpleStatement.setPositionalValues(collect));
           } else {
-            QueryOuterClass.Query builtQuery = getVectorSearchQueryByExpression(expression);
-            final List<QueryOuterClass.Value> valuesList =
-                builtQuery.getValuesOrBuilder().getValuesList();
-            final QueryOuterClass.Values.Builder builder = QueryOuterClass.Values.newBuilder();
-            valuesList.forEach(builder::addValues);
-            builder.addValues(CustomValueSerializers.getVectorValue(vector()));
-            queries.add(QueryOuterClass.Query.newBuilder(builtQuery).setValues(builder).build());
+            QueryOuterClass.Query query = getVectorSearchQueryByExpression(expression);
+            collect.add(CQLBindValues.getVectorValue(vector()));
+            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+            if (projection().doIncludeSimilarityScore()) {
+              List<Object> appendedCollect = new ArrayList<>();
+              appendedCollect.add(collect.get(collect.size() - 1));
+              appendedCollect.addAll(collect);
+              collect = appendedCollect;
+            }
+            queries.add(simpleStatement.setPositionalValues(collect));
           }
         });
 
@@ -437,8 +445,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityCosine(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
@@ -450,8 +457,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityEuclidean(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
@@ -463,8 +469,7 @@ public record FindOperation(
               .select()
               .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
               .similarityDotProduct(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-                  CustomValueSerializers.getVectorValue(vector()))
+                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
               .from(commandContext.namespace(), commandContext.collection())
               .where(expression)
               .limit(limit)
@@ -497,8 +502,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<QueryOuterClass.Query> buildSortedSelectQueries(
-      DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
@@ -512,17 +516,22 @@ public record FindOperation(
       sortColumns.toArray(columns);
     }
     final String[] columnsToAdd = columns;
-    List<QueryOuterClass.Query> queries = new ArrayList<>(expressions.size());
+    List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
-        expression ->
-            queries.add(
-                new QueryBuilder()
-                    .select()
-                    .column(columnsToAdd)
-                    .from(commandContext.namespace(), commandContext.collection())
-                    .where(expression)
-                    .limit(maxSortReadLimit())
-                    .build()));
+        expression -> {
+          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
+          final QueryOuterClass.Query query =
+              new QueryBuilder()
+                  .select()
+                  .column(columnsToAdd)
+                  .from(commandContext.namespace(), commandContext.collection())
+                  .where(expression)
+                  .limit(maxSortReadLimit())
+                  .build();
+          final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+          queries.add(simpleStatement.setPositionalValues(collect));
+        });
+
     return queries;
   }
 

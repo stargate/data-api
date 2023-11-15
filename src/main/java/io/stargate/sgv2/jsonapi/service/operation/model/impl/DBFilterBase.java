@@ -13,11 +13,13 @@ import io.stargate.sgv2.api.common.cql.builder.Predicate;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -112,12 +114,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           return BuiltCondition.of(
               DATA_CONTAINS,
               Predicate.CONTAINS,
-              getGrpcValue(getHashValue(new DocValueHasher(), key, value)));
+              new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case MAP_EQUALS:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.of(key)),
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
               Predicate.EQ,
-              getGrpcValue(value));
+              new JsonTerm(key, value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -187,11 +189,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /** Filters db documents based on a date field value */
-  public static class DateFilter extends MapFilterBase<Date> {
+  public static class DateFilter extends MapFilterBase<Instant> {
     private final Date dateValue;
 
     public DateFilter(String path, Operator operator, Date value) {
-      super("query_timestamp_values", path, operator, value);
+      super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
       this.dateValue = value;
     }
 
@@ -252,7 +254,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               BuiltCondition.of(
                   BuiltCondition.LHS.column("key"),
                   Predicate.EQ,
-                  getDocumentIdValue(values.get(0))));
+                  new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
 
         case IN:
           if (values.isEmpty()) return List.of();
@@ -260,7 +262,9 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               .map(
                   v ->
                       BuiltCondition.of(
-                          BuiltCondition.LHS.column("key"), Predicate.EQ, getDocumentIdValue(v)))
+                          BuiltCondition.LHS.column("key"),
+                          Predicate.EQ,
+                          new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
               .collect(Collectors.toList());
 
         default:
@@ -341,7 +345,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                       BuiltCondition.of(
                           DATA_CONTAINS,
                           Predicate.CONTAINS,
-                          getGrpcValue(getHashValue(new DocValueHasher(), getPath(), v))))
+                          new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
               .collect(Collectors.toList());
 
         default:
@@ -389,7 +393,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public BuiltCondition get() {
       switch (operator) {
         case CONTAINS:
-          return BuiltCondition.of(columnName, Predicate.CONTAINS, getGrpcValue(value));
+          return BuiltCondition.of(columnName, Predicate.CONTAINS, new JsonTerm(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,

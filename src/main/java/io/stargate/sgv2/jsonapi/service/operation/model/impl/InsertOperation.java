@@ -1,16 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.bridge.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -53,7 +52,7 @@ public record InsertOperation(
       QueryExecutor queryExecutor, boolean vectorEnabled) {
 
     // build query once
-    QueryOuterClass.Query query = buildInsertQuery(vectorEnabled);
+    final String query = buildInsertQuery(vectorEnabled);
 
     return Multi.createFrom()
         .iterable(documents)
@@ -101,8 +100,7 @@ public record InsertOperation(
   private Uni<Supplier<CommandResult>> insertUnordered(
       QueryExecutor queryExecutor, boolean vectorEnabled) {
     // build query once
-    QueryOuterClass.Query query = buildInsertQuery(vectorEnabled);
-
+    String query = buildInsertQuery(vectorEnabled);
     return Multi.createFrom()
         .iterable(documents)
 
@@ -127,20 +125,19 @@ public record InsertOperation(
   // inserts a single document
   private static Uni<DocumentId> insertDocument(
       QueryExecutor queryExecutor,
-      QueryOuterClass.Query query,
+      String query,
       WritableShreddedDocument doc,
       boolean vectorEnabled) {
     // bind and execute
-    QueryOuterClass.Query bindedQuery = bindInsertValues(query, doc, vectorEnabled);
-
+    SimpleStatement boundStatement = bindInsertValues(query, doc, vectorEnabled);
     return queryExecutor
-        .executeWrite(bindedQuery)
+        .executeWrite(boundStatement)
 
         // ensure document was written, if no applied continue with error
         .onItem()
         .transformToUni(
             result -> {
-              if (result.getRows(0).getValues(0).getBoolean()) {
+              if (result.wasApplied()) {
                 return Uni.createFrom().item(doc.id());
               } else {
                 Exception failure = new JsonApiException(ErrorCode.DOCUMENT_ALREADY_EXISTS);
@@ -150,53 +147,57 @@ public record InsertOperation(
   }
 
   // utility for building the insert query
-  private QueryOuterClass.Query buildInsertQuery(boolean vectorEnabled) {
+  private String buildInsertQuery(boolean vectorEnabled) {
     if (vectorEnabled) {
       String insertWithVector =
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
               + " VALUES"
               + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(
-              String.format(
-                  insertWithVector, commandContext.namespace(), commandContext.collection()))
-          .build();
+      return String.format(
+          insertWithVector, commandContext.namespace(), commandContext.collection());
     } else {
       String insert =
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
               + " VALUES"
               + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(insert, commandContext.namespace(), commandContext.collection()))
-          .build();
+      return String.format(insert, commandContext.namespace(), commandContext.collection());
     }
   }
 
   // utility for query binding
-  private static QueryOuterClass.Query bindInsertValues(
-      QueryOuterClass.Query builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
+  private static SimpleStatement bindInsertValues(
+      String query, WritableShreddedDocument doc, boolean vectorEnabled) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
-    QueryOuterClass.Values.Builder values =
-        QueryOuterClass.Values.newBuilder()
-            .addValues(Values.of(CustomValueSerializers.getDocumentIdValue(doc.id())))
-            .addValues(Values.of(doc.docJson()))
-            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.existKeys())))
-            .addValues(Values.of(CustomValueSerializers.getIntegerMapValues(doc.arraySize())))
-            .addValues(Values.of(CustomValueSerializers.getStringSetValue(doc.arrayContains())))
-            .addValues(Values.of(CustomValueSerializers.getBooleanMapValues(doc.queryBoolValues())))
-            .addValues(
-                Values.of(CustomValueSerializers.getDoubleMapValues(doc.queryNumberValues())))
-            .addValues(Values.of(CustomValueSerializers.getStringMapValues(doc.queryTextValues())))
-            .addValues(Values.of(CustomValueSerializers.getSetValue(doc.queryNullValues())))
-            .addValues(
-                Values.of(
-                    CustomValueSerializers.getTimestampMapValues(doc.queryTimestampValues())));
     if (vectorEnabled) {
-      values.addValues(CustomValueSerializers.getVectorValue(doc.queryVectorValues()));
+      return SimpleStatement.newInstance(
+          query,
+          CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.docJson(),
+          CQLBindValues.getSetValue(doc.existKeys()),
+          CQLBindValues.getIntegerMapValues(doc.arraySize()),
+          CQLBindValues.getStringSetValue(doc.arrayContains()),
+          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
+          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
+          CQLBindValues.getStringMapValues(doc.queryTextValues()),
+          CQLBindValues.getSetValue(doc.queryNullValues()),
+          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
+          CQLBindValues.getVectorValue(doc.queryVectorValues()));
+    } else {
+      return SimpleStatement.newInstance(
+          query,
+          CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.docJson(),
+          CQLBindValues.getSetValue(doc.existKeys()),
+          CQLBindValues.getIntegerMapValues(doc.arraySize()),
+          CQLBindValues.getStringSetValue(doc.arrayContains()),
+          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
+          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
+          CQLBindValues.getStringMapValues(doc.queryTextValues()),
+          CQLBindValues.getSetValue(doc.queryNullValues()),
+          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
     }
-    return QueryOuterClass.Query.newBuilder(builtQuery).setValues(values).build();
   }
 
   // simple exception to propagate fail fast

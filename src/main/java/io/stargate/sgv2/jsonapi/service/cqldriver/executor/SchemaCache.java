@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.bridge.executor;
+package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;

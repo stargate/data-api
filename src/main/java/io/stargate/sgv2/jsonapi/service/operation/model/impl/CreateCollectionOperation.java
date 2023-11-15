@@ -1,28 +1,31 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.bridge.proto.Schema;
-import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
-    SchemaManager schemaManager,
+    CQLSessionCache cqlSessionCache,
     String name,
     boolean vectorSearch,
     int vectorSize,
@@ -30,21 +33,11 @@ public record CreateCollectionOperation(
     String vectorize)
     implements Operation {
 
-  private static final Function<String, Uni<? extends Schema.CqlKeyspaceDescribe>>
-      MISSING_KEYSPACE_FUNCTION =
-          keyspace -> {
-            String message =
-                "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
-                    .formatted(keyspace);
-            Exception exception = new JsonApiException(ErrorCode.NAMESPACE_DOES_NOT_EXIST, message);
-            return Uni.createFrom().failure(exception);
-          };
-
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
-      SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       String name,
       int vectorSize,
       String vectorFunction,
@@ -53,7 +46,7 @@ public record CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
         objectMapper,
-        schemaManager,
+        cqlSessionCache,
         name,
         true,
         vectorSize,
@@ -65,96 +58,120 @@ public record CreateCollectionOperation(
       CommandContext commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
-      SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       String name) {
     return new CreateCollectionOperation(
-        commandContext, dbLimitsConfig, objectMapper, schemaManager, name, false, 0, null, null);
+        commandContext, dbLimitsConfig, objectMapper, cqlSessionCache, name, false, 0, null, null);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    return schemaManager
-        .getTables(commandContext.namespace(), MISSING_KEYSPACE_FUNCTION)
-        .collect()
-        .asList()
-        .map(tables -> findTableAndValidateLimits(tables, name))
-        .onItem()
-        .transformToUni(
-            table -> {
-              // table doesn't exist
-              if (table == null) {
-                return executeCollectionCreation(queryExecutor);
-              }
-              // get collection settings from the existing collection
-              CollectionSettings collectionSettings =
-                  CollectionSettings.getCollectionSettings(table, objectMapper);
-              // get collection settings from user input
-              CollectionSettings collectionSettings_cur =
-                  CollectionSettings.getCollectionSettings(
-                      name,
-                      vectorSearch,
-                      vectorSize,
-                      CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-                      vectorize,
-                      objectMapper);
-              // if table exists and user want to create a vector collection with the same name
-              if (vectorSearch) {
-                // if existing collection is a vector collection
-                if (collectionSettings.vectorEnabled()) {
-                  if (collectionSettings.equals(collectionSettings_cur)) {
-                    // if settings are equal, no error
-                    return executeCollectionCreation(queryExecutor);
-                  } else {
-                    // if settings are not equal, error out
-                    return Uni.createFrom()
-                        .failure(
-                            new JsonApiException(
-                                ErrorCode.INVALID_COLLECTION_NAME,
-                                "The provided collection name '%s' already exists with a different vector setting."
-                                    .formatted(name)));
-                  }
-                } else {
-                  // if existing collection is a non-vector collection, error out
-                  return Uni.createFrom()
-                      .failure(
-                          new JsonApiException(
-                              ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection name '%s' already exists with a non-vector setting."
-                                  .formatted(name)));
-                }
-              } else { // if table exists and user want to create a non-vector collection
-                // if existing table is vector enabled, error out
-                if (collectionSettings.vectorEnabled()) {
-                  return Uni.createFrom()
-                      .failure(
-                          new JsonApiException(
-                              ErrorCode.INVALID_COLLECTION_NAME,
-                              "The provided collection name '%s' already exists with a vector setting."
-                                  .formatted(name)));
-                } else {
-                  // if existing table is a non-vector collection, continue
-                  return executeCollectionCreation(queryExecutor);
-                }
-              }
-            });
+    KeyspaceMetadata keyspaceMetadata =
+        cqlSessionCache
+            .getSession()
+            .getMetadata()
+            .getKeyspaces()
+            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+    if (keyspaceMetadata == null) {
+      return Uni.createFrom()
+          .failure(
+              new JsonApiException(
+                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
+                      .formatted(commandContext.namespace())));
+    }
+    List<TableMetadata> allTables = new ArrayList<>(keyspaceMetadata.getTables().values());
+    TableMetadata table = findTableAndValidateLimits(allTables, name);
+
+    // table doesn't exist, continue
+    if (table == null) {
+      return executeCollectionCreation(queryExecutor);
+    }
+    // if table exist:
+    // get collection settings from the existing collection
+    CollectionSettings collectionSettings =
+        CollectionSettings.getCollectionSettings(table, objectMapper);
+    // get collection settings from user input
+    CollectionSettings collectionSettings_cur =
+        CollectionSettings.getCollectionSettings(
+            name,
+            vectorSearch,
+            vectorSize,
+            CollectionSettings.SimilarityFunction.fromString(vectorFunction),
+            vectorize,
+            objectMapper);
+    // if table exists and user want to create a vector collection with the same name
+    if (vectorSearch) {
+      // if existing collection is a vector collection
+      if (collectionSettings.vectorEnabled()) {
+        if (collectionSettings.equals(collectionSettings_cur)) {
+          // if settings are equal, no error
+          return executeCollectionCreation(queryExecutor);
+        } else {
+          // if settings are not equal, error out
+          return Uni.createFrom()
+              .failure(
+                  new JsonApiException(
+                      ErrorCode.INVALID_COLLECTION_NAME,
+                      "The provided collection name '%s' already exists with a different vector setting."
+                          .formatted(name)));
+        }
+      } else {
+        // if existing collection is a non-vector collection, error out
+        return Uni.createFrom()
+            .failure(
+                new JsonApiException(
+                    ErrorCode.INVALID_COLLECTION_NAME,
+                    "The provided collection name '%s' already exists with a non-vector setting."
+                        .formatted(name)));
+      }
+    } else { // if table exists and user want to create a non-vector collection
+      // if existing table is vector enabled, error out
+      if (collectionSettings.vectorEnabled()) {
+        return Uni.createFrom()
+            .failure(
+                new JsonApiException(
+                    ErrorCode.INVALID_COLLECTION_NAME,
+                    "The provided collection name '%s' already exists with a vector setting."
+                        .formatted(name)));
+      } else {
+        // if existing table is a non-vector collection, continue
+        return executeCollectionCreation(queryExecutor);
+      }
+    }
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
-    final Uni<QueryOuterClass.ResultSet> execute =
+    final Uni<AsyncResultSet> execute =
         queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
             .transformToUni(
                 res -> {
-                  final List<QueryOuterClass.Query> indexStatements =
-                      getIndexStatements(commandContext.namespace(), name);
-                  List<Uni<QueryOuterClass.ResultSet>> indexes = new ArrayList<>(10);
-                  indexStatements.stream()
-                      .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                  return Uni.combine().all().unis(indexes).combinedWith(results -> true);
+                  if (res.wasApplied()) {
+                    final List<SimpleStatement> indexStatements =
+                        getIndexStatements(commandContext.namespace(), name);
+                    List<Uni<AsyncResultSet>> indexes = new ArrayList<>(10);
+                    indexStatements.stream()
+                        .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
+                    return Uni.combine()
+                        .all()
+                        .unis(indexes)
+                        .combinedWith(
+                            results -> {
+                              final Optional<?> first =
+                                  results.stream()
+                                      .filter(
+                                          indexRes -> !(((AsyncResultSet) indexRes).wasApplied()))
+                                      .findFirst();
+                              return first.isPresent() ? false : true;
+                            });
+                  } else {
+                    return Uni.createFrom().item(false);
+                  }
                 });
-    return indexResult.onItem().transform(res -> new SchemaChangeResult(res));
+    return indexResult.onItem().transform(SchemaChangeResult::new);
   }
 
   /**
@@ -163,9 +180,9 @@ public record CreateCollectionOperation(
    *
    * @return Existing table with given name, if any; {@code null} if not
    */
-  Schema.CqlTable findTableAndValidateLimits(List<Schema.CqlTable> tables, String name) {
-    for (Schema.CqlTable table : tables) {
-      if (table.getName().equals(name)) {
+  TableMetadata findTableAndValidateLimits(List<TableMetadata> tables, String name) {
+    for (TableMetadata table : tables) {
+      if (table.getName().equals(CqlIdentifier.fromCql("\"" + name + "\""))) {
         return table;
       }
     }
@@ -180,7 +197,7 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  protected QueryOuterClass.Query getCreateTable(String keyspace, String table) {
+  protected SimpleStatement getCreateTable(String keyspace, String table) {
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -202,9 +219,7 @@ public record CreateCollectionOperation(
       if (vectorize != null) {
         createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
       }
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(createTableWithVector, keyspace, table))
-          .build();
+      return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
     } else {
       String createTable =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -221,70 +236,47 @@ public record CreateCollectionOperation(
               + "    query_null_values   set<text>, "
               + "    PRIMARY KEY (key))";
 
-      return QueryOuterClass.Query.newBuilder()
-          .setCql(String.format(createTable, keyspace, table))
-          .build();
+      return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
     }
   }
 
-  protected List<QueryOuterClass.Query> getIndexStatements(String keyspace, String table) {
-    List<QueryOuterClass.Query> statements = new ArrayList<>(10);
+  protected List<SimpleStatement> getIndexStatements(String keyspace, String table) {
+    List<SimpleStatement> statements = new ArrayList<>(10);
 
     String existKeys =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(existKeys, table, keyspace, table))
-            .build());
+
+    statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
 
     String arraySize =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(arraySize, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
 
     String arrayContains =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
     statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(arrayContains, table, keyspace, table))
-            .build());
+        SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
 
     String boolQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(boolQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
 
     String dblQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(dblQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
 
     String textQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(textQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
 
     String timestampQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
     statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(timestampQuery, table, keyspace, table))
-            .build());
+        SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
 
     String nullQuery =
         "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
-    statements.add(
-        QueryOuterClass.Query.newBuilder()
-            .setCql(String.format(nullQuery, table, keyspace, table))
-            .build());
+    statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
 
     if (vectorSearch) {
       String vectorSearch =
@@ -292,9 +284,7 @@ public record CreateCollectionOperation(
               + vectorFunction()
               + "'}";
       statements.add(
-          QueryOuterClass.Query.newBuilder()
-              .setCql(String.format(vectorSearch, table, keyspace, table))
-              .build());
+          SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
     }
     return statements;
   }

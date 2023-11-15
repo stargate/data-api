@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.bridge.serializer;
+package io.stargate.sgv2.jsonapi.service.cqldriver.serializer;
 
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;

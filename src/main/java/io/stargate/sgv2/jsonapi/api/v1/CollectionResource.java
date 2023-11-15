@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceCache;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;

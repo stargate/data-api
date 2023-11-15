@@ -3,13 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
-import io.stargate.sgv2.api.common.schema.SchemaManager;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -20,7 +20,7 @@ import jakarta.inject.Inject;
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
   private final ObjectMapper objectMapper;
-  private final SchemaManager schemaManager;
+  private final CQLSessionCache cqlSessionCache;
   private final DataStoreConfig dataStoreConfig;
 
   private final DocumentLimitsConfig documentLimitsConfig;
@@ -29,12 +29,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
-      SchemaManager schemaManager,
+      CQLSessionCache cqlSessionCache,
       DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig) {
     this.objectMapper = objectMapper;
-    this.schemaManager = schemaManager;
+    this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
@@ -81,14 +81,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           ctx,
           dbLimitsConfig,
           objectMapper,
-          schemaManager,
+          cqlSessionCache,
           command.name(),
           vectorSize,
           command.options().vector().metric(),
           vectorize);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
-          ctx, dbLimitsConfig, objectMapper, schemaManager, command.name());
+          ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name());
     }
   }
 }

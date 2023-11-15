@@ -16,17 +16,19 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.service.bridge.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);

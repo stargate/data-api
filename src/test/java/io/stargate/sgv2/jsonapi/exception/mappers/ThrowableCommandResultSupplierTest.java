@@ -103,7 +103,7 @@ class ThrowableCommandResultSupplierTest {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message()).isEqualTo("UNAUTHENTICATED");
+                assertThat(error.message()).isEqualTo("UNAUTHENTICATED: Invalid token");
                 assertThat(error.status()).isEqualTo(Response.Status.UNAUTHORIZED);
                 assertThat(error.fields())
                     .hasSize(1)

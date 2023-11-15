@@ -1433,7 +1433,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Expected vector of size 5, but received 3"));
+          .body("errors[0].message", endsWith("Mismatched vector dimension"));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1461,7 +1461,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Expected vector of size 5, but received 7"));
+          .body("errors[0].message", endsWith("Mismatched vector dimension"));
     }
 
     @Test
@@ -1491,7 +1491,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Expected vector of size 5, but received 3"));
+          .body("errors[0].message", endsWith("Mismatched vector dimension"));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1517,7 +1517,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Expected vector of size 5, but received 7"));
+          .body("errors[0].message", endsWith("Mismatched vector dimension"));
     }
   }
 

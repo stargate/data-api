@@ -63,17 +63,15 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    Map<String, Object> fields = null;
     SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     // enable debug mode for unit tests, since it can not be injected
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();
-    if (debugEnabled) {
-      fields =
-          Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    } else {
-      fields = Map.of("errorCode", errorCode.name());
-    }
+    final Map<String, Object> fields =
+        debugEnabled
+            ? Map.of(
+                "errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName())
+            : Map.of("errorCode", errorCode.name());
     return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
   }
 

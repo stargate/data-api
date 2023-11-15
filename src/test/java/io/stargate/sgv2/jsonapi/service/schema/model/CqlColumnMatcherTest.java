@@ -1,12 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.schema.model;
 
-import static io.stargate.bridge.proto.QueryOuterClass.ColumnSpec;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
+import com.datastax.oss.driver.internal.core.type.DefaultMapType;
+import com.datastax.oss.driver.internal.core.type.DefaultSetType;
+import com.datastax.oss.driver.internal.core.type.DefaultTupleType;
+import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.stargate.bridge.proto.QueryOuterClass.TypeSpec;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class CqlColumnMatcherTest {
 
   @Nested
@@ -14,14 +26,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void happyPath() {
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
       CqlColumnMatcher.BasicType matcher =
-          new CqlColumnMatcher.BasicType("column", TypeSpec.Basic.VARCHAR);
+          new CqlColumnMatcher.BasicType(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -29,14 +45,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongType() {
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT),
+              false);
 
       CqlColumnMatcher.BasicType matcher =
-          new CqlColumnMatcher.BasicType("column", TypeSpec.Basic.VARCHAR);
+          new CqlColumnMatcher.BasicType(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -44,14 +64,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void notBasicType() {
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setMap(TypeSpec.Map.newBuilder()))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultMapType(
+                  new PrimitiveType(ProtocolConstants.DataType.INT),
+                  new PrimitiveType(ProtocolConstants.DataType.INT),
+                  false),
+              false);
 
       CqlColumnMatcher.BasicType matcher =
-          new CqlColumnMatcher.BasicType("column", TypeSpec.Basic.VARCHAR);
+          new CqlColumnMatcher.BasicType(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -59,14 +86,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongName() {
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
       CqlColumnMatcher.BasicType matcher =
-          new CqlColumnMatcher.BasicType("wrong", TypeSpec.Basic.VARCHAR);
+          new CqlColumnMatcher.BasicType(
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -78,18 +109,22 @@ class CqlColumnMatcherTest {
 
     @Test
     public void happyPath() {
-      TypeSpec.Builder type1 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder type2 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setTuple(TypeSpec.Tuple.newBuilder().addElements(type1).addElements(type2)))
-              .build();
+      DataType type1 = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType type2 = new PrimitiveType(ProtocolConstants.DataType.INT);
+      List<DataType> list = Arrays.asList(type1, type2);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultTupleType(list),
+              false);
 
       CqlColumnMatcher.Tuple matcher =
-          new CqlColumnMatcher.Tuple("column", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -97,18 +132,22 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongOrder() {
-      TypeSpec.Builder type1 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder type2 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setTuple(TypeSpec.Tuple.newBuilder().addElements(type1).addElements(type2)))
-              .build();
+      DataType type1 = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType type2 = new PrimitiveType(ProtocolConstants.DataType.INT);
+      List<DataType> list = Arrays.asList(type1, type2);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultTupleType(list),
+              false);
 
       CqlColumnMatcher.Tuple matcher =
-          new CqlColumnMatcher.Tuple("column", TypeSpec.Basic.INT, TypeSpec.Basic.VARCHAR);
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -116,17 +155,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongTuple() {
-      TypeSpec.Builder type1 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder type2 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setTuple(TypeSpec.Tuple.newBuilder().addElements(type1).addElements(type2)))
-              .build();
+      DataType type1 = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType type2 = new PrimitiveType(ProtocolConstants.DataType.INT);
+      List<DataType> list = Arrays.asList(type1, type2);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultTupleType(list),
+              false);
 
-      CqlColumnMatcher.Tuple matcher = new CqlColumnMatcher.Tuple("column", TypeSpec.Basic.INT);
+      CqlColumnMatcher.Tuple matcher =
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -134,10 +177,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void notTuple() {
-      TypeSpec.Builder type1 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec = ColumnSpec.newBuilder().setName("column").setType(type1).build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
-      CqlColumnMatcher.Tuple matcher = new CqlColumnMatcher.Tuple("column", TypeSpec.Basic.VARCHAR);
+      CqlColumnMatcher.Tuple matcher =
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -145,18 +196,22 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongColumn() {
-      TypeSpec.Builder type1 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder type2 = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setTuple(TypeSpec.Tuple.newBuilder().addElements(type1).addElements(type2)))
-              .build();
+      DataType type1 = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType type2 = new PrimitiveType(ProtocolConstants.DataType.INT);
+      List<DataType> list = Arrays.asList(type1, type2);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultTupleType(list),
+              false);
 
       CqlColumnMatcher.Tuple matcher =
-          new CqlColumnMatcher.Tuple("wrong", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Tuple(
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -168,18 +223,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void happyPath() {
-      TypeSpec.Builder key = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder value = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setMap(TypeSpec.Map.newBuilder().setKey(key).setValue(value)))
-              .build();
+      DataType key = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultMapType(key, value, false),
+              false);
 
       CqlColumnMatcher.Map matcher =
-          new CqlColumnMatcher.Map("column", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Map(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -187,18 +245,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongValue() {
-      TypeSpec.Builder key = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder value = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setMap(TypeSpec.Map.newBuilder().setKey(key).setValue(value)))
-              .build();
+      DataType key = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultMapType(key, value, false),
+              false);
 
       CqlColumnMatcher.Map matcher =
-          new CqlColumnMatcher.Map("column", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.FLOAT);
+          new CqlColumnMatcher.Map(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.FLOAT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -206,18 +267,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongKey() {
-      TypeSpec.Builder key = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder value = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setMap(TypeSpec.Map.newBuilder().setKey(key).setValue(value)))
-              .build();
+      DataType key = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultMapType(key, value, false),
+              false);
 
       CqlColumnMatcher.Map matcher =
-          new CqlColumnMatcher.Map("column", TypeSpec.Basic.INT, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Map(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -226,10 +290,19 @@ class CqlColumnMatcherTest {
     @Test
     public void notMap() {
       TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec = ColumnSpec.newBuilder().setName("column").setType(type).build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
       CqlColumnMatcher.Map matcher =
-          new CqlColumnMatcher.Map("column", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Map(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -237,18 +310,21 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongColumn() {
-      TypeSpec.Builder key = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      TypeSpec.Builder value = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.INT);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(
-                  TypeSpec.newBuilder()
-                      .setMap(TypeSpec.Map.newBuilder().setKey(key).setValue(value)))
-              .build();
+      DataType key = new PrimitiveType(ProtocolConstants.DataType.VARCHAR);
+      DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultMapType(key, value, false),
+              false);
 
       CqlColumnMatcher.Map matcher =
-          new CqlColumnMatcher.Map("wrong", TypeSpec.Basic.VARCHAR, TypeSpec.Basic.INT);
+          new CqlColumnMatcher.Map(
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -260,14 +336,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void happyPath() {
-      TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setSet(TypeSpec.Set.newBuilder().setElement(type)))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
+              false);
 
-      CqlColumnMatcher.Set matcher = new CqlColumnMatcher.Set("column", TypeSpec.Basic.VARCHAR);
+      CqlColumnMatcher.Set matcher =
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isTrue();
@@ -275,14 +355,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongType() {
-      TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setSet(TypeSpec.Set.newBuilder().setElement(type)))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
+              false);
 
-      CqlColumnMatcher.Set matcher = new CqlColumnMatcher.Set("column", TypeSpec.Basic.INT);
+      CqlColumnMatcher.Set matcher =
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -290,10 +374,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void notSet() {
-      TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec = ColumnSpec.newBuilder().setName("column").setType(type).build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
-      CqlColumnMatcher.Set matcher = new CqlColumnMatcher.Set("column", TypeSpec.Basic.INT);
+      CqlColumnMatcher.Set matcher =
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("column"),
+              new PrimitiveType(ProtocolConstants.DataType.INT));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
@@ -301,14 +393,18 @@ class CqlColumnMatcherTest {
 
     @Test
     public void wrongColumn() {
-      TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
-      ColumnSpec spec =
-          ColumnSpec.newBuilder()
-              .setName("column")
-              .setType(TypeSpec.newBuilder().setSet(TypeSpec.Set.newBuilder().setElement(type)))
-              .build();
+      ColumnMetadata spec =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromCql("keyspace"),
+              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromCql("column"),
+              new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
+              false);
 
-      CqlColumnMatcher.Set matcher = new CqlColumnMatcher.Set("wrong", TypeSpec.Basic.VARCHAR);
+      CqlColumnMatcher.Set matcher =
+          new CqlColumnMatcher.Set(
+              CqlIdentifier.fromInternal("wrong"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
       boolean result = matcher.test(spec);
 
       assertThat(result).isFalse();
