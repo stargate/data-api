@@ -51,7 +51,7 @@ public class QueryExecutor {
     simpleStatement =
         simpleStatement
             .setPageSize(pageSize)
-            .setSerialConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()));
+            .setConsistencyLevel(getConsistencyLevel(queriesConfig.consistency().reads()));
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
