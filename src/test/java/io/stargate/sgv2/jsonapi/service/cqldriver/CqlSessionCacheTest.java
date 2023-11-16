@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@TestProfile(FixedTokenOverrideProfile.class)
 public class CqlSessionCacheTest {
 
   private static final String TENANT_ID_FOR_TEST = "test_tenant";
@@ -31,7 +33,7 @@ public class CqlSessionCacheTest {
       throws NoSuchFieldException, IllegalAccessException {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getCassandraToken())
-        .thenReturn(Optional.ofNullable(operationsConfig.databaseConfig().fixedToken()));
+        .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
@@ -49,7 +51,7 @@ public class CqlSessionCacheTest {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken())
-        .thenReturn(Optional.ofNullable(operationsConfig.databaseConfig().fixedToken()));
+        .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");

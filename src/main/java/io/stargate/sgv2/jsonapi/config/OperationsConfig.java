@@ -28,6 +28,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Configuration for the operation execution. */
@@ -139,8 +140,7 @@ public interface OperationsConfig {
 
     /** Fixed Token used for Integration Test authentication */
     @Nullable
-    @WithDefault("not in tests")
-    String fixedToken();
+    Optional<String> fixedToken();
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable

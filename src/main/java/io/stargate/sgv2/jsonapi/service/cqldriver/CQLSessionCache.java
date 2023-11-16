@@ -123,7 +123,7 @@ public class CQLSessionCache {
    */
   public CqlSession getSession() {
     String fixedToken;
-    if (!(fixedToken = getFixedToken()).equals("not in test")
+    if ((fixedToken = getFixedToken()) != null
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
@@ -135,7 +135,9 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return operationsConfig.databaseConfig().fixedToken();
+    return operationsConfig.databaseConfig().fixedToken().isPresent()
+        ? operationsConfig.databaseConfig().fixedToken().get()
+        : null;
   }
 
   /**
