@@ -210,7 +210,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     public void noFilter() {
-      insert(20);
+      insert(25);
       String json =
           """
           {
@@ -218,7 +218,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """;
-
+      // when there is no filter, it will delete all data in collection, like truncate operation.
+      // it will not be restricted by maxDeleteDocuments (20)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -227,7 +228,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(20))
+          .body("status.deletedCount", is(25))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -254,16 +255,65 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
-    public void noFilterMoreDataFlag() {
+    public void emptyFilter() {
       insert(25);
       String json =
           """
           {
             "deleteMany": {
+              "filter": {}
+            }
+          }
+          """;
+      // when there is an empty filter, it will delete all data in collection, like truncate operation.
+      // it will not be restricted by maxDeleteDocuments (20)
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("status.deletedCount", is(25))
+              .body("status.moreData", is(nullValue()))
+              .body("data", is(nullValue()))
+              .body("errors", is(nullValue()));
+
+      // ensure find does not find the documents
+      json = """
+          {
+            "find": {
             }
           }
           """;
 
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("data.documents", jsonEquals("[]"))
+              .body("status", is(nullValue()))
+              .body("errors", is(nullValue()));
+    }
+
+
+    @Test
+    public void withFilterMoreDataFlag() {
+      insert(25);
+      String json =
+          """
+          {
+            "deleteMany": {
+              "filter" : {"status": "active"}
+            }
+          }
+          """;
+      // moreData will only exist when filter exist. If filter doesn't exist, it will delete all data
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
