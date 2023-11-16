@@ -5,10 +5,6 @@ import java.util.Map;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 public class FixedTokenOverrideProfile implements QuarkusTestProfile {
-  @Override
-  public boolean disableGlobalTestResources() {
-    return true;
-  }
 
   @Override
   public Map<String, String> getConfigOverrides() {
