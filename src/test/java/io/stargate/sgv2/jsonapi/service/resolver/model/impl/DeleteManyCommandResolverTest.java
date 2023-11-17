@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.TruncateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -94,24 +95,31 @@ public class DeleteManyCommandResolverTest {
 
       assertThat(operation)
           .isInstanceOfSatisfying(
-              DeleteOperation.class,
+              TruncateCollectionOperation.class,
               op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.deleteLimit()).isEqualTo(operationsConfig.maxDocumentDeleteCount());
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.findOperation())
-                    .isInstanceOfSatisfying(
-                        FindOperation.class,
-                        find -> {
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                          assertThat(find.limit())
-                              .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
-                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
-                        });
+                assertThat(op.context()).isEqualTo(commandContext);
+              });
+    }
+
+    @Test
+    public void emptyFilterCondition() throws Exception {
+      String json =
+          """
+                {
+                  "deleteMany": {
+                    "filter" : {}
+                  }
+                }
+                """;
+
+      DeleteManyCommand deleteManyCommand = objectMapper.readValue(json, DeleteManyCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, deleteManyCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              TruncateCollectionOperation.class,
+              op -> {
+                assertThat(op.context()).isEqualTo(commandContext);
               });
     }
 
