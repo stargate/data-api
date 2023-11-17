@@ -52,10 +52,6 @@ public record DeleteOperation(
     return new DeleteOperation(commandContext, findOperation, deleteLimit, retryLimit, false, null);
   }
 
-  public static DeleteOperation truncate(CommandContext commandContext, int retryLimit) {
-    return new DeleteOperation(commandContext, null, 0, retryLimit, false, null);
-  }
-
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
@@ -156,11 +152,6 @@ public record DeleteOperation(
     return String.format(delete, commandContext.namespace(), commandContext.collection());
   }
 
-  private String buildTruncateQuery() {
-    String truncate = "TRUNCATE TABLE \"%s\".\"%s\"";
-    return String.format(truncate, commandContext.namespace(), commandContext.collection());
-  }
-
   /**
    * When delete is run with LWT, applied field is always the first field and in case the
    * transaction id mismatch the latest transaction id is returned as second field Eg:
@@ -213,25 +204,6 @@ public record DeleteOperation(
             });
   }
 
-  private Uni<Tuple2<Boolean, ReadDocument>> truncateDocument(
-      QueryExecutor queryExecutor, String query) throws JsonApiException {
-    SimpleStatement truncateStatement = bindTruncateQuery(query);
-    return queryExecutor
-        .executeWrite(truncateStatement)
-        .onItem()
-        .transform(
-            result -> {
-              // LWT returns `true` for successful transaction, false on failure.
-              if (result.wasApplied()) {
-                // In case of successful document delete
-                return Tuple2.of(true, null);
-              } else {
-                // In case of successful document delete
-                throw new LWTException(ErrorCode.CONCURRENCY_FAILURE);
-              }
-            });
-  }
-
   private Uni<ReadDocument> readDocumentAgain(
       QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     // Read again if retry flag is `true`
@@ -258,8 +230,4 @@ public record DeleteOperation(
     return deleteStatement;
   }
 
-  private static SimpleStatement bindTruncateQuery(String query) {
-    SimpleStatement truncateStatement = SimpleStatement.newInstance(query);
-    return truncateStatement;
-  }
 }
