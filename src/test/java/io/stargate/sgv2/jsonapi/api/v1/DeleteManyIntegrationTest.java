@@ -208,6 +208,10 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
     }
 
+    /**
+     * when there is no filter, it will delete all data in collection, like truncate operation. it
+     * will not be restricted by maxDeleteDocuments (20)
+     */
     @Test
     public void noFilter() {
       insert(25);
@@ -218,8 +222,6 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """;
-      // when there is no filter, it will delete all data in collection, like truncate operation.
-      // it will not be restricted by maxDeleteDocuments (20)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -228,7 +230,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(25))
+          .body("status.ok", is(1))
+          .body("status.deletedCount", is(nullValue()))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -254,6 +257,10 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
     }
 
+    /**
+     * when there is an empty filter, it will delete all data in collection, like truncate
+     * operation. it will not be restricted by maxDeleteDocuments (20)
+     */
     @Test
     public void emptyFilter() {
       insert(25);
@@ -265,9 +272,6 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """;
-      // when there is an empty filter, it will delete all data in collection, like truncate
-      // operation.
-      // it will not be restricted by maxDeleteDocuments (20)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -276,7 +280,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(25))
+          .body("status.ok", is(1))
+          .body("status.deletedCount", is(nullValue()))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -361,7 +366,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
       String document =
           """
           {
-            "_id": "concurrent-%s"
+            "_id": "concurrent-%s",
+            "status": "active"
           }
           """;
       for (int i = 0; i < totalDocuments; i++) {
@@ -376,6 +382,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           """
           {
             "deleteMany": {
+              "filter" : {"status": "active"}
             }
           }
           """;
