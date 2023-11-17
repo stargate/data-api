@@ -1,5 +1,3 @@
-# Changelog
-
 ## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...HEAD)
