@@ -229,5 +229,4 @@ public record DeleteOperation(
         SimpleStatement.newInstance(query, CQLBindValues.getDocumentIdValue(doc.id()), doc.txnId());
     return deleteStatement;
   }
-
 }
