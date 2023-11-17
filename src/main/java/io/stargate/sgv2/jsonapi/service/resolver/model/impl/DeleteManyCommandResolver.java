@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.TruncateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -35,6 +36,10 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
+    // if there is no filter or is an empty filter, delete all the rows or truncate the table.
+    if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
+      return new TruncateCollectionOperation(commandContext);
+    }
     final FindOperation findOperation = getFindOperation(commandContext, command);
     return DeleteOperation.delete(
         commandContext,
