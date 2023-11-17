@@ -1,12 +1,42 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+## [v1.0.0-BETA-4](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-4) (2023-11-17)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...v1.0.0-BETA-4)
 
 **Closed issues:**
 
+- Empty projection \(`{ }`\) for `find\(\)` includes nothing; should instead include everything \(similar to missing \(`null`\) projection\) [\#634](https://github.com/stargate/jsonapi/issues/634)
+- $similarity accepted within projection [\#633](https://github.com/stargate/jsonapi/issues/633)
+- Add `DocumentLimitsConfig` limit for total Properties per Document \(1000?\) [\#630](https://github.com/stargate/jsonapi/issues/630)
+- CQL branch, pagination issue [\#627](https://github.com/stargate/jsonapi/issues/627)
+- Add Integration Tests for max String property length; max Document size to ensure ability to store max valid values, docs [\#622](https://github.com/stargate/jsonapi/issues/622)
+- Increase Java Driver local pooling to 8 \(from default of just 1\) [\#617](https://github.com/stargate/jsonapi/issues/617)
+- Pagination name discrepancy "nextPageState" vs "pagingState" [\#596](https://github.com/stargate/jsonapi/issues/596)
 - Replace `X-Cassandra-Token` with `Token` [\#569](https://github.com/stargate/jsonapi/issues/569)
+- Remove namespace from the API [\#562](https://github.com/stargate/jsonapi/issues/562)
+- Map `StreamConstraintsException` to `JsonApiException` \(wrt max-number-len\) [\#448](https://github.com/stargate/jsonapi/issues/448)
+- SPEC - document the createDatabase and createCollection commands [\#137](https://github.com/stargate/jsonapi/issues/137)
+
+**Merged pull requests:**
+
+- fix changelog [\#656](https://github.com/stargate/jsonapi/pull/656) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- fixed token [\#647](https://github.com/stargate/jsonapi/pull/647) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#634: add tests to verify that empty JSON Object as projection includes whole doc [\#642](https://github.com/stargate/jsonapi/pull/642) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update to latest dse-next backend [\#641](https://github.com/stargate/jsonapi/pull/641) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add to \#630: update `jsonapi-spec.md` too [\#640](https://github.com/stargate/jsonapi/pull/640) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#630: limit max properties per doc to 1000 [\#636](https://github.com/stargate/jsonapi/pull/636) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#633: prevent use of "$similarity" in projection [\#635](https://github.com/stargate/jsonapi/pull/635) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- add pagination IT in main branch [\#628](https://github.com/stargate/jsonapi/pull/628) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- $in with empty array should find nothing [\#626](https://github.com/stargate/jsonapi/pull/626) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#622: add Integration tests verifying both biggest allowed, and bigger-than-allowed JSON docs, values [\#624](https://github.com/stargate/jsonapi/pull/624) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Enable node level metrics [\#621](https://github.com/stargate/jsonapi/pull/621) ([amorton](https://github.com/amorton))
+- Fix \#446: expose StreamConstaintsException as ApiException [\#619](https://github.com/stargate/jsonapi/pull/619) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Stargate v2.1.0-BETA-3 [\#618](https://github.com/stargate/jsonapi/pull/618) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#596: renaming "pagingState"/"nextPagingState" as "pageState"/"nextPageState" [\#614](https://github.com/stargate/jsonapi/pull/614) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#613](https://github.com/stargate/jsonapi/pull/613) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Native cql changes [\#606](https://github.com/stargate/jsonapi/pull/606) ([maheshrajamani](https://github.com/maheshrajamani))
+- add more in createCollection [\#605](https://github.com/stargate/jsonapi/pull/605) ([johnsmartco](https://github.com/johnsmartco))
 
 ## [v1.0.0-BETA-3](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-3) (2023-11-02)
 
