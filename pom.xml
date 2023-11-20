@@ -10,8 +10,9 @@
   <version>1.0.0-BETA-5-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
-    <!-- 17-May-2023, tatu: [json-api#172] Need Jackson 2.15.x -->
-    <jackson.version>2.15.3</jackson.version>
+    <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
+    <!-- 16-Nov-2023, tatu: but may use 2.16 now that it's available -->
+    <jackson.version>2.16.0</jackson.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
