@@ -26,21 +26,23 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   @BeforeAll
   public final void createCollection() {
-    String json =
-        """
-        {
-          "createCollection": {
-            "name": "%s"
-          }
-        }
-        """
-            .formatted(collectionName);
+    createCollection(this.collectionName);
+  }
 
+  protected void createCollection(String collectionToCreate) {
     given()
         .port(getTestPort())
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
         .contentType(ContentType.JSON)
-        .body(json)
+        .body(
+            """
+              {
+                "createCollection": {
+                  "name": "%s"
+                }
+              }
+              """
+                .formatted(collectionToCreate))
         .when()
         .post(NamespaceResource.BASE_PATH, namespaceName)
         .then()
