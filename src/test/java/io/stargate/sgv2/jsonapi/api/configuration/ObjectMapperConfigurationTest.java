@@ -233,11 +233,10 @@ class ObjectMapperConfigurationTest {
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
           .hasMessageContaining(
-              "Number length ("
+              "Number value length ("
                   + tooLongNumStr.length()
-                  + ") exceeds the maximum length ("
-                  + documentLimitsConfig.maxNumberLength()
-                  + ")");
+                  + ") exceeds the maximum allowed ("
+                  + documentLimitsConfig.maxNumberLength());
     }
   }
 
