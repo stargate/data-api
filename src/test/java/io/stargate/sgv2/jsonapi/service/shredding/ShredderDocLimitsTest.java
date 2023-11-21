@@ -287,7 +287,7 @@ public class ShredderDocLimitsTest {
       assertThat(e)
           .isNotNull()
           .isInstanceOf(StreamConstraintsException.class)
-          .hasMessageStartingWith("Number length (60) exceeds the maximum length (50)");
+          .hasMessageStartingWith("Number value length (60) exceeds the maximum allowed (50");
     }
   }
 
