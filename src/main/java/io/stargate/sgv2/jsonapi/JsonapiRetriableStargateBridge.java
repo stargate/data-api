@@ -20,7 +20,6 @@ public class JsonapiRetriableStargateBridge {
   @Retriable
   io.stargate.sgv2.api.common.grpc.RetriableStargateBridge retriableStargateBridge(
       Instance<GrpcRetryPredicate> predicate, GrpcConfig grpcConfig) {
-    return new io.stargate.sgv2.api.common.grpc.RetriableStargateBridge(
-        null, predicate.get(), grpcConfig);
+    return null;
   }
 }
