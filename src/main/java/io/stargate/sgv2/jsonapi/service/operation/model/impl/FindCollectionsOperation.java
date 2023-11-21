@@ -56,7 +56,7 @@ public record FindCollectionsOperation(
             .getSession()
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+            .get(CqlIdentifier.fromInternal(commandContext.namespace()));
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(

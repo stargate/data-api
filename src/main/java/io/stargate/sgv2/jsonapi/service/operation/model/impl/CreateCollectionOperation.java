@@ -71,7 +71,7 @@ public record CreateCollectionOperation(
             .getSession()
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
+            .get(CqlIdentifier.fromInternal(commandContext.namespace()));
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
@@ -182,7 +182,7 @@ public record CreateCollectionOperation(
    */
   TableMetadata findTableAndValidateLimits(List<TableMetadata> tables, String name) {
     for (TableMetadata table : tables) {
-      if (table.getName().equals(CqlIdentifier.fromCql("\"" + name + "\""))) {
+      if (table.getName().equals(CqlIdentifier.fromInternal(name))) {
         return table;
       }
     }
