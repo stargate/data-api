@@ -110,7 +110,7 @@ public class QueryExecutor {
               .getSession()
               .getMetadata()
               .getKeyspaces()
-              .get(CqlIdentifier.fromCql("\"" + namespace + "\""));
+              .get(CqlIdentifier.fromInternal(namespace));
     } catch (Exception e) {
       return Uni.createFrom().failure(e);
     }

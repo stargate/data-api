@@ -85,7 +85,7 @@ public record CollectionSettings(
         if (functionName != null)
           function = CollectionSettings.SimilarityFunction.fromString(functionName);
       }
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromCql("comment"));
+      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       if (comment != null && !comment.isBlank()) {
         return createCollectionSettingsFromJson(
             collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
