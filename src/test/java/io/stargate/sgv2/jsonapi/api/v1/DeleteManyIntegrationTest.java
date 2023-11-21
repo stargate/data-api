@@ -209,8 +209,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     /**
-     * Verify that DeleteMany with no filter will use truncate and delete all documents in a collection,
-     * instead of using Delete with maximum number to delete.
+     * Verify that DeleteMany with no filter will use truncate and delete all documents in a
+     * collection, instead of using Delete with maximum number to delete.
      */
     @Test
     public void noFilter() {
@@ -257,8 +257,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     /**
-     * Verify that DeleteMany with empty filter will use truncate and delete all documents in a collection,
-     * instead of using Delete with maximum number to delete.
+     * Verify that DeleteMany with empty filter will use truncate and delete all documents in a
+     * collection, instead of using Delete with maximum number to delete.
      */
     @Test
     public void emptyFilter() {
