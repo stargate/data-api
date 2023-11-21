@@ -14,11 +14,9 @@ import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.stargate.bridge.proto.QueryOuterClass.TypeSpec;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 class CqlColumnMatcherTest {
 
   @Nested
@@ -28,9 +26,9 @@ class CqlColumnMatcherTest {
     public void happyPath() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               false);
 
@@ -47,9 +45,9 @@ class CqlColumnMatcherTest {
     public void wrongType() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.INT),
               false);
 
@@ -66,9 +64,9 @@ class CqlColumnMatcherTest {
     public void notBasicType() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultMapType(
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   new PrimitiveType(ProtocolConstants.DataType.INT),
@@ -88,9 +86,9 @@ class CqlColumnMatcherTest {
     public void wrongName() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               false);
 
@@ -114,9 +112,9 @@ class CqlColumnMatcherTest {
       List<DataType> list = Arrays.asList(type1, type2);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultTupleType(list),
               false);
 
@@ -137,9 +135,9 @@ class CqlColumnMatcherTest {
       List<DataType> list = Arrays.asList(type1, type2);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultTupleType(list),
               false);
 
@@ -160,9 +158,9 @@ class CqlColumnMatcherTest {
       List<DataType> list = Arrays.asList(type1, type2);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultTupleType(list),
               false);
 
@@ -179,9 +177,9 @@ class CqlColumnMatcherTest {
     public void notTuple() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               false);
 
@@ -201,9 +199,9 @@ class CqlColumnMatcherTest {
       List<DataType> list = Arrays.asList(type1, type2);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultTupleType(list),
               false);
 
@@ -227,9 +225,9 @@ class CqlColumnMatcherTest {
       DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultMapType(key, value, false),
               false);
 
@@ -249,9 +247,9 @@ class CqlColumnMatcherTest {
       DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultMapType(key, value, false),
               false);
 
@@ -271,9 +269,9 @@ class CqlColumnMatcherTest {
       DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultMapType(key, value, false),
               false);
 
@@ -292,9 +290,9 @@ class CqlColumnMatcherTest {
       TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               false);
 
@@ -314,9 +312,9 @@ class CqlColumnMatcherTest {
       DataType value = new PrimitiveType(ProtocolConstants.DataType.INT);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultMapType(key, value, false),
               false);
 
@@ -338,9 +336,9 @@ class CqlColumnMatcherTest {
     public void happyPath() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
               false);
 
@@ -357,9 +355,9 @@ class CqlColumnMatcherTest {
     public void wrongType() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
               false);
 
@@ -376,9 +374,9 @@ class CqlColumnMatcherTest {
     public void notSet() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               false);
 
@@ -395,9 +393,9 @@ class CqlColumnMatcherTest {
     public void wrongColumn() {
       ColumnMetadata spec =
           new DefaultColumnMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
-              CqlIdentifier.fromCql("column"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("column"),
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false),
               false);
 
