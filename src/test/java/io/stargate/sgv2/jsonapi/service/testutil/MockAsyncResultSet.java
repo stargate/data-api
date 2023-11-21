@@ -23,13 +23,12 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.util.Lists;
 
 public class MockAsyncResultSet implements AsyncResultSet {
 
@@ -63,10 +62,9 @@ public class MockAsyncResultSet implements AsyncResultSet {
     return remaining;
   }
 
-  @NonNull
   @Override
   public List<Row> currentPage() {
-    return Lists.newArrayList(rows);
+    return new ArrayList<>(rows);
   }
 
   @Override
@@ -74,19 +72,16 @@ public class MockAsyncResultSet implements AsyncResultSet {
     return nextPage != null;
   }
 
-  @NonNull
   @Override
   public CompletionStage<AsyncResultSet> fetchNextPage() throws IllegalStateException {
     return nextPage;
   }
 
-  @NonNull
   @Override
   public ColumnDefinitions getColumnDefinitions() {
     return columnDefinitions;
   }
 
-  @NonNull
   @Override
   public ExecutionInfo getExecutionInfo() {
     return executionInfo;
