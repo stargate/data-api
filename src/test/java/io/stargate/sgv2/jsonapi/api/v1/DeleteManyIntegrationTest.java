@@ -230,8 +230,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.ok", is(1))
-          .body("status.deletedCount", is(nullValue()))
+          .body("status.deletedCount", is(-1))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -280,8 +279,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.ok", is(1))
-          .body("status.deletedCount", is(nullValue()))
+          .body("status.deletedCount", is(-1))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
