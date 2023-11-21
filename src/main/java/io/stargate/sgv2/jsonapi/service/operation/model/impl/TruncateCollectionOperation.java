@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 /**
  * Implementation of the truncate collection.
  *
- * @param context Command context, carries namespace and collectoin of the collection.
+ * @param context Command context, carries namespace and the name of the collection.
  */
 public record TruncateCollectionOperation(CommandContext context) implements Operation {
   private static final String TRUNCATE_TABLE_CQL = "TRUNCATE TABLE \"%s\".\"%s\";";

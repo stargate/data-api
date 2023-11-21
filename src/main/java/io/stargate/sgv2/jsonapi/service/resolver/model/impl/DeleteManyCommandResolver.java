@@ -36,7 +36,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
-    // if there is no filter or is an empty filter, delete all the rows or truncate the table.
+    // If there is no filter or filter is empty, use Truncate operation instead of Delete
     if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
       return new TruncateCollectionOperation(commandContext);
     }
