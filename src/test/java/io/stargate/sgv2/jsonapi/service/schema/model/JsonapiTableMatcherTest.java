@@ -3,23 +3,20 @@ package io.stargate.sgv2.jsonapi.service.schema.model;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
+import com.datastax.oss.driver.internal.core.type.DefaultTupleType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.bridge.proto.Schema;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 class JsonapiTableMatcherTest {
 
   JsonapiTableMatcher tableMatcher = new JsonapiTableMatcher();
@@ -34,15 +31,15 @@ class JsonapiTableMatcherTest {
       List<ColumnMetadata> partitionKey =
           List.of(
               new DefaultColumnMetadata(
-                  CqlIdentifier.fromCql("keyspace"),
-                  CqlIdentifier.fromCql("collection"),
-                  CqlIdentifier.fromCql("key"),
+                  CqlIdentifier.fromInternal("keyspace"),
+                  CqlIdentifier.fromInternal("collection"),
+                  CqlIdentifier.fromInternal("key"),
                   new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                   false));
       TableMetadata table =
           new DefaultTableMetadata(
-              CqlIdentifier.fromCql("keyspace"),
-              CqlIdentifier.fromCql("collection"),
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
               UUID.randomUUID(),
               false,
               false,
@@ -59,91 +56,179 @@ class JsonapiTableMatcherTest {
 
     @Test
     public void partitionColumnsTooMany() {
-      Schema.CqlTable table =
-          withCorrectPartitionColumns()
-              .addPartitionKeyColumns(
-                  QueryOuterClass.ColumnSpec.newBuilder().setName("key2").build())
-              .build();
+      ColumnMetadata anotherPartitionColumn =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key2"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
-      boolean result = tableMatcher.test(null);
+      List<ColumnMetadata> partitionColumns = createCorrectPartitionColumn();
+      partitionColumns.add(anotherPartitionColumn);
+      TableMetadata table =
+          new DefaultTableMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              UUID.randomUUID(),
+              false,
+              false,
+              partitionColumns,
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>());
+
+      boolean result = tableMatcher.test(table);
 
       assertThat(result).isFalse();
     }
 
     @Test
     public void clusteringColumnsCountNotMatching() {
-      Schema.CqlTable table =
-          withCorrectPartitionColumns()
-              .addClusteringKeyColumns(
-                  QueryOuterClass.ColumnSpec.newBuilder().setName("cluster").build())
-              .build();
+      ColumnMetadata key =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
+      Map<ColumnMetadata, ClusteringOrder> clusteringColumns =
+          new HashMap<>() {
+            {
+              put(key, ClusteringOrder.ASC);
+            }
+          };
+      TableMetadata table =
+          new DefaultTableMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              UUID.randomUUID(),
+              false,
+              false,
+              createCorrectPartitionColumn(),
+              clusteringColumns,
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>());
 
-      boolean result = tableMatcher.test(null);
+      boolean result = tableMatcher.test(table);
 
       assertThat(result).isFalse();
     }
 
     @Test
     public void columnsCountTooLess() {
-      Schema.CqlTable.Builder tableBuilder = withCorrectPartitionColumns();
-      for (int i = 0; i < 10; i++) {
-        tableBuilder.addColumns(
-            QueryOuterClass.ColumnSpec.newBuilder().setName("c%s".formatted(i)).build());
-      }
-      Schema.CqlTable table = tableBuilder.build();
+      DefaultColumnMetadata columnMetadata =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
 
-      boolean result = tableMatcher.test(null);
+      Map<CqlIdentifier, ColumnMetadata> columns = new HashMap<>();
+      for (int i = 0; i < 10; i++) {
+        columns.put(CqlIdentifier.fromInternal("c%s".formatted(i)), columnMetadata);
+      }
+
+      TableMetadata table =
+          new DefaultTableMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              UUID.randomUUID(),
+              false,
+              false,
+              createCorrectPartitionColumn(),
+              new HashMap<>(),
+              columns,
+              new HashMap<>(),
+              new HashMap<>());
+
+      boolean result = tableMatcher.test(table);
 
       assertThat(result).isFalse();
     }
 
     @Test
     public void columnsCountTooMuch() {
-      Schema.CqlTable.Builder tableBuilder = withCorrectPartitionColumns();
+      DefaultColumnMetadata columnMetadata =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
+      Map<CqlIdentifier, ColumnMetadata> columns = new HashMap<>();
       for (int i = 0; i < 12; i++) {
-        tableBuilder.addColumns(
-            QueryOuterClass.ColumnSpec.newBuilder().setName("c%s".formatted(i)).build());
+        columns.put(CqlIdentifier.fromInternal("c%s".formatted(i)), columnMetadata);
       }
-      Schema.CqlTable table = tableBuilder.build();
 
-      boolean result = tableMatcher.test(null);
+      TableMetadata table =
+          new DefaultTableMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              UUID.randomUUID(),
+              false,
+              false,
+              createCorrectPartitionColumn(),
+              new HashMap<>(),
+              columns,
+              new HashMap<>(),
+              new HashMap<>());
+
+      boolean result = tableMatcher.test(table);
 
       assertThat(result).isFalse();
     }
 
     @Test
     public void columnsNotMatching() {
-      Schema.CqlTable.Builder tableBuilder = withCorrectPartitionColumns();
+      DefaultColumnMetadata columnMetadata =
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key"),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
+              false);
+      Map<CqlIdentifier, ColumnMetadata> columns = new HashMap<>();
       for (int i = 0; i < 11; i++) {
-        tableBuilder.addColumns(
-            QueryOuterClass.ColumnSpec.newBuilder().setName("c%s".formatted(i)).build());
+        columns.put(CqlIdentifier.fromInternal("c%s".formatted(i)), columnMetadata);
       }
-      Schema.CqlTable table = tableBuilder.build();
 
-      boolean result = tableMatcher.test(null);
+      TableMetadata table =
+          new DefaultTableMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              UUID.randomUUID(),
+              false,
+              false,
+              createCorrectPartitionColumn(),
+              new HashMap<>(),
+              columns,
+              new HashMap<>(),
+              new HashMap<>());
+
+      boolean result = tableMatcher.test(table);
 
       assertThat(result).isFalse();
     }
 
     @NotNull
-    private Schema.CqlTable.Builder withCorrectPartitionColumns() {
-      return Schema.CqlTable.newBuilder()
-          .addPartitionKeyColumns(
-              QueryOuterClass.ColumnSpec.newBuilder()
-                  .setName("key")
-                  .setType(
-                      QueryOuterClass.TypeSpec.newBuilder()
-                          .setTuple(
-                              QueryOuterClass.TypeSpec.Tuple.newBuilder()
-                                  .addElements(
-                                      QueryOuterClass.TypeSpec.newBuilder()
-                                          .setBasic(QueryOuterClass.TypeSpec.Basic.TINYINT))
-                                  .addElements(
-                                      QueryOuterClass.TypeSpec.newBuilder()
-                                          .setBasic(QueryOuterClass.TypeSpec.Basic.VARCHAR)
-                                          .build())
-                                  .build()))
-                  .build());
+    private List<ColumnMetadata> createCorrectPartitionColumn() {
+      List<DataType> tuple =
+          Arrays.asList(
+              new PrimitiveType(ProtocolConstants.DataType.TINYINT),
+              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+      List<ColumnMetadata> partitionKey = new ArrayList<>();
+      partitionKey.add(
+          new DefaultColumnMetadata(
+              CqlIdentifier.fromInternal("keyspace"),
+              CqlIdentifier.fromInternal("collection"),
+              CqlIdentifier.fromInternal("key"),
+              new DefaultTupleType(tuple),
+              false));
+      return partitionKey;
     }
 
     @Test
