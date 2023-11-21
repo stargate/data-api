@@ -40,6 +40,7 @@ services:
       - QUARKUS_GRPC_CLIENTS_BRIDGE_PORT=8091
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG}
       - QUARKUS_LOG_LEVEL=${LOGLEVEL}
+      - JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
     healthcheck:
       test: curl -f http://localhost:8181/stargate/health || exit 1
       interval: 5s
