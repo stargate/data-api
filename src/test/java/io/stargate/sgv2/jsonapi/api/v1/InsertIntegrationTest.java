@@ -651,7 +651,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Number length (60) exceeds the maximum length (50)"));
+                  "Document size limitation violated: Number value length (60) exceeds the maximum allowed (50"));
     }
 
     @Test
