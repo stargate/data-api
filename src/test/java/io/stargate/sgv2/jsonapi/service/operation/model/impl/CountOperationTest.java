@@ -16,9 +16,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.bridge.grpc.TypeSpecs;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -33,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -185,26 +181,21 @@ public class CountOperationTest extends OperationTestBase {
               });
     }
 
-    @Disabled
     @Test
     public void error() {
       // failures are propagated down
       RuntimeException failure = new RuntimeException("Ivan fails the test.");
-
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("count")
-                          .setType(TypeSpecs.INT)
-                          .build()))
-              .returningFailure(failure);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().failure(failure);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
@@ -217,7 +208,7 @@ public class CountOperationTest extends OperationTestBase {
               .getFailure();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       assertThat(result).isEqualTo(failure);
