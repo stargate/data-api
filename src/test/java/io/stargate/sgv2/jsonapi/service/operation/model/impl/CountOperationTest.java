@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -39,7 +38,7 @@ public class CountOperationTest extends OperationTestBase {
   @Nested
   class Execute {
     private final ColumnDefinitions COUNT_RESULT_COLUMNS =
-        buildColumnDefs(Arrays.asList(TestColumn.of("count", ProtocolConstants.DataType.BIGINT)));
+        buildColumnDefs(Arrays.asList(TestColumn.ofLong("count")));
 
     @Test
     public void countWithNoFilter() {
