@@ -1,0 +1,2111 @@
+{
+	"info": {
+		"_postman_id": "266032b1-1fe9-4abd-aee9-e6e4b335f921",
+		"name": "JSON API (non-vector) - public preview",
+		"description": "To execute these non-vector commands in this public preview release of the **JSON API collection**, be sure to:\n\n1. In DataStax [Astra Portal](https://astra.datastax.com/), create an **Astra DB Vector** database.\n    \n2. When your Astra DB Vector database is Active, click the **Connect** tab. Generate an Application Token with Database Administrator role. Copy and/or download the token's JSON.\n    \n3. Define **local variables** here in Postman with values specific to your Astra DB Vector database: In the JSON API calls, you'll need the appropriate values for ASTRA_DB_ID, ASTRA_DB_REGION, ASTRA_DB_KEYSPACE, ASTRA_DB_APPLICATION_TOKEN.\n    \n4. Download and install the [Postman app,](https://www.postman.com/downloads/) if you haven't already.\n    \n\n**TIP**: After stepping through all the commands, you can reset the example data and start over by executing the final call, deleteCollection.\n\n**NOTE**: Do not use this JSON API public preview software in production. It is intended for development environments only. See the [DataStax Preview Terms](https://www.datastax.com/legal/previewterms).\n\nAlso see the [JSON API with Astra DB Vector Search - public preview](https://www.postman.com/datastax/workspace/stargate-cassandra/collection/25879866-51ff01b2-f155-4a2b-b996-f62e956cb745?tab=overview) collection in this Stargate-Cassandra workspace. Its examples include vector-specific features.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25879866",
+		"_collection_link": "https://www.postman.com/datastax/workspace/stargate-cassandra/collection/25879866-266032b1-1fe9-4abd-aee9-e6e4b335f921?action=share&source=collection_link&creator=25879866"
+	},
+	"item": [
+		{
+			"name": "Create collection for existing namespace",
+			"item": [
+				{
+					"name": "Create collection",
+					"item": [
+						{
+							"name": "Create a simple collection",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Verify status body\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.status.ok).to.equal(1);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {
+									"content-type": true
+								}
+							},
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "x-cassandra-token",
+										"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"createCollection\": {\n    \"name\": \"simple_collection\"\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"json",
+										"v1",
+										"{{ASTRA_DB_KEYSPACE}}"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "Create a simple collection with the createCollection operation."
+				}
+			],
+			"description": "If you haven't already, create an Astra DB Vector database in [Astra Portal](https://astra.datastax.com). On the **Create Database** dialog, specify the namespace (a/k/a the \"keyspace\") as **purchase_database**. Once that prerequisite is done, you can use the operation in this section to create a simple collection. Subsequent operations occur within this collection."
+		},
+		{
+			"name": "Insert data",
+			"item": [
+				{
+					"name": "insertOne document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify status body\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status.insertedIds).to.deep.equal([\"1\"])",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"insertOne\": {\n    \"document\": {\n      \"_id\": \"1\",\n      \"purchase_type\": \"Online\",\n      \"customer\": {\n        \"name\": \"Jim\",\n        \"phone\": \"123-123-1234\",\n        \"address\": {\n          \"address_line\": \"1234 Broadway\",\n          \"city\": \"New York\",\n          \"state\": \"NY\"\n        }\n      },\n      \"purchase_date\": \"12/31/2022\",\n      \"seller\": {\n        \"name\": \"Jon\",\n        \"location\": \"New York\"\n      },\n      \"items\": [\n        {\n          \"car\" : \"BMW\",\n          \"color\": \"Black\"\n        }, \n        \"Extended warranty - 5 years\"\n      ],\n      \"amount\": 65000,\n      \"status\" : \"active\",\n      \"preferred_customer\" : true\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify insertOne with find",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\" : {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "insertMany documents",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response is successful and has a body\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.withBody;",
+									"});",
+									"",
+									"let jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Check if inserted Ids exist\", function () {",
+									"    pm.expect(jsonData.status.insertedIds).to.deep.equal([",
+									"            \"2\",",
+									"            \"3\",",
+									"            \"4\",",
+									"            \"5\",",
+									"            \"6\",",
+									"            \"7\",",
+									"            \"8\",",
+									"            \"9\",",
+									"            \"10\",",
+									"            \"11\",",
+									"            \"12\",",
+									"            \"13\",",
+									"            \"14\",",
+									"            \"15\",",
+									"            \"16\",",
+									"            \"17\",",
+									"            \"18\",",
+									"            \"19\",",
+									"            \"20\",",
+									"            \"21\"])",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"insertMany\": {\n    \"documents\": [\n      {\n        \"_id\": \"2\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"Jack\",\n          \"phone\": \"123-123-4321\",\n          \"address\": {\n            \"address_line\": \"888 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/31/2022\",\n        \"seller\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        },\n        \"items\": [\n            {\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 10 years\",\n            \"Service - 5 years\"\n        ],\n        \"amount\": 60000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"3\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"Jack\",\n          \"phone\": \"123-123-1234\",\n          \"address\": {\n            \"address_line\": \"12345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        },\n        \"items\": \"Extended warranty - 10 years\",\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"4\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 4\",\n          \"phone\": \"123-123-2345\",\n          \"address\": {\n            \"address_line\": \"12346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        },\n        \"items\": [\n            {\n          \"car\" : \"BMW\",\n          \"color\": \"Black\"\n            }, \n            \"Extended warranty - 5 years\",\n            \"Service - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"5\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 5\",\n          \"phone\": \"123-123-3234\",\n          \"address\": {\n            \"address_line\": \"32345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New York\"\n        },\n        \"items\": [\n          {\n          \"car\" : \"Tesla\",\n          \"color\": \"Red\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"6\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 6\",\n          \"phone\": \"123-123-3345\",\n          \"address\": {\n            \"address_line\": \"32346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [\n          {\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"7\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 7\",\n          \"phone\": \"223-123-1234\",\n          \"address\": {\n            \"address_line\": \"22345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW\",\n          \"color\": \"Black\"\n            }, \n            \"Extended warranty - 5 years\"],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"8\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 8\",\n          \"phone\": \"223-123-2345\",\n          \"address\": {\n            \"address_line\": \"22346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"9\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 9\",\n          \"phone\": \"223-123-3234\",\n          \"address\": {\n            \"address_line\": \"22345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"10\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 10\",\n          \"phone\": null,\n          \"address\": {\n            \"address_line\": \"22346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"11\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 11\",\n          \"phone\": \"323-123-1234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"12\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 12\",\n          \"phone\": \"123-123-2345\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW\",\n          \"color\": \"Black\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"13\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 13\",\n          \"phone\": \"123-123-3234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New York\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"14\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 14\",\n          \"phone\": \"123-123-3345\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"15\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 15\",\n          \"phone\": \"223-123-1234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": {\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            },\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"16\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 16\",\n          \"phone\": \"223-123-2345\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"17\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 17\",\n          \"phone\": \"223-123-3234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"18\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 17\",\n          \"phone\": \"223-123-3234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"19\",\n        \"purchase_type\": \"Online\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 19\",\n          \"phone\": \"223-123-3234\",\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"20\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 20\",\n          \"phone\": null,\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla\",\n          \"color\": \"White\"\n            }, \n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"21\",\n        \"purchase_type\": \"In Person\",\n        \"customer\": {\n          \"name\": \"CUSTOMER 18\",\n          \"phone\": null,\n          \"address\": {\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": \"12/30/2022\",\n        \"seller\": {\n          \"name\": \"Jim\",\n          \"location\": \"New Jersey\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW\",\n          \"color\": \"Black\"\n            }, \n            \"Extended warranty - 5 years\",\n            \"Gap Insurance - 5 years\"\n        ],\n        \"amount\": 65000,\n      \"status\" : \"active\"\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "JSON API operations that insert data."
+		},
+		{
+			"name": "Find data",
+			"item": [
+				{
+					"name": "findOne using partition key: filter purchase by _id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"let jsonData = pm.response.json();",
+									"pm.test(\"Check if findOne returned data\", function () {",
+									"    pm.expect(jsonData.data.document).to.deep.equal(",
+									"           {",
+									"            \"_id\": \"1\",",
+									"            \"purchase_type\": \"Online\",",
+									"            \"customer\": {",
+									"                \"name\": \"Jim\",",
+									"                \"phone\": \"123-123-1234\",",
+									"                \"address\": {",
+									"                    \"address_line\": \"1234 Broadway\",",
+									"                    \"city\": \"New York\",",
+									"                    \"state\": \"NY\"",
+									"                }",
+									"            },",
+									"            \"purchase_date\": \"12/31/2022\",",
+									"            \"seller\": {",
+									"                \"name\": \"Jon\",",
+									"                \"location\": \"New York\"",
+									"            },",
+									"            \"items\": [",
+									"                {",
+									"                    \"car\": \"BMW\",",
+									"                    \"color\": \"Black\"",
+									"                },",
+									"                \"Extended warranty - 5 years\"",
+									"            ],",
+									"            \"amount\": 65000,",
+									"            \"status\": \"active\",",
+									"            \"preferred_customer\": true",
+									"        }",
+									" )",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOne\": {\n    \"filter\": {\"_id\" : \"1\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOne query using index: filter where purchase_date = “12/31/2022”",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"let jsonData = pm.response.json();",
+									"pm.test(\"Check if findOne returned data\", function () {",
+									"    pm.expect(jsonData.data.document).to.deep.equal(",
+									"           {",
+									"            \"_id\": \"1\",",
+									"            \"purchase_type\": \"Online\",",
+									"            \"customer\": {",
+									"                \"name\": \"Jim\",",
+									"                \"phone\": \"123-123-1234\",",
+									"                \"address\": {",
+									"                    \"address_line\": \"1234 Broadway\",",
+									"                    \"city\": \"New York\",",
+									"                    \"state\": \"NY\"",
+									"                }",
+									"            },",
+									"            \"purchase_date\": \"12/31/2022\",",
+									"            \"seller\": {",
+									"                \"name\": \"Jon\",",
+									"                \"location\": \"New York\"",
+									"            },",
+									"            \"items\": [",
+									"                {",
+									"                    \"car\": \"BMW\",",
+									"                    \"color\": \"Black\"",
+									"                },",
+									"                \"Extended warranty - 5 years\"",
+									"            ],",
+									"            \"amount\": 65000,",
+									"            \"status\": \"active\",",
+									"            \"preferred_customer\": true",
+									"        }",
+									" )",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOne\": {\n    \"filter\": {\"purchase_date\" : \"12/31/2022\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find to return multiple documents: filter by online purchase_type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\"purchase_type\": \"Online\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find field stored as array: filter where items = \"Extended warranty - 10 years\"",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\"items\" : \"Extended warranty - 10 years\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with multi-column filter: purchases by city and state",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"customer.address.city\": \"New York\",\n      \"customer.address.state\": \"NY\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $and, $or: filter seller is either Jim or Jon, and customer is either from New York or Fair Haven",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"$and\": [\n                {\n                    \"$or\": [\n                        {\n                            \"customer.address.city\": \"New York\"\n                        },\n                        {\n                            \"customer.address.city\": \"Fair Haven\"\n                        }\n                    ]\n                },\n                {\n                    \"$or\": [\n                        {\n                            \"seller.name\": \"Jim\"\n                        },\n                        {\n                            \"seller.name\": \"Jon\"\n                        }\n                    ]\n                }\n            ]\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $in: filter where city is NY or Fair Haven Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"customer.address.city\": {\n                \"$in\": [\n                    \"New York\",\n                    \"Fair Haven\"\n                ]\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $exists: filter if field exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"preferred_customer\": {\n        \"$exists\": true\n      }\n    }\n  }\n}\n\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $eq: filter if sub document equals given values to get seller data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"seller\": {\n        \"$eq\": {\n          \"name\": \"Jon\",\n          \"location\": \"New York\"\n        }\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $size: filter to get purchases with 3 items",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$size\": 3\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $all in array: purchases having 2 items car and color, plus Extended warranty 10 years",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$all\": [\n          {\n            \"car\": \"Tesla\",\n            \"color\": \"White\"\n          },\n          \"Extended warranty - 10 years\"\n        ]\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $eq: filter purchases having only the 2 items BMW black car, plus Extended warranty 5 years and insurance 5 years",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$eq\": [\n          {\n            \"car\": \"BMW\",\n            \"color\": \"Black\"\n          },\n          \"Extended warranty - 5 years\",\n          \"Gap Insurance - 5 years\"\n        ]\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find to get all purchases showing Page 1 results",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with pagingState: to get all purchases showing Page 2 results",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"options\" : {\"pagingState\" : \"CwAAAAECAAAAAjExAIPUAA==\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "JSON API operations that find data."
+		},
+		{
+			"name": "Find and Update data",
+			"item": [
+				{
+					"name": "findOneAndUpdate - upsert--> Query: Set array of tags, multi data type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\",\n      \"amount\": 65,\n      \"wait\" : 42\n    },\n    \"update\" : {\"$set\" : { \"tags\" : [\"my test\", 5, true, null], \"min_col\": 2, \"max_col\": 99}},\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : true}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate - unset--> Query: Unset amount from the document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$unset\" : {\"amount\": \"\"}},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate - inc--> Query: Decrease wait list by 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$inc\" : {\"wait\": -1}},\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - push --> Query: Add data to tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\": \"High priority\" }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - pop --> Query: Remove last data to tags array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$pop\": { \"tags\": 1 }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - each - Add multiple elements to array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\": { \"$each\": [ \"last-1\", \"last\"] } } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - position - Add element to a particular position",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\" : { \"$each\": [ \"first\", \"second\" ] ,\n           \"$position\" : 0 } } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - min and max - no update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$max\": { \"max_col\" : 25 }, \"$min\" : {\"min_col\" : 5} },\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - min and max - Update value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$max\": { \"max_col\" : 100 }, \"$min\" : {\"min_col\" : 1} },\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - addToSet - Add's data to array if value not part of the array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$addToSet\": { \"tags\" : \"first\" }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - Rename a field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$rename\": { \"min_col\" : \"minimum\", \"max_col\" : \"maximum\" } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "JSON API operations that find and update data."
+		},
+		{
+			"name": "Update data",
+			"item": [
+				{
+					"name": "updateOne  - dot notation - Set element value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"updateOne\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$set\" : { \"customer.name\" : \"CUSTOMER 22\"}}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify updateOne data with find  - dot notation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateMany  - Set element value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"updateMany\": {\n    \"filter\": {\"status\" : \"active\" },\n    \"update\" : {\"$set\" : { \"status\" : \"inactive\"}}\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "JSON API operations that update data."
+		},
+		{
+			"name": "Delete data",
+			"item": [
+				{
+					"name": "deleteOne  - delete by tags value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteOne\": {\n    \"filter\": {\n      \"tags\": \"first\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMany  - delete by status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteMany\": {\n    \"filter\": {\n      \"status\": \"inactive\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteCollection  - delete by collection name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-cassandra-token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteCollection\": {\n    \"name\": \"{{collection_name}}\"\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "JSON API operations that delete data, including an example that deletes the entire collection so that you can start over with the simple_collection."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "COLLECTION",
+			"value": "simple_collection",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_ID",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_REGION",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_KEYSPACE",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_APPLICATION_TOKEN",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "base_url",
+			"value": "https://{{ASTRA_DB_ID}}-{{ASTRA_DB_REGION}}.apps.astra.datastax.com",
+			"type": "string"
+		}
+	]
+}

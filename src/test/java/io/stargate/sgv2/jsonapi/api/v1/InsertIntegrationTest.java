@@ -827,6 +827,66 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(3)
+  class InsertInMixedCaseCollection {
+    private static final String COLLECTION_MIXED = "MyCollection";
+
+    // Both mixed-case Collection name and a field with mixed-case name
+    @Test
+    public void insertOneWithMixedCaseField() {
+      createCollection(COLLECTION_MIXED);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": "mixed1",
+                            "userName": "userA"
+                          }
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, COLLECTION_MIXED)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("mixed1"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"userName" : "userA"}
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, COLLECTION_MIXED)
+          .then()
+          .statusCode(200)
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                      {
+                                        "_id": "mixed1",
+                                        "userName": "userA"
+                                      }
+                                      """))
+          .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(4)
   class InsertMany {
 
     @Test
