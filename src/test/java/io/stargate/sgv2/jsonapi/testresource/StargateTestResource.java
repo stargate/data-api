@@ -215,7 +215,7 @@ public class StargateTestResource
 
   private Duration getCoordinatorStartupTimeout() {
     long coordinatorStartupTimeout =
-        Long.getLong("testing.containers.coordinator-startup-timeout", 3L);
+        Long.getLong("testing.containers.coordinator-startup-timeout", 4L);
     return Duration.ofMinutes(coordinatorStartupTimeout);
   }
 
