@@ -30,7 +30,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
-import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,24 +41,22 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CountOperationTest extends OperationTestBase {
-
-  @Inject QueryExecutor queryExecutor;
-
   @Nested
   class Execute {
+    private final ColumnDefinitions COUNT_RESULT_COLUMNS =
+        buildColumnDefs(Arrays.asList("count"), Arrays.asList(ProtocolConstants.DataType.BIGINT));
 
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
-      QueryExecutor queryExecutorMock = mock(QueryExecutor.class);
-      ColumnDefinitions columnDefs =
-          buildColumnDefs(Arrays.asList("count"), Arrays.asList(ProtocolConstants.DataType.BIGINT));
-      List<Row> rows = Arrays.asList(new MockRow(columnDefs, 0, Arrays.asList(byteBufferFrom(5L))));
-      AsyncResultSet mockResults = new MockAsyncResultSet(columnDefs, rows, null);
+      List<Row> rows =
+          Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(5L))));
+      AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
-      when(queryExecutorMock.executeRead(eq(stmt), any(), anyInt()))
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -69,7 +66,7 @@ public class CountOperationTest extends OperationTestBase {
       CountOperation countOperation = new CountOperation(CONTEXT, LogicalExpression.and());
       Supplier<CommandResult> execute =
           countOperation
-              .execute(queryExecutorMock)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -88,25 +85,24 @@ public class CountOperationTest extends OperationTestBase {
               });
     }
 
-    @Disabled
     @Test
     public void countWithDynamic() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("count")
-                          .setType(TypeSpecs.INT)
-                          .build()))
-              .returning(List.of(List.of(Values.of(2))));
+      final String filterValue = "username " + new DocValueHasher().getHash("user1").hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      List<Row> rows =
+          Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(2))));
+      AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -127,7 +123,7 @@ public class CountOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -135,7 +131,7 @@ public class CountOperationTest extends OperationTestBase {
           .satisfies(
               commandResult -> {
                 assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
-                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(2);
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(2L);
               });
     }
 
@@ -145,6 +141,7 @@ public class CountOperationTest extends OperationTestBase {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(
@@ -199,6 +196,7 @@ public class CountOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)

@@ -43,6 +43,6 @@ public class OperationTestBase extends AbstractValidatingStargateBridgeTest {
   }
 
   protected ByteBuffer byteBufferFrom(long value) {
-    return TypeCodecs.BIGINT.encode(5L, ProtocolVersion.DEFAULT);
+    return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
   }
 }
