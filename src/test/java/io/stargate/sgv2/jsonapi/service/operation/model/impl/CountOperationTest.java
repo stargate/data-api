@@ -17,7 +17,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
-import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -135,26 +134,24 @@ public class CountOperationTest extends OperationTestBase {
               });
     }
 
-    @Disabled
     @Test
     public void countWithDynamicNoMatch() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      List<Row> rows =
+          Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(0L))));
+      AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user_all").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("count")
-                          .setType(TypeSpecs.INT)
-                          .build()))
-              .returning(List.of(List.of(Values.of(0))));
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -176,7 +173,7 @@ public class CountOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -184,7 +181,7 @@ public class CountOperationTest extends OperationTestBase {
           .satisfies(
               commandResult -> {
                 assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
-                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(0);
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(0L);
               });
     }
 
