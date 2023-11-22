@@ -17,8 +17,6 @@
  */
 package io.stargate.sgv2.jsonapi.service.testutil;
 
-import static org.mockito.Mockito.mock;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.DefaultProtocolVersion;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
@@ -26,84 +24,85 @@ import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
-import com.datastax.oss.driver.internal.core.cql.EmptyColumnDefinitions;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.List;
 
 public class MockRow implements Row {
+  private final ColumnDefinitions columnDefs;
+  private final int index;
 
-  private int index;
-
-  MockRow(int index) {
+  public MockRow(ColumnDefinitions columnDefs, int index) {
+    this.columnDefs = columnDefs;
     this.index = index;
   }
 
   @Override
   public int size() {
-    return 0;
+    return columnDefs.size();
   }
 
   @Override
   public CodecRegistry codecRegistry() {
-    return mock(CodecRegistry.class);
+    return CodecRegistry.DEFAULT;
   }
 
   @Override
   public ProtocolVersion protocolVersion() {
-    return DefaultProtocolVersion.V4;
+    return DefaultProtocolVersion.V5;
   }
 
   @Override
   public ColumnDefinitions getColumnDefinitions() {
-    return EmptyColumnDefinitions.INSTANCE;
+    return columnDefs;
   }
 
   @Override
   public List<Integer> allIndicesOf(String name) {
-    return Collections.singletonList(0);
+    return columnDefs.allIndicesOf(name);
   }
 
   @Override
   public int firstIndexOf(String name) {
-    return 0;
+    return columnDefs.firstIndexOf(name);
   }
 
   @Override
   public List<Integer> allIndicesOf(CqlIdentifier id) {
-    return Collections.singletonList(0);
+    return columnDefs.allIndicesOf(id);
   }
 
   @Override
   public int firstIndexOf(CqlIdentifier id) {
-    return 0;
+    return columnDefs.firstIndexOf(id);
   }
 
   @Override
   public DataType getType(int i) {
-    return DataTypes.INT;
+    return columnDefs.get(i).getType();
   }
 
   @Override
   public DataType getType(String name) {
-    return DataTypes.INT;
+    return columnDefs.get(name).getType();
   }
 
   @Override
   public DataType getType(CqlIdentifier id) {
-    return DataTypes.INT;
+    return columnDefs.get(id).getType();
   }
 
   @Override
   public ByteBuffer getBytesUnsafe(int i) {
+    if (true) {
+      throw new IllegalStateException("No column #" + i);
+    }
     return null;
   }
 
   @Override
   public boolean isDetached() {
-    return false;
+    return true;
   }
 
   @Override

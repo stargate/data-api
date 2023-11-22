@@ -1,9 +1,26 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
+import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinition;
+import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
+import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
+import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
@@ -19,7 +36,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
+import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -28,7 +49,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
@@ -44,7 +64,15 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
     public void countWithNoFilter() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      QueryExecutor queryExecutorMock = mock(QueryExecutor.class);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(Arrays.asList("count"), Arrays.asList(ProtocolConstants.DataType.INT));
+      List<Row> rows = Arrays.asList(new MockRow(columnDefs, 0));
+      AsyncResultSet mockResults = new MockAsyncResultSet(columnDefs, rows, null);
+      when(queryExecutorMock.executeRead(eq(stmt), any(), anyInt()))
+          .thenReturn(Uni.createFrom().item(mockResults));
+      /*
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql)
               .withPageSize(1)
@@ -55,19 +83,20 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
                           .setType(TypeSpecs.INT)
                           .build()))
               .returning(List.of(List.of(Values.of(5))));
+       */
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd);
       Supplier<CommandResult> execute =
           countOperation
-              .execute(queryExecutor)
+              .execute(queryExecutorMock)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      //      candidatesAssert.assertExecuteCount().isOne();
 
       // then result
       CommandResult result = execute.get();
@@ -79,6 +108,28 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    ColumnDefinitions buildColumnDefs(List<String> columnNames, List<Integer> typeCodes) {
+      return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columnNames, typeCodes);
+    }
+
+    ColumnDefinitions buildColumnDefs(
+        String ks, String tableName, List<String> columnNames, List<Integer> typeCodes) {
+      List<ColumnDefinition> columnDefs = new ArrayList<>();
+      for (int ix = 0, end = columnNames.size(); ix < end; ++ix) {
+        columnDefs.add(
+            new DefaultColumnDefinition(
+                new ColumnSpec(
+                    ks,
+                    tableName,
+                    columnNames.get(ix),
+                    ix,
+                    RawType.PRIMITIVES.get(typeCodes.get(ix))),
+                AttachmentPoint.NONE));
+      }
+      return DefaultColumnDefinitions.valueOf(columnDefs);
+    }
+
+    @Disabled
     @Test
     public void countWithDynamic() {
       String collectionReadCql =
@@ -129,6 +180,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void countWithDynamicNoMatch() {
       String collectionReadCql =
@@ -180,6 +232,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void error() {
       // failures are propagated down

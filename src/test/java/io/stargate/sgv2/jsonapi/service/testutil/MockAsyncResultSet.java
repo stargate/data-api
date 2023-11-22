@@ -36,14 +36,23 @@ public class MockAsyncResultSet implements AsyncResultSet {
   private final Iterator<Row> iterator;
   private final CompletionStage<AsyncResultSet> nextPage;
   private final ExecutionInfo executionInfo = mock(ExecutionInfo.class);
-  private final ColumnDefinitions columnDefinitions = mock(ColumnDefinitions.class);
+  private final ColumnDefinitions columnDefs;
   private int remaining;
 
-  public MockAsyncResultSet(int size, CompletionStage<AsyncResultSet> nextPage) {
-    this(IntStream.range(0, size).boxed().map(MockRow::new).collect(Collectors.toList()), nextPage);
+  public MockAsyncResultSet(
+      ColumnDefinitions columnDefs, int size, CompletionStage<AsyncResultSet> nextPage) {
+    this(
+        columnDefs,
+        IntStream.range(0, size)
+            .boxed()
+            .map(id -> new MockRow(columnDefs, id))
+            .collect(Collectors.toList()),
+        nextPage);
   }
 
-  public MockAsyncResultSet(List<Row> rows, CompletionStage<AsyncResultSet> nextPage) {
+  public MockAsyncResultSet(
+      ColumnDefinitions columnDefs, List<Row> rows, CompletionStage<AsyncResultSet> nextPage) {
+    this.columnDefs = columnDefs;
     this.rows = rows;
     iterator = rows.iterator();
     remaining = rows.size();
@@ -79,7 +88,7 @@ public class MockAsyncResultSet implements AsyncResultSet {
 
   @Override
   public ColumnDefinitions getColumnDefinitions() {
-    return columnDefinitions;
+    return columnDefs;
   }
 
   @Override
