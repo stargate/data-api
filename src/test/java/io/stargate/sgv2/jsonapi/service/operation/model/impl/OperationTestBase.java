@@ -85,11 +85,12 @@ public class OperationTestBase {
     }
 
     static TestColumn keyColumn() {
-      List<RawType> keyTupleParams =
-          Arrays.asList(
-              RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
-              RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR));
-      return of("key", new RawType.RawTuple(keyTupleParams));
+      return of(
+          "key",
+          new RawType.RawTuple(
+              Arrays.asList(
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR))));
     }
   }
 }

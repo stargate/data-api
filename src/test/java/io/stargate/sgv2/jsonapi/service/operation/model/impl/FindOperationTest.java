@@ -58,26 +58,20 @@ public class FindOperationTest extends OperationTestBase {
       new CommandContext(
           KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
-  private final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          true,
-          CollectionSettings.SimilarityFunction.DOT_PRODUCT,
-          null);
+  private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
+      buildColumnDefs(
+          Arrays.asList(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json")));
 
   @Inject ObjectMapper objectMapper;
 
-  private QueryExecutor queryExecutor = mock(QueryExecutor.class);
+  // !!! Only left temporarily for Disabled tests
+  private QueryExecutor queryExecutor0 = mock(QueryExecutor.class);
 
   @Nested
   class Execute {
-    private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
-        buildColumnDefs(
-            Arrays.asList(
-                TestColumn.keyColumn(),
-                TestColumn.ofUuid("tx_id"),
-                TestColumn.ofVarchar("doc_json")));
 
     @Test
     public void findAll() throws Exception {
@@ -104,14 +98,14 @@ public class FindOperationTest extends OperationTestBase {
           Arrays.asList(
               resultRow(0, "doc1", UUID.randomUUID(), doc1),
               resultRow(1, "doc2", UUID.randomUUID(), doc2));
-      AsyncResultSet mockResults = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return Uni.createFrom().item(mockResults);
+                return Uni.createFrom().item(results);
               });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
@@ -146,14 +140,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    MockRow resultRow(int index, String key, UUID txId, String doc) {
-      return new MockRow(
-          KEY_TXID_JSON_COLUMNS,
-          index,
-          Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
-    }
-
-    @Disabled
     @Test
     public void byIdWithInOperator() throws Exception {
       String collectionReadCql =
@@ -173,63 +159,28 @@ public class FindOperationTest extends OperationTestBase {
                 "username": "user1"
               }
               """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
+      SimpleStatement stmt1 = SimpleStatement.newInstance(collectionReadCql, "doc1");
+      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      SimpleStatement stmt2 = SimpleStatement.newInstance(collectionReadCql, "doc2");
+      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
+      AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
+      final AtomicInteger callCount1 = new AtomicInteger();
+      final AtomicInteger callCount2 = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount1.incrementAndGet();
+                return Uni.createFrom().item(results1);
+              });
+      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount2.incrementAndGet();
+                return Uni.createFrom().item(results2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -260,8 +211,9 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      candidatesAssert2.assertExecuteCount().isOne();
+      assertThat(callCount1.get()).isEqualTo(1);
+      assertThat(callCount2.get()).isEqualTo(1);
+
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
@@ -293,7 +245,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -422,7 +374,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -540,7 +492,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -617,7 +569,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -685,7 +637,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -762,7 +714,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -841,7 +793,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -923,7 +875,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -998,7 +950,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1079,7 +1031,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1157,7 +1109,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1236,7 +1188,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1315,7 +1267,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1385,7 +1337,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -1570,7 +1522,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1785,7 +1737,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1981,7 +1933,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2175,7 +2127,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2263,7 +2215,7 @@ public class FindOperationTest extends OperationTestBase {
 
       ReadOperation.FindResponse result =
           findOperation
-              .getDocuments(queryExecutor, null, null)
+              .getDocuments(queryExecutor0, null, null)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2338,7 +2290,7 @@ public class FindOperationTest extends OperationTestBase {
 
       ReadOperation.FindResponse result =
           findOperation
-              .getDocuments(queryExecutor, null, filter)
+              .getDocuments(queryExecutor0, null, filter)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2411,7 +2363,7 @@ public class FindOperationTest extends OperationTestBase {
 
       ReadOperation.FindResponse result =
           findOperation
-              .getDocuments(queryExecutor, null, null)
+              .getDocuments(queryExecutor0, null, null)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2489,7 +2441,7 @@ public class FindOperationTest extends OperationTestBase {
               DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
       ReadOperation.FindResponse result =
           findOperation
-              .getDocuments(queryExecutor, null, idFilter)
+              .getDocuments(queryExecutor0, null, idFilter)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2574,7 +2526,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2653,7 +2605,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2726,6 +2678,13 @@ public class FindOperationTest extends OperationTestBase {
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
     }
+  }
+
+  MockRow resultRow(int index, String key, UUID txId, String doc) {
+    return new MockRow(
+        KEY_TXID_JSON_COLUMNS,
+        index,
+        Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
   }
 
   // !!! TEMPORARY BOGUS OVERRIDE
