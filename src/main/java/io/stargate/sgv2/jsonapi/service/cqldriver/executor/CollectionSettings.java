@@ -59,7 +59,8 @@ public record CollectionSettings(
 
   public static CollectionSettings getCollectionSettings(
       TableMetadata table, ObjectMapper objectMapper) {
-    String collectionName = table.getName().asCql(true);
+    // [jsonapi#639]: get internal name to avoid quoting of case-sensitive names
+    String collectionName = table.getName().asInternal();
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
@@ -84,7 +85,7 @@ public record CollectionSettings(
         if (functionName != null)
           function = CollectionSettings.SimilarityFunction.fromString(functionName);
       }
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromCql("comment"));
+      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       if (comment != null && !comment.isBlank()) {
         return createCollectionSettingsFromJson(
             collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
