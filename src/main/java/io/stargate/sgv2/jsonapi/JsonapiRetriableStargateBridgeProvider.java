@@ -11,7 +11,7 @@ import jakarta.ws.rs.Produces;
 @Priority(1)
 @GrpcService
 @Singleton
-public class JsonapiRetriableStargateBridge {
+public class JsonapiRetriableStargateBridgeProvider {
 
   @Produces
   @Retriable
