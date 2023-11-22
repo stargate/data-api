@@ -20,22 +20,22 @@ public class OperationTestBase {
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  protected ColumnDefinitions buildColumnDefs(List<String> columnNames, List<Integer> typeCodes) {
-    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columnNames, typeCodes);
+  protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
+    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
   }
 
   protected ColumnDefinitions buildColumnDefs(
-      String ks, String tableName, List<String> columnNames, List<Integer> typeCodes) {
+      String ks, String tableName, List<TestColumn> columns) {
     List<ColumnDefinition> columnDefs = new ArrayList<>();
-    for (int ix = 0, end = columnNames.size(); ix < end; ++ix) {
+    for (int ix = 0, end = columns.size(); ix < end; ++ix) {
       columnDefs.add(
           new DefaultColumnDefinition(
               new ColumnSpec(
                   ks,
                   tableName,
-                  columnNames.get(ix),
+                  columns.get(ix).name(),
                   ix,
-                  RawType.PRIMITIVES.get(typeCodes.get(ix))),
+                  RawType.PRIMITIVES.get(columns.get(ix).type())),
               AttachmentPoint.NONE));
     }
     return DefaultColumnDefinitions.valueOf(columnDefs);
@@ -43,5 +43,11 @@ public class OperationTestBase {
 
   protected ByteBuffer byteBufferFrom(long value) {
     return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected static record TestColumn(String name, int type) {
+    static TestColumn of(String name, int type) {
+      return new TestColumn(name, type);
+    }
   }
 }
