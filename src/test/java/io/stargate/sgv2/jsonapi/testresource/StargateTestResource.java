@@ -134,6 +134,8 @@ public class StargateTestResource
             .withEnv(
                 "JVM_EXTRA_OPTS",
                 "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1")
+            .withEnv("DATACENTER_NAME", "datacenter1")
+            .withEnv("RACK_NAME", "rack1")
             .withNetworkAliases(new String[] {"cassandra"})
             .withExposedPorts(new Integer[] {7000, 9042})
             .withLogConsumer(
@@ -159,6 +161,8 @@ public class StargateTestResource
             .withEnv("CLUSTER_NAME", getClusterName())
             .withEnv("SIMPLE_SNITCH", "true")
             .withEnv("ENABLE_AUTH", "true")
+            .withEnv("DATACENTER_NAME", "datacenter1")
+            .withEnv("RACK_NAME", "rack1")
             .withNetworkAliases(new String[] {"coordinator"})
             .withExposedPorts(new Integer[] {8091, 8081, 8084, 9042})
             .withLogConsumer(
@@ -215,7 +219,7 @@ public class StargateTestResource
 
   private Duration getCoordinatorStartupTimeout() {
     long coordinatorStartupTimeout =
-        Long.getLong("testing.containers.coordinator-startup-timeout", 4L);
+        Long.getLong("testing.containers.coordinator-startup-timeout", 3L);
     return Duration.ofMinutes(coordinatorStartupTimeout);
   }
 
