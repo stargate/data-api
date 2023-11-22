@@ -25,10 +25,12 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
+import com.datastax.oss.driver.internal.core.type.codec.registry.DefaultCodecRegistry;
 import java.nio.ByteBuffer;
 import java.util.List;
 
 public class MockRow implements Row {
+  private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("json-api-test");
   private final ColumnDefinitions columnDefs;
   private final int index;
 
@@ -44,7 +46,7 @@ public class MockRow implements Row {
 
   @Override
   public CodecRegistry codecRegistry() {
-    return CodecRegistry.DEFAULT;
+    return DEFAULT_CODECS;
   }
 
   @Override
@@ -95,14 +97,14 @@ public class MockRow implements Row {
   @Override
   public ByteBuffer getBytesUnsafe(int i) {
     if (true) {
-      throw new IllegalStateException("No column #" + i);
+      //      throw new IllegalStateException("No column #" + i);
     }
-    return null;
+    return ByteBuffer.wrap(new byte[16]);
   }
 
   @Override
   public boolean isDetached() {
-    return true;
+    return false;
   }
 
   @Override
