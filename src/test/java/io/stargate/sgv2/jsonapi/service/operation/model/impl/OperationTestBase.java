@@ -45,7 +45,7 @@ public class OperationTestBase {
     return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
   }
 
-  protected static record TestColumn(String name, int type) {
+  protected record TestColumn(String name, int type) {
     static TestColumn of(String name, int type) {
       return new TestColumn(name, type);
     }
