@@ -9,14 +9,13 @@ import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinition;
 import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
-import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 
-public class OperationTestBase extends AbstractValidatingStargateBridgeTest {
+public class OperationTestBase {
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
