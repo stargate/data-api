@@ -99,7 +99,9 @@ public class MockRow implements Row {
     if (true) {
       //      throw new IllegalStateException("No column #" + i);
     }
-    return ByteBuffer.wrap(new byte[16]);
+    byte[] b = new byte[8];
+    b[7] = 5;
+    return ByteBuffer.wrap(b);
   }
 
   @Override

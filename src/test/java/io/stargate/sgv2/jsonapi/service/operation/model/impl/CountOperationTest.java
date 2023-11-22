@@ -67,7 +67,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       QueryExecutor queryExecutorMock = mock(QueryExecutor.class);
       ColumnDefinitions columnDefs =
-          buildColumnDefs(Arrays.asList("count"), Arrays.asList(ProtocolConstants.DataType.INT));
+          buildColumnDefs(Arrays.asList("count"), Arrays.asList(ProtocolConstants.DataType.BIGINT));
       List<Row> rows = Arrays.asList(new MockRow(columnDefs, 0));
       AsyncResultSet mockResults = new MockAsyncResultSet(columnDefs, rows, null);
       when(queryExecutorMock.executeRead(eq(stmt), any(), anyInt()))
@@ -104,7 +104,7 @@ public class CountOperationTest extends AbstractValidatingStargateBridgeTest {
           .satisfies(
               commandResult -> {
                 assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
-                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(5);
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(5L);
               });
     }
 
