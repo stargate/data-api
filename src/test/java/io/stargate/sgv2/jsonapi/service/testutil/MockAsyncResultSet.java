@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class MockAsyncResultSet implements AsyncResultSet {
 
@@ -38,17 +36,6 @@ public class MockAsyncResultSet implements AsyncResultSet {
   private final ExecutionInfo executionInfo = mock(ExecutionInfo.class);
   private final ColumnDefinitions columnDefs;
   private int remaining;
-
-  public MockAsyncResultSet(
-      ColumnDefinitions columnDefs, int size, CompletionStage<AsyncResultSet> nextPage) {
-    this(
-        columnDefs,
-        IntStream.range(0, size)
-            .boxed()
-            .map(id -> new MockRow(columnDefs, id))
-            .collect(Collectors.toList()),
-        nextPage);
-  }
 
   public MockAsyncResultSet(
       ColumnDefinitions columnDefs, List<Row> rows, CompletionStage<AsyncResultSet> nextPage) {

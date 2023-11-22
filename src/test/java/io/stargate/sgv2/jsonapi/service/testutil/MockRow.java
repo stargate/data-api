@@ -33,10 +33,12 @@ public class MockRow implements Row {
   private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("json-api-test");
   private final ColumnDefinitions columnDefs;
   private final int index;
+  private final List<ByteBuffer> values;
 
-  public MockRow(ColumnDefinitions columnDefs, int index) {
+  public MockRow(ColumnDefinitions columnDefs, int index, List<ByteBuffer> values) {
     this.columnDefs = columnDefs;
     this.index = index;
+    this.values = values;
   }
 
   @Override
@@ -96,17 +98,12 @@ public class MockRow implements Row {
 
   @Override
   public ByteBuffer getBytesUnsafe(int i) {
-    if (true) {
-      //      throw new IllegalStateException("No column #" + i);
-    }
-    byte[] b = new byte[8];
-    b[7] = 5;
-    return ByteBuffer.wrap(b);
+    return values.get(i);
   }
 
   @Override
   public boolean isDetached() {
-    return false;
+    return true;
   }
 
   @Override
