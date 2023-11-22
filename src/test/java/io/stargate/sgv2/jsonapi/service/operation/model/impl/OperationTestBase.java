@@ -27,6 +27,9 @@ public class OperationTestBase {
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
+  protected static final TupleType DOC_KEY_TYPE =
+      DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
+
   protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
     return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
   }
@@ -57,10 +60,21 @@ public class OperationTestBase {
   }
 
   protected ByteBuffer byteBufferForKey(String key) {
-    TupleType tupleType = DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
-    // important! TINYINT means Byte
-    TupleValue value = tupleType.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
-    return TypeCodecs.tupleOf(tupleType).encode(value, ProtocolVersion.DEFAULT);
+    // Important! TINYINT requires Byte:
+    TupleValue value =
+        DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
+    return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  /**
+   * Factory method for constructing value for Document key of type {@code String}, to be used for
+   * {@code SimpleStatement} bound values.
+   *
+   * @param key String id of the document
+   * @return Bound value to use with {@code SimpleStatement}
+   */
+  protected TupleValue boundKeyForStatement(String key) {
+    return DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
   }
 
   protected record TestColumn(String name, RawType type) {

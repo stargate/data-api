@@ -160,9 +160,11 @@ public class FindOperationTest extends OperationTestBase {
               }
               """;
 
-      SimpleStatement stmt1 = SimpleStatement.newInstance(collectionReadCql, "doc1");
+      SimpleStatement stmt1 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
-      SimpleStatement stmt2 = SimpleStatement.newInstance(collectionReadCql, "doc2");
+      SimpleStatement stmt2 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
       List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
