@@ -1,17 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalListener;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.security.UnauthorizedException;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -42,7 +43,9 @@ public class CQLSessionCache {
   private static final String TOKEN = "token";
 
   /** CQLSession cache. */
-  private final Cache<SessionCacheKey, CqlSession> sessionCache;
+  @Inject
+  @CacheName("cql-sessions-cache")
+  Cache sessionCache;
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
@@ -50,25 +53,6 @@ public class CQLSessionCache {
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
     this.operationsConfig = operationsConfig;
-    sessionCache =
-        Caffeine.newBuilder()
-            .expireAfterAccess(
-                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
-            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-            .evictionListener(
-                (RemovalListener<SessionCacheKey, CqlSession>)
-                    (sessionCacheKey, session, cause) -> {
-                      if (sessionCacheKey != null) {
-                        if (LOGGER.isTraceEnabled()) {
-                          LOGGER.trace(
-                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
-                        }
-                      }
-                      if (session != null) {
-                        session.close();
-                      }
-                    })
-            .build();
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -81,7 +65,8 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+  @CacheResult(cacheName = "cql-sessions-cache")
+  protected CqlSession getNewSession(@CacheKey SessionCacheKey cacheKey) {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -121,7 +106,7 @@ public class CQLSessionCache {
    *
    * @return CQLSession
    */
-  public CqlSession getSession() {
+  public Uni<CqlSession> getSession() {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {

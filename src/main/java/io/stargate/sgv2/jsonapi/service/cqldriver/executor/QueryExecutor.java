@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
@@ -54,8 +53,13 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+    SimpleStatement finalSimpleStatement = simpleStatement;
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transformToUni(
+            cqlSession ->
+                Uni.createFrom().completionStage(cqlSession.executeAsync(finalSimpleStatement)));
   }
 
   /**
@@ -66,16 +70,19 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession()
-                .executeAsync(
-                    statement
-                        .setConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().writes())
-                        .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().serialConsistency())));
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transformToUni(
+            cqlSession ->
+                Uni.createFrom()
+                    .completionStage(
+                        cqlSession.executeAsync(
+                            statement
+                                .setConsistencyLevel(
+                                    operationsConfig.queriesConfig().consistency().writes())
+                                .setSerialConsistencyLevel(
+                                    operationsConfig.queriesConfig().serialConsistency()))));
   }
 
   /**
@@ -86,13 +93,16 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession()
-                .executeAsync(
-                    boundStatement.setSerialConsistencyLevel(
-                        operationsConfig.queriesConfig().consistency().schemaChanges())));
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transformToUni(
+            cqlSession ->
+                Uni.createFrom()
+                    .completionStage(
+                        cqlSession.executeAsync(
+                            boundStatement.setSerialConsistencyLevel(
+                                operationsConfig.queriesConfig().consistency().schemaChanges()))));
   }
 
   /**
@@ -103,27 +113,23 @@ public class QueryExecutor {
    * @return
    */
   protected Uni<Optional<TableMetadata>> getSchema(String namespace, String collectionName) {
-    KeyspaceMetadata keyspaceMetadata;
-    try {
-      keyspaceMetadata =
-          cqlSessionCache
-              .getSession()
-              .getMetadata()
-              .getKeyspaces()
-              .get(CqlIdentifier.fromCql("\"" + namespace + "\""));
-    } catch (Exception e) {
-      return Uni.createFrom().failure(e);
-    }
-    // if namespace does not exist, throw error
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              new JsonApiException(
-                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "The provided namespace does not exist: " + namespace));
-    }
-    // else get the table
-    return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transform(
+            session ->
+                session
+                    .getMetadata()
+                    .getKeyspaces()
+                    .get(CqlIdentifier.fromCql("\"" + namespace + "\"")))
+        .onItem()
+        .ifNull()
+        .failWith(
+            new JsonApiException(
+                ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                "The provided namespace does not exist: " + namespace))
+        .onItem()
+        .transform(keyspaceMetadata -> keyspaceMetadata.getTable("\"" + collectionName + "\""));
   }
 
   /**
@@ -134,15 +140,13 @@ public class QueryExecutor {
    * @return TableMetadata
    */
   protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
-    Optional<KeyspaceMetadata> keyspaceMetadata;
-    if ((keyspaceMetadata = cqlSessionCache.getSession().getMetadata().getKeyspace(namespace))
-        .isPresent()) {
-      Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
-      if (tableMetadata.isPresent()) {
-        return Uni.createFrom().item(tableMetadata.get());
-      }
-    }
-    return Uni.createFrom().nullItem();
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transform(cqlSession -> cqlSession.getMetadata().getKeyspace(namespace).orElse(null))
+        .onItem()
+        .ifNotNull()
+        .transform(keyspaceMetadata -> keyspaceMetadata.getTable(collectionName).orElse(null));
   }
 
   private static byte[] decodeBase64(String base64encoded) {

@@ -6,10 +6,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
@@ -37,8 +39,10 @@ public class FixedTokenTests {
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    UniAssertSubscriber<CqlSession> subscriber = cqlSessionCacheForTest.getSession()
+                    .subscribe().withSubscriber(UniAssertSubscriber.create());
     assertThat(
-            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+            ((DefaultDriverContext) subscriber.awaitItem().assertItem(cqlSession -> cqlSession.getContext())
                 .getStartupOptions()
                 .get(TENANT_ID_PROPERTY_KEY))
         .isEqualTo(TENANT_ID_FOR_TEST);

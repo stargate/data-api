@@ -22,17 +22,15 @@ public record FindNamespacesOperations(CQLSessionCache cqlSessionCache) implemen
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-
-    return Uni.createFrom()
-        .item(
-            () -> {
-              // get all existing keyspaces
-              List<String> keyspacesList =
-                  cqlSessionCache.getSession().getMetadata().getKeyspaces().keySet().stream()
-                      .map(CqlIdentifier::asInternal)
-                      .toList();
-              return new Result(keyspacesList);
-            });
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transform(
+            cqlSession ->
+                new Result(
+                    cqlSession.getMetadata().getKeyspaces().keySet().stream()
+                        .map(CqlIdentifier::asInternal)
+                        .toList()));
   }
 
   // simple result wrapper

@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -51,23 +50,25 @@ public record FindCollectionsOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession()
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\""));
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              new JsonApiException(
-                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "Unknown namespace %s, you must create it first."
-                      .formatted(commandContext.namespace())));
-    }
-    return Uni.createFrom()
-        .item(
-            () -> {
+    return cqlSessionCache
+        .getSession()
+        .onItem()
+        .transform(
+            cqlSession ->
+                cqlSession
+                    .getMetadata()
+                    .getKeyspaces()
+                    .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\"")))
+        .onItem()
+        .ifNull()
+        .failWith(
+            new JsonApiException(
+                ErrorCode.NAMESPACE_DOES_NOT_EXIST,
+                "Unknown namespace %s, you must create it first."
+                    .formatted(commandContext.namespace())))
+        .onItem()
+        .transform(
+            keyspaceMetadata -> {
               List<CollectionSettings> properties =
                   keyspaceMetadata
                       // get all tables
