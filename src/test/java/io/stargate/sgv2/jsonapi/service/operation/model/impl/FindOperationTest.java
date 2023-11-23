@@ -874,7 +874,7 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
+    @Disabled // Somehow fails with binding error?!
     @Test
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
@@ -890,6 +890,20 @@ public class FindOperationTest extends OperationTestBase {
                     "tags" : ["tag1","tag2"]
                   }
                   """;
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags");
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      /*
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(2))
               .withPageSize(1)
@@ -916,6 +930,8 @@ public class FindOperationTest extends OperationTestBase {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
+       */
+
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters = List.of(new DBFilterBase.SizeFilter("tags", 2));
@@ -934,14 +950,14 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor0)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -952,9 +968,10 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
+    @Disabled // Somehow fails with binding error?!
     @Test
     public void findWithArrayEqualFilter() throws Exception {
+      // Due to trimming of indexes, former "array_equals" moved under "query_text_values":
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
@@ -968,7 +985,21 @@ public class FindOperationTest extends OperationTestBase {
                     "tags" : ["tag1","tag2"]
                   }
                   """;
-      final String hash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
+
+      final String tagsHash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", tagsHash);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      /*
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
               .withPageSize(1)
@@ -995,6 +1026,8 @@ public class FindOperationTest extends OperationTestBase {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
+       */
+
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
@@ -1013,14 +1046,14 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor0)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
