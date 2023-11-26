@@ -5,10 +5,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
@@ -24,7 +28,9 @@ public class CqlSessionCacheTest {
 
   @InjectMock protected StargateRequestInfo stargateRequestInfo;
 
-  @Inject CQLSessionCache cqlSessionCache;
+  @Inject
+  @CacheName("cql-sessions-cache")
+  Cache sessionCache;
 
   @Inject OperationsConfig operationsConfig;
 
@@ -39,8 +45,19 @@ public class CqlSessionCacheTest {
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set cache
+    Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
+    sessionCacheField.setAccessible(true);
+    sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+    CqlSession cqlSession =
+        cqlSessionCacheForTest
+            .getSession()
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
     assertThat(
-            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+            ((DefaultDriverContext) cqlSession.getContext())
                 .getStartupOptions()
                 .get(TENANT_ID_PROPERTY_KEY))
         .isEqualTo("default_tenant");
@@ -57,8 +74,19 @@ public class CqlSessionCacheTest {
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set cache
+    Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
+    sessionCacheField.setAccessible(true);
+    sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+    CqlSession cqlSession =
+        cqlSessionCacheForTest
+            .getSession()
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
     assertThat(
-            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+            ((DefaultDriverContext) cqlSession.getContext())
                 .getStartupOptions()
                 .get(TENANT_ID_PROPERTY_KEY))
         .isEqualTo(TENANT_ID_FOR_TEST);
