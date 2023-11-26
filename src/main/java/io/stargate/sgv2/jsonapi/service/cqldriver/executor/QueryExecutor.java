@@ -118,10 +118,7 @@ public class QueryExecutor {
         .onItem()
         .transform(
             session ->
-                session
-                    .getMetadata()
-                    .getKeyspaces()
-                    .get(CqlIdentifier.fromCql("\"" + namespace + "\"")))
+                session.getMetadata().getKeyspaces().get(CqlIdentifier.fromInternal(namespace)))
         .onItem()
         .ifNull()
         .failWith(

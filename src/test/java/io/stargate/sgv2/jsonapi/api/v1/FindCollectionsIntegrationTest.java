@@ -37,20 +37,18 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Order(1)
     public void happyPath() {
       // create first
-      String json =
-          """
-          {
-            "createCollection": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted("collection1");
-
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                {
+                  "createCollection": {
+                    "name": "%s"
+                  }
+                }
+                """
+                  .formatted("collection1"))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -58,18 +56,15 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body("status.ok", is(1));
 
       // then find
-      json =
-          """
-          {
-            "findCollections": {
-            }
-          }
-          """;
-
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                  {
+                    "findCollections": { }
+                  }
+                  """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -79,7 +74,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(1)
+    @Order(2)
     public void happyPathWithExplain() {
       String json =
           """
@@ -155,6 +150,44 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
     @Test
     @Order(3)
+    public void happyPathWithMixedCase() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                {
+                                  "createCollection": {
+                                    "name": "TableName"
+                                  }
+                                }
+                                """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // then find
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                {
+                                  "findCollections": { }
+                                }
+                                """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
+          .body("status.collections", hasItem("TableName"));
+    }
+
+    @Test
+    @Order(4)
     public void emptyNamespace() {
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
@@ -220,7 +253,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     /**
      * The keyspace that exists when database is created, and check if there is no collection in
      * this default keyspace.
@@ -247,7 +280,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     public void notExistingNamespace() {
       // then find
       String json =

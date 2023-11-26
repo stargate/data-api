@@ -206,7 +206,7 @@
       <properties>
         <skipITs>false</skipITs>
         <quarkus.package.type>native</quarkus.package.type>
-        <!-- Please update github workflows that build docker images if changing image name -->
+        <!-- Please update GitHub workflows that build docker images if changing image name -->
         <quarkus.container-image.name>jsonapi-native</quarkus.container-image.name>
         <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
       </properties>

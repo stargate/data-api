@@ -58,7 +58,7 @@ public record FindCollectionsOperation(
                 cqlSession
                     .getMetadata()
                     .getKeyspaces()
-                    .get(CqlIdentifier.fromCql("\"" + commandContext.namespace() + "\"")))
+                    .get(CqlIdentifier.fromInternal(commandContext.namespace())))
         .onItem()
         .ifNull()
         .failWith(

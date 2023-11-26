@@ -1,0 +1,644 @@
+{
+	"info": {
+		"_postman_id": "51ff01b2-f155-4a2b-b996-f62e956cb745",
+		"name": "JSON API with Astra DB Vector Search - public preview",
+		"description": "To execute these commands in this **public preview** release of the **JSON API collection**:\n\n1. In DataStax [Astra Portal](https://astra.datastax.com/), create an **Astra DB Vector** database. To follow along with the examples, specify **purchase_database** as the keyspace.\n    1. In the context of Astra DB, the term \"keyspace\" is equivalent to a JSON API namespace.\n    2. If you already have a different keyspace name defined for your Astra DB Vector database, you can use **Add Keyspace** on your database's **Overview** tab in **Astra Portal**.\n2. When your vector database is Active in [Astra Portal](https://astra.datastax.com) , go to the **Connect** tab for your database. Click **Generate Token** with **Database Administrator** role. Copy and/or download the token's value.\n3. Here in Postman, define the following variables (**local** only) with values that are specific to your Astra DB Vector database: ASTRA_DB_KEYSPACE, ASTRA_DB_ID, ASTRA_DB_REGION, ASTRA_DB_APPLICATION_TOKEN.\n    1. The ASTRA_DB_APPLICATION_TOKEN is used in the JSON API call Headers.\n    2. You can also define a value for the COLLECTION variable. In the examples, after it's created here in Postman by the **createCollection** operation, we define and use COLLECTION variable with a value of **vector_collection**.\n4. Download and install the [Postman app,](https://www.postman.com/downloads/) if you haven't already.\n    \n\n**TIP**: After stepping through all the commands, you can reset the example data and start over by executing the final call, deleteCollection.\n\n**NOTE**: Do not use this JSON API public preview software in production. It is intended for development environments only. See the [DataStax Preview Terms](https://www.datastax.com/legal/previewterms).\n\nAlso see the [JSON API (non-vector) - public preview](https://www.postman.com/datastax/workspace/stargate-cassandra/collection/25879866-266032b1-1fe9-4abd-aee9-e6e4b335f921?tab=overview) collection in this Stargate-Cassandra workspace.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25879866",
+		"_collection_link": "https://www.postman.com/datastax/workspace/stargate-cassandra/collection/25879866-51ff01b2-f155-4a2b-b996-f62e956cb745?action=share&source=collection_link&creator=25879866"
+	},
+	"item": [
+		{
+			"name": "Create vector-enabled collection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"createCollection\": {\n    \"name\": \"vector_collection\",\n    \"options\" : {\n      \"vector\" : {\n      \"dimension\" : 5,\n      \"metric\" : \"cosine\"\n      }\n    }\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find Collections",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"findCollections\": {\n    \"options\" : {\n      \"explain\" : true\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Insert One document to purchase collection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"insertOne\": {\n        \"document\": {\n            \"_id\": \"4\",\n            \"name\": \"Coded Cleats Copy\",\n            \"description\": \"ChatGPT integrated sneakers that talk to you\",\n            \"$vector\": [0.25, 0.25, 0.25, 0.25, 0.25]\n        }\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Insert Many documents to purchase collection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"insertMany\": {\n     \"documents\": [\n       {\n         \"_id\": \"1\",\n         \"name\": \"Coded Cleats\",\n         \"description\": \"ChatGPT integrated sneakers that talk to you\",\n         \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.05]\n        },\n        {\n          \"_id\": \"2\",\n          \"name\": \"Logic Layers\",\n          \"description\": \"An AI quilt to help you sleep forever\",\n          \"$vector\": [0.45, 0.09, 0.01, 0.2, 0.11]\n        },\n        {\n          \"_id\": \"3\",\n          \"name\": \"Vision Vector Frame\",\n          \"description\": \"Vision Vector Frame - A deep learning display that controls your mood\",\n          \"$vector\": [0.1, 0.05, 0.08, 0.3, 0.6]\n        }\n     ]\n   }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find with vector search",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"find\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"options\" : {\n        \"limit\" : 100\n    }\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find with vector search projection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"find\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"projection\" : {\"$vector\" : 1, \"$similarity\" : 1},\n    \"options\" : {\n        \"limit\" : 100\n    }\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindOne with vector search",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"findOne\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"projection\" : {\"$vector\" : 1}\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindOneAndUpdate with vector search",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"findOneAndUpdate\": {\n        \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n        \"update\" : {\"$set\" : {\"status\" : \"active\"}},\n        \"options\" : {\"returnDocument\" : \"after\"}\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindOneAndReplace with vector search",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"findOneAndReplace\": {\n        \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n        \"replacement\" : {\n            \"_id\": \"3\",\n            \"name\": \"Vision Vector Frame\",\n            \"description\": \"Vision Vector Frame - A deep learning display that controls your mood\",\n            \"$vector\": [\n                0.1,\n                0.05,\n                0.08,\n                0.3,\n                0.6\n            ],\n            \"status\": \"inactive\"\n        },\n        \"options\" : {\"returnDocument\" : \"after\"}\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindOneAndDelete with vector search",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"findOneAndDelete\": {\n        \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]}\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{COLLECTION}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}",
+						"{{COLLECTION}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete a Collection",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"deleteCollection\": {\n    \"name\": \"{{COLLECTION}}\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"json",
+						"v1",
+						"{{ASTRA_DB_KEYSPACE}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "ASTRA_DB_KEYSPACE",
+			"value": "REPLACE ME"
+		},
+		{
+			"key": "ASTRA_DB_ID",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_REGION",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_APPLICATION_TOKEN",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "COLLECTION",
+			"value": "vector_collection",
+			"type": "string"
+		},
+		{
+			"key": "base_url",
+			"value": "https://{{ASTRA_DB_ID}}-{{ASTRA_DB_REGION}}.apps.astra.datastax.com",
+			"type": "string"
+		}
+	]
+}
