@@ -1722,7 +1722,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findAllSortDescending() throws Exception {
       String collectionReadCql =
@@ -1771,115 +1770,96 @@ public class FindOperationTest extends OperationTestBase {
                   "username": "user6"
                 }
                 """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['username']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.of("user6"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.of("user4"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of("user2"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of("user1"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.of("user3"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.of("user5"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL)));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofDate("query_timestamp_values['username']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  "user6",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  "user4",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  "user2",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  "user1",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  "user3",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  "user5",
+                  null,
+                  null,
+                  null,
+                  null));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -1898,14 +1878,14 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor0)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
