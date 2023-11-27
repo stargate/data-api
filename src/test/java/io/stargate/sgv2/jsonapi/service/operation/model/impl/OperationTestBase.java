@@ -13,6 +13,7 @@ import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
+import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import java.nio.ByteBuffer;
@@ -46,6 +47,16 @@ public class OperationTestBase {
 
   protected ByteBuffer byteBufferFrom(long value) {
     return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected ByteBuffer byteBufferFrom(boolean value) {
+    return TypeCodecs.BOOLEAN.encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  private static TupleType keyTupleType = DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
+
+  protected ByteBuffer byteBufferFrom(TupleValue value) {
+    return TypeCodecs.tupleOf(keyTupleType).encode(value, ProtocolVersion.DEFAULT);
   }
 
   protected ByteBuffer byteBufferFrom(String value) {
@@ -82,6 +93,19 @@ public class OperationTestBase {
 
     static TestColumn ofUuid(String name) {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.UUID));
+    }
+
+    static TestColumn ofBoolean(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN));
+    }
+
+    static TestColumn ofKey(String name) {
+      return of(
+          name,
+          new RawType.RawTuple(
+              Lists.newArrayList(
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR))));
     }
 
     static TestColumn keyColumn() {
