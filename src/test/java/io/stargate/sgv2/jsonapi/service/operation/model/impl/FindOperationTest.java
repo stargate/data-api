@@ -874,7 +874,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled // Somehow fails with binding error?!
     @Test
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
