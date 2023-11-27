@@ -1,17 +1,26 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
-import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -26,32 +35,30 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
+public class FindOperationTest extends OperationTestBase {
+  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-
-  private static final CommandContext VECTOR_COMMAND_CONTEXT =
+  private final CommandContext VECTOR_COMMAND_CONTEXT =
       new CommandContext(
           KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
-  private static final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
+  private final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
       new CommandContext(
           KEYSPACE_NAME,
           COLLECTION_NAME,
@@ -59,11 +66,18 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
           CollectionSettings.SimilarityFunction.DOT_PRODUCT,
           null);
 
-  @Inject QueryExecutor queryExecutor;
   @Inject ObjectMapper objectMapper;
+
+  private QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
   @Nested
   class Execute {
+    private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
+        buildColumnDefs(
+            Arrays.asList(
+                TestColumn.keyColumn(),
+                TestColumn.ofUuid("tx_id"),
+                TestColumn.ofVarchar("doc_json")));
 
     @Test
     public void findAll() throws Exception {
@@ -85,37 +99,20 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
                     "username": "user2"
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(0, "doc1", UUID.randomUUID(), doc1),
+              resultRow(1, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet mockResults = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -138,7 +135,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -149,6 +146,14 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    MockRow resultRow(int index, String key, UUID txId, String doc) {
+      return new MockRow(
+          KEY_TXID_JSON_COLUMNS,
+          index,
+          Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
+    }
+
+    @Disabled
     @Test
     public void byIdWithInOperator() throws Exception {
       String collectionReadCql =
@@ -266,6 +271,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void byIdWithInEmptyArray() throws Exception {
       LogicalExpression implicitAnd = LogicalExpression.and();
@@ -300,6 +306,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void byIdWithInAndOtherOperator() throws Exception {
       String collectionReadCql =
@@ -433,6 +440,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findOneByIdWithInOperator() throws Exception {
       String collectionReadCql =
@@ -550,6 +558,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithId() throws Exception {
       String collectionReadCql =
@@ -626,6 +635,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithIdNoData() {
       String collectionReadCql =
@@ -691,6 +701,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithDynamic() throws Exception {
       String collectionReadCql =
@@ -769,6 +780,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
@@ -847,6 +859,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithDateFilter() throws Exception {
       String collectionReadCql =
@@ -928,6 +941,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithExistsFilter() throws Exception {
       String collectionReadCql =
@@ -1002,6 +1016,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithAllFilter() throws Exception {
       String collectionReadCql =
@@ -1082,6 +1097,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
@@ -1159,6 +1175,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithArrayEqualFilter() throws Exception {
       String collectionReadCql =
@@ -1237,6 +1254,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findWithSubDocEqualFilter() throws Exception {
       String collectionReadCql =
@@ -1319,6 +1337,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
     ///    FAILURES   ///
     /////////////////////
 
+    @Disabled
     @Test
     public void failurePropagated() {
       String collectionReadCql =
@@ -1379,6 +1398,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(failure).isEqualTo(exception);
     }
 
+    @Disabled
     @Test
     public void findAllSort() throws Exception {
       String collectionReadCql =
@@ -1574,6 +1594,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findAllSortByDate() throws Exception {
       String collectionReadCql =
@@ -1788,6 +1809,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findAllSortWithSkip() throws Exception {
       String collectionReadCql =
@@ -1977,6 +1999,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void findAllSortDescending() throws Exception {
       String collectionReadCql =
@@ -2180,6 +2203,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
   @Nested
   class GetDocuments {
 
+    @Disabled
     @Test
     public void findWithId() {
       String collectionReadCql =
@@ -2253,6 +2277,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.docs()).hasSize(1);
     }
 
+    @Disabled
     @Test
     public void findWithIdWithIdRetry() {
       String collectionReadCql =
@@ -2327,6 +2352,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.docs()).hasSize(1);
     }
 
+    @Disabled
     @Test
     public void findWithDynamic() {
       String collectionReadCql =
@@ -2399,6 +2425,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.docs()).hasSize(1);
     }
 
+    @Disabled
     @Test
     public void findWithDynamicWithIdRetry() {
       String collectionReadCql =
@@ -2476,6 +2503,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.docs()).hasSize(1);
     }
 
+    @Disabled
     @Test
     public void vectorSearch() throws Exception {
       String collectionReadCql =
@@ -2563,6 +2591,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
+    @Disabled
     @Test
     public void vectorSearchWithFilter() throws Exception {
       String collectionReadCql =
@@ -2646,6 +2675,7 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
   @Nested
   class LogicalExpressionOrder {
 
+    @Disabled
     @Test
     public void expressionSort() {
 
@@ -2696,5 +2726,10 @@ public class FindOperationTest extends AbstractValidatingStargateBridgeTest {
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
     }
+  }
+
+  // !!! TEMPORARY BOGUS OVERRIDE
+  protected ValidatingStargateBridge.QueryExpectation withQuery(Object... args) {
+    return null;
   }
 }
