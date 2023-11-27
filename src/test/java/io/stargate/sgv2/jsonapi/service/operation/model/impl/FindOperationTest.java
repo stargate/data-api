@@ -1349,7 +1349,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findAllSortByDate() throws Exception {
       String collectionReadCql =
@@ -1417,111 +1416,96 @@ public class FindOperationTest extends OperationTestBase {
                       }
                     }
                     """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['sort_date']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['sort_date']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['sort_date']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['sort_date']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['sort_date']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531700000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531500000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531300000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531200000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531400000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531600000L))));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['sort_date']"),
+              TestColumn.ofDecimal("query_dbl_values['sort_date']"),
+              TestColumn.ofBoolean("query_bool_values['sort_date']"),
+              TestColumn.ofVarchar("query_null_values['sort_date']"),
+              TestColumn.ofDate("query_timestamp_values['sort_date']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531700000L),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531500000L),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531300000L),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531200000L),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531400000L),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531600000L));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -1540,14 +1524,14 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor0)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
