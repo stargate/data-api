@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.data.TupleValue;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -103,6 +104,10 @@ public class OperationTestBase {
    */
   protected TupleValue boundKeyForStatement(String key) {
     return DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
+  }
+
+  protected CqlVector<Float> vectorForStatement(Float... value) {
+    return CqlVector.newInstance(value);
   }
 
   protected record TestColumn(String name, RawType type) {
