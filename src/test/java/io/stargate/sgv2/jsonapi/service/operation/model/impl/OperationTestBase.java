@@ -31,12 +31,12 @@ public class OperationTestBase {
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
-  protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
-    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
+  protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
+    return buildColumnDefs(Arrays.asList(columns));
   }
 
-  protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
-    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, Arrays.asList(columns));
+  protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
+    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
   }
 
   protected ColumnDefinitions buildColumnDefs(

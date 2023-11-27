@@ -57,10 +57,7 @@ public class FindOperationTest extends OperationTestBase {
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
-          Arrays.asList(
-              TestColumn.keyColumn(),
-              TestColumn.ofUuid("tx_id"),
-              TestColumn.ofVarchar("doc_json")));
+          TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
 
   @Inject ObjectMapper objectMapper;
 
