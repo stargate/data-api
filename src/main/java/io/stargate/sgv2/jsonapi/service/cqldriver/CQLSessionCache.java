@@ -52,10 +52,7 @@ public class CQLSessionCache {
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig) {
     this.operationsConfig = operationsConfig;
-    LOGGER.info(
-        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
-        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
-        operationsConfig.databaseConfig().sessionCacheMaxSize());
+    LOGGER.info("CQLSessionCache initialized!");
   }
 
   /**

@@ -156,14 +156,6 @@ public interface OperationsConfig {
     @NotNull
     @WithDefault("datacenter1")
     String localDatacenter();
-
-    /** Time to live for CQLSession in cache in seconds. */
-    @WithDefault("300")
-    long sessionCacheTtlSeconds();
-
-    /** Maximum number of CQLSessions in cache. */
-    @WithDefault("100")
-    long sessionCacheMaxSize();
   }
 
   /** Query consistency related configs. */
