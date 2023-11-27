@@ -64,6 +64,7 @@ quarkus:
   application:
     name: Stargate JSON API
 
+  # CQL sessions cache configuration
   cache:
     caffeine:
       cql-sessions-cache:
