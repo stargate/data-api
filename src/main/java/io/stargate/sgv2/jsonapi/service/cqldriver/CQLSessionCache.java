@@ -120,9 +120,7 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return operationsConfig.databaseConfig().fixedToken().isPresent()
-        ? operationsConfig.databaseConfig().fixedToken().get()
-        : null;
+    return Objects.requireNonNull(operationsConfig.databaseConfig().fixedToken()).orElse(null);
   }
 
   /**
@@ -162,7 +160,7 @@ public class CQLSessionCache {
    * @param tenantId tenant id
    * @param credentials credentials (username/password or token)
    */
-  private record SessionCacheKey(String tenantId, Credentials credentials) {}
+  protected record SessionCacheKey(String tenantId, Credentials credentials) {}
 
   /**
    * Credentials for CQLSession cache when username and password is provided.
@@ -170,7 +168,7 @@ public class CQLSessionCache {
    * @param userName
    * @param password
    */
-  private record UsernamePasswordCredentials(String userName, String password)
+  protected record UsernamePasswordCredentials(String userName, String password)
       implements Credentials {}
 
   /**
@@ -178,7 +176,7 @@ public class CQLSessionCache {
    *
    * @param token
    */
-  private record TokenCredentials(String token) implements Credentials {}
+  protected record TokenCredentials(String token) implements Credentials {}
 
   /** A marker interface for credentials. */
   private interface Credentials {}

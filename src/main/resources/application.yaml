@@ -64,11 +64,12 @@ quarkus:
   application:
     name: Stargate JSON API
 
-  caffeine:
-    cql-sessions-cache:
-      maximum-size: 50
-      expire-after-access: PT5M
-      metrics-enabled: true
+  cache:
+    caffeine:
+      cql-sessions-cache:
+        maximum-size: 50
+        expire-after-access: PT5M
+        metrics-enabled: true
 
   # banner for the startup
   banner:
