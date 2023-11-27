@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheName;
-import io.quarkus.cache.CacheResult;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
@@ -65,7 +64,6 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  @CacheResult(cacheName = "cql-sessions-cache")
   protected CqlSession getNewSession(@CacheKey SessionCacheKey cacheKey) {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
