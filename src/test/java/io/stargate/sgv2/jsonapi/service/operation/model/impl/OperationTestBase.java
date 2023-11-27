@@ -34,6 +34,10 @@ public class OperationTestBase {
     return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
   }
 
+  protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
+    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, Arrays.asList(columns));
+  }
+
   protected ColumnDefinitions buildColumnDefs(
       String ks, String tableName, List<TestColumn> columns) {
     List<ColumnDefinition> columnDefs = new ArrayList<>();
@@ -59,11 +63,35 @@ public class OperationTestBase {
     return TypeCodecs.UUID.encode(value, ProtocolVersion.DEFAULT);
   }
 
+  protected ByteBuffer byteBufferFromAny(Object value) {
+    if (value == null) {
+      return byteBufferForNull();
+    }
+    if (value instanceof ByteBuffer) {
+      return (ByteBuffer) value;
+    }
+    if (value instanceof UUID) {
+      return byteBufferFrom((UUID) value);
+    }
+    if (value instanceof String) {
+      return byteBufferFrom((String) value);
+    }
+    if (value instanceof Long) {
+      return byteBufferFrom((Long) value);
+    }
+    throw new IllegalArgumentException(
+        "byteBufferFromAny() does not (yet?) support value of type: " + value.getClass());
+  }
+
   protected ByteBuffer byteBufferForKey(String key) {
     // Important! TINYINT requires Byte:
     TupleValue value =
         DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
     return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected ByteBuffer byteBufferForNull() {
+    return ByteBuffer.wrap(new byte[0]);
   }
 
   /**
@@ -84,6 +112,18 @@ public class OperationTestBase {
 
     static TestColumn of(String name, RawType type) {
       return new TestColumn(name, type);
+    }
+
+    static TestColumn ofBoolean(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN));
+    }
+
+    static TestColumn ofDate(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DATE));
+    }
+
+    static TestColumn ofDecimal(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DECIMAL));
     }
 
     static TestColumn ofLong(String name) {
