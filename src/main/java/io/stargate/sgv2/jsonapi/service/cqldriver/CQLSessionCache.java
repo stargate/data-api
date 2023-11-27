@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ public class CQLSessionCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
 
   /** Configuration for the JSON API operations. */
-  private final OperationsConfig operationsConfig;
+  @Inject OperationsConfig operationsConfig;
 
   /** Stargate request info. */
   @Inject StargateRequestInfo stargateRequestInfo;
@@ -46,13 +47,26 @@ public class CQLSessionCache {
   @CacheName("cql-sessions-cache")
   Cache sessionCache;
 
+  /** Backend type Astra */
   public static final String ASTRA = "astra";
+
+  /** Backend type Cassandra */
   public static final String CASSANDRA = "cassandra";
-  /** Default token property name which will be used by the integration tests */
+
+  /** Maximum size of the sessions cache. */
+  @ConfigProperty(name = "quarkus.cache.caffeine.cql-sessions-cache.maximum-size")
+  int sessionCacheMaxSizeConfigured;
+
+  /** Expire after access time of the sessions cache. */
+  @ConfigProperty(name = "quarkus.cache.caffeine.cql-sessions-cache.expire-after-access")
+  String sessionCacheTTLConfigured;
+
   @Inject
-  public CQLSessionCache(OperationsConfig operationsConfig) {
-    this.operationsConfig = operationsConfig;
-    LOGGER.info("CQLSessionCache initialized!");
+  public CQLSessionCache() {
+    LOGGER.info(
+        "CQLSessionCache initialized with expire after access time of {} and max size of {}",
+        sessionCacheTTLConfigured,
+        sessionCacheMaxSizeConfigured);
   }
 
   /**
