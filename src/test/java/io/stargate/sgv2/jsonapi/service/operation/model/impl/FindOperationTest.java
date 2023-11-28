@@ -34,6 +34,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -690,7 +691,7 @@ public class FindOperationTest extends OperationTestBase {
                       }
                       """;
       final String dateFilterValue =
-          "date_field " + new DocValueHasher().getHash(new Date(1672531200000L)).hash();
+          "date_field " + new DocValueHasher().getHash(Instant.ofEpochMilli(1672531200000L)).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, dateFilterValue);
       List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
