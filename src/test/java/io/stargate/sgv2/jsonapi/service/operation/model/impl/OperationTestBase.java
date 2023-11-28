@@ -13,7 +13,6 @@ import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
-import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import java.nio.ByteBuffer;
@@ -97,15 +96,6 @@ public class OperationTestBase {
 
     static TestColumn ofBoolean(String name) {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN));
-    }
-
-    static TestColumn ofKey(String name) {
-      return of(
-          name,
-          new RawType.RawTuple(
-              Lists.newArrayList(
-                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
-                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR))));
     }
 
     static TestColumn keyColumn() {

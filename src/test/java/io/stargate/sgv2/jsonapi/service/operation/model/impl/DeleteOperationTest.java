@@ -32,7 +32,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +60,14 @@ public class DeleteOperationTest extends OperationTestBase {
         buildColumnDefs(Arrays.asList(TestColumn.ofBoolean("[applied]")));
 
     private final ColumnDefinitions SELECT_RESULT_COLUMNS =
-        buildColumnDefs(Arrays.asList(TestColumn.ofKey("key"), TestColumn.ofUuid("tx_id")));
+        buildColumnDefs(Arrays.asList(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id")));
+
+    private final ColumnDefinitions SELECT_WITH_JSON_RESULT_COLUMNS =
+        buildColumnDefs(
+            Arrays.asList(
+                TestColumn.keyColumn(),
+                TestColumn.ofUuid("tx_id"),
+                TestColumn.ofVarchar("doc_json")));
 
     @Test
     public void deleteWithId() {
@@ -71,7 +77,6 @@ public class DeleteOperationTest extends OperationTestBase {
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
-
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, keyValue);
 
       List<Row> rows =
@@ -144,23 +149,26 @@ public class DeleteOperationTest extends OperationTestBase {
     }
 
     @Test
-    public void deleteWithSizeFilter() {
+    public void deleteOneAndReturnById() {
       UUID tx_id = UUID.randomUUID();
-
+      String docJson = "{\"_id\":\"doc1\",\"a\":1}";
       String collectionReadCql =
-          "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_size[?] = ? LIMIT 1"
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", 2);
+
       final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, keyValue);
 
       List<Row> rows =
           Arrays.asList(
               new MockRow(
-                  SELECT_RESULT_COLUMNS,
+                  SELECT_WITH_JSON_RESULT_COLUMNS,
                   0,
-                  Arrays.asList(byteBufferFrom(keyValue), byteBufferFrom(tx_id))));
+                  Arrays.asList(
+                      byteBufferFrom(keyValue), byteBufferFrom(tx_id), byteBufferFrom(docJson))));
 
-      AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
+      AsyncResultSet mockResults =
+          new MockAsyncResultSet(SELECT_WITH_JSON_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
@@ -187,82 +195,6 @@ public class DeleteOperationTest extends OperationTestBase {
                 deleteCallCount.incrementAndGet();
                 return Uni.createFrom().item(deleteResults);
               });
-
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      List<DBFilterBase> filters = List.of(new DBFilterBase.SizeFilter("tags", 2));
-      implicitAnd.comparisonExpressions.add(
-          new ComparisonExpression("tags", new ArrayList<>(), filters));
-
-      FindOperation findOperation =
-          FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              ReadType.KEY,
-              objectMapper);
-
-      DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
-
-      final UniAssertSubscriber<Supplier<CommandResult>> supplierUniAssertSubscriber =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure();
-
-      supplierUniAssertSubscriber.getFailure().printStackTrace();
-      // assert query execution
-      assertThat(selectCallCount.get()).isEqualTo(1);
-      assertThat(deleteCallCount.get()).isEqualTo(1);
-
-      // then result
-      // CommandResult result = execute.get();
-      // assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
-    }
-    /*
-    @Test
-    public void deleteOneAndReturnById() {
-      UUID tx_id = UUID.randomUUID();
-      String docJson = "{\"_id\":\"doc1\",\"a\":1}";
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert readAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id),
-                          Values.of(docJson))));
-
-      String collectionDeleteCql =
-          "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert deleteAssert =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of(tx_id))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -292,8 +224,8 @@ public class DeleteOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      readAssert.assertExecuteCount().isOne();
-      deleteAssert.assertExecuteCount().isOne();
+      assertThat(selectCallCount.get()).isEqualTo(1);
+      assertThat(deleteCallCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -302,6 +234,7 @@ public class DeleteOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson);
     }
 
+    /*
     @Test
     public void deleteOneAndReturnWithSort() {
       UUID tx_id1 = UUID.randomUUID();
