@@ -869,7 +869,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled // fails on binding Collection value
     @Test
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
@@ -934,7 +933,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled // fails on binding Map key
     @Test
     public void findWithArrayEqualFilter() throws Exception {
       // Due to trimming of indexes, former "array_equals" moved under "query_text_values":
@@ -1030,7 +1028,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled // fails on binding Map key
     @Test
     public void findWithSubDocEqualFilter() throws Exception {
       String collectionReadCql =
