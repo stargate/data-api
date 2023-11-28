@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import io.stargate.sgv2.api.common.cql.builder.Marker;
+import io.stargate.bridge.grpc.Values;
+import io.stargate.sgv2.api.common.cql.builder.Literal;
 import java.util.Objects;
 
-public class JsonTerm extends Marker {
+public class JsonTerm extends Literal {
   static final String NULL_ERROR_MESSAGE = "Use Values.NULL to bind a null CQL value";
   private final Object key;
   private final Object value;
@@ -13,6 +14,7 @@ public class JsonTerm extends Marker {
   }
 
   public JsonTerm(Object key, Object value) {
+    super(Values.NULL);
     this.key = key;
     this.value = value;
   }
