@@ -41,7 +41,7 @@ public class CqlSessionCacheTimingTests {
     Optional<String> tokenForTest = operationsConfig.databaseConfig().fixedToken();
     assertThat(tokenForTest).isPresent();
     when(stargateRequestInfo.getCassandraToken()).thenReturn(tokenForTest);
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
@@ -50,6 +50,13 @@ public class CqlSessionCacheTimingTests {
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
     sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+
+    // set operationsConfig
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+
     CqlSession cqlSession =
         cqlSessionCacheForTest
             .getSession()

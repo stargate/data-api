@@ -56,7 +56,7 @@ public class CqlSessionCacheTests {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
@@ -65,6 +65,11 @@ public class CqlSessionCacheTests {
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
     sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+    // set operationsConfig
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     CqlSession cqlSession =
         cqlSessionCacheForTest
             .getSession()
@@ -87,7 +92,7 @@ public class CqlSessionCacheTests {
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
@@ -96,6 +101,11 @@ public class CqlSessionCacheTests {
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
     sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+    // set operationsConfig
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     CqlSession cqlSession =
         cqlSessionCacheForTest
             .getSession()
@@ -117,7 +127,7 @@ public class CqlSessionCacheTests {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
@@ -126,6 +136,11 @@ public class CqlSessionCacheTests {
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
     sessionCacheField.set(cqlSessionCacheForTest, sessionCache);
+    // set operationsConfig
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     // Throwable
     Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
     assertThat(t).isNotNull().isInstanceOf(UnauthorizedException.class).hasMessage("Unauthorized");
@@ -134,7 +149,7 @@ public class CqlSessionCacheTests {
   @Test
   public void testOSSCxCQLSessionCacheMultiTenant()
       throws NoSuchFieldException, IllegalAccessException {
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     // set cache
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
@@ -154,6 +169,12 @@ public class CqlSessionCacheTests {
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
 
+      // set operationsConfig
+      Field operationsConfigField =
+          cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+      operationsConfigField.setAccessible(true);
+      operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+
       CqlSession cqlSession =
           cqlSessionCacheForTest
               .getSession()
@@ -172,7 +193,7 @@ public class CqlSessionCacheTests {
   @Test
   public void testOSSCxCQLSessionCacheEviction()
       throws NoSuchFieldException, IllegalAccessException {
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache();
     // set cache
     Field sessionCacheField = cqlSessionCacheForTest.getClass().getDeclaredField("sessionCache");
     sessionCacheField.setAccessible(true);
@@ -190,6 +211,12 @@ public class CqlSessionCacheTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+
+      // set operationsConfig
+      Field operationsConfigField =
+          cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+      operationsConfigField.setAccessible(true);
+      operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
 
       CqlSession cqlSession =
           cqlSessionCacheForTest
