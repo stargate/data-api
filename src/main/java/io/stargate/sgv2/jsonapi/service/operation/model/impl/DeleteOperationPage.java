@@ -32,6 +32,9 @@ public record DeleteOperationPage(
 
   @Override
   public CommandResult get() {
+    if (deletedInformation == null) {
+      return new CommandResult(null, Map.of(CommandStatus.DELETED_COUNT, -1), null);
+    }
     int deletedCount =
         (int)
             deletedInformation.stream()
