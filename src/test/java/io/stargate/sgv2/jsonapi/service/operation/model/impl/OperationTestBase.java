@@ -90,6 +90,14 @@ public class OperationTestBase {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR));
     }
 
+    static TestColumn ofTimestamp(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.TIMESTAMP));
+    }
+
+    static TestColumn ofDecimal(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DECIMAL));
+    }
+
     static TestColumn ofUuid(String name) {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.UUID));
     }
