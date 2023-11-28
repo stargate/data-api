@@ -208,13 +208,37 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
     }
 
+    /**
+     * Verify that DeleteMany with no filter will use truncate and delete all documents in a
+     * collection, instead of using Delete with maximum number to delete.
+     */
     @Test
     public void noFilter() {
-      insert(20);
+      insert(25);
       String json =
           """
           {
             "deleteMany": {
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(-1))
+          .body("status.moreData", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // ensure find does not find the documents
+      json = """
+          {
+            "find": {
             }
           }
           """;
@@ -227,7 +251,35 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(20))
+          .body("data.documents", jsonEquals("[]"))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
+    }
+
+    /**
+     * Verify that DeleteMany with empty filter will use truncate and delete all documents in a
+     * collection, instead of using Delete with maximum number to delete.
+     */
+    @Test
+    public void emptyFilter() {
+      insert(25);
+      String json =
+          """
+          {
+            "deleteMany": {
+              "filter": {}
+            }
+          }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(-1))
           .body("status.moreData", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -254,16 +306,18 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
-    public void noFilterMoreDataFlag() {
+    public void withFilterMoreDataFlag() {
       insert(25);
       String json =
           """
           {
             "deleteMany": {
+              "filter" : {"status": "active"}
             }
           }
           """;
-
+      // moreData will only exist when filter exist. If filter doesn't exist, it will delete all
+      // data
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -310,7 +364,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
       String document =
           """
           {
-            "_id": "concurrent-%s"
+            "_id": "concurrent-%s",
+            "status": "active"
           }
           """;
       for (int i = 0; i < totalDocuments; i++) {
@@ -325,6 +380,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           """
           {
             "deleteMany": {
+              "filter" : {"status": "active"}
             }
           }
           """;
