@@ -2,17 +2,24 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.bridge.grpc.TypeSpecs;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.config.QueriesConfig;
-import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
 import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -22,34 +29,35 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.RandomStringUtils;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@Disabled
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+public class InsertOperationTest extends OperationTestBase {
+  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
 
-  private static final CommandContext COMMAND_CONTEXT_VECTOR =
+  private final CommandContext COMMAND_CONTEXT_VECTOR =
       new CommandContext(
           KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
-  @Inject QueryExecutor queryExecutor;
   @Inject QueriesConfig queriesConfig;
 
   @Nested
@@ -87,34 +95,32 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
       String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert insertAssert =
-          withQuery(
-                  insertCql,
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
 
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              insertCql,
+              CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1")),
+              shredDocument.docJson(),
+              CQLBindValues.getStringSetValue(shredDocument.existKeys()),
+              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+              shredDocument.arrayContains(), // already Set<String>
+              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()));
+      ColumnDefinitions columnDefs = buildColumnDefs(TestColumn.ofBoolean("applied"));
+      List<Row> rows = Arrays.asList(resultRow(columnDefs, 0, Boolean.TRUE));
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+
+      when(queryExecutor.executeWrite(eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
@@ -125,7 +131,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               .getItem();
 
       // assert query execution
-      insertAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -135,6 +141,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNull();
     }
 
+    @Disabled
     @Test
     public void insertDuplicate() throws Exception {
       String doc1 =
@@ -185,7 +192,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -210,6 +217,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void insertManyOrdered() throws Exception {
       String document1 =
@@ -305,7 +313,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -325,6 +333,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNull();
     }
 
+    @Disabled
     @Test
     public void insertManyUnordered() throws Exception {
       String document1 =
@@ -420,7 +429,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -442,6 +451,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
 
     // failure modes
 
+    @Disabled
     @Test
     public void failureOrdered() throws Exception {
       // unordered first query fail
@@ -510,7 +520,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -533,6 +543,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void failureOrderedLastFails() throws Exception {
       // unordered first query OK, second fail
@@ -629,7 +640,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), true);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -656,6 +667,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void failureUnorderedPartial() throws Exception {
       // unordered one query fail
@@ -752,7 +764,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -778,6 +790,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               });
     }
 
+    @Disabled
     @Test
     public void failureUnorderedAll() throws Exception {
       // unordered both queries fail
@@ -874,7 +887,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
           new InsertOperation(COMMAND_CONTEXT, List.of(shredDocument1, shredDocument2), false);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -896,6 +909,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
               "Failed to insert document with _id 'doc2': Ivan really breaks the test.");
     }
 
+    @Disabled
     @Test
     public void insertOneVectorSearch() throws Exception {
       String document =
@@ -949,7 +963,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -966,6 +980,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNull();
     }
 
+    @Disabled
     @Test
     public void insertOneVectorEnabledNoVectorData() throws Exception {
       String document =
@@ -1018,7 +1033,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(queryExecutor0)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1035,6 +1050,7 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       assertThat(result.errors()).isNull();
     }
 
+    @Disabled
     @Test
     public void insertOneVectorDisabledWithVectorData() throws Exception {
       String document =
@@ -1055,10 +1071,24 @@ public class InsertOperationTest extends AbstractValidatingStargateBridgeTest {
       JsonNode jsonNode = objectMapper.readTree(document);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
-      Throwable failure = catchThrowable(() -> operation.execute(queryExecutor));
+      Throwable failure = catchThrowable(() -> operation.execute(queryExecutor0));
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED);
     }
+  }
+
+  private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
+    List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
+    return new MockRow(columnDefs, index, buffers);
+  }
+
+  // TEMPORARY ADDITIONS TO COMPILE DURING CONVERSION
+
+  QueryExecutor queryExecutor0 = mock(QueryExecutor.class);
+
+  protected ValidatingStargateBridge.QueryExpectation withQuery(
+      String cql, QueryOuterClass.Value... values) {
+    throw new IllegalStateException("No longer supported without Bridge");
   }
 }

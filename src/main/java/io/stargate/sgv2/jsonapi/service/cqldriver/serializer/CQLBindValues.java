@@ -30,18 +30,18 @@ public class CQLBindValues {
     return from.stream().map(val -> val.toString()).collect(Collectors.toSet());
   }
 
-  public static Set<String> getStringSetValue(Set<String> from) {
+  public static Set<String> getStringSetValue(Set<?> from) {
     return from.stream().map(val -> val.toString()).collect(Collectors.toSet());
   }
 
-  public static List<String> getListValue(List<JsonPath> from) {
+  public static List<String> getListValue(List<?> from) {
     return from.stream().map(val -> val.toString()).collect(Collectors.toList());
   }
 
-  public static Map<String, String> getStringMapValues(Map<JsonPath, String> from) {
+  public static Map<String, String> getStringMapValues(Map<JsonPath, ?> from) {
     final Map<String, String> to = new HashMap<>(from.size());
-    for (Map.Entry<JsonPath, String> entry : from.entrySet()) {
-      to.put(entry.getKey().toString(), entry.getValue());
+    for (Map.Entry<JsonPath, ?> entry : from.entrySet()) {
+      to.put(entry.getKey().toString(), entry.getValue().toString());
     }
     return to;
   }
