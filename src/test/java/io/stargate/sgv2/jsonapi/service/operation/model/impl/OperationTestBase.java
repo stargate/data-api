@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.data.TupleValue;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -26,6 +27,13 @@ public class OperationTestBase {
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+
+  protected static final TupleType DOC_KEY_TYPE =
+      DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
+
+  protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
+    return buildColumnDefs(Arrays.asList(columns));
+  }
 
   protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
     return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
@@ -56,11 +64,50 @@ public class OperationTestBase {
     return TypeCodecs.UUID.encode(value, ProtocolVersion.DEFAULT);
   }
 
+  protected ByteBuffer byteBufferFromAny(Object value) {
+    if (value == null) {
+      return byteBufferForNull();
+    }
+    if (value instanceof ByteBuffer) {
+      return (ByteBuffer) value;
+    }
+    if (value instanceof UUID) {
+      return byteBufferFrom((UUID) value);
+    }
+    if (value instanceof String) {
+      return byteBufferFrom((String) value);
+    }
+    if (value instanceof Long) {
+      return byteBufferFrom((Long) value);
+    }
+    throw new IllegalArgumentException(
+        "byteBufferFromAny() does not (yet?) support value of type: " + value.getClass());
+  }
+
   protected ByteBuffer byteBufferForKey(String key) {
-    TupleType tupleType = DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
-    // important! TINYINT means Byte
-    TupleValue value = tupleType.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
-    return TypeCodecs.tupleOf(tupleType).encode(value, ProtocolVersion.DEFAULT);
+    // Important! TINYINT requires Byte:
+    TupleValue value =
+        DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
+    return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected ByteBuffer byteBufferForNull() {
+    return ByteBuffer.wrap(new byte[0]);
+  }
+
+  /**
+   * Factory method for constructing value for Document key of type {@code String}, to be used for
+   * {@code SimpleStatement} bound values.
+   *
+   * @param key String id of the document
+   * @return Bound value to use with {@code SimpleStatement}
+   */
+  protected TupleValue boundKeyForStatement(String key) {
+    return DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
+  }
+
+  protected CqlVector<Float> vectorForStatement(Float... value) {
+    return CqlVector.newInstance(value);
   }
 
   protected record TestColumn(String name, RawType type) {
@@ -70,6 +117,18 @@ public class OperationTestBase {
 
     static TestColumn of(String name, RawType type) {
       return new TestColumn(name, type);
+    }
+
+    static TestColumn ofBoolean(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN));
+    }
+
+    static TestColumn ofDate(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DATE));
+    }
+
+    static TestColumn ofDecimal(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DECIMAL));
     }
 
     static TestColumn ofLong(String name) {
@@ -85,11 +144,12 @@ public class OperationTestBase {
     }
 
     static TestColumn keyColumn() {
-      List<RawType> keyTupleParams =
-          Arrays.asList(
-              RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
-              RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR));
-      return of("key", new RawType.RawTuple(keyTupleParams));
+      return of(
+          "key",
+          new RawType.RawTuple(
+              Arrays.asList(
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.TINYINT),
+                  RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR))));
     }
   }
 }

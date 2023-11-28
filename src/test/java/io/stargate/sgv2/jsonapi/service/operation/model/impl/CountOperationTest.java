@@ -38,7 +38,7 @@ public class CountOperationTest extends OperationTestBase {
   @Nested
   class Execute {
     private final ColumnDefinitions COUNT_RESULT_COLUMNS =
-        buildColumnDefs(Arrays.asList(TestColumn.ofLong("count")));
+        buildColumnDefs(TestColumn.ofLong("count"));
 
     @Test
     public void countWithNoFilter() {

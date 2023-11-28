@@ -12,16 +12,13 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.bridge.grpc.TypeSpecs;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
-import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -29,8 +26,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -38,6 +33,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -45,6 +42,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,26 +56,17 @@ public class FindOperationTest extends OperationTestBase {
       new CommandContext(
           KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
-  private final CommandContext VECTOR_DOT_PRODUCT_COMMAND_CONTEXT =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          true,
-          CollectionSettings.SimilarityFunction.DOT_PRODUCT,
-          null);
+  private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
+      buildColumnDefs(
+          TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
 
   @Inject ObjectMapper objectMapper;
 
-  private QueryExecutor queryExecutor = mock(QueryExecutor.class);
+  // !!! Only left temporarily for Disabled tests
+  private QueryExecutor queryExecutor0 = mock(QueryExecutor.class);
 
   @Nested
   class Execute {
-    private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
-        buildColumnDefs(
-            Arrays.asList(
-                TestColumn.keyColumn(),
-                TestColumn.ofUuid("tx_id"),
-                TestColumn.ofVarchar("doc_json")));
 
     @Test
     public void findAll() throws Exception {
@@ -104,14 +93,14 @@ public class FindOperationTest extends OperationTestBase {
           Arrays.asList(
               resultRow(0, "doc1", UUID.randomUUID(), doc1),
               resultRow(1, "doc2", UUID.randomUUID(), doc2));
-      AsyncResultSet mockResults = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return Uni.createFrom().item(mockResults);
+                return Uni.createFrom().item(results);
               });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
@@ -146,14 +135,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    MockRow resultRow(int index, String key, UUID txId, String doc) {
-      return new MockRow(
-          KEY_TXID_JSON_COLUMNS,
-          index,
-          Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
-    }
-
-    @Disabled
     @Test
     public void byIdWithInOperator() throws Exception {
       String collectionReadCql =
@@ -170,66 +151,33 @@ public class FindOperationTest extends OperationTestBase {
           """
               {
                 "_id": "doc2",
-                "username": "user1"
+                "username": "user2"
               }
               """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
+      SimpleStatement stmt1 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      SimpleStatement stmt2 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
+      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
+      AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
+      final AtomicInteger callCount1 = new AtomicInteger();
+      final AtomicInteger callCount2 = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount1.incrementAndGet();
+                return Uni.createFrom().item(results1);
+              });
+      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount2.incrementAndGet();
+                return Uni.createFrom().item(results2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -260,8 +208,9 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      candidatesAssert2.assertExecuteCount().isOne();
+      assertThat(callCount1.get()).isEqualTo(1);
+      assertThat(callCount2.get()).isEqualTo(1);
+
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
@@ -271,14 +220,14 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
-    public void byIdWithInEmptyArray() throws Exception {
+    public void byIdWithInEmptyArray() {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
           List.of(new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.IN, List.of()));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       FindOperation operation =
           FindOperation.unsorted(
@@ -306,7 +255,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void byIdWithInAndOtherOperator() throws Exception {
       String collectionReadCql =
@@ -323,75 +271,36 @@ public class FindOperationTest extends OperationTestBase {
           """
                   {
                     "_id": "doc2",
-                    "username": "user1"
+                    "username": "user2"
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
-
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.IN,
-              List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
-      DBFilterBase.TextFilter textFilter =
-          new DBFilterBase.TextFilter("username", DBFilterBase.TextFilter.Operator.EQ, "user1");
+      final String textFilterValue = "username " + new DocValueHasher().getHash("user1").hash();
+      SimpleStatement stmt1 =
+          SimpleStatement.newInstance(
+              collectionReadCql, boundKeyForStatement("doc1"), textFilterValue);
+      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      SimpleStatement stmt2 =
+          SimpleStatement.newInstance(
+              collectionReadCql, boundKeyForStatement("doc2"), textFilterValue);
+      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
+      AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
+      final AtomicInteger callCount1 = new AtomicInteger();
+      final AtomicInteger callCount2 = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount1.incrementAndGet();
+                return Uni.createFrom().item(results1);
+              });
+      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount2.incrementAndGet();
+                return Uni.createFrom().item(results2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -429,8 +338,8 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      candidatesAssert2.assertExecuteCount().isOne();
+      assertThat(callCount1.get()).isEqualTo(1);
+      assertThat(callCount2.get()).isEqualTo(1);
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
@@ -440,7 +349,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findOneByIdWithInOperator() throws Exception {
       String collectionReadCql =
@@ -456,67 +364,33 @@ public class FindOperationTest extends OperationTestBase {
       String doc2 =
           """
                   {
-                    "_id": "doc1",
-                    "username": "user1"
+                    "_id": "doc2",
+                    "username": "user2"
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
-
-      ValidatingStargateBridge.QueryAssert candidatesAssert2 =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
+      SimpleStatement stmt1 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      SimpleStatement stmt2 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
+      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
+      AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
+      final AtomicInteger callCount1 = new AtomicInteger();
+      final AtomicInteger callCount2 = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount1.incrementAndGet();
+                return Uni.createFrom().item(results1);
+              });
+      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount2.incrementAndGet();
+                return Uni.createFrom().item(results2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -547,8 +421,8 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-      candidatesAssert2.assertExecuteCount().isOne();
+      assertThat(callCount1.get()).isEqualTo(1);
+      assertThat(callCount2.get()).isEqualTo(1);
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
@@ -558,7 +432,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithId() throws Exception {
       String collectionReadCql =
@@ -571,34 +444,19 @@ public class FindOperationTest extends OperationTestBase {
               "username": "user1"
             }
             """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -624,7 +482,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -635,34 +493,23 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithIdNoData() {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(List.of());
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, Arrays.asList(), null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -692,7 +539,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -701,7 +548,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithDynamic() throws Exception {
       String collectionReadCql =
@@ -716,33 +562,18 @@ public class FindOperationTest extends OperationTestBase {
                   }
                   """;
 
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+      final String textFilterValue = "username " + new DocValueHasher().getHash("user1").hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, textFilterValue);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -769,7 +600,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -780,13 +611,11 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
       String doc1 =
           """
                   {
@@ -795,33 +624,20 @@ public class FindOperationTest extends OperationTestBase {
                     "registration_active" : true
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("registration_active " + new DocValueHasher().getHash(true).hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+
+      final String booleanFilterValue =
+          "registration_active " + new DocValueHasher().getHash(true).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, booleanFilterValue);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -848,7 +664,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -859,7 +675,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithDateFilter() throws Exception {
       String collectionReadCql =
@@ -875,35 +690,19 @@ public class FindOperationTest extends OperationTestBase {
                         "date_field" : {"$date" : 1672531200000}
                       }
                       """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      "date_field "
-                          + new DocValueHasher().getHash(new Date(1672531200000L)).hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+      final String dateFilterValue =
+          "date_field " + new DocValueHasher().getHash(Instant.ofEpochMilli(1672531200000L)).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, dateFilterValue);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -930,7 +729,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -941,7 +740,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithExistsFilter() throws Exception {
       String collectionReadCql =
@@ -956,31 +754,18 @@ public class FindOperationTest extends OperationTestBase {
                     "registration_active" : true
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("registration_active"))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "registration_active");
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1005,7 +790,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1016,7 +801,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findWithAllFilter() throws Exception {
       String collectionReadCql =
@@ -1032,31 +816,19 @@ public class FindOperationTest extends OperationTestBase {
                     "tags": ["tag1", "tag2"]
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("tags Stag1"), Values.of("tags Stag2"))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, "tags Stag1", "tags Stag2");
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1086,7 +858,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1097,7 +869,7 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
+    @Disabled // fails on binding Collection value
     @Test
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
@@ -1113,31 +885,18 @@ public class FindOperationTest extends OperationTestBase {
                     "tags" : ["tag1","tag2"]
                   }
                   """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("tags"), Values.of(2))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", 2);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1164,7 +923,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1175,9 +934,10 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
+    @Disabled // fails on binding Map key
     @Test
     public void findWithArrayEqualFilter() throws Exception {
+      // Due to trimming of indexes, former "array_equals" moved under "query_text_values":
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
@@ -1191,7 +951,21 @@ public class FindOperationTest extends OperationTestBase {
                     "tags" : ["tag1","tag2"]
                   }
                   """;
-      final String hash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
+
+      final String tagsHash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", tagsHash);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      /*
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
               .withPageSize(1)
@@ -1218,6 +992,8 @@ public class FindOperationTest extends OperationTestBase {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
+       */
+
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
@@ -1243,7 +1019,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1254,7 +1030,7 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
+    @Disabled // fails on binding Map key
     @Test
     public void findWithSubDocEqualFilter() throws Exception {
       String collectionReadCql =
@@ -1271,6 +1047,19 @@ public class FindOperationTest extends OperationTestBase {
                   }
                   """;
       final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "sub_doc", hash);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      /*
       ValidatingStargateBridge.QueryAssert candidatesAssert =
           withQuery(collectionReadCql, Values.of("sub_doc"), Values.of(hash))
               .withPageSize(1)
@@ -1297,6 +1086,8 @@ public class FindOperationTest extends OperationTestBase {
                           Values.of(UUID.randomUUID()),
                           Values.of(doc1))));
 
+       */
+
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
@@ -1322,7 +1113,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1337,35 +1128,23 @@ public class FindOperationTest extends OperationTestBase {
     ///    FAILURES   ///
     /////////////////////
 
-    @Disabled
     @Test
     public void failurePropagated() {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
       RuntimeException exception = new RuntimeException("Ivan breaks tests.");
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returningFailure(exception);
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().failure(exception);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1392,13 +1171,12 @@ public class FindOperationTest extends OperationTestBase {
               .getFailure();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       assertThat(failure).isEqualTo(exception);
     }
 
-    @Disabled
     @Test
     public void findAllSort() throws Exception {
       String collectionReadCql =
@@ -1447,111 +1225,96 @@ public class FindOperationTest extends OperationTestBase {
                   "username": "user6"
                 }
                 """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['username']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.of("user6"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.of("user4"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of("user2"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of("user1"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.of("user3"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.of("user5"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL)));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofDate("query_timestamp_values['username']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  "user6",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  "user4",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  "user2",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  "user1",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  "user3",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  "user5",
+                  null,
+                  null,
+                  null,
+                  null));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -1577,7 +1340,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1594,7 +1357,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findAllSortByDate() throws Exception {
       String collectionReadCql =
@@ -1662,111 +1424,96 @@ public class FindOperationTest extends OperationTestBase {
                       }
                     }
                     """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['sort_date']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['sort_date']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['sort_date']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['sort_date']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['sort_date']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531700000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531500000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531300000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531200000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531400000L)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.of(1672531600000L))));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['sort_date']"),
+              TestColumn.ofDecimal("query_dbl_values['sort_date']"),
+              TestColumn.ofBoolean("query_bool_values['sort_date']"),
+              TestColumn.ofVarchar("query_null_values['sort_date']"),
+              TestColumn.ofDate("query_timestamp_values['sort_date']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531700000L),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531500000L),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531300000L),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531200000L),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531400000L),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  null,
+                  null,
+                  null,
+                  null,
+                  1672531600000L));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -1792,7 +1539,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1809,7 +1556,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findAllSortWithSkip() throws Exception {
       String collectionReadCql =
@@ -1858,111 +1604,96 @@ public class FindOperationTest extends OperationTestBase {
                   "username": "user6"
                 }
                 """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['username']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.of("user6"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.of("user4"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of("user2"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of("user1"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.of("user3"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.of("user5"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL)));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofDate("query_timestamp_values['username']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  "user6",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  "user4",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  "user2",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  "user1",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  "user3",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  "user5",
+                  null,
+                  null,
+                  null,
+                  null));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -1988,7 +1719,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1999,7 +1730,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void findAllSortDescending() throws Exception {
       String collectionReadCql =
@@ -2048,115 +1778,96 @@ public class FindOperationTest extends OperationTestBase {
                   "username": "user6"
                 }
                 """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql)
-              .withPageSize(20)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_text_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_dbl_values['username']")
-                          .setType(TypeSpecs.DECIMAL)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_bool_values['username']")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_null_values['username']")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("query_timestamp_values['username']")
-                          .setType(TypeSpecs.DATE)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc6"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc6),
-                          Values.of("user6"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc4"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc4),
-                          Values.of("user4"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2),
-                          Values.of("user2"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1),
-                          Values.of("user1"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc3),
-                          Values.of("user3"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc5"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc5),
-                          Values.of("user5"),
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL,
-                          Values.NULL)));
+
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+      ColumnDefinitions columnDefs =
+          buildColumnDefs(
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofDate("query_timestamp_values['username']"));
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(
+                  columnDefs,
+                  0,
+                  byteBufferForKey("doc6"),
+                  UUID.randomUUID(),
+                  doc6,
+                  "user6",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  1,
+                  byteBufferForKey("doc4"),
+                  UUID.randomUUID(),
+                  doc4,
+                  "user4",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  2,
+                  byteBufferForKey("doc2"),
+                  UUID.randomUUID(),
+                  doc2,
+                  "user2",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  3,
+                  byteBufferForKey("doc1"),
+                  UUID.randomUUID(),
+                  doc1,
+                  "user1",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  4,
+                  byteBufferForKey("doc3"),
+                  UUID.randomUUID(),
+                  doc3,
+                  "user3",
+                  null,
+                  null,
+                  null,
+                  null),
+              resultRow(
+                  columnDefs,
+                  5,
+                  byteBufferForKey("doc5"),
+                  UUID.randomUUID(),
+                  doc5,
+                  "user5",
+                  null,
+                  null,
+                  null,
+                  null));
+
+      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -2182,7 +1893,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -2201,309 +1912,7 @@ public class FindOperationTest extends OperationTestBase {
   }
 
   @Nested
-  class GetDocuments {
-
-    @Disabled
-    @Test
-    public void findWithId() {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      String doc1 =
-          """
-                  {
-                    "_id": "doc1",
-                    "username": "user1"
-                  }
-                  """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
-
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.IDFilter(
-                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-      FindOperation findOperation =
-          FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      ReadOperation.FindResponse result =
-          findOperation
-              .getDocuments(queryExecutor, null, null)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-
-      // then result
-      assertThat(result.docs()).isNotNull();
-      assertThat(result.docs()).hasSize(1);
-    }
-
-    @Disabled
-    @Test
-    public void findWithIdWithIdRetry() {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      String doc1 =
-          """
-                  {
-                    "_id": "doc1",
-                    "username": "user1"
-                  }
-                  """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
-
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of(filter);
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
-      FindOperation findOperation =
-          FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      ReadOperation.FindResponse result =
-          findOperation
-              .getDocuments(queryExecutor, null, filter)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-
-      // then result
-      assertThat(result.docs()).isNotNull();
-      assertThat(result.docs()).hasSize(1);
-    }
-
-    @Disabled
-    @Test
-    public void findWithDynamic() {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      String doc1 =
-          """
-                  {
-                    "_id": "doc1",
-                    "username": "user1"
-                  }
-                  """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
-
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-      FindOperation findOperation =
-          FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      ReadOperation.FindResponse result =
-          findOperation
-              .getDocuments(queryExecutor, null, null)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-
-      // then result
-      assertThat(result.docs()).isNotNull();
-      assertThat(result.docs()).hasSize(1);
-    }
-
-    @Disabled
-    @Test
-    public void findWithDynamicWithIdRetry() {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      String doc1 =
-          """
-                        {
-                          "_id": "doc1",
-                          "username": "user1"
-                        }
-                        """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
-
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-      FindOperation findOperation =
-          FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      DBFilterBase.IDFilter idFilter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
-      ReadOperation.FindResponse result =
-          findOperation
-              .getDocuments(queryExecutor, null, idFilter)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
-
-      // then result
-      assertThat(result.docs()).isNotNull();
-      assertThat(result.docs()).hasSize(1);
-    }
-
-    @Disabled
+  class GetVectorDocuments {
     @Test
     public void vectorSearch() throws Exception {
       String collectionReadCql =
@@ -2525,39 +1934,22 @@ public class FindOperationTest extends OperationTestBase {
               "$vector": [0.35, 0.35, 0.35, 0.35]
             }
             """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
-              .withPageSize(2)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc2))));
+
+      CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, vectorValue);
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(0, "doc1", UUID.randomUUID(), doc1),
+              resultRow(1, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
@@ -2581,7 +1973,8 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
+
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
@@ -2591,7 +1984,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNullOrEmpty();
     }
 
-    @Disabled
     @Test
     public void vectorSearchWithFilter() throws Exception {
       String collectionReadCql =
@@ -2605,34 +1997,20 @@ public class FindOperationTest extends OperationTestBase {
                   "$vector": [0.25, 0.25, 0.25, 0.25]
                 }
                 """;
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()),
-                  CustomValueSerializers.getVectorValue(new float[] {0.25f, 0.25f, 0.25f, 0.25f}))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+      final String textFilterValue = "username " + new DocValueHasher().getHash("user1").hash();
+      CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, textFilterValue, vectorValue);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -2660,7 +2038,7 @@ public class FindOperationTest extends OperationTestBase {
               .getItem();
 
       //       assert query execution
-      candidatesAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       //       then result
       CommandResult result = execute.get();
@@ -2674,8 +2052,6 @@ public class FindOperationTest extends OperationTestBase {
 
   @Nested
   class LogicalExpressionOrder {
-
-    @Disabled
     @Test
     public void expressionSort() {
 
@@ -2728,8 +2104,15 @@ public class FindOperationTest extends OperationTestBase {
     }
   }
 
-  // !!! TEMPORARY BOGUS OVERRIDE
-  protected ValidatingStargateBridge.QueryExpectation withQuery(Object... args) {
-    return null;
+  MockRow resultRow(int index, String key, UUID txId, String doc) {
+    return new MockRow(
+        KEY_TXID_JSON_COLUMNS,
+        index,
+        Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
+  }
+
+  MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
+    List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
+    return new MockRow(columnDefs, index, buffers);
   }
 }
