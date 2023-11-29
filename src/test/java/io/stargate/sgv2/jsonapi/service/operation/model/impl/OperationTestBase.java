@@ -79,6 +79,9 @@ public class OperationTestBase {
     if (value instanceof ByteBuffer) {
       return (ByteBuffer) value;
     }
+    if (value instanceof Boolean) {
+      return byteBufferFrom((Boolean) value);
+    }
     if (value instanceof UUID) {
       return byteBufferFrom((UUID) value);
     }
