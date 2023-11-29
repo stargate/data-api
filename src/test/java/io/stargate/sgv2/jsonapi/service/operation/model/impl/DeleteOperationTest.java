@@ -58,17 +58,14 @@ public class DeleteOperationTest extends OperationTestBase {
   class Execute {
 
     private final ColumnDefinitions DELETE_RESULT_COLUMNS =
-        buildColumnDefs(Arrays.asList(TestColumn.ofBoolean("[applied]")));
+        buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
     private final ColumnDefinitions SELECT_RESULT_COLUMNS =
-        buildColumnDefs(Arrays.asList(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id")));
+        buildColumnDefs(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"));
 
     private final ColumnDefinitions SELECT_WITH_JSON_RESULT_COLUMNS =
         buildColumnDefs(
-            Arrays.asList(
-                TestColumn.keyColumn(),
-                TestColumn.ofUuid("tx_id"),
-                TestColumn.ofVarchar("doc_json")));
+            TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
 
     @Test
     public void deleteWithId() {
@@ -239,15 +236,14 @@ public class DeleteOperationTest extends OperationTestBase {
     public void deleteOneAndReturnWithSort() {
       ColumnDefinitions SELECT_SORT_RESULT_COLUMNS =
           buildColumnDefs(
-              Arrays.asList(
-                  TestColumn.keyColumn(),
-                  TestColumn.ofUuid("tx_id"),
-                  TestColumn.ofVarchar("doc_json"),
-                  TestColumn.ofVarchar("query_text_values['username']"),
-                  TestColumn.ofDecimal("query_dbl_values['username']"),
-                  TestColumn.ofBoolean("query_bool_values['username']"),
-                  TestColumn.ofVarchar("query_null_values['username']"),
-                  TestColumn.ofTimestamp("query_timestamp_values['username']")));
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofTimestamp("query_timestamp_values['username']"));
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
       String docJson1 = "{\"_id\":\"doc1\",\"username\":1,\"status\":\"active\"}";
@@ -363,15 +359,14 @@ public class DeleteOperationTest extends OperationTestBase {
     public void deleteOneAndReturnWithSortDesc() {
       ColumnDefinitions SELECT_SORT_RESULT_COLUMNS =
           buildColumnDefs(
-              Arrays.asList(
-                  TestColumn.keyColumn(),
-                  TestColumn.ofUuid("tx_id"),
-                  TestColumn.ofVarchar("doc_json"),
-                  TestColumn.ofVarchar("query_text_values['username']"),
-                  TestColumn.ofDecimal("query_dbl_values['username']"),
-                  TestColumn.ofBoolean("query_bool_values['username']"),
-                  TestColumn.ofVarchar("query_null_values['username']"),
-                  TestColumn.ofTimestamp("query_timestamp_values['username']")));
+              TestColumn.keyColumn(),
+              TestColumn.ofUuid("tx_id"),
+              TestColumn.ofVarchar("doc_json"),
+              TestColumn.ofVarchar("query_text_values['username']"),
+              TestColumn.ofDecimal("query_dbl_values['username']"),
+              TestColumn.ofBoolean("query_bool_values['username']"),
+              TestColumn.ofVarchar("query_null_values['username']"),
+              TestColumn.ofTimestamp("query_timestamp_values['username']"));
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
       String docJson1 = "{\"_id\":\"doc1\",\"username\":1,\"status\":\"active\"}";

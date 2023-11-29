@@ -60,10 +60,8 @@ public class OperationTestBase {
     return TypeCodecs.BOOLEAN.encode(value, ProtocolVersion.DEFAULT);
   }
 
-  private static TupleType keyTupleType = DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
-
   protected ByteBuffer byteBufferFrom(TupleValue value) {
-    return TypeCodecs.tupleOf(keyTupleType).encode(value, ProtocolVersion.DEFAULT);
+    return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
   }
 
   protected ByteBuffer byteBufferFrom(String value) {
@@ -153,16 +151,8 @@ public class OperationTestBase {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.TIMESTAMP));
     }
 
-    static TestColumn ofDecimal(String name) {
-      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.DECIMAL));
-    }
-
     static TestColumn ofUuid(String name) {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.UUID));
-    }
-
-    static TestColumn ofBoolean(String name) {
-      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN));
     }
 
     static TestColumn keyColumn() {
