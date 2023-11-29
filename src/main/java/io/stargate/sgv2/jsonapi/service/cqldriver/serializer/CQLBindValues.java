@@ -38,10 +38,10 @@ public class CQLBindValues {
     return from.stream().map(val -> val.toString()).collect(Collectors.toList());
   }
 
-  public static Map<String, String> getStringMapValues(Map<JsonPath, ?> from) {
+  public static Map<String, String> getStringMapValues(Map<JsonPath, String> from) {
     final Map<String, String> to = new HashMap<>(from.size());
-    for (Map.Entry<JsonPath, ?> entry : from.entrySet()) {
-      to.put(entry.getKey().toString(), entry.getValue().toString());
+    for (Map.Entry<JsonPath, String> entry : from.entrySet()) {
+      to.put(entry.getKey().toString(), entry.getValue());
     }
     return to;
   }
