@@ -657,16 +657,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void insertLongestValidString() {
       int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
-      final String longString1 = "abcd ".repeat((maxLen - 1) / 5);
-      final String longString2 = "bcde ".repeat((maxLen - 1) / 5);
-      final String longString3 = "cdef ".repeat((maxLen - 1) / 5);
-      final String longString4 = "defg ".repeat((maxLen - 1) / 5);
+      // 1M / 16k means about 64 max length Strings; try adding 60
+      final String longString = "abcd ".repeat((maxLen - 1) / 5);
       ObjectNode doc = MAPPER.createObjectNode();
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongString");
-      doc.put("text1", longString1);
-      doc.put("text2", longString2);
-      doc.put("text3", longString3);
-      doc.put("text4", longString4);
+      for (int i = 0; i < 60; ++i) {
+        doc.put("text" + i, longString + " " + i);
+      }
       _verifyInsert("docWithLongString", doc);
     }
 
