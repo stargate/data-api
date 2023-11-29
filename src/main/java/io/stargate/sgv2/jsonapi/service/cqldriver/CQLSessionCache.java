@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
@@ -42,15 +44,14 @@ public class CQLSessionCache {
   private static final String TOKEN = "token";
 
   /** CQLSession cache. */
-  private final Cache<SessionCacheKey, CqlSession> sessionCache;
+  private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
 
   public static final String ASTRA = "astra";
   public static final String CASSANDRA = "cassandra";
-  /** Default token property name which will be used by the integration tests */
-  @Inject
-  public CQLSessionCache(OperationsConfig operationsConfig) {
+
+  public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
     this.operationsConfig = operationsConfig;
-    sessionCache =
+    LoadingCache<SessionCacheKey, CqlSession> sessionCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
@@ -68,7 +69,10 @@ public class CQLSessionCache {
                         session.close();
                       }
                     })
-            .build();
+            .recordStats()
+            .build(this::getNewSession);
+    this.sessionCache =
+        CaffeineCacheMetrics.monitor(meterRegistry, sessionCache, "cql_sessions_cache");
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -127,7 +131,7 @@ public class CQLSessionCache {
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
-    return sessionCache.get(getSessionCacheKey(), this::getNewSession);
+    return sessionCache.get(getSessionCacheKey());
   }
 
   /**

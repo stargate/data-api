@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -24,6 +26,8 @@ public class FixedTokenTests {
 
   @Inject OperationsConfig operationsConfig;
 
+  @Inject MeterRegistry meterRegistry;
+
   @Test
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
@@ -32,11 +36,21 @@ public class FixedTokenTests {
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set operation config
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+    // set meter registry
+    Field meterRegistryField = cqlSessionCacheForTest.getClass().getDeclaredField("meterRegistry");
+    meterRegistryField.setAccessible(true);
+    meterRegistryField.set(cqlSessionCacheForTest, new SimpleMeterRegistry());
+
     assertThat(
             ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
                 .getStartupOptions()
@@ -51,11 +65,20 @@ public class FixedTokenTests {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set operation config
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+    // set meter registry
+    Field meterRegistryField = cqlSessionCacheForTest.getClass().getDeclaredField("meterRegistry");
+    meterRegistryField.setAccessible(true);
+    meterRegistryField.set(cqlSessionCacheForTest, new SimpleMeterRegistry());
     // Throwable
     Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
     assertThat(t).isNotNull().isInstanceOf(UnauthorizedException.class).hasMessage("Unauthorized");

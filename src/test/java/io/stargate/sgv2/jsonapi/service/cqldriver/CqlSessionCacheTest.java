@@ -6,7 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
-import io.quarkus.test.InjectMock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
@@ -22,11 +23,9 @@ public class CqlSessionCacheTest {
 
   private static final String TENANT_ID_FOR_TEST = "test_tenant";
 
-  @InjectMock protected StargateRequestInfo stargateRequestInfo;
-
-  @Inject CQLSessionCache cqlSessionCache;
-
   @Inject OperationsConfig operationsConfig;
+
+  @Inject MeterRegistry meterRegistry;
 
   @Test
   public void testOSSCxCQLSessionCacheDefaultTenant()
@@ -34,11 +33,20 @@ public class CqlSessionCacheTest {
     StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
     when(stargateRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set operation config
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+    // set meter registry
+    Field meterRegistryField = cqlSessionCacheForTest.getClass().getDeclaredField("meterRegistry");
+    meterRegistryField.setAccessible(true);
+    meterRegistryField.set(cqlSessionCacheForTest, new SimpleMeterRegistry());
     assertThat(
             ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
                 .getStartupOptions()
@@ -52,11 +60,20 @@ public class CqlSessionCacheTest {
     when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(stargateRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     Field stargateRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    // set operation config
+    Field operationsConfigField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
+    operationsConfigField.setAccessible(true);
+    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+    // set meter registry
+    Field meterRegistryField = cqlSessionCacheForTest.getClass().getDeclaredField("meterRegistry");
+    meterRegistryField.setAccessible(true);
+    meterRegistryField.set(cqlSessionCacheForTest, new SimpleMeterRegistry());
     assertThat(
             ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
                 .getStartupOptions()
