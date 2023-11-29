@@ -655,6 +655,22 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
+    public void insertLongestValidString() {
+      int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
+      final String LONGEST_STRING1 = "abcd ".repeat((maxLen - 1) / 5);
+      final String LONGEST_STRING2 = "bcde ".repeat((maxLen - 1) / 5);
+      final String LONGEST_STRING3 = "cdef ".repeat((maxLen - 1) / 5);
+      final String LONGEST_STRING4 = "defg ".repeat((maxLen - 1) / 5);
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongString");
+      doc.put("text1", LONGEST_STRING1);
+      doc.put("text2", LONGEST_STRING2);
+      doc.put("text3", LONGEST_STRING3);
+      doc.put("text4", LONGEST_STRING4);
+      _verifyInsert("docWithLongString", doc);
+    }
+
+    @Test
     public void insertLongButNotTooLongDoc() throws Exception {
       JsonNode bigDoc =
           createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
