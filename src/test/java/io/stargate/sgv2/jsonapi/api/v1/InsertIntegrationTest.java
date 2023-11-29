@@ -675,7 +675,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
       final String tooLongString = "abcd ".repeat((maxLen / 5) + 10);
       String json =
-              """
+          """
                         {
                           "insertOne": {
                             "document": {
@@ -685,22 +685,23 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                         }
                         """
-                      .formatted(tooLongString);
+              .formatted(tooLongString);
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-              .then()
-              .statusCode(200)
-              .body("errors", is(notNullValue()))
-              .body("errors", hasSize(1))
-              .body("errors[0].exceptionClass", is("JsonApiException"))
-              .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
-              .body(
-                      "errors[0].message",
-                      startsWith("Document size limitation violated: String value length (16050) exceeds maximum allowed"));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document size limitation violated: String value length (16050) exceeds maximum allowed"));
     }
 
     @Test
