@@ -657,17 +657,50 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void insertLongestValidString() {
       int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
-      final String LONGEST_STRING1 = "abcd ".repeat((maxLen - 1) / 5);
-      final String LONGEST_STRING2 = "bcde ".repeat((maxLen - 1) / 5);
-      final String LONGEST_STRING3 = "cdef ".repeat((maxLen - 1) / 5);
-      final String LONGEST_STRING4 = "defg ".repeat((maxLen - 1) / 5);
+      final String longString1 = "abcd ".repeat((maxLen - 1) / 5);
+      final String longString2 = "bcde ".repeat((maxLen - 1) / 5);
+      final String longString3 = "cdef ".repeat((maxLen - 1) / 5);
+      final String longString4 = "defg ".repeat((maxLen - 1) / 5);
       ObjectNode doc = MAPPER.createObjectNode();
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongString");
-      doc.put("text1", LONGEST_STRING1);
-      doc.put("text2", LONGEST_STRING2);
-      doc.put("text3", LONGEST_STRING3);
-      doc.put("text4", LONGEST_STRING4);
+      doc.put("text1", longString1);
+      doc.put("text2", longString2);
+      doc.put("text3", longString3);
+      doc.put("text4", longString4);
       _verifyInsert("docWithLongString", doc);
+    }
+
+    @Test
+    public void tryInsertTooLongString() {
+      int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
+      final String tooLongString = "abcd ".repeat((maxLen / 5) + 10);
+      String json =
+              """
+                        {
+                          "insertOne": {
+                            "document": {
+                               "_id" : 123,
+                               "bigString" : "%s"
+                            }
+                          }
+                        }
+                        """
+                      .formatted(tooLongString);
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("errors", is(notNullValue()))
+              .body("errors", hasSize(1))
+              .body("errors[0].exceptionClass", is("JsonApiException"))
+              .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+              .body(
+                      "errors[0].message",
+                      startsWith("Document size limitation violated: String value length (16050) exceeds maximum allowed"));
     }
 
     @Test
