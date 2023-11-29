@@ -62,6 +62,14 @@ public class OperationTestBase {
     return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
   }
 
+  protected ByteBuffer byteBufferFrom(boolean value) {
+    return TypeCodecs.BOOLEAN.encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected ByteBuffer byteBufferFrom(TupleValue value) {
+    return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
+  }
+
   protected ByteBuffer byteBufferFrom(String value) {
     return TypeCodecs.TEXT.encode(value, ProtocolVersion.DEFAULT);
   }
@@ -146,6 +154,10 @@ public class OperationTestBase {
 
     static TestColumn ofVarchar(String name) {
       return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.VARCHAR));
+    }
+
+    static TestColumn ofTimestamp(String name) {
+      return of(name, RawType.PRIMITIVES.get(ProtocolConstants.DataType.TIMESTAMP));
     }
 
     static TestColumn ofUuid(String name) {
