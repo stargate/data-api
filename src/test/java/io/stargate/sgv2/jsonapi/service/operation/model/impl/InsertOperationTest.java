@@ -56,25 +56,27 @@ public class InsertOperationTest extends OperationTestBase {
       new CommandContext(
           KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
 
+  private final ColumnDefinitions COLUMNS_APPLIED =
+      buildColumnDefs(TestColumn.ofBoolean("[applied]"));
+
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
   @Inject QueriesConfig queriesConfig;
 
+  static final String INSERT_CQL =
+      "INSERT INTO \"%s\".\"%s\""
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+          + " VALUES"
+          + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+
+  static final String INSERT_VECTOR_CQL =
+      "INSERT INTO \"%s\".\"%s\""
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+          + " VALUES"
+          + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+
   @Nested
   class Execute {
-
-    static final String INSERT_CQL =
-        "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
-            + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-
-    static final String INSERT_VECTOR_CQL =
-        "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
-            + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
-
     @Test
     public void insertOne() throws Exception {
       String document =
@@ -94,33 +96,19 @@ public class InsertOperationTest extends OperationTestBase {
       JsonNode jsonNode = objectMapper.readTree(document);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-
-      SimpleStatement stmt =
-          SimpleStatement.newInstance(
-              insertCql,
-              CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1")),
-              shredDocument.docJson(),
-              CQLBindValues.getStringSetValue(shredDocument.existKeys()),
-              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-              shredDocument.arrayContains(), // already Set<String>
-              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()));
-      ColumnDefinitions columnDefs = buildColumnDefs(TestColumn.ofBoolean("applied"));
-      List<Row> rows = Arrays.asList(resultRow(columnDefs, 0, Boolean.TRUE));
-      AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(stmt)))
+      when(queryExecutor.executeWrite(eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
                 return Uni.createFrom().item(results);
               });
+
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
@@ -141,7 +129,6 @@ public class InsertOperationTest extends OperationTestBase {
       assertThat(result.errors()).isNull();
     }
 
-    @Disabled
     @Test
     public void insertDuplicate() throws Exception {
       String doc1 =
@@ -160,46 +147,31 @@ public class InsertOperationTest extends OperationTestBase {
       final JsonNode jsonNode = objectMapper.readTree(doc1);
       final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert insertAssert =
-          withQuery(
-                  insertCql,
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(false))));
+      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      // Note: FALSE is needed to "fail" insertion, producing failure message
+      List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+
+      when(queryExecutor.executeWrite(eq(insertStmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor0)
+              .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
       // assert query execution
-      insertAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -1081,6 +1053,22 @@ public class InsertOperationTest extends OperationTestBase {
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
     List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
     return new MockRow(columnDefs, index, buffers);
+  }
+
+  private SimpleStatement nonVectorInsertStatement(WritableShreddedDocument shredDocument) {
+    String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    return SimpleStatement.newInstance(
+        insertCql,
+        CQLBindValues.getDocumentIdValue(shredDocument.id()),
+        shredDocument.docJson(),
+        CQLBindValues.getSetValue(shredDocument.existKeys()),
+        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
+        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()));
   }
 
   // TEMPORARY ADDITIONS TO COMPILE DURING CONVERSION

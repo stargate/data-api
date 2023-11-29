@@ -85,6 +85,6 @@ public class MockAsyncResultSet implements AsyncResultSet {
 
   @Override
   public boolean wasApplied() {
-    return true;
+    return rows.get(0).getBoolean("[applied]");
   }
 }
