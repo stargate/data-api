@@ -77,7 +77,7 @@
 							"response": []
 						},
 						{
-							"name": "Find Collections Copy",
+							"name": "Find Collections",
 							"event": [
 								{
 									"listen": "test",
