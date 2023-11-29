@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.TupleValue;
@@ -33,9 +34,13 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -1407,6 +1412,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults4 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+
       when(queryExecutor.executeWrite(eq(deleteStmt)))
           .then(
               invocation -> {
@@ -1465,62 +1471,93 @@ public class DeleteOperationTest extends OperationTestBase {
               });
     }
 
-    /*
-
     @Test
     public void deleteManyWithDynamicPaging() {
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
+      String pagingState = "pagingState";
+      ByteBuffer pagingStateBB = ByteBuffer.wrap(pagingState.getBytes());
       String collectionReadCql =
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id1)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(tx_id2))));
+      final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
+      final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username " + new DocValueHasher().getHash("user1").hash());
+
+      List<Row> rows =
+          Arrays.asList(
+              new MockRow(
+                  SELECT_RESULT_COLUMNS,
+                  0,
+                  Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id1))));
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      ExecutionInfo executionInfo = mock(ExecutionInfo.class);
+      when(executionInfo.getPagingState()).thenReturn(pagingStateBB);
+      final CompletableFuture<AsyncResultSet> asyncResultSetCompletableFuture =
+          mock(CompletableFuture.class);
+      AsyncResultSet mockResults =
+          new MockAsyncResultSet(
+              SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
+      final AtomicInteger selectCallCount = new AtomicInteger();
+      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt()))
+          .then(
+              invocation -> {
+                selectCallCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults);
+              });
+
+      rows =
+          Arrays.asList(
+              new MockRow(
+                  SELECT_RESULT_COLUMNS,
+                  0,
+                  Arrays.asList(byteBufferFrom(keyValue2), byteBufferFrom(tx_id2))));
+
+      AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
+      when(queryExecutor.executeRead(
+              eq(stmt),
+              eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
+              anyInt()))
+          .then(
+              invocation -> {
+                selectCallCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults1);
+              });
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert deleteFirstAsser =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of(tx_id1))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
-      ValidatingStargateBridge.QueryAssert deleteSecondAssert =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
-                  Values.of(tx_id2))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
+
+      SimpleStatement deleteStmt =
+          SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
+      List<Row> deleteRows =
+          Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+
+      AsyncResultSet deleteResults =
+          new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+      final AtomicInteger deleteCallCount = new AtomicInteger();
+      when(queryExecutor.executeWrite(eq(deleteStmt)))
+          .then(
+              invocation -> {
+                deleteCallCount.incrementAndGet();
+                return Uni.createFrom().item(deleteResults);
+              });
+
+      deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue2, tx_id2);
+      deleteRows =
+          Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+
+      AsyncResultSet deleteResults2 =
+          new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+
+      when(queryExecutor.executeWrite(eq(deleteStmt)))
+          .then(
+              invocation -> {
+                deleteCallCount.incrementAndGet();
+                return Uni.createFrom().item(deleteResults2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1550,76 +1587,127 @@ public class DeleteOperationTest extends OperationTestBase {
               .awaitItem()
               .getItem();
 
-      candidatesAssert.assertExecuteCount().isEqualTo(3);
-      deleteFirstAsser.assertExecuteCount().isOne();
-      deleteSecondAssert.assertExecuteCount().isOne();
+      assertThat(selectCallCount.get()).isEqualTo(2);
+      assertThat(deleteCallCount.get()).isEqualTo(2);
 
       // then result
       CommandResult result = execute.get();
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 2);
     }
 
-
     @Test
     public void deleteManyWithDynamicPagingAndMoreData() {
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
       UUID tx_id3 = UUID.randomUUID();
+      String pagingState = "pagingState";
+      ByteBuffer pagingStateBB = ByteBuffer.wrap(pagingState.getBytes());
+
+      String pagingState2 = "pagingState2";
+      ByteBuffer pagingStateBB2 = ByteBuffer.wrap(pagingState2.getBytes());
+
       String collectionReadCql =
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of("username " + new DocValueHasher().getHash("user1").hash()))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id1)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc2"))),
-                          Values.of(tx_id2)),
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc3"))),
-                          Values.of(tx_id3))));
+      final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
+      final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
+      final TupleValue keyValue3 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc3"));
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username " + new DocValueHasher().getHash("user1").hash());
+
+      List<Row> rows =
+          Arrays.asList(
+              new MockRow(
+                  SELECT_RESULT_COLUMNS,
+                  0,
+                  Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id1))));
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      ExecutionInfo executionInfo = mock(ExecutionInfo.class);
+      when(executionInfo.getPagingState()).thenReturn(pagingStateBB);
+      CompletableFuture<AsyncResultSet> asyncResultSetCompletableFuture =
+          mock(CompletableFuture.class);
+      AsyncResultSet mockResults =
+          new MockAsyncResultSet(
+              SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
+      final AtomicInteger selectCallCount = new AtomicInteger();
+      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt()))
+          .then(
+              invocation -> {
+                selectCallCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults);
+              });
+
+      rows =
+          Arrays.asList(
+              new MockRow(
+                  SELECT_RESULT_COLUMNS,
+                  0,
+                  Arrays.asList(byteBufferFrom(keyValue2), byteBufferFrom(tx_id2))));
+      executionInfo = mock(ExecutionInfo.class);
+      when(executionInfo.getPagingState()).thenReturn(pagingStateBB2);
+      AsyncResultSet mockResults1 =
+          new MockAsyncResultSet(
+              SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
+      when(queryExecutor.executeRead(
+              eq(stmt),
+              eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
+              anyInt()))
+          .then(
+              invocation -> {
+                selectCallCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults1);
+              });
+
+      rows =
+          Arrays.asList(
+              new MockRow(
+                  SELECT_RESULT_COLUMNS,
+                  0,
+                  Arrays.asList(byteBufferFrom(keyValue3), byteBufferFrom(tx_id3))));
+      AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
+      when(queryExecutor.executeRead(
+              eq(stmt),
+              eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB2.array()))),
+              anyInt()))
+          .then(
+              invocation -> {
+                selectCallCount.incrementAndGet();
+                return Uni.createFrom().item(mockResults2);
+              });
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert deleteFirstAsser =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of(tx_id1))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
-      ValidatingStargateBridge.QueryAssert deleteSecondAssert =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc2"))),
-                  Values.of(tx_id2))
-              .withSerialConsistency(queriesConfig.serialConsistency())
-              .returning(List.of(List.of(Values.of(true))));
+
+      SimpleStatement deleteStmt =
+          SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
+      List<Row> deleteRows =
+          Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+
+      AsyncResultSet deleteResults =
+          new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+      final AtomicInteger deleteCallCount = new AtomicInteger();
+      when(queryExecutor.executeWrite(eq(deleteStmt)))
+          .then(
+              invocation -> {
+                deleteCallCount.incrementAndGet();
+                return Uni.createFrom().item(deleteResults);
+              });
+
+      deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue2, tx_id2);
+      deleteRows =
+          Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+
+      AsyncResultSet deleteResults2 =
+          new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+
+      when(queryExecutor.executeWrite(eq(deleteStmt)))
+          .then(
+              invocation -> {
+                deleteCallCount.incrementAndGet();
+                return Uni.createFrom().item(deleteResults2);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -1651,9 +1739,8 @@ public class DeleteOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      candidatesAssert.assertExecuteCount().isEqualTo(3);
-      deleteFirstAsser.assertExecuteCount().isOne();
-      deleteSecondAssert.assertExecuteCount().isOne();
+      assertThat(selectCallCount.get()).isEqualTo(3);
+      assertThat(deleteCallCount.get()).isEqualTo(2);
 
       // then result
       CommandResult result = execute.get();
@@ -1662,6 +1749,5 @@ public class DeleteOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.DELETED_COUNT, 2)
           .containsEntry(CommandStatus.MORE_DATA, true);
     }
-     */
   }
 }
