@@ -62,10 +62,6 @@ public class OperationTestBase {
     return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
   }
 
-  protected ByteBuffer byteBufferFrom(boolean value) {
-    return TypeCodecs.BOOLEAN.encode(value, ProtocolVersion.DEFAULT);
-  }
-
   protected ByteBuffer byteBufferFrom(TupleValue value) {
     return TypeCodecs.tupleOf(DOC_KEY_TYPE).encode(value, ProtocolVersion.DEFAULT);
   }
