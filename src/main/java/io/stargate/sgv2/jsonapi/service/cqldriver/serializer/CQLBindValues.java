@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,8 +31,8 @@ public class CQLBindValues {
     return from.stream().map(val -> val.toString()).collect(Collectors.toSet());
   }
 
-  public static Set<String> getStringSetValue(Set<?> from) {
-    return from.stream().map(val -> val.toString()).collect(Collectors.toSet());
+  public static Set<String> getStringSetValue(Set<String> from) {
+    return new LinkedHashSet<>(from);
   }
 
   public static List<String> getListValue(List<?> from) {

@@ -383,7 +383,7 @@ public class InsertOperationTest extends OperationTestBase {
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Ivan breaks the test."));
+                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
               });
       when(queryExecutor.executeWrite(eq(insertStmt2)))
           .then(
@@ -413,7 +413,7 @@ public class InsertOperationTest extends OperationTestBase {
           .satisfies(
               error -> {
                 assertThat(error.message())
-                    .isEqualTo("Failed to insert document with _id 'doc1': Ivan breaks the test.");
+                    .isEqualTo("Failed to insert document with _id 'doc1': Test break #1");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -471,8 +471,7 @@ public class InsertOperationTest extends OperationTestBase {
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom()
-                    .failure(new RuntimeException("Ivan really breaks the test."));
+                return Uni.createFrom().failure(new RuntimeException("Test break #2"));
               });
 
       Supplier<CommandResult> execute =
@@ -497,8 +496,7 @@ public class InsertOperationTest extends OperationTestBase {
           .satisfies(
               error -> {
                 assertThat(error.message())
-                    .isEqualTo(
-                        "Failed to insert document with _id 'doc2': Ivan really breaks the test.");
+                    .isEqualTo("Failed to insert document with _id 'doc2': Test break #2");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -550,7 +548,7 @@ public class InsertOperationTest extends OperationTestBase {
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Ivan breaks the test."));
+                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
               });
       when(queryExecutor.executeWrite(eq(insertStmt2)))
           .then(
@@ -582,7 +580,7 @@ public class InsertOperationTest extends OperationTestBase {
           .satisfies(
               error -> {
                 assertThat(error.message())
-                    .isEqualTo("Failed to insert document with _id 'doc1': Ivan breaks the test.");
+                    .isEqualTo("Failed to insert document with _id 'doc1': Test break #1");
                 assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
               });
     }
@@ -816,7 +814,7 @@ public class InsertOperationTest extends OperationTestBase {
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
+        shredDocument.arrayContains(),
         CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
         CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
         CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
@@ -832,7 +830,7 @@ public class InsertOperationTest extends OperationTestBase {
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
+        shredDocument.arrayContains(),
         CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
         CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
         CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
