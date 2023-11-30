@@ -33,17 +33,26 @@ public class MockAsyncResultSet implements AsyncResultSet {
   private final List<Row> rows;
   private final Iterator<Row> iterator;
   private final CompletionStage<AsyncResultSet> nextPage;
-  private final ExecutionInfo executionInfo = mock(ExecutionInfo.class);
+  private final ExecutionInfo executionInfo;
   private final ColumnDefinitions columnDefs;
   private int remaining;
 
   public MockAsyncResultSet(
       ColumnDefinitions columnDefs, List<Row> rows, CompletionStage<AsyncResultSet> nextPage) {
+    this(columnDefs, rows, nextPage, mock(ExecutionInfo.class));
+  }
+
+  public MockAsyncResultSet(
+      ColumnDefinitions columnDefs,
+      List<Row> rows,
+      CompletionStage<AsyncResultSet> nextPage,
+      ExecutionInfo executionInfo) {
     this.columnDefs = columnDefs;
     this.rows = rows;
     iterator = rows.iterator();
     remaining = rows.size();
     this.nextPage = nextPage;
+    this.executionInfo = executionInfo;
   }
 
   @Override
@@ -85,6 +94,6 @@ public class MockAsyncResultSet implements AsyncResultSet {
 
   @Override
   public boolean wasApplied() {
-    return true;
+    return rows.get(0).getBoolean("[applied]");
   }
 }
