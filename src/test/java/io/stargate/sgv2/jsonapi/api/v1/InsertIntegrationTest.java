@@ -27,6 +27,7 @@ import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -656,21 +657,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void insertLongestValidString() {
-      int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
-      // 1M / 16k means about 64 max length Strings; try adding 60
-      final String longString = "abcd ".repeat((maxLen - 1) / 5);
+      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH - 20;
       ObjectNode doc = MAPPER.createObjectNode();
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongString");
+      // 1M / 16k means about 64 max length Strings; try adding 60
       for (int i = 0; i < 60; ++i) {
-        doc.put("text" + i, longString + " " + i);
+        doc.put("text" + i, createBigString(strLen));
       }
       _verifyInsert("docWithLongString", doc);
     }
 
     @Test
     public void tryInsertTooLongString() {
-      int maxLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH;
-      final String tooLongString = "abcd ".repeat((maxLen / 5) + 10);
+      final String tooLongString =
+          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH + 50);
       String json =
           """
                         {
@@ -698,7 +698,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: String value length (16050) exceeds maximum allowed"));
+                  "Document size limitation violated: String value length (16056) exceeds maximum allowed"));
+    }
+
+    private String createBigString(int minLen) {
+      // Create random "words" of 7 characters each, and space
+      StringBuilder sb = new StringBuilder(minLen + 8);
+      do {
+        sb.append(RandomStringUtils.randomAlphanumeric(7)).append(' ');
+      } while (sb.length() < minLen);
+      return sb.toString();
     }
 
     @Test
