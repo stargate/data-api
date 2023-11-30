@@ -16,6 +16,8 @@ import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,12 +54,12 @@ public class OperationTestBase {
     return DefaultColumnDefinitions.valueOf(columnDefs);
   }
 
-  protected ByteBuffer byteBufferFrom(long value) {
-    return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
-  }
-
   protected ByteBuffer byteBufferFrom(boolean value) {
     return TypeCodecs.BOOLEAN.encode(value, ProtocolVersion.DEFAULT);
+  }
+
+  protected ByteBuffer byteBufferFrom(long value) {
+    return TypeCodecs.BIGINT.encode(value, ProtocolVersion.DEFAULT);
   }
 
   protected ByteBuffer byteBufferFrom(TupleValue value) {
@@ -114,7 +116,7 @@ public class OperationTestBase {
    * @return Bound value to use with {@code SimpleStatement}
    */
   protected TupleValue boundKeyForStatement(String key) {
-    return DOC_KEY_TYPE.newValue((byte) DocumentConstants.KeyTypeId.TYPE_ID_STRING, key);
+    return CQLBindValues.getDocumentIdValue(DocumentId.fromString(key));
   }
 
   protected CqlVector<Float> vectorForStatement(Float... value) {
