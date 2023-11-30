@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -57,6 +58,9 @@ import org.junit.jupiter.api.Test;
 @TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
 public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
   private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private final ColumnDefinitions COLUMNS_APPLIED =
+      buildColumnDefs(TestColumn.ofBoolean("[applied]"));
+
   @Inject ObjectMapper objectMapper;
   @Inject Shredder shredder;
 
@@ -102,11 +106,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      final ColumnDefinitions columnsApplied = buildColumnDefs(TestColumn.ofBoolean("[applied]"));
       SimpleStatement deleteStmt =
           SimpleStatement.newInstance(collectionDeleteCql, boundKeyForStatement("doc1"), tx_id);
-      List<Row> deleteRows = Arrays.asList(resultRow(columnsApplied, 0, byteBufferFrom(true)));
-      AsyncResultSet deleteResults = new MockAsyncResultSet(columnsApplied, deleteRows, null);
+      List<Row> deleteRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet deleteResults = new MockAsyncResultSet(COLUMNS_APPLIED, deleteRows, null);
       final AtomicInteger callCountDelete = new AtomicInteger();
       when(queryExecutor.executeWrite(eq(deleteStmt)))
           .then(
@@ -176,36 +179,30 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       JsonNode jsonNode = objectMapper.readTree(document);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              CQLBindValues.getDocumentIdValue(shredDocument.id()),
+              shredDocument.docJson(),
+              CQLBindValues.getSetValue(shredDocument.existKeys()),
+              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+              shredDocument.arrayContains(),
+              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()));
 
-      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert insertAssert =
-          withQuery(
-                  insertCql,
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
-              .returning(List.of(List.of(Values.of(true))));
+      List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeWrite(eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
@@ -217,7 +214,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      insertAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
