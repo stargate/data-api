@@ -42,13 +42,14 @@ public class CQLSessionCache {
   private static final String DEFAULT_TENANT = "default_tenant";
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
-
   /** CQLSession cache. */
   private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
-
+  /** Database type Astra */
   public static final String ASTRA = "astra";
+  /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
 
+  @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
     this.operationsConfig = operationsConfig;
     LoadingCache<SessionCacheKey, CqlSession> sessionCache =
@@ -139,9 +140,7 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return operationsConfig.databaseConfig().fixedToken().isPresent()
-        ? operationsConfig.databaseConfig().fixedToken().get()
-        : null;
+    return Objects.requireNonNull(operationsConfig.databaseConfig().fixedToken()).orElse(null);
   }
 
   /**
@@ -173,6 +172,16 @@ public class CQLSessionCache {
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
+  }
+
+  /**
+   * Get cache size.
+   *
+   * @return cache size
+   */
+  public long cacheSize() {
+    sessionCache.cleanUp();
+    return sessionCache.estimatedSize();
   }
 
   /**
