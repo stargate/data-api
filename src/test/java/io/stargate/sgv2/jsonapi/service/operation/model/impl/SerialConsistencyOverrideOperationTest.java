@@ -19,10 +19,6 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.bridge.grpc.TypeSpecs;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -31,7 +27,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -243,42 +238,31 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                       }
                       """;
 
+      final ColumnDefinitions keyTxIdDocColumns =
+          buildColumnDefs(
+              TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
+      SimpleStatement selectStmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> selectRows =
+          Arrays.asList(resultRow(keyTxIdDocColumns, 0, byteBufferForKey("doc1"), tx_id, doc1));
+      AsyncResultSet selectResults = new MockAsyncResultSet(keyTxIdDocColumns, selectRows, null);
+      final AtomicInteger callCountSelect = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCountSelect.incrementAndGet();
+                return Uni.createFrom().item(selectResults);
+              });
+
       String doc1Updated =
           """
-                      {
-                        "_id": "doc1",
-                        "username": "user1",
-                        "name" : "test"
-                      }
-                      """;
-      ValidatingStargateBridge.QueryAssert selectQueryAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id),
-                          Values.of(doc1))));
+                          {
+                            "_id": "doc1",
+                            "username": "user1",
+                            "name" : "test"
+                          }
+                          """;
 
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -297,38 +281,34 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String updateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      ValidatingStargateBridge.QueryAssert updateQueryAssert =
-          withQuery(
-                  collectionUpdateCql,
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(tx_id))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
-              .returning(List.of(List.of(Values.of(true))));
+      SimpleStatement updateStmt =
+          SimpleStatement.newInstance(
+              updateCql.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              CQLBindValues.getSetValue(shredDocument.existKeys()),
+              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+              shredDocument.arrayContains(),
+              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
+              shredDocument.docJson(),
+              CQLBindValues.getDocumentIdValue(shredDocument.id()),
+              tx_id);
+
+      List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
+      final AtomicInteger callCountUpdate = new AtomicInteger();
+      when(queryExecutor.executeWrite(eq(updateStmt)))
+          .then(
+              invocation -> {
+                callCountUpdate.incrementAndGet();
+                return Uni.createFrom().item(updateResults);
+              });
 
       DBFilterBase.IDFilter filter =
           new DBFilterBase.IDFilter(
@@ -363,7 +343,6 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               1,
               3);
 
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -373,8 +352,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               .getItem();
 
       // assert query execution
-      selectQueryAssert.assertExecuteCount().isOne();
-      updateQueryAssert.assertExecuteCount().isOne();
+      assertThat(callCountSelect.get()).isEqualTo(1);
+      assertThat(callCountUpdate.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -389,10 +368,5 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
     List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
     return new MockRow(columnDefs, index, buffers);
-  }
-
-  // /// !!! TEMPORARY
-  ValidatingStargateBridge.QueryExpectation withQuery(String query, Object... args) {
-    return null;
   }
 }
