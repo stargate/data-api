@@ -18,8 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Utility class for methods used to convert from Java types to CQL types,
- * for use in CQL bind values.
+ * Utility class for methods used to convert from Java types to CQL types, for use in CQL bind
+ * values.
  */
 public class CQLBindValues {
 
