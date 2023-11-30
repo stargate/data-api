@@ -17,6 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for methods used to convert from Java types to CQL types,
+ * for use in CQL bind values.
+ */
 public class CQLBindValues {
 
   public static Map<String, Integer> getIntegerMapValues(Map<JsonPath, Integer> from) {
