@@ -321,7 +321,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_VECTOR_CONTEXT,
+              COMMAND_CONTEXT,
               findOperation,
               documentUpdater,
               true,
