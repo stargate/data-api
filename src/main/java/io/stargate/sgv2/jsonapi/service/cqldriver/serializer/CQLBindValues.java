@@ -11,11 +11,16 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for methods used to convert from Java types to CQL types, for use in CQL bind
+ * values.
+ */
 public class CQLBindValues {
 
   public static Map<String, Integer> getIntegerMapValues(Map<JsonPath, Integer> from) {
@@ -31,10 +36,10 @@ public class CQLBindValues {
   }
 
   public static Set<String> getStringSetValue(Set<String> from) {
-    return from.stream().map(val -> val.toString()).collect(Collectors.toSet());
+    return new LinkedHashSet<>(from);
   }
 
-  public static List<String> getListValue(List<JsonPath> from) {
+  public static List<String> getListValue(List<?> from) {
     return from.stream().map(val -> val.toString()).collect(Collectors.toList());
   }
 
