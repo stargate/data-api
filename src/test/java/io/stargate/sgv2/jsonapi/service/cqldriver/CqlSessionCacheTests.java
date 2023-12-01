@@ -183,7 +183,7 @@ public class CqlSessionCacheTests {
     assertThat(cacheLoadMetric.count()).isEqualTo(tenantIds.size());
   }
 
-  /*@Test
+  @Test
   public void testOSSCxCQLSessionCacheSizeEviction()
       throws NoSuchFieldException, IllegalAccessException {
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
@@ -231,5 +231,5 @@ public class CqlSessionCacheTests {
             .functionCounter();
     assertThat(cacheLoadMetric).isNotNull();
     assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
-  }*/
+  }
 }
