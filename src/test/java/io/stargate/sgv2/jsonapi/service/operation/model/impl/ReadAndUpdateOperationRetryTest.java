@@ -140,11 +140,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
-    final AtomicInteger callCount1 = new AtomicInteger();
+    final AtomicInteger selectQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
-              callCount1.incrementAndGet();
+              selectQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results1);
             });
 
@@ -161,11 +161,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
-    final AtomicInteger callCount2 = new AtomicInteger();
+    final AtomicInteger reReadQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
-              callCount2.incrementAndGet();
+              reReadQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results2);
             });
 
@@ -183,22 +183,22 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
-    final AtomicInteger callCount3 = new AtomicInteger();
+    final AtomicInteger failedUpdateQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt3)))
         .then(
             invocation -> {
-              callCount3.incrementAndGet();
+              failedUpdateQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results3);
             });
 
     SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
-    final AtomicInteger callCount4 = new AtomicInteger();
+    final AtomicInteger updateQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt4)))
         .then(
             invocation -> {
-              callCount4.incrementAndGet();
+              updateQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results4);
             });
 
@@ -244,10 +244,10 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             .getItem();
 
     // assert query execution
-    assertThat(callCount1.get()).isEqualTo(1);
-    assertThat(callCount2.get()).isEqualTo(1);
-    assertThat(callCount3.get()).isEqualTo(1);
-    assertThat(callCount4.get()).isEqualTo(1);
+    assertThat(selectQueryAssert.get()).isEqualTo(1);
+    assertThat(reReadQueryAssert.get()).isEqualTo(1);
+    assertThat(failedUpdateQueryAssert.get()).isEqualTo(1);
+    assertThat(updateQueryAssert.get()).isEqualTo(1);
 
     // then result
     CommandResult result = execute.get();
@@ -283,11 +283,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
-    final AtomicInteger callCount1 = new AtomicInteger();
+    final AtomicInteger selectQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
-              callCount1.incrementAndGet();
+              selectQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results1);
             });
 
@@ -304,11 +304,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
-    final AtomicInteger callCount2 = new AtomicInteger();
+    final AtomicInteger reReadQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
-              callCount2.incrementAndGet();
+              reReadQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results2);
             });
 
@@ -326,22 +326,22 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
-    final AtomicInteger callCount3 = new AtomicInteger();
+    final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt3)))
         .then(
             invocation -> {
-              callCount3.incrementAndGet();
+              updateFailedQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results3);
             });
 
     SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
-    final AtomicInteger callCount4 = new AtomicInteger();
+    final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt4)))
         .then(
             invocation -> {
-              callCount4.incrementAndGet();
+              updateRetryFailedQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results4);
             });
 
@@ -387,10 +387,10 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             .getItem();
 
     // assert query execution
-    assertThat(callCount1.get()).isEqualTo(1);
-    assertThat(callCount2.get()).isEqualTo(3);
-    assertThat(callCount3.get()).isEqualTo(1);
-    assertThat(callCount4.get()).isEqualTo(3);
+    assertThat(selectQueryAssert.get()).isEqualTo(1);
+    assertThat(reReadQueryAssert.get()).isEqualTo(3);
+    assertThat(updateFailedQueryAssert.get()).isEqualTo(1);
+    assertThat(updateRetryFailedQueryAssert.get()).isEqualTo(3);
 
     // then result
     CommandResult result = execute.get();
@@ -434,11 +434,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
-    final AtomicInteger callCount1 = new AtomicInteger();
+    final AtomicInteger selectQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
-              callCount1.incrementAndGet();
+              selectQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results1);
             });
 
@@ -455,11 +455,11 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
-    final AtomicInteger callCount2 = new AtomicInteger();
+    final AtomicInteger reReadQueryAssert = new AtomicInteger();
     when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
-              callCount2.incrementAndGet();
+              reReadQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results2);
             });
 
@@ -477,22 +477,22 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
-    final AtomicInteger callCount3 = new AtomicInteger();
+    final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt3)))
         .then(
             invocation -> {
-              callCount3.incrementAndGet();
+              updateFailedQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results3);
             });
 
     SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
-    final AtomicInteger callCount4 = new AtomicInteger();
+    final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
     when(queryExecutor.executeWrite(eq(stmt4)))
         .then(
             invocation -> {
-              callCount4.incrementAndGet();
+              updateRetryFailedQueryAssert.incrementAndGet();
               return Uni.createFrom().item(results4);
             });
 
@@ -538,10 +538,10 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             .getItem();
 
     // assert query execution
-    assertThat(callCount1.get()).isEqualTo(1);
-    assertThat(callCount2.get()).isEqualTo(3);
-    assertThat(callCount3.get()).isEqualTo(1);
-    assertThat(callCount4.get()).isEqualTo(3);
+    assertThat(selectQueryAssert.get()).isEqualTo(1);
+    assertThat(reReadQueryAssert.get()).isEqualTo(3);
+    assertThat(updateFailedQueryAssert.get()).isEqualTo(1);
+    assertThat(updateRetryFailedQueryAssert.get()).isEqualTo(3);
 
     // then result
     CommandResult result = execute.get();
@@ -641,7 +641,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
               return Uni.createFrom().item(results2);
             });
 
-    String collectionUpdateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
     WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
     SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
