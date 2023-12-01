@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.annotations.VisibleForTesting;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -51,15 +50,14 @@ public class NamespaceCache {
                     return Uni.createFrom()
                         .failure(
                             new JsonApiException(
-                                ErrorCode.COLLECTION_NOT_EXIST,
-                                ErrorCode.COLLECTION_NOT_EXIST
+                                ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA,
+                                ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA
                                     .getMessage()
                                     .concat(collectionName)));
                   }
                   // collection does not exist
                   if (error instanceof RuntimeException rte
-                      && rte.getMessage()
-                          .startsWith(ErrorCode.INVALID_COLLECTION_NAME.getMessage())) {
+                      && rte.getMessage().startsWith(ErrorCode.COLLECTION_NOT_EXIST.getMessage())) {
                     return Uni.createFrom()
                         .failure(
                             new JsonApiException(
@@ -86,7 +84,6 @@ public class NamespaceCache {
     }
   }
 
-  @VisibleForTesting
   private Uni<CollectionSettings> getVectorProperties(String collectionName) {
     return queryExecutor
         .getSchema(namespace, collectionName)
@@ -103,7 +100,7 @@ public class NamespaceCache {
                 return CollectionSettings.getCollectionSettings(table.get(), objectMapper);
               } else {
                 throw new RuntimeException(
-                    ErrorCode.INVALID_COLLECTION_NAME.getMessage() + collectionName);
+                    ErrorCode.COLLECTION_NOT_EXIST.getMessage() + collectionName);
               }
             });
   }

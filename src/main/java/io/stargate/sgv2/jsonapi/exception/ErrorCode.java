@@ -59,7 +59,7 @@ public enum ErrorCode {
 
   INVALID_COLLECTION_NAME("Invalid collection name "),
 
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema : "),
+  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
