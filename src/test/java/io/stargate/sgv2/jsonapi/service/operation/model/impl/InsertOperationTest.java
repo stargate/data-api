@@ -16,7 +16,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -57,7 +56,6 @@ public class InsertOperationTest extends OperationTestBase {
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
-  @Inject QueriesConfig queriesConfig;
 
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
