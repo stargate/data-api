@@ -10,7 +10,7 @@ public class FixedTokenTimingTestProfile implements QuarkusTestProfile {
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
         .put("stargate.jsonapi.operations.database-config.fixed-token", "test-token")
-        .put("stargate.jsonapi.operations.database-config.session-cache-ttl-seconds", "2")
+        .put("stargate.jsonapi.operations.database-config.session-cache-ttl-seconds", "10")
         .build();
   }
 }
