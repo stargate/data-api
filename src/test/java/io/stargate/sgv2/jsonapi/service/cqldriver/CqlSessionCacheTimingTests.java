@@ -38,14 +38,9 @@ public class CqlSessionCacheTimingTests {
   public void testOSSCxCQLSessionCacheTimedEviction()
       throws NoSuchFieldException, IllegalAccessException, InterruptedException {
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    // set operation config
-    Field operationsConfigField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
-    operationsConfigField.setAccessible(true);
-    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
-    int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize() + 5;
+    int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
     for (int i = 0; i < sessionsToCreate; i++) {
-      String tenantId = "tenant" + i;
+      String tenantId = "tenant_timing_test_" + i;
       StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
       when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(stargateRequestInfo.getCassandraToken())
