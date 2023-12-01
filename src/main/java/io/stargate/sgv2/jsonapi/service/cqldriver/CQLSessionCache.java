@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import com.datastax.oss.driver.api.core.AsyncAutoCloseable;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -81,13 +82,7 @@ public class CQLSessionCache {
         operationsConfig.databaseConfig().sessionCacheMaxSize());
     Runtime.getRuntime()
         .addShutdownHook(
-            new Thread(
-                new Runnable() {
-                  @Override
-                  public void run() {
-                    sessionCache.asMap().values().stream().forEach(session -> session.close());
-                  }
-                }));
+            new Thread(() -> sessionCache.asMap().values().forEach(AsyncAutoCloseable::close)));
   }
 
   /**
