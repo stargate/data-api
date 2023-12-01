@@ -28,6 +28,11 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
     }
+
+    // 01-Dec-2023, tatu: Astra overrides default 1kB limit to 5kB
+    if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
+      System.setProperty("cassandra.sai.max_string_term_size_kb", "5");
+    }
   }
 
   @Override
