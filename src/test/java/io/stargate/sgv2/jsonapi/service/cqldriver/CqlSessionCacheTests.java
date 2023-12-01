@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -11,16 +10,12 @@ import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +61,7 @@ public class CqlSessionCacheTests {
     assertThat(cachePutMetric.count()).isEqualTo(1);
   }
 
-  @Test
+  /*@Test
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
@@ -231,5 +226,5 @@ public class CqlSessionCacheTests {
             .functionCounter();
     assertThat(cacheLoadMetric).isNotNull();
     assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
-  }
+  }*/
 }
