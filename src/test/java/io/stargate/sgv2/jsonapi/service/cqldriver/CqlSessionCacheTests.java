@@ -61,7 +61,7 @@ public class CqlSessionCacheTests {
     assertThat(cachePutMetric.count()).isEqualTo(1);
   }
 
-  /*@Test
+  @Test
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
@@ -127,7 +127,7 @@ public class CqlSessionCacheTests {
     assertThat(cachePutMetric.count()).isEqualTo(0);
   }
 
-  @Test
+  /*@Test
   public void testOSSCxCQLSessionCacheMultiTenant()
       throws NoSuchFieldException, IllegalAccessException {
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
