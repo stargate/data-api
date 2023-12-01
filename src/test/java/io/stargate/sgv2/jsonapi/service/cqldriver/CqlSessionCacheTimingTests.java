@@ -19,12 +19,10 @@ import jakarta.inject.Inject;
 import java.lang.reflect.Field;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(FixedTokenTimingTestProfile.class)
-@Disabled
 public class CqlSessionCacheTimingTests {
 
   @Inject OperationsConfig operationsConfig;
