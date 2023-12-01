@@ -79,6 +79,7 @@ public class CQLSessionCache {
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
         operationsConfig.databaseConfig().sessionCacheMaxSize());
+    Runtime.getRuntime().addShutdownHook(new Thread(sessionCache::invalidateAll));
   }
 
   /**
