@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.assertj.core.api.Fail.fail;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -801,25 +802,39 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       boolean bigEnough = false;
 
-      // Since we add one property before loop, reduce max by 1
+      // Since we add one property before loop, reduce max by 1.
+      // Target is around 1 meg; can have at most 1000 properties, and for
+      // big doc we don't want to exceed 1000 bytes per property.
+      // So let's make properties arrays of 4 Strings to get there.
       final int ROOT_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
-      final int LEAF_PROPS = 30;
-      final String TEXT_2K = "abcd123 ".repeat(250); // 2000 chars
+      final int LEAF_PROPS = 15; // so it's slightly under 1000 total properties, max
+      final String TEXT_2K = "abcd123 ".repeat(120); // 960 chars
 
       // Use double loop to create a document with a lot of properties, 2-level nesting
-      // But keep total number of props under 1000
       for (int i = 0; i < ROOT_PROPS && !bigEnough; ++i) {
         sb.append(",\n\"root").append(i).append("\":{");
         // Add one short entry to simplify following loop
         sb.append("\n \"subId\":").append(i);
         for (int j = 0; j < LEAF_PROPS && !bigEnough; ++j) {
           sb.append(",\n \"sub").append(j).append("\":");
-          sb.append('"').append(TEXT_2K).append('"');
+          sb.append('[');
+          sb.append('"').append(TEXT_2K).append("\",");
+          sb.append('"').append(TEXT_2K).append("\",");
+          sb.append('"').append(TEXT_2K).append("\",");
+          sb.append('"').append(TEXT_2K).append("\"");
+          sb.append(']');
           bigEnough = sb.length() >= minDocSize;
         }
         sb.append("\n}");
       }
       sb.append("\n}");
+      if (!bigEnough) {
+        fail(
+            "Failed to create a document big enough, size: "
+                + sb.length()
+                + " bytes; needed "
+                + minDocSize);
+      }
 
       return MAPPER.readTree(sb.toString());
     }
