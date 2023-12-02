@@ -69,6 +69,10 @@ public class StargateTestResource
       String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
+
+      // 01-Dec-2023, tatu: Astra overrides default 1kB limit to 5kB
+      propsBuilder.put("cassandra.sai.max_string_term_size_kb", "5");
+
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
       LOG.info("Using props map for the integration tests: %s".formatted(props));
