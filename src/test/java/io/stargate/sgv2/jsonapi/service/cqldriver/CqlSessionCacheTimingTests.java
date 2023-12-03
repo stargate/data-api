@@ -17,24 +17,37 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(FixedTokenTimingTestProfile.class)
-@Disabled(
-    "Disabled time based eviction test for now, since adding this test causes the CqlSessionCacheTests tests to fail")
 public class CqlSessionCacheTimingTests {
 
   @Inject OperationsConfig operationsConfig;
 
   private MeterRegistry meterRegistry;
 
+  /**
+   * List of sessions created in the tests. This is used to close the sessions after each test. This
+   * is needed because, though the sessions evicted from the cache are closed, the sessions left
+   * active on the cache are not closed, so we have to close them explicitly.
+   */
+  private List<CqlSession> sessionsCreatedInTests;
+
   @BeforeEach
   public void setupEachTest() {
     meterRegistry = new SimpleMeterRegistry();
+    sessionsCreatedInTests = new ArrayList<>();
+  }
+
+  @AfterEach
+  public void tearDownEachTest() {
+    sessionsCreatedInTests.forEach(CqlSession::close);
   }
 
   @Test
@@ -52,14 +65,13 @@ public class CqlSessionCacheTimingTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      sessionsCreatedInTests.add(cqlSession);
       assertThat(
-              ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+              ((DefaultDriverContext) cqlSession.getContext())
                   .getStartupOptions()
                   .get(TENANT_ID_PROPERTY_KEY))
           .isEqualTo(tenantId);
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
-      assertThat(cqlSession).isNotNull();
     }
     Thread.sleep(10000);
     assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);

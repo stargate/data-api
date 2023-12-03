@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
@@ -21,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,9 +36,22 @@ public class CqlSessionCacheTests {
 
   private MeterRegistry meterRegistry;
 
+  /**
+   * List of sessions created in the tests. This is used to close the sessions after each test. This
+   * is needed because, though the sessions evicted from the cache are closed, the sessions left
+   * active on the cache are not closed, so we have to close them explicitly.
+   */
+  private List<CqlSession> sessionsCreatedInTests;
+
   @BeforeEach
-  public void setupEachTest() {
+  public void tearUpEachTest() {
     meterRegistry = new SimpleMeterRegistry();
+    sessionsCreatedInTests = new ArrayList<>();
+  }
+
+  @AfterEach
+  public void tearDownEachTest() {
+    sessionsCreatedInTests.forEach(CqlSession::close);
   }
 
   @Test
@@ -50,9 +65,10 @@ public class CqlSessionCacheTests {
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    sessionsCreatedInTests.add(cqlSession);
     assertThat(
-            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+            ((DefaultDriverContext) cqlSession.getContext())
                 .getStartupOptions()
                 .get(TENANT_ID_PROPERTY_KEY))
         .isEqualTo("default_tenant");
@@ -84,9 +100,10 @@ public class CqlSessionCacheTests {
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
-
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    sessionsCreatedInTests.add(cqlSession);
     assertThat(
-            ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+            ((DefaultDriverContext) cqlSession.getContext())
                 .getStartupOptions()
                 .get(TENANT_ID_PROPERTY_KEY))
         .isEqualTo(TENANT_ID_FOR_TEST);
@@ -157,9 +174,10 @@ public class CqlSessionCacheTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      sessionsCreatedInTests.add(cqlSession);
       assertThat(
-              ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+              ((DefaultDriverContext) cqlSession.getContext())
                   .getStartupOptions()
                   .get(TENANT_ID_PROPERTY_KEY))
           .isEqualTo(tenantId);
@@ -203,9 +221,10 @@ public class CqlSessionCacheTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      sessionsCreatedInTests.add(cqlSession);
       assertThat(
-              ((DefaultDriverContext) cqlSessionCacheForTest.getSession().getContext())
+              ((DefaultDriverContext) cqlSession.getContext())
                   .getStartupOptions()
                   .get(TENANT_ID_PROPERTY_KEY))
           .isEqualTo(tenantId);
