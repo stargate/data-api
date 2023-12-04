@@ -103,16 +103,27 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         sortExpressions.add(exp);
         break;
       } else {
+        if (path.isBlank()) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_SORT_CLAUSE_PATH,
+              String.format(
+                  "%s: sort clause path must be represented as not-blank strings.",
+                  ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage()));
+        }
+
+        if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(path).matches()) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_SORT_CLAUSE_PATH,
+              String.format(
+                  "%s: sort clause path ('%s') contains character(s) not allowed",
+                  ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage(), path));
+        }
+
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
           throw new JsonApiException(
               ErrorCode.INVALID_SORT_CLAUSE_VALUE,
               ErrorCode.INVALID_SORT_CLAUSE_VALUE.getMessage());
-        }
-
-        if (path.isBlank()) {
-          throw new JsonApiException(
-              ErrorCode.INVALID_SORT_CLAUSE_PATH, ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage());
         }
 
         boolean ascending = inner.getValue().intValue() == 1;
