@@ -111,7 +111,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
                   ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage()));
         }
 
-        if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(path).matches()) {
+        if (!DocumentConstants.Fields.VALID_FIELD_NAME_PATTERN.matcher(path).matches()) {
           throw new JsonApiException(
               ErrorCode.INVALID_SORT_CLAUSE_PATH,
               String.format(

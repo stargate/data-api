@@ -53,7 +53,7 @@ public class ComparisonExpression {
    * @return {@link ComparisonExpression} with equal operator
    */
   public static ComparisonExpression eq(String path, Object value) {
-    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(path).matches()) {
+    if (!DocumentConstants.Fields.VALID_FIELD_NAME_PATTERN.matcher(path).matches()) {
       throw new JsonApiException(
           ErrorCode.INVALID_FILTER_EXPRESSION,
           String.format(
