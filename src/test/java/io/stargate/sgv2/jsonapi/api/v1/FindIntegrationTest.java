@@ -1638,8 +1638,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+              endsWith("sort clause path must be represented as not-blank strings."))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
@@ -1661,8 +1661,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank strings."))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
+              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
