@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -52,6 +53,13 @@ public class ComparisonExpression {
    * @return {@link ComparisonExpression} with equal operator
    */
   public static ComparisonExpression eq(String path, Object value) {
+    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(path).matches()) {
+      throw new JsonApiException(
+          ErrorCode.INVALID_FILTER_EXPRESSION,
+          String.format(
+              "%s: filter clause path ('%s') contains character(s) not allowed",
+              ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), path));
+    }
     return new ComparisonExpression(
         path,
         List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))),
