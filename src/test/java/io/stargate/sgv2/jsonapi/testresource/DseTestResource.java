@@ -52,6 +52,8 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
+    // 01-Dec-2023, tatu: Astra overrides default 1kB limit to 5kB
+    propsBuilder.put("cassandra.sai.max_string_term_size_kb", "5");
 
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
     if (defaultToken != null) {
