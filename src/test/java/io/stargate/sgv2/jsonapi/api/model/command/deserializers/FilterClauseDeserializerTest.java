@@ -902,5 +902,22 @@ public class FilterClauseDeserializerTest {
                         "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal");
               });
     }
+
+    @Test
+    public void wrongPathName() throws Exception {
+      String json = """
+              {"$gt" : {"test" : 5}}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: filter clause path ('$gt') contains character(s) not allowed");
+              });
+    }
   }
 }

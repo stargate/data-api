@@ -1638,6 +1638,29 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
+              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    void dollarOperatorInFilterFieldName() {
+      String json =
+          """
+              { "find": { "filter" : {"$gt" : {"test" : 5}} } }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
               endsWith("sort clause path must be represented as not-blank strings."))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
