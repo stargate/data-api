@@ -949,6 +949,39 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                      """;
+      String expected3 =
+          """
+              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+              """;
+
+      String expected4 =
+          """
+              {
+                "_id": "doc4",
+                "username":"user4",
+                "indexedObject" : { "0": "value_0", "1": "value_1" }
+              }
+              """;
+      String expected5 =
+          """
+              {
+                "_id": "doc5",
+                "username": "user5",
+                "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+              }
+              """;
+      String expected6 =
+          """
+                          {
+                            "_id": {"$date": 6},
+                            "user-name": "user6"
+                          }
+                          """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -958,11 +991,16 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", hasSize(1))
-          .body("errors[0].message", is("$exists operator supports only true"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
     }
 
     @Test
@@ -1500,7 +1538,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(2));
+          .body("data.documents", hasSize(2))
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
     }
 
     @Test

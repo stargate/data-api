@@ -545,12 +545,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("data.document", is(not(nullValue())))
+          .body("data.document", hasSize(4))
           .body("status", is(nullValue()))
-          .body("errors", hasSize(1))
-          .body("errors[0].message", is("$exists operator supports only true"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()));
     }
 
     @Test

@@ -337,10 +337,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", is("$exists operator supports only true"));
+          .body("status.count", is(4))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
 
     @Test

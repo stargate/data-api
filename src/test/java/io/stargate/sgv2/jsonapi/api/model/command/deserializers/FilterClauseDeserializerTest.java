@@ -256,22 +256,6 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
-    public void mustHandleExists() throws Exception {
-      String json =
-          """
-                        {"existsPath" : {"$exists": false}}
-                        """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage()).isEqualTo("$exists operator supports only true");
-              });
-    }
-
-    @Test
     public void mustHandleAll() throws Exception {
       String json =
           """
