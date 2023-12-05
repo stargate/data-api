@@ -16,7 +16,6 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,8 +140,7 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    Optional<String> fixedToken = operationsConfig.databaseConfig().fixedToken();
-    return fixedToken != null && fixedToken.isPresent() ? fixedToken.get() : null;
+    return operationsConfig.databaseConfig().fixedToken().orElse(null);
   }
 
   /**
