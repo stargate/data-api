@@ -36,7 +36,7 @@ public interface DocumentConstants {
     Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-]*");
 
     /** Field name pattern in sort and filter clause. */
-    Pattern VALID_FIELD_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
+    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
   }
 
   interface KeyTypeId {

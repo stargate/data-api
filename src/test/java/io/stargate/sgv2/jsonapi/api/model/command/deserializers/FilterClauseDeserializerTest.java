@@ -904,7 +904,7 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
-    public void wrongPathName() throws Exception {
+    public void invalidPathName() throws Exception {
       String json = """
               {"$gt" : {"test" : 5}}
           """;

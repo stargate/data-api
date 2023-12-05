@@ -107,11 +107,11 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           throw new JsonApiException(
               ErrorCode.INVALID_SORT_CLAUSE_PATH,
               String.format(
-                  "%s: sort clause path must be represented as not-blank strings.",
+                  "%s: sort clause path must be represented as not-blank string",
                   ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage()));
         }
 
-        if (!DocumentConstants.Fields.VALID_FIELD_NAME_PATTERN.matcher(path).matches()) {
+        if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
           throw new JsonApiException(
               ErrorCode.INVALID_SORT_CLAUSE_PATH,
               String.format(

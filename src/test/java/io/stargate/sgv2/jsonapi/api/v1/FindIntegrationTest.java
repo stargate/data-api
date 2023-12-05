@@ -1600,7 +1600,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void dollarOperatorInSortFieldName() {
+    public void dollarOperatorInSortPathExpression() {
       String json = """
               { "find": { "sort" : {"$gt" : 1} } }
               """;
@@ -1622,7 +1622,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    void emptyFieldNameInSort() {
+    void emptyPathExpressionInSort() {
       String json = """
               { "find": { "sort" : {"" : 1} } }
               """;
@@ -1638,13 +1638,13 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank strings."))
+              endsWith("sort clause path must be represented as not-blank string"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
-    void dollarOperatorInFilterFieldName() {
+    void dollarOperatorInFilterPathExpression() {
       String json =
           """
               { "find": { "filter" : {"$gt" : {"test" : 5}} } }

@@ -260,7 +260,7 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void wrongPathName() {
+    public void invalidPathName() {
       String json = """
               {"$gt": 1}
           """;
