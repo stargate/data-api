@@ -7,6 +7,7 @@ import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.TestModeConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -20,7 +21,8 @@ import org.slf4j.LoggerFactory;
 public class JsonApiStartUp {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
-  private final DebugModeConfig config;
+  private final DebugModeConfig debugConfig;
+  private final TestModeConfig testModeConfig;
   private final OperationsConfig operationsConfig;
   public static final String CASSANDRA = "cassandra";
 
@@ -36,13 +38,21 @@ public class JsonApiStartUp {
   private static final String DEFAULT_TENANT = "default_tenant";
 
   @Inject
-  public JsonApiStartUp(DebugModeConfig config, OperationsConfig operationsConfig) {
-    this.config = config;
+  public JsonApiStartUp(
+      DebugModeConfig debugConfig,
+      TestModeConfig testModeConfig,
+      OperationsConfig operationsConfig) {
+    this.debugConfig = debugConfig;
     this.operationsConfig = operationsConfig;
+    this.testModeConfig = testModeConfig;
   }
 
   void onStart(@Observes StartupEvent ev) {
-    LOGGER.info(String.format("DEBUG mode Enabled: %s", config.enabled()));
+    // if jsonapi starts in a unit test or integration test, assume SAI is enabled for backend
+    if (testModeConfig.inTest()) {
+      return;
+    }
+    LOGGER.info(String.format("DEBUG mode Enabled: %s", debugConfig.enabled()));
     // only check for local cassandra, see if SAI is enabled
     if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
       List<InetSocketAddress> seeds =

@@ -5,6 +5,8 @@ stargate:
     ignore-bridge: true
   debug:
     enabled: true
+  test:
+    in-test: true
 
 # change test port from 8081 (used by other SG services)
 quarkus:
