@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -359,7 +360,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** DB filter / condition for testing a set value */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
-      CONTAINS;
+      CONTAINS,
+      NOT_CONTAINS;
     }
 
     protected final String columnName;
@@ -394,6 +396,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case CONTAINS:
           return BuiltCondition.of(columnName, Predicate.CONTAINS, new JsonTerm(value));
+        case NOT_CONTAINS:
+          return BuiltCondition.of(columnName, Predicate.NOT_CONTAINS, new JsonTerm(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -424,13 +428,14 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /**
-   * Filter for document where a field exists
+   * Filter for document where a field exists or not
    *
-   * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
+   * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set ?????TODO
    */
   public static class ExistsFilter extends SetFilterBase<String> {
     public ExistsFilter(String path, boolean existFlag) {
-      super("exist_keys", path, path, Operator.CONTAINS);
+      super("exist_keys", path, path, existFlag ? Operator.CONTAINS : Operator.NOT_CONTAINS);
+      Log.error("path exists filter: " + path + " " + existFlag);
     }
 
     @Override

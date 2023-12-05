@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -74,6 +75,7 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
+    Log.error("create ks");
 
     // call processor
     return meteredCommandProcessor

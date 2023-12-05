@@ -188,13 +188,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == EXISTS_GROUP) {
         Boolean bool = (Boolean) filterOperation.operand().value();
-        if (bool) {
-          filters.add(new DBFilterBase.ExistsFilter(captureExpression.path(), bool));
-        } else {
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE, "$exists is supported only with true option");
-        }
+        filters.add(new DBFilterBase.ExistsFilter(captureExpression.path(), bool));
       }
+
       if (captureExpression.marker() == ALL_GROUP) {
         final DocValueHasher docValueHasher = new DocValueHasher();
         List<Object> objects = (List<Object>) filterOperation.operand().value();

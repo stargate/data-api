@@ -171,11 +171,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     if (filterOperation.operator() instanceof ElementComparisonOperator elementComparisonOperator) {
       switch (elementComparisonOperator) {
         case EXISTS:
-          if (filterOperation.operand().value() instanceof Boolean b) {
-            if (!b)
-              throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator supports only true");
-          } else {
+          if (!(filterOperation.operand().value() instanceof Boolean)) {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have `BOOLEAN`");
           }
