@@ -919,5 +919,60 @@ public class FilterClauseDeserializerTest {
                         "Invalid filter expression: filter clause path ('$gt') contains character(s) not allowed");
               });
     }
+
+    @Test
+    public void valid$vectorPathName() throws Exception {
+      String json = """
+              {"$vector" : {"$exists": true}}
+              """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo("$vector");
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations()
+                  .get(0)
+                  .operator())
+          .isEqualTo(ElementComparisonOperator.EXISTS);
+    }
+
+    @Test
+    public void invalid$vectorPathName() throws Exception {
+      String json = """
+              {"$exists" : {"$vector": true}}
+              """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator $vector");
+              });
+    }
+
+    @Test
+    public void invalidPathNameWithValidOperator() {
+      String json = """
+              {"$exists" : {"$exists": true}}
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: filter clause path ('$exists') contains character(s) not allowed");
+              });
+    }
   }
 }
