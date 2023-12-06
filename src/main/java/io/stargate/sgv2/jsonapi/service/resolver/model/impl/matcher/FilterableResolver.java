@@ -67,7 +67,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(DYNAMIC_GROUP_IN)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
@@ -75,7 +83,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(DYNAMIC_NULL_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
         .capture(DYNAMIC_DATE_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DATE)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DATE)
         .capture(EXISTS_GROUP)
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
@@ -170,7 +186,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.NumberFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getDBFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
       }
 
@@ -182,7 +198,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.DateFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getDBFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
       }
 
@@ -227,5 +243,26 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
 
     return filters;
+  }
+
+  private static DBFilterBase.MapFilterBase.Operator getDBFilterBaseOperator(
+      FilterOperator filterOperation) {
+    switch ((ValueComparisonOperator) filterOperation) {
+      case EQ:
+        return DBFilterBase.MapFilterBase.Operator.EQ;
+      case GT:
+        return DBFilterBase.MapFilterBase.Operator.GT;
+      case GTE:
+        return DBFilterBase.MapFilterBase.Operator.GTE;
+      case LT:
+        return DBFilterBase.MapFilterBase.Operator.LT;
+      case LTE:
+        return DBFilterBase.MapFilterBase.Operator.LTE;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format(
+                "Unsupported filter operator %s for number type", filterOperation.getOperator()));
+    }
   }
 }

@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -1342,6 +1343,167 @@ public class FindCommandResolverTest {
                 assertThat(
                         find.logicalExpression().comparisonExpressions.get(1).getDbFilters().get(0))
                     .isIn(inFilter, idFilter);
+              });
+    }
+  }
+
+  @Nested
+  class FindCommandResolveWithRangeOperator {
+    CommandContext commandContext = CommandContext.empty();
+
+    @Test
+    public void gt() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"amount" : { "$gt" : 100}}
+              }
+            }
+            """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.NumberFilter(
+                        "amount", DBFilterBase.MapFilterBase.Operator.GT, new BigDecimal(100));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
+              });
+    }
+
+    @Test
+    public void gte() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"amount" : { "$gte" : 100}}
+              }
+            }
+            """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.NumberFilter(
+                        "amount", DBFilterBase.MapFilterBase.Operator.GTE, new BigDecimal(100));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
+              });
+    }
+
+    @Test
+    public void lt() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"amount" : { "$lt" : 100}}
+              }
+            }
+            """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.NumberFilter(
+                        "amount", DBFilterBase.MapFilterBase.Operator.LT, new BigDecimal(100));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
+              });
+    }
+
+    @Test
+    public void lte() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"dob": {"$lte" : {"$date" : 1672531200000}}}
+              }
+            }
+            """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.DateFilter(
+                        "dob", DBFilterBase.MapFilterBase.Operator.LTE, new Date(1672531200000L));
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
               });
     }
   }
