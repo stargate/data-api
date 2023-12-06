@@ -57,7 +57,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "find": {
             "filter" : {"userId" : {"$gt" : 23}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -93,7 +93,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "find": {
             "filter" : {"userId" : {"$gte" : 23}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -129,7 +129,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "find": {
             "filter" : {"userId" : {"$lt" : 3}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -164,8 +164,8 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
         {
           "find": {
-            "filter" : {"userId" : {"$lt3" : 3}},
-            "sort" : [{"userId" : "asc"}]
+            "filter" : {"userId" : {"$lte" : 3}},
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -200,8 +200,8 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
         {
           "find": {
-            "filter" : {"dateValue" : {"$gt" : 1672531223000}},
-            "sort" : [{"userId" : "asc"}]
+            "filter" : {"dateValue" : {"$gt" : {"$date" : 1672531223000}}},
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -237,7 +237,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "find": {
             "filter" : {"activeUser" : {"$gt" : "data"}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -261,7 +261,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid filter expression, $lt operator must have `DATE` or `NUMBER` value"))
+              is("Invalid filter expression, $gt operator must have `DATE` or `NUMBER` value"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
@@ -275,7 +275,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "findOne": {
             "filter" : {"userId" : {"$gt" : 23}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -303,7 +303,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         {
           "deleteOne": {
             "filter" : {"userId" : {"$gt" : 23}},
-            "sort" : [{"userId" : "asc"}]
+            "sort" : {"userId" : 1}
           }
         }
         """;
@@ -326,9 +326,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
               {
                 "deleteMany": {
-                  "filter" : {"userId" : {"$gte" : 23}},
-                  "sort" : [{"userId" : "asc"}]
-                }
+                  "filter" : {"userId" : {"$gte" : 23}}                }
               }
               """;
       given()
