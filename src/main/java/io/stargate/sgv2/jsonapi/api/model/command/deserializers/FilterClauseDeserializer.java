@@ -111,9 +111,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
-      // the key should match pattern or equal to $vector
-      if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
-          || entry.getKey().equals("$vector"))) {
+      // the key should match pattern
+      if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
         throw new JsonApiException(
             ErrorCode.INVALID_FILTER_EXPRESSION,
             String.format(
