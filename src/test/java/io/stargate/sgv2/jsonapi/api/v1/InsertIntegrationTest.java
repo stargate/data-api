@@ -660,21 +660,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertLongestValidString() {
       final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH - 20;
 
-      // There appears to be some limits by SAI wrt Text values (5 kB).
-      // But we cannot seem to breach that with individual values (up to 16kB)
-      // or with big documents (up to 1MB).
-      // So as last extension, try to insert 10 documents and see if that works
-
-      for (int docIx = 0; docIx < 10; ++docIx) {
-        ObjectNode doc = MAPPER.createObjectNode();
-        String docId = "docWithLongString" + docIx;
-        doc.put(DocumentConstants.Fields.DOC_ID, docId);
-        // 1M / 16k means about 64 max length Strings; try adding 60
-        for (int i = 0; i < 60; ++i) {
-          doc.put("text" + i, createBigString(strLen));
-        }
-        _verifyInsert(docId, doc);
+      // Issue with SAI max String length should not require more than 1 doc, so:
+      ObjectNode doc = MAPPER.createObjectNode();
+      final String docId = "docWithLongString";
+      doc.put(DocumentConstants.Fields.DOC_ID, docId);
+      // 1M / 16k means about 64 max length Strings; try adding 60
+      for (int i = 0; i < 60; ++i) {
+        doc.put("text" + i, createBigString(strLen));
       }
+      _verifyInsert(docId, doc);
     }
 
     @Test
