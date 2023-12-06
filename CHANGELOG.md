@@ -1,8 +1,8 @@
 # Changelog
 
-## [v2.0.0-BETA-6](https://github.com/stargate/jsonapi/tree/v2.0.0-BETA-6) (2023-12-05)
+## [v1.0.0-BETA-5](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-5) (2023-12-06)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-4...v2.0.0-BETA-6)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-4...v1.0.0-BETA-5)
 
 **Closed issues:**
 
