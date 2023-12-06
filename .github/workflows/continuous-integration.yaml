@@ -40,8 +40,8 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
 
-    # max run time 5 minutes
-    timeout-minutes: 5
+    # max run time 10 minutes
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v3
