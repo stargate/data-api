@@ -297,6 +297,36 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
 
     @Test
     @Order(10)
+    public void gtWithIDRange() throws Exception {
+      int[] ids = {24, 25};
+      List<Object> testDatas = getDocuments(ids);
+      String json =
+          """
+            {
+              "findOne": {
+                "filter" : {"_id" : {"$gt" : 23}},
+                "sort" : {"userId" : 1}
+              }
+            }
+            """;
+      final String expected =
+          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testDatas.get(0));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", is(notNullValue()))
+          .body("data.document", jsonEquals(expected));
+    }
+
+    @Test
+    @Order(11)
     public void gtWithDeleteOne() throws Exception {
       String json =
           """
@@ -320,7 +350,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     }
 
     @Test
-    @Order(11)
+    @Order(12)
     public void gtWithDeleteMany() throws Exception {
       String json =
           """
@@ -346,13 +376,12 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     List<Object> data = new ArrayList<>(countOfDocuments);
     for (int docId = 1; docId <= countOfDocuments; docId++) {
       data.add(
-          new FindOperationWithSortIntegrationTest.FindOperationWithSort.TestData(
-              "doc" + docId,
+          new TestData(
+              docId,
               "user" + docId,
               docId,
               docId % 2 == 0,
-              new FindOperationWithSortIntegrationTest.FindOperationWithSort.DateValue(
-                  1672531200000L + docId * 1000)));
+              new DateValue(1672531200000L + docId * 1000)));
     }
     return data;
   }
@@ -362,7 +391,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     for (int docId : docIds) {
       data.add(
           new TestData(
-              "doc" + docId,
+              docId,
               "user" + docId,
               docId,
               docId % 2 == 0,
@@ -384,8 +413,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         });
   }
 
-  record TestData(
-      String _id, String username, int userId, boolean activeUser, DateValue dateValue) {}
+  record TestData(int _id, String username, int userId, boolean activeUser, DateValue dateValue) {}
 
   record DateValue(long $date) {}
 }

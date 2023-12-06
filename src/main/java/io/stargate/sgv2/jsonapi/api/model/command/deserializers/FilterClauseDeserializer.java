@@ -252,7 +252,9 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
           || operator == ValueComparisonOperator.LTE) {
-        if (!(valueObject instanceof Date || valueObject instanceof BigDecimal)) {
+        if (!(valueObject instanceof Date
+            || valueObject instanceof BigDecimal
+            || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
           throw new JsonApiException(
               ErrorCode.INVALID_FILTER_EXPRESSION,
               String.format(

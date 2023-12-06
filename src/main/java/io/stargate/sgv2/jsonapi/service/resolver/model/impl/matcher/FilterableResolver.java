@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -28,6 +29,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
+  private static final Object ID_GROUP_RANGE = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
@@ -64,6 +66,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .capture(ID_GROUP_RANGE)
+        .compareValues(
+            "_id",
+            EnumSet.of(
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_GROUP_IN)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
@@ -156,6 +167,24 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new DBFilterBase.IDFilter(
                 DBFilterBase.IDFilter.Operator.IN,
                 (List<DocumentId>) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == ID_GROUP_RANGE) {
+        final DocumentId value = (DocumentId) filterOperation.operand().value();
+        if (value.value() instanceof BigDecimal bdv) {
+          filters.add(
+              new DBFilterBase.NumberFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getDBFilterBaseOperator(filterOperation.operator()),
+                  bdv));
+        }
+        if (value.value() instanceof Map mv) {
+          filters.add(
+              new DBFilterBase.DateFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getDBFilterBaseOperator(filterOperation.operator()),
+                  new Date((Long) mv.get("$date"))));
+        }
       }
 
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
