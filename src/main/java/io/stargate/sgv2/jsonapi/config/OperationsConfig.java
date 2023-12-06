@@ -201,6 +201,12 @@ public interface OperationsConfig {
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel reads();
+
+      /** @return Consistency for queries reading the data. */
+      @WithDefault("LOCAL_ONE")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel vectorSearch();
     }
   }
 }

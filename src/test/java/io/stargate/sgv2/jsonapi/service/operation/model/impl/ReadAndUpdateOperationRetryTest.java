@@ -141,7 +141,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -162,7 +162,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt(), false))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -284,7 +284,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -305,7 +305,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt(), false))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -435,7 +435,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -456,7 +456,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt(), false))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -615,7 +615,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id3, doc2));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -634,7 +634,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadFirstQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt(), false))
         .then(
             invocation -> {
               reReadFirstQueryAssert.incrementAndGet();
@@ -802,7 +802,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id3, doc2));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -819,7 +819,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger retrySelectQueryDoc1Assert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt2), any(), anyInt(), false))
         .then(
             invocation -> {
               retrySelectQueryDoc1Assert.incrementAndGet();
@@ -834,7 +834,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     List<Row> rows3 = Arrays.asList(resultRow(0, "doc2", tx_id4, doc2));
     AsyncResultSet results3 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows3, null);
     final AtomicInteger retrySelectQueryDoc2Assert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(stmt3), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(stmt3), any(), anyInt(), false))
         .then(
             invocation -> {
               retrySelectQueryDoc2Assert.incrementAndGet();

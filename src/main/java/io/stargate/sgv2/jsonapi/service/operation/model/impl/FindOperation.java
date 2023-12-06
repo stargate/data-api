@@ -315,20 +315,48 @@ public record FindOperation(
     switch (readType) {
       case SORTED_DOCUMENT -> {
         List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
-        return findOrderDocument(
-            queryExecutor,
-            queries,
-            pageSize,
-            objectMapper(),
-            new ChainedComparator(orderBy(), objectMapper()),
-            orderBy().size(),
-            skip(),
-            limit(),
-            maxSortReadLimit(),
-            projection());
+        if (vector() == null) {
+          return findOrderDocument(
+              queryExecutor,
+              queries,
+              pageSize,
+              objectMapper(),
+              new ChainedComparator(orderBy(), objectMapper()),
+              orderBy().size(),
+              skip(),
+              limit(),
+              maxSortReadLimit(),
+              projection(),
+              false);
+        } else {
+          return findOrderDocument(
+              queryExecutor,
+              queries,
+              pageSize,
+              objectMapper(),
+              new ChainedComparator(orderBy(), objectMapper()),
+              orderBy().size(),
+              skip(),
+              limit(),
+              maxSortReadLimit(),
+              projection(),
+              true);
+        }
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
+        if (vector() == null) {
+          return findDocument(
+              queryExecutor,
+              queries,
+              pageState,
+              pageSize,
+              ReadType.DOCUMENT == readType,
+              objectMapper,
+              projection,
+              limit(),
+              false);
+        }
         return findDocument(
             queryExecutor,
             queries,
@@ -337,7 +365,8 @@ public record FindOperation(
             ReadType.DOCUMENT == readType,
             objectMapper,
             projection,
-            limit());
+            limit(),
+            true);
       }
       default -> {
         JsonApiException failure =

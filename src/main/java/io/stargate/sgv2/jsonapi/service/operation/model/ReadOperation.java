@@ -62,6 +62,7 @@ public interface ReadOperation extends Operation {
    * @param objectMapper
    * @param projection
    * @param limit - How many documents to return
+   * @param vectorSearch - whether the query uses vector search
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -72,13 +73,16 @@ public interface ReadOperation extends Operation {
       boolean readDocument,
       ObjectMapper objectMapper,
       DocumentProjector projection,
-      int limit) {
+      int limit,
+      boolean vectorSearch) {
 
     return Multi.createFrom()
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query -> queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize))
+            query ->
+                queryExecutor.executeRead(
+                    query, Optional.ofNullable(pageState), pageSize, vectorSearch))
         .onItem()
         .transform(
             rSet -> {
@@ -155,6 +159,7 @@ public interface ReadOperation extends Operation {
    * @param limit - How many documents to return
    * @param errorLimit - Count of record on which system to error out, this will be (maximum read
    *     count for sort + 1)
+   * @param vectorSearch - whether the query uses vector search
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
@@ -167,7 +172,8 @@ public interface ReadOperation extends Operation {
       int skip,
       int limit,
       int errorLimit,
-      DocumentProjector projection) {
+      DocumentProjector projection,
+      boolean vectorSearch) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()
@@ -181,7 +187,8 @@ public interface ReadOperation extends Operation {
                         () -> new AtomicReference<String>(null),
                         stateRef -> {
                           return queryExecutor
-                              .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                              .executeRead(
+                                  q, Optional.ofNullable(stateRef.get()), pageSize, vectorSearch)
                               .onItem()
                               .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                         })
@@ -333,7 +340,7 @@ public interface ReadOperation extends Operation {
   default Uni<CountResponse> countDocuments(
       QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
     return queryExecutor
-        .executeRead(simpleStatement, Optional.empty(), 1)
+        .executeRead(simpleStatement, Optional.empty(), 1, false)
         .onItem()
         .transform(
             rSet -> {
