@@ -261,7 +261,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
       }
-      // if the key does not match pattern or the entry is not ($vector and $exist operator) combination, throw error
+      // if the key does not match pattern or the entry is not ($vector and $exist operator)
+      // combination, throw error
       if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
           || (entry.getKey().equals("$vector") && updateField.getKey().equals("$exists")))) {
         throw new JsonApiException(
