@@ -29,6 +29,8 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 public class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
+
+  private static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 5;
   private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
   private Network network;
@@ -69,9 +71,6 @@ public class StargateTestResource
       String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
-
-      // 01-Dec-2023, tatu: Astra overrides default 1kB limit to 5kB
-      propsBuilder.put("cassandra.sai.max_string_term_size_kb", "5");
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
@@ -157,9 +156,15 @@ public class StargateTestResource
 
   private GenericContainer<?> baseCoordinatorContainer(boolean reuse) {
     String image = this.getStargateImage();
+
+    String javaOpts =
+        String.format(
+            "-Xmx1G -D%s=%d",
+            "cassandra.sai.max_string_term_size_kb", DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB);
+
     GenericContainer<?> container =
         (new GenericContainer(image))
-            .withEnv("JAVA_OPTS", "-Xmx1G")
+            .withEnv("JAVA_OPTS", javaOpts)
             .withEnv("CLUSTER_NAME", getClusterName())
             .withEnv("SIMPLE_SNITCH", "true")
             .withEnv("ENABLE_AUTH", "true")
