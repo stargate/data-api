@@ -72,10 +72,20 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
        */
       MAP_EQUALS,
       /**
-       * This represents eq operation for array element or automic value operation against
+       * This represents eq to be run against map type index columns like array_size, sub_doc_equals
+       * and array_equals.
+       */
+      MAP_NOT_EQUALS,
+      /**
+       * This represents eq operation for array element or atomic value operation against
        * array_contains
        */
-      EQ
+      EQ,
+      /**
+       * This represents NE operation for array element or atomic value operation against
+       * array_contains
+       */
+      NE,
     }
 
     private final String columnName;
@@ -86,6 +96,15 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     protected MapFilterBase(
         String columnName, String key, MapFilterBase.Operator operator, T value) {
       super(key);
+      Log.error(
+          "MAP filter column name : "
+              + columnName
+              + " key "
+              + key
+              + " operator "
+              + operator
+              + " value "
+              + value);
       this.columnName = columnName;
       this.key = key;
       this.operator = operator;
@@ -116,10 +135,20 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               DATA_CONTAINS,
               Predicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
+        case NE:
+          return BuiltCondition.of(
+              DATA_CONTAINS,
+              Predicate.NOT_CONTAINS,
+              new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case MAP_EQUALS:
           return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
               Predicate.EQ,
+              new JsonTerm(key, value));
+        case MAP_NOT_EQUALS:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.NEQ,
               new JsonTerm(key, value));
         default:
           throw new JsonApiException(
@@ -195,6 +224,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     public DateFilter(String path, Operator operator, Date value) {
       super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
+      Log.error("Date Filter extend MapFilterBase");
       this.dateValue = value;
     }
 
@@ -213,7 +243,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
       EQ,
-      IN;
+      IN,
+      NE;
     }
 
     protected final IDFilter.Operator operator;
@@ -308,7 +339,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
     // IN operator for non-id field filtering
     public enum Operator {
-      IN;
+      IN,
+      NOT_IN;
     }
 
     public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
@@ -336,6 +368,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
 
     public List<BuiltCondition> getAll() {
+      Log.error("here " + arrayValue);
       List<Object> values = arrayValue;
       switch (operator) {
         case IN:
@@ -412,8 +445,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
    */
   public static class IsNullFilter extends SetFilterBase<String> {
-    public IsNullFilter(String path) {
-      super("query_null_values", path, path, Operator.CONTAINS);
+    public IsNullFilter(String path, SetFilterBase.Operator operator) {
+      super("query_null_values", path, path, operator);
     }
 
     @Override
@@ -490,8 +523,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     private final List<Object> arrayValue;
 
-    public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
-      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, arrayData));
+    public ArrayEqualsFilter(
+        DocValueHasher hasher,
+        String path,
+        List<Object> arrayData,
+        MapFilterBase.Operator operator) {
+      super("query_text_values", path, operator, getHash(hasher, arrayData));
       this.arrayValue = arrayData;
     }
 
@@ -513,8 +550,13 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class SubDocEqualsFilter extends MapFilterBase<String> {
     private final Map<String, Object> subDocValue;
 
-    public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
-      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, subDocData));
+    public SubDocEqualsFilter(
+        DocValueHasher hasher,
+        String path,
+        Map<String, Object> subDocData,
+        MapFilterBase.Operator operator) {
+      super("query_text_values", path, operator, getHash(hasher, subDocData));
+      Log.error("sub");
       this.subDocValue = subDocData;
     }
 

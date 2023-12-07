@@ -996,7 +996,10 @@ public class FindOperationTest extends OperationTestBase {
       List<DBFilterBase> filters =
           List.of(
               new DBFilterBase.ArrayEqualsFilter(
-                  new DocValueHasher(), "tags", List.of("tag1", "tag2")));
+                  new DocValueHasher(),
+                  "tags",
+                  List.of("tag1", "tag2"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
@@ -1089,7 +1092,10 @@ public class FindOperationTest extends OperationTestBase {
       List<DBFilterBase> filters =
           List.of(
               new DBFilterBase.SubDocEqualsFilter(
-                  new DocValueHasher(), "sub_doc", Map.of("col", "val")));
+                  new DocValueHasher(),
+                  "sub_doc",
+                  Map.of("col", "val"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =

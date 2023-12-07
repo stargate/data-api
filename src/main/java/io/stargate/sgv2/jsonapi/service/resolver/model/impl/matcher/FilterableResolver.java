@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -39,6 +40,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+
+  private static final Object ID_GROUP_NE = new Object();
+  private static final Object DYNAMIC_TEXT_GROUP_NE = new Object();
+  private static final Object DYNAMIC_NUMBER_GROUP_NE = new Object();
+  private static final Object DYNAMIC_BOOL_GROUP_NE = new Object();
+  private static final Object DYNAMIC_NULL_GROUP_NE = new Object();
+  private static final Object DYNAMIC_DATE_GROUP_NE = new Object();
+  private static final Object ARRAY_EQUALS_NE = new Object();
+  private static final Object SUB_DOC_EQUALS_NE = new Object();
   @Inject DocumentLimitsConfig docLimits;
 
   @Inject
@@ -56,7 +66,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
-    //     NOTE - can only do eq ops on fields until SAI changes
     matchRules
         .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
@@ -85,10 +94,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ARRAY_EQUALS)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY)
         .capture(SUB_DOC_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC)
+        .capture(ID_GROUP_NE)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NE), JsonType.DOCUMENT_ID)
+        .capture(DYNAMIC_NUMBER_GROUP_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.NUMBER)
+        .capture(DYNAMIC_TEXT_GROUP_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.STRING)
+        .capture(DYNAMIC_BOOL_GROUP_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.BOOLEAN)
+        .capture(DYNAMIC_NULL_GROUP_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.NULL)
+        .capture(DYNAMIC_DATE_GROUP_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.DATE)
+        .capture(ARRAY_EQUALS_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.ARRAY)
+        .capture(SUB_DOC_EQUALS_NE)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.SUB_DOC);
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
+    Log.error("Filterable Resolver start");
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > docLimits.maxFilterObjectProperties()) {
       throw new JsonApiException(
@@ -99,10 +125,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               filter.getTotalComparisonExpressionCount(),
               docLimits.maxFilterObjectProperties()));
     }
+    Log.error("Filterable Resolver end " + filter);
     return filter;
   }
 
   public static List<DBFilterBase> findById(CaptureExpression captureExpression) {
+    Log.error("findByID");
 
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
@@ -122,10 +150,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   public static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
+
+    Log.error("find NO Filter");
     return List.of();
   }
 
   public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
+    Log.error("findByDynamic");
+
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
 
@@ -175,7 +207,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
-        filters.add(new DBFilterBase.IsNullFilter(captureExpression.path()));
+        filters.add(
+            new DBFilterBase.IsNullFilter(
+                captureExpression.path(), DBFilterBase.SetFilterBase.Operator.CONTAINS));
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
@@ -210,7 +244,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new DBFilterBase.ArrayEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
-                (List<Object>) filterOperation.operand().value()));
+                (List<Object>) filterOperation.operand().value(),
+                DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
@@ -218,7 +253,71 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new DBFilterBase.SubDocEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
-                (Map<String, Object>) filterOperation.operand().value()));
+                (Map<String, Object>) filterOperation.operand().value(),
+                DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
+      }
+
+      //    new
+      if (captureExpression.marker() == ID_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.IDFilter(
+                DBFilterBase.IDFilter.Operator.NE, (DocumentId) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_TEXT_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.TextFilter(
+                captureExpression.path(),
+                DBFilterBase.MapFilterBase.Operator.NE,
+                (String) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_BOOL_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.BoolFilter(
+                captureExpression.path(),
+                DBFilterBase.MapFilterBase.Operator.NE,
+                (Boolean) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.NumberFilter(
+                captureExpression.path(),
+                DBFilterBase.MapFilterBase.Operator.NE,
+                (BigDecimal) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_NULL_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.IsNullFilter(
+                captureExpression.path(), DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_DATE_GROUP_NE) {
+        filters.add(
+            new DBFilterBase.DateFilter(
+                captureExpression.path(),
+                DBFilterBase.MapFilterBase.Operator.NE,
+                (Date) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == ARRAY_EQUALS_NE) {
+        filters.add(
+            new DBFilterBase.ArrayEqualsFilter(
+                new DocValueHasher(),
+                captureExpression.path(),
+                (List<Object>) filterOperation.operand().value(),
+                DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
+      }
+
+      if (captureExpression.marker() == SUB_DOC_EQUALS_NE) {
+        filters.add(
+            new DBFilterBase.SubDocEqualsFilter(
+                new DocValueHasher(),
+                captureExpression.path(),
+                (Map<String, Object>) filterOperation.operand().value(),
+                DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
     }
 

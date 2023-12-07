@@ -2,10 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -761,10 +759,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
-          .body("errors[0].message", startsWith("Unsupported filter operator $ne"));
+          .body("status.count", is(4))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
@@ -38,6 +39,7 @@ public class FilterMatcher<T extends Command & Filterable> {
   }
 
   public Optional<LogicalExpression> apply(T command) {
+    Log.error("mather apply  stategy " + strategy + "resolve func " + resolveFunction);
     FilterClause filter = command.filterClause();
     if (strategy == MatchStrategy.EMPTY) {
       if (filter == null || filter.logicalExpression().isEmpty()) {
@@ -174,6 +176,11 @@ public class FilterMatcher<T extends Command & Filterable> {
             // everything group and expression matched
             return Optional.of(filter.logicalExpression());
           }
+          Log.error(
+              "unmatchedCaptureCount "
+                  + unmatchedCaptureCount
+                  + " unmatchedComparisonExpressionCount "
+                  + unmatchedComparisonExpressionCount);
           break;
         case GREEDY:
           if (unmatchedComparisonExpressionCount == 0) {
