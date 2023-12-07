@@ -241,13 +241,28 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
           throw exception;
         } else {
+          // move it out of the eq
           return ComparisonExpression.eq(
               entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
       }
       JsonNode value = updateField.getValue();
-      // @TODO: Need to add array and sub-document value type to this condition
-      expression.add(operator, jsonNodeValue(entry.getKey(), value));
+      Object valueObject = jsonNodeValue(entry.getKey(), value);
+      if (operator == ValueComparisonOperator.GT
+          || operator == ValueComparisonOperator.GTE
+          || operator == ValueComparisonOperator.LT
+          || operator == ValueComparisonOperator.LTE) {
+        if (!(valueObject instanceof Date
+            || valueObject instanceof BigDecimal
+            || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION,
+              String.format(
+                  "Invalid filter expression, %s operator must have `DATE` or `NUMBER` value",
+                  operator.getOperator()));
+        }
+      }
+      expression.add(operator, valueObject);
     }
     return expression;
   }
