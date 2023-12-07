@@ -6,12 +6,12 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
  */
 public enum ValueComparisonOperator implements FilterOperator {
   EQ("$eq"),
-  IN("$in");
-  /*GT("$gt"),
+  IN("$in"),
+  GT("$gt"),
   GTE("$gte"),
   LT("$lt"),
-  LTE("$lte"),
-  NE("$ne");*/
+  LTE("$lte");
+  /*NE("$ne");*/
 
   private String operator;
 
