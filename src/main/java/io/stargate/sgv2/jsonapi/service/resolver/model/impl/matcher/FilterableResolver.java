@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
@@ -183,7 +184,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               new DBFilterBase.DateFilter(
                   DocumentConstants.Fields.DOC_ID,
                   getDBFilterBaseOperator(filterOperation.operator()),
-                  new Date((Long) mv.get("$date"))));
+                  JsonUtil.createDateFromDocumentId(value)));
         }
       }
 
@@ -290,8 +291,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format(
-                "Unsupported filter operator %s for number type", filterOperation.getOperator()));
+            String.format("Unsupported filter operator %s ", filterOperation.getOperator()));
     }
   }
 }

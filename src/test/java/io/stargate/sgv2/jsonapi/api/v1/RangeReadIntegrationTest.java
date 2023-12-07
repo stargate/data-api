@@ -18,7 +18,6 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -43,7 +42,6 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     @Order(1)
     public void setUp() {
-      Collections.shuffle(testDatas);
       insert(testDatas);
     }
 
@@ -64,11 +62,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
       for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -100,11 +94,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
       for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -136,11 +126,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
       for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -172,11 +158,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
       for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -208,11 +190,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
       for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -241,14 +219,6 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           }
         }
         """;
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
-      for (int i = 0; i < testDatas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -279,8 +249,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           }
         }
         """;
-      final String expected =
-          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testDatas.get(0));
+      final String expected = objectMapper.writeValueAsString(testDatas.get(0));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -291,7 +260,6 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.document", is(notNullValue()))
           .body("data.document", jsonEquals(expected));
     }
 
@@ -309,8 +277,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
             """;
-      final String expected =
-          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testDatas.get(0));
+      final String expected = objectMapper.writeValueAsString(testDatas.get(0));
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -405,9 +372,9 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
         testData -> {
           String json = null;
           try {
-            json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testData);
+            json = objectMapper.writeValueAsString(testData);
           } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            throw new IllegalArgumentException(e);
           }
           insertDoc(json);
         });

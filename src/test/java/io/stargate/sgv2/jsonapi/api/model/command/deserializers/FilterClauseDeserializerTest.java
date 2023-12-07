@@ -17,8 +17,12 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -54,36 +58,24 @@ public class FilterClauseDeserializerTest {
           .isEqualTo(expectedResult.getPath());
     }
 
-    @Test
-    public void eqComparisonOperator() throws Exception {
-      String json = """
-                    {"username": {"$eq" : "aaron"}}
-                    """;
-
-      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      final ComparisonExpression expectedResult =
-          new ComparisonExpression(
-              "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
-              null);
-      assertThat(filterClause).isNotNull();
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
-          .isEqualTo(expectedResult.getFilterOperations());
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo(expectedResult.getPath());
+    private static Stream<Arguments> provideRangeQueries() {
+      return Stream.of(
+          Arguments.of(
+              "{\"username\": {\"$eq\" : \"aaron\"}}", ValueComparisonOperator.EQ, "username"),
+          Arguments.of("{\"amount\": {\"$gt\" : 5000}}", ValueComparisonOperator.GT, "amount"),
+          Arguments.of("{\"amount\": {\"$gte\" : 5000}}", ValueComparisonOperator.GTE, "amount"),
+          Arguments.of("{\"amount\": {\"$lt\" : 5000}}", ValueComparisonOperator.LT, "amount"),
+          Arguments.of("{\"amount\": {\"$lte\" : 5000}}", ValueComparisonOperator.LTE, "amount"),
+          Arguments.of(
+              "{\"dob\": {\"$gte\" : {\"$date\" : 1672531200000}}}",
+              ValueComparisonOperator.GTE,
+              "dob"));
     }
 
-    @Test
-    public void gtComparisonOperator() throws Exception {
-      String json = """
-        {"amount": {"$gt" : 5000}}
-        """;
-
+    @ParameterizedTest
+    @MethodSource("provideRangeQueries")
+    public void testRangeComparisonOperator(
+        String json, ValueComparisonOperator operator, String column) throws Exception {
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause).isNotNull();
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -96,105 +88,9 @@ public class FilterClauseDeserializerTest {
                   .getFilterOperations()
                   .get(0)
                   .operator())
-          .isEqualTo(ValueComparisonOperator.GT);
+          .isEqualTo(operator);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("amount");
-    }
-
-    @Test
-    public void gteComparisonOperator() throws Exception {
-      String json = """
-        {"amount": {"$gte" : 5000}}
-        """;
-
-      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-
-      assertThat(filterClause).isNotNull();
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations()
-                  .get(0)
-                  .operator())
-          .isEqualTo(ValueComparisonOperator.GTE);
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("amount");
-    }
-
-    @Test
-    public void ltComparisonOperator() throws Exception {
-      String json = """
-        {"amount": {"$lt" : 5000}}
-        """;
-
-      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-
-      assertThat(filterClause).isNotNull();
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations()
-                  .get(0)
-                  .operator())
-          .isEqualTo(ValueComparisonOperator.LT);
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("amount");
-    }
-
-    @Test
-    public void lteComparisonOperator() throws Exception {
-      String json = """
-        {"amount": {"$lte" : 5000}}
-        """;
-
-      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-
-      assertThat(filterClause).isNotNull();
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations()
-                  .get(0)
-                  .operator())
-          .isEqualTo(ValueComparisonOperator.LTE);
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("amount");
-    }
-
-    @Test
-    public void mustHandleDateForRange() throws Exception {
-      String json = """
-            {"dob": {"$gte" : {"$date" : 1672531200000}}}
-          """;
-
-      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-
-      assertThat(filterClause).isNotNull();
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations()
-                  .get(0)
-                  .operator())
-          .isEqualTo(ValueComparisonOperator.GTE);
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("dob");
+          .isEqualTo(column);
     }
 
     @Test
