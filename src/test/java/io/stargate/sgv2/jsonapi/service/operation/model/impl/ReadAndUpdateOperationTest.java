@@ -182,7 +182,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -289,7 +289,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -425,7 +425,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -538,7 +538,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -647,7 +647,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -799,7 +799,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -967,7 +967,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1071,7 +1071,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1168,7 +1168,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1289,7 +1289,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id2, doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1393,7 +1393,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1492,7 +1492,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();

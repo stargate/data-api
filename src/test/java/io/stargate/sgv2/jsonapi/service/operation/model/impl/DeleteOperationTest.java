@@ -92,7 +92,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -174,7 +174,7 @@ public class DeleteOperationTest extends OperationTestBase {
           new MockAsyncResultSet(SELECT_WITH_JSON_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -293,7 +293,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -416,7 +416,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -496,7 +496,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -557,7 +557,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -639,7 +639,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -664,7 +664,7 @@ public class DeleteOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue), byteBufferFrom(tx_id2))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -760,7 +760,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -785,7 +785,7 @@ public class DeleteOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue), byteBufferFrom(tx_id2))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -881,7 +881,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -901,7 +901,7 @@ public class DeleteOperationTest extends OperationTestBase {
       rows = Arrays.asList();
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -989,7 +989,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1079,7 +1079,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1148,7 +1148,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1172,7 +1172,7 @@ public class DeleteOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id3))));
 
       AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1305,7 +1305,7 @@ public class DeleteOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1330,7 +1330,7 @@ public class DeleteOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id3))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1351,7 +1351,7 @@ public class DeleteOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue2), byteBufferFrom(tx_id4))));
 
       AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1501,7 +1501,7 @@ public class DeleteOperationTest extends OperationTestBase {
           new MockAsyncResultSet(
               SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
       final AtomicInteger selectCallCount = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1520,7 +1520,7 @@ public class DeleteOperationTest extends OperationTestBase {
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
               anyInt(),
-              false))
+              eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1632,7 +1632,7 @@ public class DeleteOperationTest extends OperationTestBase {
           new MockAsyncResultSet(
               SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
       final AtomicInteger selectCallCount = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), eq(Optional.empty()), anyInt(), eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1654,7 +1654,7 @@ public class DeleteOperationTest extends OperationTestBase {
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
               anyInt(),
-              false))
+              eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1672,7 +1672,7 @@ public class DeleteOperationTest extends OperationTestBase {
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB2.array()))),
               anyInt(),
-              false))
+              eq(false)))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();

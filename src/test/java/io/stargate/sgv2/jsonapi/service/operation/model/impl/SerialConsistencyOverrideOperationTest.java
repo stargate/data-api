@@ -91,7 +91,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       AsyncResultSet selectResults = new MockAsyncResultSet(keyAndTxtIdColumns, selectRows, null);
       final AtomicInteger callCountSelect = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCountSelect.incrementAndGet();
@@ -248,7 +248,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       AsyncResultSet selectResults = new MockAsyncResultSet(keyTxIdDocColumns, selectRows, null);
       final AtomicInteger callCountSelect = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCountSelect.incrementAndGet();

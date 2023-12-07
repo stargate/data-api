@@ -50,7 +50,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -91,7 +91,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -141,7 +141,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -189,7 +189,7 @@ public class CountOperationTest extends OperationTestBase {
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), false))
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt(), eq(false)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
