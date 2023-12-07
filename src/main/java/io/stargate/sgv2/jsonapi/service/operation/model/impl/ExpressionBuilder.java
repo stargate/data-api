@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.api.common.cql.ExpressionUtils;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
@@ -32,6 +33,7 @@ public class ExpressionBuilder {
     List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
 
+    Log.error("expression !! " + expressions);
     return expressions;
   }
 
@@ -96,16 +98,24 @@ public class ExpressionBuilder {
       conditionExpressions.add(subExpressionCondition);
     }
 
-    boolean hasInFilterThisLevel = false;
+    // if seeing $in or $nin, set hasInOrNinFilterThisLevel as true
+    boolean hasInOrNinFilterThisLevel = false;
     boolean inFilterThisLevelWithEmptyArray = true;
+    boolean ninFilterThisLevelWithEmptyArray = true;
+
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
         if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
-          hasInFilterThisLevel = true;
+          hasInOrNinFilterThisLevel = true;
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
-            inFilterThisLevelWithEmptyArray = false;
+            // store information of an empty array happens with $in or $nin
+            if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)) {
+              inFilterThisLevelWithEmptyArray = false;
+            } else if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.NIN)) {
+              ninFilterThisLevelWithEmptyArray = false;
+            }
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
             conditionExpressions.add(ExpressionUtils.orOf(inConditionsVariables));
@@ -119,16 +129,34 @@ public class ExpressionBuilder {
         }
       }
     }
+
+    // when having an empty array $nin, if $nin occurs within an $or logic, entire $or should match
+    // everything
+    if (hasInOrNinFilterThisLevel
+        && ninFilterThisLevelWithEmptyArray
+        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.OR)) {
+      // TODO: find a better CQL TRUE placeholder
+      conditionExpressions.clear();
+      conditionExpressions.add(
+          Variable.of(
+              new DBFilterBase.IsNullFilter(
+                      "something user never use", DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS)
+                  .get()));
+      return ExpressionUtils.buildExpression(
+          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+    }
+
+    // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
+    // nothing
+    if (hasInOrNinFilterThisLevel
+        && inFilterThisLevelWithEmptyArray
+        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
+      return null;
+    }
+
     // current logicalExpression is empty (implies sub-logicalExpression and
     // sub-comparisonExpression are all empty)
     if (conditionExpressions.isEmpty()) {
-      return null;
-    }
-    // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
-    // nothing
-    if (hasInFilterThisLevel
-        && inFilterThisLevelWithEmptyArray
-        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
       return null;
     }
 

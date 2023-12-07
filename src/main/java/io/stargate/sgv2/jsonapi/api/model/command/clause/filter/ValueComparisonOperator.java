@@ -6,8 +6,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
  */
 public enum ValueComparisonOperator implements FilterOperator {
   EQ("$eq"),
+  NE("$ne"),
   IN("$in"),
-  NE("$ne");
+  NIN("$nin");
   /*GT("$gt"),
   GTE("$gte"),
   LT("$lt"),

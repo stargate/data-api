@@ -41,6 +41,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
+  // $ne: 8 captures as following
   private static final Object ID_GROUP_NE = new Object();
   private static final Object DYNAMIC_TEXT_GROUP_NE = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP_NE = new Object();
@@ -49,6 +50,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object DYNAMIC_DATE_GROUP_NE = new Object();
   private static final Object ARRAY_EQUALS_NE = new Object();
   private static final Object SUB_DOC_EQUALS_NE = new Object();
+
+  // $nin: 2 captures as following
+  private static final Object ID_GROUP_NIN = new Object();
+  private static final Object DYNAMIC_GROUP_NIN = new Object();
+
   @Inject DocumentLimitsConfig docLimits;
 
   @Inject
@@ -58,13 +64,17 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
+        .capture(ID_GROUP_NE)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NE), JsonType.DOCUMENT_ID);
 
     matchRules
         .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP_IN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .capture(ID_GROUP_NIN)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY);
 
     matchRules
         .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
@@ -95,6 +105,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY)
         .capture(SUB_DOC_EQUALS)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC)
+        // $ne: 8 captures as following
         .capture(ID_GROUP_NE)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.NE), JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_NUMBER_GROUP_NE)
@@ -110,7 +121,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ARRAY_EQUALS_NE)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.ARRAY)
         .capture(SUB_DOC_EQUALS_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.SUB_DOC);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.SUB_DOC)
+        // $nin: 2 captures as following
+        .capture(ID_GROUP_NIN)
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY)
+        .capture(DYNAMIC_GROUP_NIN)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY);
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
@@ -150,7 +166,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   public static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
-
     Log.error("find NO Filter");
     return List.of();
   }
@@ -257,7 +272,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
       }
 
-      //    new
+      // $ne: 8 captures as following
       if (captureExpression.marker() == ID_GROUP_NE) {
         filters.add(
             new DBFilterBase.IDFilter(
@@ -318,6 +333,21 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 captureExpression.path(),
                 (Map<String, Object>) filterOperation.operand().value(),
                 DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
+      }
+      // $nin: 2 captures as following
+      if (captureExpression.marker() == ID_GROUP_NIN) {
+        filters.add(
+            new DBFilterBase.IDFilter(
+                DBFilterBase.IDFilter.Operator.NIN,
+                (List<DocumentId>) filterOperation.operand().value()));
+      }
+
+      if (captureExpression.marker() == DYNAMIC_GROUP_NIN) {
+        filters.add(
+            new DBFilterBase.InFilter(
+                DBFilterBase.InFilter.Operator.NIN,
+                captureExpression.path(),
+                (List<Object>) filterOperation.operand().value()));
       }
     }
 

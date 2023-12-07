@@ -243,8 +243,9 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
       EQ,
+      NE,
       IN,
-      NE;
+      NIN;
     }
 
     protected final IDFilter.Operator operator;
@@ -340,7 +341,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     // IN operator for non-id field filtering
     public enum Operator {
       IN,
-      NOT_IN;
+      NIN;
     }
 
     public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
@@ -381,7 +382,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                           Predicate.CONTAINS,
                           new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
               .collect(Collectors.toList());
-
+        case NIN:
+          if (values.isEmpty()) return List.of();
+          return values.stream()
+              .map(
+                  v ->
+                      BuiltCondition.of(
+                          DATA_CONTAINS,
+                          Predicate.NOT_CONTAINS,
+                          new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
+              .collect(Collectors.toList());
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,

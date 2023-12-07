@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
@@ -396,6 +397,7 @@ public record FindOperation(
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
+    Log.error("expresssion sssss " + expressions);
     if (expressions == null) { // find nothing
       return List.of();
     }
