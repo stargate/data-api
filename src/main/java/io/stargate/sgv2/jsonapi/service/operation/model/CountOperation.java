@@ -32,8 +32,10 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
   }
 
   private SimpleStatement buildSelectQuery() {
-    List<Expression<BuiltCondition>> expressions =
+
+    final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
+    final List<Expression<BuiltCondition>> expressions = expressionBuiltResult.expressions();
     List<Object> collect = new ArrayList<>();
     if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null) {
       collect = ExpressionBuilder.getExpressionValuesInOrder(expressions.get(0));
@@ -45,6 +47,7 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
             .as("count")
             .from(commandContext.namespace(), commandContext.collection())
             .where(expressions.get(0)) // TODO count will assume no id filter query split?
+            .allowFiltering(expressionBuiltResult.allowFiltering())
             .build();
 
     final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());

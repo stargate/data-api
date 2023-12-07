@@ -2077,8 +2077,9 @@ public class FindOperationTest extends OperationTestBase {
                 ReadType.DOCUMENT,
                 objectMapper);
 
-        List<Expression<BuiltCondition>> expressions1 =
+        final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
             ExpressionBuilder.buildExpressions(operation1.logicalExpression(), null);
+        List<Expression<BuiltCondition>> expressions1 = expressionBuiltResult.expressions();
 
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -2099,8 +2100,9 @@ public class FindOperationTest extends OperationTestBase {
                 ReadType.DOCUMENT,
                 objectMapper);
 
-        List<Expression<BuiltCondition>> expressions2 =
+        final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult1 =
             ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
+        List<Expression<BuiltCondition>> expressions2 = expressionBuiltResult1.expressions();
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
     }
