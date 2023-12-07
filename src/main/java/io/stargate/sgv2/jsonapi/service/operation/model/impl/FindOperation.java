@@ -326,7 +326,7 @@ public record FindOperation(
             limit(),
             maxSortReadLimit(),
             projection(),
-            vector() == null);
+            vector() != null);
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -339,7 +339,7 @@ public record FindOperation(
             objectMapper,
             projection,
             limit(),
-            vector() == null);
+            vector() != null);
       }
       default -> {
         JsonApiException failure =
