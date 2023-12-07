@@ -111,6 +111,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
+      // the key should match pattern
+      if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_FILTER_EXPRESSION,
+            String.format(
+                "%s: filter clause path ('%s') contains character(s) not allowed",
+                ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+      }
       logicalExpression.addComparisonExpression(
           ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
     }
@@ -241,10 +249,26 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
           throw exception;
         } else {
-          // move it out of the eq
+          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION,
+                String.format(
+                    "%s: filter clause path ('%s') contains character(s) not allowed",
+                    ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+          }
           return ComparisonExpression.eq(
               entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
+      }
+      // if the key does not match pattern or the entry is not ($vector and $exist operator)
+      // combination, throw error
+      if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
+          || (entry.getKey().equals("$vector") && updateField.getKey().equals("$exists")))) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_FILTER_EXPRESSION,
+            String.format(
+                "%s: filter clause path ('%s') contains character(s) not allowed",
+                ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
       }
       JsonNode value = updateField.getValue();
       Object valueObject = jsonNodeValue(entry.getKey(), value);

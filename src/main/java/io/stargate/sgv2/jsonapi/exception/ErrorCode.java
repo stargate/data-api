@@ -67,7 +67,7 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
-  INVALID_SORT_CLAUSE_PATH("Sort clause path must be represented as not-blank strings."),
+  INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
 
   INVALID_SORT_CLAUSE_VALUE(
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),
