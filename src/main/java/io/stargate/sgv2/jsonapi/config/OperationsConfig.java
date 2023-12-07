@@ -202,7 +202,7 @@ public interface OperationsConfig {
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel reads();
 
-      /** @return Consistency for queries reading the data. */
+      /** @return Consistency for vector search queries. */
       @WithDefault("LOCAL_ONE")
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
