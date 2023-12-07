@@ -74,7 +74,26 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
        * This represents eq operation for array element or automic value operation against
        * array_contains
        */
-      EQ
+      EQ,
+      /**
+       * This represents greater than to be run against map type index columns for number and date
+       * type
+       */
+      GT,
+      /**
+       * This represents greater than or equal to be run against map type index columns for number
+       * and date type
+       */
+      GTE,
+      /**
+       * This represents less than to be run against map type index columns for number and date type
+       */
+      LT,
+      /**
+       * This represents lesser than or equal to be run against map type index columns for number
+       * and date type
+       */
+      LTE
     }
 
     private final String columnName;
@@ -119,6 +138,26 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
               Predicate.EQ,
+              new JsonTerm(key, value));
+        case GT:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.GT,
+              new JsonTerm(key, value));
+        case GTE:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.GTE,
+              new JsonTerm(key, value));
+        case LT:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.LT,
+              new JsonTerm(key, value));
+        case LTE:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.LTE,
               new JsonTerm(key, value));
         default:
           throw new JsonApiException(

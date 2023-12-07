@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -139,5 +140,9 @@ public class JsonUtil {
 
   public static Map<String, Object> createEJSonDateAsMap(long timestamp) {
     return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
+  }
+
+  public static Date createDateFromDocumentId(DocumentId documentId) {
+    return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
   }
 }
