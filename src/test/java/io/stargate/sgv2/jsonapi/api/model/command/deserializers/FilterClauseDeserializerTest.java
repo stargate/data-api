@@ -802,6 +802,28 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleNinArrayNonEmpty() throws Exception {
+      String json = """
+               {"_id" : {"$nin": []}}
+              """;
+      final ComparisonExpression expectedResult =
+              new ComparisonExpression(
+                      "_id",
+                      List.of(
+                              new ValueComparisonOperation(
+                                      ValueComparisonOperator.NIN, new JsonLiteral(List.of(), JsonType.ARRAY))),
+                      null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+              .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+              .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
     public void mustHandleInArrayOnly() throws Exception {
       String json = """
                {"_id" : {"$in": "aaa"}}
@@ -814,14 +836,28 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage()).isEqualTo("$in operator must have `ARRAY`");
               });
     }
+    @Test
+    public void mustHandleNinArrayOnly() throws Exception {
+      String json = """
+               {"_id" : {"$nin": "random"}}
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+              .isInstanceOf(JsonApiException.class)
+              .satisfies(
+                      t -> {
+                        assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
+                      });
+    }
+
 
     @Test
-    public void mustHandleInArrayOnlyAnd() throws Exception {
+    public void mustHandleNinArrayOnlyAnd() throws Exception {
       String json =
           """
                {
                            "$and": [
-                               {"_id" : {"$in": "aaa"}},
+                               {"age" : {"$in": "aaa"}},
                                {
                                    "name": "testName"
                                }
@@ -833,7 +869,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$in operator must have `ARRAY`");
+                assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
               });
     }
 
@@ -855,6 +891,26 @@ public class FilterClauseDeserializerTest {
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
+    }
+
+    @Test
+    public void mustHandleNinArrayWithBigArray() throws Exception {
+      // String array with 100 unique numbers
+      String json =
+              """
+            {"_id" : {"$nin": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
+           """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+              .isInstanceOf(JsonApiException.class)
+              .satisfies(
+                      t -> {
+                        assertThat(t.getMessage())
+                                .isEqualTo(
+                                        "$nin operator must have at most "
+                                                + operationsConfig.maxNinOperatorValueSize()
+                                                + " values");
+                      });
     }
 
     @Test

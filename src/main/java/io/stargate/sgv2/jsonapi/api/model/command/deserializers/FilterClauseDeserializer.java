@@ -153,7 +153,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       switch (valueComparisonOperator) {
         case IN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
-            if (list.size() > operationsConfig.defaultPageSize()) {
+            if (list.size() > operationsConfig.maxInOperatorValueSize()) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$in operator must have at most "
@@ -163,6 +163,21 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           } else {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have `ARRAY`");
+          }
+
+        }
+        case NIN -> {
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.size() > operationsConfig.maxNinOperatorValueSize()) {
+              throw new JsonApiException(
+                      ErrorCode.INVALID_FILTER_EXPRESSION,
+                      "$nin operator must have at most "
+                              + operationsConfig.maxNinOperatorValueSize()
+                              + " values");
+            }
+          } else {
+            throw new JsonApiException(
+                    ErrorCode.INVALID_FILTER_EXPRESSION, "$nin operator must have `ARRAY`");
           }
         }
       }

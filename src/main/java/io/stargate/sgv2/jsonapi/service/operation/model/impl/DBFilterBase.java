@@ -251,6 +251,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     protected final IDFilter.Operator operator;
     protected final List<DocumentId> values;
 
+    /** when use $ne and $nin for _id, cql needs allow_filtering enabled */
+    public boolean allowFiltering() {
+      return operator.equals(Operator.NE) || operator.equals(Operator.NIN);
+    }
+
     public IDFilter(IDFilter.Operator operator, DocumentId value) {
       this(operator, List.of(value));
     }
@@ -288,7 +293,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                   BuiltCondition.LHS.column("key"),
                   Predicate.EQ,
                   new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
-
+        case NE:
+          return List.of(
+              BuiltCondition.of(
+                  BuiltCondition.LHS.column("key"),
+                  Predicate.NEQ,
+                  new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
         case IN:
           if (values.isEmpty()) return List.of();
           return values.stream()
@@ -299,7 +309,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                           Predicate.EQ,
                           new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
               .collect(Collectors.toList());
-
+        case NIN:
+          if (values.isEmpty()) return List.of();
+          return values.stream()
+              .map(
+                  v ->
+                      BuiltCondition.of(
+                          BuiltCondition.LHS.column("key"),
+                          Predicate.NEQ,
+                          new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
+              .collect(Collectors.toList());
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
