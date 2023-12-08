@@ -357,7 +357,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void ninConditionNonArrayArray() {
       String json =
-              """
+          """
             {
               "findOne": {
                 "filter" : {"_id" : {"$nin": false}}
@@ -365,18 +365,18 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             }
             """;
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-              .then()
-              .statusCode(200)
-              .body("errors", is(notNullValue()))
-              .body("errors", hasSize(1))
-              .body("errors[0].message", is("$nin operator must have `ARRAY`"))
-              .body("errors[0].exceptionClass", is("JsonApiException"))
-              .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].message", is("$nin operator must have `ARRAY`"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
     @Test

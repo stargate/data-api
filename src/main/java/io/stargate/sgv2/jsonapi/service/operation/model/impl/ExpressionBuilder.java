@@ -54,8 +54,9 @@ public class ExpressionBuilder {
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
-        //no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
-        return new ExpressionBuiltResult(Collections.singletonList(null), false); // should find everything
+        // no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
+        return new ExpressionBuiltResult(
+            Collections.singletonList(null), false); // should find everything
       } else {
         return new ExpressionBuiltResult(List.of(expressionWithoutId), false);
       }
@@ -206,13 +207,13 @@ public class ExpressionBuilder {
       // TODO: find a better CQL FALSE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
-              Variable.of(
-                      new DBFilterBase.IsNullFilter(
-                              "something user never use", DBFilterBase.SetFilterBase.Operator.CONTAINS)
-                              .get()));
+          Variable.of(
+              new DBFilterBase.IsNullFilter(
+                      "something user never use", DBFilterBase.SetFilterBase.Operator.CONTAINS)
+                  .get()));
       return ExpressionUtils.buildExpression(
-              conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
-//      return null;
+          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+      //      return null;
     }
 
     Log.error("etere " + conditionExpressions);

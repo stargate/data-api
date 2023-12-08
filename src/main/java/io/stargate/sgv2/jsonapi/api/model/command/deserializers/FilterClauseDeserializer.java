@@ -172,20 +172,19 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have `ARRAY`");
           }
-
         }
         case NIN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxNinOperatorValueSize()) {
               throw new JsonApiException(
-                      ErrorCode.INVALID_FILTER_EXPRESSION,
-                      "$nin operator must have at most "
-                              + operationsConfig.maxNinOperatorValueSize()
-                              + " values");
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$nin operator must have at most "
+                      + operationsConfig.maxNinOperatorValueSize()
+                      + " values");
             }
           } else {
             throw new JsonApiException(
-                    ErrorCode.INVALID_FILTER_EXPRESSION, "$nin operator must have `ARRAY`");
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$nin operator must have `ARRAY`");
           }
         }
       }
