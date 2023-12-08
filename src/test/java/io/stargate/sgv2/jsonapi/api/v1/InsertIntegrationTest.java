@@ -664,8 +664,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       ObjectNode doc = MAPPER.createObjectNode();
       final String docId = "docWithLongString";
       doc.put(DocumentConstants.Fields.DOC_ID, docId);
-      // 1M / 16k means about 64 max length Strings; try adding 60
-      for (int i = 0; i < 60; ++i) {
+      // 1M / 8k means at most 125 max length Strings; add 63 (with _id max of 64
+      // properties per Object)
+      for (int i = 0; i < 63; ++i) {
         doc.put("text" + i, createBigString(strLen));
       }
       _verifyInsert(docId, doc);
