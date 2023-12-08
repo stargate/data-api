@@ -252,8 +252,8 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ArrayNode arr = doc.putArray("arr");
-      // Let's add 50_000 char one (exceeds max of 16_000)
-      String str = RandomStringUtils.randomAscii(50_000);
+      // Let's add 10_000 char one (exceeds max of 8_000)
+      String str = RandomStringUtils.randomAscii(10_000);
       arr.add(str);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -263,9 +263,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value length (50000) exceeds maximum allowed ("
-                  + docLimits.maxStringLength()
-                  + ")");
+              " String value length (10000 bytes) exceeds maximum allowed ("
+                  + docLimits.maxStringLengthInBytes()
+                  + " bytes)");
     }
 
     // Since max-number-len is handled at low-level, it's not strictly speaking
