@@ -8,11 +8,12 @@ public enum ValueComparisonOperator implements FilterOperator {
   EQ("$eq"),
   NE("$ne"),
   IN("$in"),
-  NIN("$nin");
-  /*GT("$gt"),
+  NIN("$nin"),
+  GT("$gt"),
   GTE("$gte"),
   LT("$lt"),
-  LTE("$lte"),*/
+  LTE("$lte");
+
   private String operator;
 
   ValueComparisonOperator(String operator) {

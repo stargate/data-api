@@ -6,11 +6,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
@@ -29,6 +31,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
+  private static final Object ID_GROUP_RANGE = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
@@ -83,10 +86,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .capture(ID_GROUP_RANGE)
+        .compareValues(
+            "_id",
+            EnumSet.of(
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_GROUP_IN)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
@@ -94,7 +114,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(DYNAMIC_NULL_GROUP)
         .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
         .capture(DYNAMIC_DATE_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DATE)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DATE)
         .capture(EXISTS_GROUP)
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
@@ -189,6 +217,24 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 (List<DocumentId>) filterOperation.operand().value()));
       }
 
+      if (captureExpression.marker() == ID_GROUP_RANGE) {
+        final DocumentId value = (DocumentId) filterOperation.operand().value();
+        if (value.value() instanceof BigDecimal bdv) {
+          filters.add(
+              new DBFilterBase.NumberFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getDBFilterBaseOperator(filterOperation.operator()),
+                  bdv));
+        }
+        if (value.value() instanceof Map mv) {
+          filters.add(
+              new DBFilterBase.DateFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getDBFilterBaseOperator(filterOperation.operator()),
+                  JsonUtil.createDateFromDocumentId(value)));
+        }
+      }
+
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
         filters.add(
             new DBFilterBase.InFilter(
@@ -217,7 +263,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.NumberFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getDBFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
       }
 
@@ -231,7 +277,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.DateFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getDBFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
       }
 
@@ -352,5 +398,25 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
 
     return filters;
+  }
+
+  private static DBFilterBase.MapFilterBase.Operator getDBFilterBaseOperator(
+      FilterOperator filterOperation) {
+    switch ((ValueComparisonOperator) filterOperation) {
+      case EQ:
+        return DBFilterBase.MapFilterBase.Operator.EQ;
+      case GT:
+        return DBFilterBase.MapFilterBase.Operator.GT;
+      case GTE:
+        return DBFilterBase.MapFilterBase.Operator.GTE;
+      case LT:
+        return DBFilterBase.MapFilterBase.Operator.LT;
+      case LTE:
+        return DBFilterBase.MapFilterBase.Operator.LTE;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperation.getOperator()));
+    }
   }
 }

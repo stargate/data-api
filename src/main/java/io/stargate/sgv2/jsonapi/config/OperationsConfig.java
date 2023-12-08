@@ -146,7 +146,6 @@ public interface OperationsConfig {
     String password();
 
     /** Fixed Token used for Integration Test authentication */
-    @Nullable
     Optional<String> fixedToken();
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */
@@ -169,8 +168,8 @@ public interface OperationsConfig {
     long sessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
-    @WithDefault("100")
-    long sessionCacheMaxSize();
+    @WithDefault("50")
+    int sessionCacheMaxSize();
   }
 
   /** Query consistency related configs. */

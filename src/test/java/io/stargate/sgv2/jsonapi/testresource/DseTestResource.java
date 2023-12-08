@@ -13,12 +13,14 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-a09f8c1431ab");
+          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-b259738f492f");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
+      // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
+      //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-6");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {

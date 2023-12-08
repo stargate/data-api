@@ -111,6 +111,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
+      // the key should match pattern
+      if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_FILTER_EXPRESSION,
+            String.format(
+                "%s: filter clause path ('%s') contains character(s) not allowed",
+                ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+      }
       logicalExpression.addComparisonExpression(
           ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
     }
@@ -252,13 +260,44 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
           throw exception;
         } else {
+          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION,
+                String.format(
+                    "%s: filter clause path ('%s') contains character(s) not allowed",
+                    ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+          }
           return ComparisonExpression.eq(
               entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()));
         }
       }
+      // if the key does not match pattern or the entry is not ($vector and $exist operator)
+      // combination, throw error
+      if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
+          || (entry.getKey().equals("$vector") && updateField.getKey().equals("$exists")))) {
+        throw new JsonApiException(
+            ErrorCode.INVALID_FILTER_EXPRESSION,
+            String.format(
+                "%s: filter clause path ('%s') contains character(s) not allowed",
+                ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+      }
       JsonNode value = updateField.getValue();
-      // @TODO: Need to add array and sub-document value type to this condition
-      expression.add(operator, jsonNodeValue(entry.getKey(), value));
+      Object valueObject = jsonNodeValue(entry.getKey(), value);
+      if (operator == ValueComparisonOperator.GT
+          || operator == ValueComparisonOperator.GTE
+          || operator == ValueComparisonOperator.LT
+          || operator == ValueComparisonOperator.LTE) {
+        if (!(valueObject instanceof Date
+            || valueObject instanceof BigDecimal
+            || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION,
+              String.format(
+                  "Invalid filter expression, %s operator must have `DATE` or `NUMBER` value",
+                  operator.getOperator()));
+        }
+      }
+      expression.add(operator, valueObject);
     }
     return expression;
   }

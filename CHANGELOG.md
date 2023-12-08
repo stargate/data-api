@@ -1,5 +1,49 @@
 # Changelog
 
+## [v1.0.0-BETA-5](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-5) (2023-12-06)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-4...v1.0.0-BETA-5)
+
+**Closed issues:**
+
+- Provide better error message when accessing non-JSON API table [\#659](https://github.com/stargate/jsonapi/issues/659)
+- Update to Jackson 2.16.0 [\#650](https://github.com/stargate/jsonapi/issues/650)
+- Remove all gRPC bridge communications [\#649](https://github.com/stargate/jsonapi/issues/649)
+- Write unit test for JsonapiTableMatcher [\#643](https://github.com/stargate/jsonapi/issues/643)
+- Verify handling of Collection with capital letter\(s\) [\#639](https://github.com/stargate/jsonapi/issues/639)
+- Feature request: Add truncate/empty collection support [\#631](https://github.com/stargate/jsonapi/issues/631)
+- $in, with empty array, should find nothing [\#625](https://github.com/stargate/jsonapi/issues/625)
+- CQL branch, filter, cql mulfunction with same values [\#623](https://github.com/stargate/jsonapi/issues/623)
+- Operations implement predicate instead of override equals and hashcode [\#36](https://github.com/stargate/jsonapi/issues/36)
+- Revisit FilterMatcher and FilterMatchRules logic [\#34](https://github.com/stargate/jsonapi/issues/34)
+
+**Merged pull requests:**
+
+- Use Stargate v2.1.0-BETA-6 [\#700](https://github.com/stargate/jsonapi/pull/700) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Use Stargate v2.1.0-BETA-5 [\#699](https://github.com/stargate/jsonapi/pull/699) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Use Stargate v2.1.0-BETA-4 [\#696](https://github.com/stargate/jsonapi/pull/696) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Update dse-next to latest as of 2023-12-01: 4.0.11-a09f8c1431ab [\#695](https://github.com/stargate/jsonapi/pull/695) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- convert ReadAndUpdateOperationRetryTest unit test [\#694](https://github.com/stargate/jsonapi/pull/694) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Throw error on invalid json api table schema [\#693](https://github.com/stargate/jsonapi/pull/693) ([maheshrajamani](https://github.com/maheshrajamani))
+- Convert "SerialConsistencyOverrideOperationTest" to not use ValidatingBridge [\#692](https://github.com/stargate/jsonapi/pull/692) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- convert ReadAndUpdateOperationTest [\#688](https://github.com/stargate/jsonapi/pull/688) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Convert `InsertOperationTest` to use native CQL not validating Bridge [\#684](https://github.com/stargate/jsonapi/pull/684) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix delete unit test [\#683](https://github.com/stargate/jsonapi/pull/683) ([maheshrajamani](https://github.com/maheshrajamani))
+- Un-Disable 3 tests that pass with recent `JsonTerm` fix [\#682](https://github.com/stargate/jsonapi/pull/682) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- JsonTerm Refactoring for unit test [\#681](https://github.com/stargate/jsonapi/pull/681) ([maheshrajamani](https://github.com/maheshrajamani))
+- Docker compose fix [\#678](https://github.com/stargate/jsonapi/pull/678) ([kathirsvn](https://github.com/kathirsvn))
+- Convert "FindOperationTest" to not use ValidatingBridge  [\#677](https://github.com/stargate/jsonapi/pull/677) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove those "XxxOperationTest"s that do not seem to add any value [\#675](https://github.com/stargate/jsonapi/pull/675) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Convert "CountOperationTest" unit test to not use Validating Bridge but direct QueryExecutor mocking [\#672](https://github.com/stargate/jsonapi/pull/672) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Disable bridge usage [\#670](https://github.com/stargate/jsonapi/pull/670) ([maheshrajamani](https://github.com/maheshrajamani))
+- Moved JAVA\_OPTS\_APPEND out of Dockerfile [\#665](https://github.com/stargate/jsonapi/pull/665) ([kathirsvn](https://github.com/kathirsvn))
+- Unit test for JsonapiTableMatcher and CqlColumnMatcher [\#663](https://github.com/stargate/jsonapi/pull/663) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add manually exported JSON API Postman collections from Stargate-Cass… [\#660](https://github.com/stargate/jsonapi/pull/660) ([johnsmartco](https://github.com/johnsmartco))
+- Add truncate/empty collection support [\#658](https://github.com/stargate/jsonapi/pull/658) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bumping version for next jsonapi release [\#657](https://github.com/stargate/jsonapi/pull/657) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#639: add testing of CreateCollection with mixed-case name, fix quoting for FindCollections [\#654](https://github.com/stargate/jsonapi/pull/654) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update Jackson to 2.16.0 \(from 2.15.3\) [\#651](https://github.com/stargate/jsonapi/pull/651) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.0-BETA-4](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-4) (2023-11-17)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-3...v1.0.0-BETA-4)
