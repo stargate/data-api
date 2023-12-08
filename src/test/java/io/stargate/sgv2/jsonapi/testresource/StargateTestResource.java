@@ -30,7 +30,8 @@ public class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
-  private static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 5;
+  // Astra will have 8kB limit some time around or after 1.0.0-BETA-6:
+  protected static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 8;
   private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
   private Network network;
