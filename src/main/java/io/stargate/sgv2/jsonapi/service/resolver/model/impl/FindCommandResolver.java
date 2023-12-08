@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -104,7 +103,6 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           skip,
           operationsConfig.maxDocumentSortCount());
     } else {
-      Log.error("here unsorted");
       return FindOperation.unsorted(
           commandContext,
           resolvedLogicalExpression,

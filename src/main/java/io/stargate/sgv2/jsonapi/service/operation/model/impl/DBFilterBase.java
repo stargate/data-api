@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.logging.Log;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
@@ -115,15 +114,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     protected MapFilterBase(
         String columnName, String key, MapFilterBase.Operator operator, T value) {
       super(key);
-      Log.error(
-          "MAP filter column name : "
-              + columnName
-              + " key "
-              + key
-              + " operator "
-              + operator
-              + " value "
-              + value);
       this.columnName = columnName;
       this.key = key;
       this.operator = operator;
@@ -263,7 +253,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
     public DateFilter(String path, Operator operator, Date value) {
       super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
-      Log.error("Date Filter extend MapFilterBase");
       this.dateValue = value;
     }
 
@@ -427,7 +416,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
 
     public List<BuiltCondition> getAll() {
-      Log.error("here " + arrayValue);
       List<Object> values = arrayValue;
       switch (operator) {
         case IN:
@@ -536,7 +524,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class ExistsFilter extends SetFilterBase<String> {
     public ExistsFilter(String path, boolean existFlag) {
       super("exist_keys", path, path, existFlag ? Operator.CONTAINS : Operator.NOT_CONTAINS);
-      Log.error("path exists filter: " + path + " " + existFlag);
     }
 
     @Override
@@ -624,7 +611,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         Map<String, Object> subDocData,
         MapFilterBase.Operator operator) {
       super("query_text_values", path, operator, getHash(hasher, subDocData));
-      Log.error("sub");
       this.subDocValue = subDocData;
     }
 

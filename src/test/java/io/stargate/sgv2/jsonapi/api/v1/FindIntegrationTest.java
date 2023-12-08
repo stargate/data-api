@@ -11,18 +11,23 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
+
+  private void insert(String json) {
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .statusCode(200);
+  }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -39,7 +44,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               "_id": "doc1",
                               "username": "user1",
                               "active_user" : true,
-                              "date" : {"$date": 1672531200000}
+                              "date" : {"$date": 1672531200000},
+                              "age" : 20,
+                              "null_column": null
                             }
                           }
                         }
@@ -114,17 +121,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           }
                         }
                       """);
-    }
-
-    private void insert(String json) {
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200);
     }
 
     @Test
@@ -228,7 +224,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           "_id": "doc1",
                           "username": "user1",
                           "active_user" : true,
-                          "date" : {"$date": 1672531200000}
+                          "date" : {"$date": 1672531200000},
+                          "age" : 20,
+                          "null_column": null
                       }
                       """));
     }
@@ -264,7 +262,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           "_id": "doc1",
                           "username": "user1",
                           "active_user" : true,
-                          "date" : {"$date": 1672531200000}
+                          "date" : {"$date": 1672531200000},
+                          "age" : 20,
+                          "null_column": null
                       }
                       """));
     }
@@ -300,7 +300,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                     "_id": "doc1",
                     "username": "user1",
                     "active_user" : true,
-                    "date" : {"$date": 1672531200000}
+                    "date" : {"$date": 1672531200000},
+                    "age" : 20,
+                    "null_column": null
                 }
                 """))
           .body("data.documents", hasSize(1));
@@ -353,7 +355,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       // $in clause is not guaranteed.
       String expected1 =
           """
-                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
+                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                       """;
       String expected2 =
           """
@@ -385,7 +387,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       }
                       """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -505,7 +509,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                       """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -585,7 +591,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       }
                       """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -614,8 +622,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       """;
       String expected1 =
           """
-                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-                      """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       String expected2 =
           """
                       {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
@@ -648,7 +656,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                       """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -678,7 +688,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                       """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -707,7 +719,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                             }
                           """;
       String expected1 =
-          "{\"_id\":\"doc1\", \"username\":\"user1\", \"active_user\":true, \"date\" : {\"$date\": 1672531200000}}";
+          """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -764,8 +778,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-                      {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-                      """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -825,8 +839,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1016,8 +1030,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1418,69 +1432,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void withNEComparisonOperator() {
-      String json =
-          """
-          {
-            "find": {
-              "filter" : {"username" : {"$ne" : "user1"}}
-            }
-          }
-          """;
-      String expected2 =
-          """
-                          {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
-                          """;
-      String expected3 =
-          """
-                  {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
-                  """;
-
-      String expected4 =
-          """
-                  {
-                    "_id": "doc4",
-                    "username":"user4",
-                    "indexedObject" : { "0": "value_0", "1": "value_1" }
-                  }
-                  """;
-      String expected5 =
-          """
-                  {
-                    "_id": "doc5",
-                    "username": "user5",
-                    "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                  }
-                  """;
-      String expected6 =
-          """
-                              {
-                                "_id": {"$date": 6},
-                                "user-name": "user6"
-                              }
-                              """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(5))
-          .body(
-              "data.documents",
-              containsInAnyOrder(
-                  jsonEquals(expected2),
-                  jsonEquals(expected3),
-                  jsonEquals(expected4),
-                  jsonEquals(expected5),
-                  jsonEquals(expected6)));
-    }
-
-    @Test
     public void byBooleanColumn() {
       String json =
           """
@@ -1493,8 +1444,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1523,8 +1474,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-              """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -1558,8 +1509,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected1 =
           """
-                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}}
-                  """;
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """;
       String expected2 =
           """
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
@@ -1785,6 +1736,392 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       sb.append("}");
 
       return sb.toString();
+    }
+
+    @Test
+    public void NeText() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"username" : {"$ne" : "user1"}}
+                }
+              }
+              """;
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                              """;
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void NeNumber() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"age" : {"$ne" : 20}}
+                }
+              }
+              """;
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                              """;
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void NeBool() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"active_user" : {"$ne" : true}}
+                }
+              }
+              """;
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                              """;
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void NeNull() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"null_column" : {"$ne" : null}}
+                }
+              }
+              """;
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                              """;
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void NeDate() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"date" : {"$ne" : {"$date" : 1672531200000}}}
+                }
+              }
+              """;
+      String expected2 =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                              """;
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void NeSubdoc() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {"subdoc" : {"$ne" : {"id":"abc"}}}
+                }
+              }
+              """;
+      String expected1 =
+          """
+                        {
+                          "_id": "doc1",
+                          "username": "user1",
+                          "active_user" : true,
+                          "date" : {"$date": 1672531200000}
+                          "age" : 20,
+                          "null_column": null
+                      }
+                              """;
+
+      String expected3 =
+          """
+                      {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                      """;
+
+      String expected4 =
+          """
+                      {
+                        "_id": "doc4",
+                        "username":"user4",
+                        "indexedObject" : { "0": "value_0", "1": "value_1" }
+                      }
+                      """;
+      String expected5 =
+          """
+                      {
+                        "_id": "doc5",
+                        "username": "user5",
+                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                      }
+                      """;
+      String expected6 =
+          """
+                                  {
+                                    "_id": {"$date": 6},
+                                    "user-name": "user6"
+                                  }
+                                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected1),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
     }
   }
 

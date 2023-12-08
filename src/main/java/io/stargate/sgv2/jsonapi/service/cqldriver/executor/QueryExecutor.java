@@ -52,7 +52,10 @@ public class QueryExecutor {
             .setPageSize(pageSize)
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
     Log.error(
-        "cql " + simpleStatement.getQuery() + " values " + simpleStatement.getPositionalValues());
+        "read cql111 "
+            + simpleStatement.getQuery()
+            + " values "
+            + simpleStatement.getPositionalValues());
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
@@ -69,6 +72,9 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
+    Log.error(
+        "wrete cql111 " + statement.getQuery() + " values " + statement.getPositionalValues());
+
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache

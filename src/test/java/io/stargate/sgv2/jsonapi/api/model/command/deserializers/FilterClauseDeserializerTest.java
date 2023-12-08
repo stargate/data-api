@@ -889,7 +889,7 @@ public class FilterClauseDeserializerTest {
           """
                {
                            "$and": [
-                               {"age" : {"$in": "aaa"}},
+                               {"age" : {"$nin": "aaa"}},
                                {
                                    "name": "testName"
                                }

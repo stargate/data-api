@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -126,6 +127,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
+    Log.error(tx_id1 + " " + tx_id2);
     String doc1 =
         """
         {
@@ -137,7 +139,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     SimpleStatement stmt1 =
         SimpleStatement.newInstance(
             collectionReadCql, "username " + new DocValueHasher().getHash("user1").hash());
-
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
@@ -148,7 +149,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
               return Uni.createFrom().item(results1);
             });
 
-    // read2
+    //     read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
             .formatted(KEYSPACE_NAME, COLLECTION_NAME);
@@ -158,7 +159,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             collectionReadCql,
             boundKeyForStatement("doc1"),
             "username " + new DocValueHasher().getHash("user1").hash());
-
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
@@ -730,7 +730,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     assertThat(failedUpdateRetryFirstQueryAssert.get()).isEqualTo(3);
     assertThat(updateSecondQueryAssert.get()).isEqualTo(1);
 
-    // then result
+    //     then result
     CommandResult result = execute.get();
     assertThat(result.status())
         .hasSize(2)

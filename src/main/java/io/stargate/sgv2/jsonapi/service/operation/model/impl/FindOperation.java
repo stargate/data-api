@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
@@ -396,9 +395,8 @@ public record FindOperation(
    */
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
-        ExpressionBuilder.buildExpressions(logicalExpression, null);
+        ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     final List<Expression<BuiltCondition>> expressions = expressionBuiltResult.expressions();
-    Log.error("expresssion sssss " + expressions);
     if (expressions == null) { // find nothing
       return List.of();
     }
@@ -508,7 +506,7 @@ public record FindOperation(
    */
   private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
     final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
-        ExpressionBuilder.buildExpressions(logicalExpression, null);
+        ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     final List<Expression<BuiltCondition>> expressions = expressionBuiltResult.expressions();
     if (expressions == null) { // find nothing
       return List.of();

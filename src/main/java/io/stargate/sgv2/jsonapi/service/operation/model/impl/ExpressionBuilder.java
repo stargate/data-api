@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.api.common.cql.ExpressionUtils;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
@@ -33,11 +32,8 @@ public class ExpressionBuilder {
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
         buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
-    Log.error("expressionWithoutId " + expressionWithoutId);
     ExpressionBuiltResult expressionBuiltResult =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
-
-    Log.error("pairOfExpressionsAndAllowFiltering !! " + expressionBuiltResult);
     return expressionBuiltResult;
   }
 
@@ -186,7 +182,6 @@ public class ExpressionBuilder {
     if (hasNinFilterThisLevel
         && ninFilterThisLevelWithEmptyArray
         && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.OR)) {
-      Log.error("qweqweqeqw");
       // TODO: find a better CQL TRUE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -203,7 +198,6 @@ public class ExpressionBuilder {
     if (hasInFilterThisLevel
         && inFilterThisLevelWithEmptyArray
         && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
-      Log.error("etere122112 " + conditionExpressions);
       // TODO: find a better CQL FALSE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -216,7 +210,6 @@ public class ExpressionBuilder {
       //      return null;
     }
 
-    Log.error("etere " + conditionExpressions);
     // current logicalExpression is empty (implies sub-logicalExpression and
     // sub-comparisonExpression are all empty)
     if (conditionExpressions.isEmpty()) {

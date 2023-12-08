@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -158,7 +157,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
-    Log.error("Filterable Resolver start");
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > docLimits.maxFilterObjectProperties()) {
       throw new JsonApiException(
@@ -169,13 +167,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               filter.getTotalComparisonExpressionCount(),
               docLimits.maxFilterObjectProperties()));
     }
-    Log.error("Filterable Resolver end " + filter);
     return filter;
   }
 
   public static List<DBFilterBase> findById(CaptureExpression captureExpression) {
-    Log.error("findByID");
-
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
@@ -194,13 +189,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   public static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
-    Log.error("find NO Filter");
     return List.of();
   }
 
   public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
-    Log.error("findByDynamic");
-
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
 
@@ -405,6 +397,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     switch ((ValueComparisonOperator) filterOperation) {
       case EQ:
         return DBFilterBase.MapFilterBase.Operator.EQ;
+      case NE:
+        return DBFilterBase.MapFilterBase.Operator.NE;
       case GT:
         return DBFilterBase.MapFilterBase.Operator.GT;
       case GTE:

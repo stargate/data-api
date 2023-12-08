@@ -13,7 +13,6 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -719,7 +718,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
       // then result
       CommandResult result = execute.get();
-      Log.error("stat " + result.status());
       assertThat(result.status())
           .hasSize(3)
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
