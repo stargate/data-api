@@ -37,12 +37,11 @@ public class ExpressionBuilder {
     return expressionBuiltResult;
   }
 
+  // buildExpressionWithId only handles IDFilter ($eq, $in)
   private static ExpressionBuiltResult buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
-    List<Expression<BuiltCondition>> expressionsWithId = new ArrayList<>();
-    boolean allow_filtering;
     if (idFilters.size() > 1) {
       throw new JsonApiException(
           ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
@@ -61,38 +60,11 @@ public class ExpressionBuilder {
     // have an idFilter
     DBFilterBase.IDFilter idFilter =
         additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
-    allow_filtering = idFilter.allowFiltering();
-    boolean finalAllow_filtering = allow_filtering;
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
     if (idFilter.operator == DBFilterBase.IDFilter.Operator.IN && idFilter.getAll().isEmpty()) {
       return new ExpressionBuiltResult(null, false); // should find nothing
-    }
-
-    // _id: {$nin: []} should return true
-    // if expressionWithoutId is null, find everything ~
-    // if expressionWithoutId is not null, apply expressionWithoutId to filter
-    if (idFilter.operator == DBFilterBase.IDFilter.Operator.NIN && idFilter.getAll().isEmpty()) {
-      return new ExpressionBuiltResult(
-          expressionWithoutId == null
-              ? Collections.singletonList(null)
-              : List.of(expressionWithoutId),
-          false);
-    }
-
-    // from here, idFilter is not empty
-
-    // $nin will not split n queries, need allow filtering
-    if (idFilter.operator.equals(DBFilterBase.IDFilter.Operator.NIN)) {
-      List<Variable<BuiltCondition>> inConditionsVariables =
-          idFilter.getAll().stream().map(Variable::of).toList();
-      Expression<BuiltCondition> newExpression =
-          expressionWithoutId == null
-              ? ExpressionUtils.andOf(inConditionsVariables)
-              : ExpressionUtils.andOf(
-                  ExpressionUtils.andOf(inConditionsVariables), expressionWithoutId);
-      return new ExpressionBuiltResult(List.of(newExpression), finalAllow_filtering);
     }
 
     // $in, idFilter's operator is IN or EQ, for both, split into n query logic
@@ -112,8 +84,7 @@ public class ExpressionBuilder {
             })
         .collect(
             Collectors.collectingAndThen(
-                Collectors.toList(),
-                expressions -> new ExpressionBuiltResult(expressions, finalAllow_filtering)));
+                Collectors.toList(), expressions -> new ExpressionBuiltResult(expressions, false)));
   }
 
   private static Expression<BuiltCondition> buildExpressionRecursive(
@@ -159,9 +130,11 @@ public class ExpressionBuilder {
             }
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
-            // $in:["A","B"] -> array_contains contains A or array_contains contains B
-            // $nin:["A","B"] -> array_contains not contains A and array_contains not
+            // non_id $in:["A","B"] -> array_contains contains A or array_contains contains B
+            // non_id $nin:["A","B"] -> array_contains not contains A and array_contains not
             // contains B
+            // _id $nin: ["A","B"] -> query_text_values['_id'] != A and query_text_values['_id'] !=
+            // B
             conditionExpressions.add(
                 inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)
                     ? ExpressionUtils.orOf(inConditionsVariables)

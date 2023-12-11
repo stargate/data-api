@@ -43,20 +43,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  // $ne: 8 captures as following
-  private static final Object ID_GROUP_NE = new Object();
-  private static final Object DYNAMIC_TEXT_GROUP_NE = new Object();
-  private static final Object DYNAMIC_NUMBER_GROUP_NE = new Object();
-  private static final Object DYNAMIC_BOOL_GROUP_NE = new Object();
-  private static final Object DYNAMIC_NULL_GROUP_NE = new Object();
-  private static final Object DYNAMIC_DATE_GROUP_NE = new Object();
-  private static final Object ARRAY_EQUALS_NE = new Object();
-  private static final Object SUB_DOC_EQUALS_NE = new Object();
-
-  // $nin: 2 captures as following
-  private static final Object ID_GROUP_NIN = new Object();
-  private static final Object DYNAMIC_GROUP_NIN = new Object();
-
   @Inject DocumentLimitsConfig docLimits;
 
   @Inject
@@ -66,25 +52,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
-        .capture(ID_GROUP_NE)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NE), JsonType.DOCUMENT_ID);
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
 
     matchRules
         .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP_IN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
-        .capture(ID_GROUP_NIN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY);
+        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
     matchRules
         .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
+        .compareValues(
+            "_id",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .compareValues(
+            "_id",
+            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+            JsonType.ARRAY)
         .capture(ID_GROUP_RANGE)
         .compareValues(
             "_id",
@@ -95,28 +83,40 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 ValueComparisonOperator.LTE),
             JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_GROUP_IN)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+            JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
         .compareValues(
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
             JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.BOOLEAN)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.BOOLEAN)
         .capture(DYNAMIC_NULL_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
+        .compareValues(
+            "*", EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE), JsonType.NULL)
         .capture(DYNAMIC_DATE_GROUP)
         .compareValues(
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
@@ -129,31 +129,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(SIZE_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
         .capture(ARRAY_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY)
+        .compareValues(
+            "*", EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE), JsonType.ARRAY)
         .capture(SUB_DOC_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC)
-        // $ne: 8 captures as following
-        .capture(ID_GROUP_NE)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NE), JsonType.DOCUMENT_ID)
-        .capture(DYNAMIC_NUMBER_GROUP_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.NUMBER)
-        .capture(DYNAMIC_TEXT_GROUP_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.STRING)
-        .capture(DYNAMIC_BOOL_GROUP_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.BOOLEAN)
-        .capture(DYNAMIC_NULL_GROUP_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.NULL)
-        .capture(DYNAMIC_DATE_GROUP_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.DATE)
-        .capture(ARRAY_EQUALS_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.ARRAY)
-        .capture(SUB_DOC_EQUALS_NE)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NE), JsonType.SUB_DOC)
-        // $nin: 2 captures as following
-        .capture(ID_GROUP_NIN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY)
-        .capture(DYNAMIC_GROUP_NIN)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.NIN), JsonType.ARRAY);
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.SUB_DOC);
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
@@ -195,18 +177,53 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-
       if (captureExpression.marker() == ID_GROUP) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case EQ:
+            filters.add(
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.EQ,
+                    (DocumentId) filterOperation.operand().value()));
+            break;
+          case NE:
+            final String docIdWithSingleQuote =
+                ((DocumentId) filterOperation.operand().value()).toString();
+            filters.add(
+                new DBFilterBase.TextFilter(
+                    captureExpression.path(),
+                    DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS,
+                    // _id value is deserialized with single quote
+                    docIdWithSingleQuote.substring(1, docIdWithSingleQuote.length() - 1)));
+            break;
+          default:
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format(
+                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+        }
       }
 
       if (captureExpression.marker() == ID_GROUP_IN) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.IN,
-                (List<DocumentId>) filterOperation.operand().value()));
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case IN:
+            filters.add(
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.IN,
+                    (List<DocumentId>) filterOperation.operand().value()));
+            break;
+          case NIN:
+            filters.add(
+                new DBFilterBase.InFilter(
+                    getInFilterBaseOperator(filterOperation.operator()),
+                    captureExpression.path(),
+                    (List<Object>) filterOperation.operand().value()));
+            break;
+          default:
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format(
+                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+        }
       }
 
       if (captureExpression.marker() == ID_GROUP_RANGE) {
@@ -215,14 +232,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           filters.add(
               new DBFilterBase.NumberFilter(
                   DocumentConstants.Fields.DOC_ID,
-                  getDBFilterBaseOperator(filterOperation.operator()),
+                  getMapFilterBaseOperator(filterOperation.operator()),
                   bdv));
         }
-        if (value.value() instanceof Map mv) {
+        if (value.value() instanceof Map) {
           filters.add(
               new DBFilterBase.DateFilter(
                   DocumentConstants.Fields.DOC_ID,
-                  getDBFilterBaseOperator(filterOperation.operator()),
+                  getMapFilterBaseOperator(filterOperation.operator()),
                   JsonUtil.createDateFromDocumentId(value)));
         }
       }
@@ -230,7 +247,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
         filters.add(
             new DBFilterBase.InFilter(
-                DBFilterBase.InFilter.Operator.IN,
+                getInFilterBaseOperator(filterOperation.operator()),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value()));
       }
@@ -239,7 +256,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.TextFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (String) filterOperation.operand().value()));
       }
 
@@ -247,7 +264,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.BoolFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (Boolean) filterOperation.operand().value()));
       }
 
@@ -255,21 +272,21 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.NumberFilter(
                 captureExpression.path(),
-                getDBFilterBaseOperator(filterOperation.operator()),
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
       }
 
       if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
         filters.add(
             new DBFilterBase.IsNullFilter(
-                captureExpression.path(), DBFilterBase.SetFilterBase.Operator.CONTAINS));
+                captureExpression.path(), getSetFilterBaseOperator(filterOperation.operator())));
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
         filters.add(
             new DBFilterBase.DateFilter(
                 captureExpression.path(),
-                getDBFilterBaseOperator(filterOperation.operator()),
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
       }
 
@@ -298,7 +315,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 new DocValueHasher(),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value(),
-                DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
+                filterOperation.operator().equals(ValueComparisonOperator.EQ)
+                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
+                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
@@ -307,94 +326,18 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                 new DocValueHasher(),
                 captureExpression.path(),
                 (Map<String, Object>) filterOperation.operand().value(),
-                DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
-      }
-
-      // $ne: 8 captures as following
-      if (captureExpression.marker() == ID_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.NE, (DocumentId) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_TEXT_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.TextFilter(
-                captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.NE,
-                (String) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_BOOL_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.BoolFilter(
-                captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.NE,
-                (Boolean) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.NumberFilter(
-                captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.NE,
-                (BigDecimal) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_NULL_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.IsNullFilter(
-                captureExpression.path(), DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_DATE_GROUP_NE) {
-        filters.add(
-            new DBFilterBase.DateFilter(
-                captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.NE,
-                (Date) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == ARRAY_EQUALS_NE) {
-        filters.add(
-            new DBFilterBase.ArrayEqualsFilter(
-                new DocValueHasher(),
-                captureExpression.path(),
-                (List<Object>) filterOperation.operand().value(),
-                DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
-      }
-
-      if (captureExpression.marker() == SUB_DOC_EQUALS_NE) {
-        filters.add(
-            new DBFilterBase.SubDocEqualsFilter(
-                new DocValueHasher(),
-                captureExpression.path(),
-                (Map<String, Object>) filterOperation.operand().value(),
-                DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
-      }
-      // $nin: 2 captures as following
-      if (captureExpression.marker() == ID_GROUP_NIN) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.NIN,
-                (List<DocumentId>) filterOperation.operand().value()));
-      }
-
-      if (captureExpression.marker() == DYNAMIC_GROUP_NIN) {
-        filters.add(
-            new DBFilterBase.InFilter(
-                DBFilterBase.InFilter.Operator.NIN,
-                captureExpression.path(),
-                (List<Object>) filterOperation.operand().value()));
+                filterOperation.operator().equals(ValueComparisonOperator.EQ)
+                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
+                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
     }
 
     return filters;
   }
 
-  private static DBFilterBase.MapFilterBase.Operator getDBFilterBaseOperator(
-      FilterOperator filterOperation) {
-    switch ((ValueComparisonOperator) filterOperation) {
+  private static DBFilterBase.MapFilterBase.Operator getMapFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
         return DBFilterBase.MapFilterBase.Operator.EQ;
       case NE:
@@ -410,7 +353,35 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format("Unsupported filter operator %s ", filterOperation.getOperator()));
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+    }
+  }
+
+  private static DBFilterBase.InFilter.Operator getInFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
+      case IN:
+        return DBFilterBase.InFilter.Operator.IN;
+      case NIN:
+        return DBFilterBase.InFilter.Operator.NIN;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+    }
+  }
+
+  private static DBFilterBase.SetFilterBase.Operator getSetFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
+      case EQ:
+        return DBFilterBase.SetFilterBase.Operator.CONTAINS;
+      case NE:
+        return DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
     }
   }
 }

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -10,7 +10,6 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.Predicate;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -271,25 +270,18 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
       EQ,
-      NE,
-      IN,
-      NIN;
+      IN;
     }
 
     protected final IDFilter.Operator operator;
     protected final List<DocumentId> values;
-
-    /** when use $ne and $nin for _id, cql needs allow_filtering enabled */
-    public boolean allowFiltering() {
-      return operator.equals(Operator.NE) || operator.equals(Operator.NIN);
-    }
 
     public IDFilter(IDFilter.Operator operator, DocumentId value) {
       this(operator, List.of(value));
     }
 
     public IDFilter(IDFilter.Operator operator, List<DocumentId> values) {
-      super(DocumentConstants.Fields.DOC_ID);
+      super(DOC_ID);
       this.operator = operator;
       this.values = values;
     }
@@ -321,12 +313,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                   BuiltCondition.LHS.column("key"),
                   Predicate.EQ,
                   new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
-        case NE:
-          return List.of(
-              BuiltCondition.of(
-                  BuiltCondition.LHS.column("key"),
-                  Predicate.NEQ,
-                  new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
         case IN:
           if (values.isEmpty()) return List.of();
           return values.stream()
@@ -335,16 +321,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                       BuiltCondition.of(
                           BuiltCondition.LHS.column("key"),
                           Predicate.EQ,
-                          new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
-              .collect(Collectors.toList());
-        case NIN:
-          if (values.isEmpty()) return List.of();
-          return values.stream()
-              .map(
-                  v ->
-                      BuiltCondition.of(
-                          BuiltCondition.LHS.column("key"),
-                          Predicate.NEQ,
                           new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
               .collect(Collectors.toList());
         default:
@@ -369,9 +345,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-  /**
-   * based on values of fields other than document id: for filtering on non-id field use InFilter.
-   */
+  /** non_id($in, $nin), _id($nin) */
   public static class InFilter extends DBFilterBase {
     private final List<Object> arrayValue;
     protected final InFilter.Operator operator;
@@ -385,10 +359,10 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     boolean canAddField() {
       return false;
     }
-    // IN operator for non-id field filtering
+
     public enum Operator {
       IN,
-      NIN;
+      NIN,
     }
 
     public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
@@ -430,14 +404,28 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               .collect(Collectors.toList());
         case NIN:
           if (values.isEmpty()) return List.of();
-          return values.stream()
-              .map(
-                  v ->
-                      BuiltCondition.of(
-                          DATA_CONTAINS,
-                          Predicate.NOT_CONTAINS,
-                          new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
-              .collect(Collectors.toList());
+          if (!this.getPath().equals(DOC_ID)) {
+            return values.stream()
+                .map(
+                    v ->
+                        BuiltCondition.of(
+                            DATA_CONTAINS,
+                            Predicate.NOT_CONTAINS,
+                            new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
+                .collect(Collectors.toList());
+          } else {
+            //            List<DocumentId> documentIdList = (List<DocumentId>) values;
+            return values.stream()
+                .map(
+                    v ->
+                        BuiltCondition.of(
+                            BuiltCondition.LHS.mapAccess(QUERY_TEXT_MAP_COLUMN_NAME, Values.NULL),
+                            Predicate.NEQ,
+                            // _id value is deserialized with single quote
+                            new JsonTerm(
+                                DOC_ID, v.toString().substring(1, v.toString().length() - 1))))
+                .collect(Collectors.toList());
+          }
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -573,7 +561,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return false;
     }
   }
-
   /** Filter for document where array matches (data in same order) as the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     private final List<Object> arrayValue;

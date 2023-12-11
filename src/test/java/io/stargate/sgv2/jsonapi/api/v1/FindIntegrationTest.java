@@ -2069,7 +2069,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           "_id": "doc1",
                           "username": "user1",
                           "active_user" : true,
-                          "date" : {"$date": 1672531200000}
+                          "date" : {"$date": 1672531200000},
                           "age" : 20,
                           "null_column": null
                       }

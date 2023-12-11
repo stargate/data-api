@@ -8,7 +8,6 @@ services:
     ports:
       - "9042:9042"
       - "8081:8081"
-      - "8091:8091"
     mem_limit: 2G
     environment:
       - JAVA_OPTS="-Xmx1536M"

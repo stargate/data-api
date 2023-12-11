@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -127,7 +126,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
-    Log.error(tx_id1 + " " + tx_id2);
     String doc1 =
         """
         {
