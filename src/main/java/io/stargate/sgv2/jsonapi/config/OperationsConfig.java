@@ -177,7 +177,7 @@ public interface OperationsConfig {
     ConsistencyConfig consistency();
 
     /** @return Serial Consistency for queries. */
-    @WithDefault("SERIAL")
+    @WithDefault("LOCAL_SERIAL")
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
@@ -201,6 +201,12 @@ public interface OperationsConfig {
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel reads();
+
+      /** @return Consistency for vector search queries. */
+      @WithDefault("LOCAL_ONE")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel vectorSearch();
     }
   }
 }
