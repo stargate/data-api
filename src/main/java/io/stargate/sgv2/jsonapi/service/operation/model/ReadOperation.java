@@ -80,9 +80,14 @@ public interface ReadOperation extends Operation {
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query ->
-                queryExecutor.executeRead(
-                    query, Optional.ofNullable(pageState), pageSize, vectorSearch))
+            query -> {
+              if (vectorSearch) {
+                return queryExecutor.executeVectorSearch(
+                    query, Optional.ofNullable(pageState), pageSize);
+              } else {
+                return queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize);
+              }
+            })
         .onItem()
         .transform(
             rSet -> {
@@ -186,11 +191,18 @@ public interface ReadOperation extends Operation {
                     .uni(
                         () -> new AtomicReference<String>(null),
                         stateRef -> {
-                          return queryExecutor
-                              .executeRead(
-                                  q, Optional.ofNullable(stateRef.get()), pageSize, vectorSearch)
-                              .onItem()
-                              .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          if (vectorSearch) {
+                            return queryExecutor
+                                .executeVectorSearch(
+                                    q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .onItem()
+                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          } else {
+                            return queryExecutor
+                                .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .onItem()
+                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          }
                         })
                     // Read document while pageState exists, limit for read is set at updateLimit
                     // +1
@@ -340,7 +352,7 @@ public interface ReadOperation extends Operation {
   default Uni<CountResponse> countDocuments(
       QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
     return queryExecutor
-        .executeRead(simpleStatement, Optional.empty(), 1, false)
+        .executeRead(simpleStatement, Optional.empty(), 1)
         .onItem()
         .transform(
             rSet -> {

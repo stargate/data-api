@@ -42,25 +42,38 @@ public class QueryExecutor {
    * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
    *     subsequent pages
    * @param pageSize - page size
-   * @param vectorSearch - whether the query uses vector search -- use ANN OF
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      SimpleStatement simpleStatement,
-      Optional<String> pagingState,
-      int pageSize,
-      boolean vectorSearch) {
-    if (vectorSearch) {
+      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+    simpleStatement =
+        simpleStatement
+            .setPageSize(pageSize)
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+    if (pagingState.isPresent()) {
       simpleStatement =
-          simpleStatement
-              .setPageSize(pageSize)
-              .setConsistencyLevel(operationsConfig.queriesConfig().consistency().vectorSearch());
-    } else {
-      simpleStatement =
-          simpleStatement
-              .setPageSize(pageSize)
-              .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+          simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+  }
+
+  /**
+   * Execute vector search query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
+   *     subsequent pages
+   * @param pageSize - page size
+   * @return
+   */
+  public Uni<AsyncResultSet> executeVectorSearch(
+      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+    simpleStatement =
+        simpleStatement
+            .setPageSize(pageSize)
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().vectorSearch());
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
