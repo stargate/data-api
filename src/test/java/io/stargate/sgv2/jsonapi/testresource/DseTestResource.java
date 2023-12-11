@@ -17,8 +17,10 @@ public class DseTestResource extends StargateTestResource {
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
+      // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
+      //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-6");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {
@@ -27,6 +29,12 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
+    }
+
+    if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
+      System.setProperty(
+          "cassandra.sai.max_string_term_size_kb",
+          String.valueOf(DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB));
     }
   }
 
@@ -47,7 +55,6 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
-
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
     if (defaultToken != null) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);

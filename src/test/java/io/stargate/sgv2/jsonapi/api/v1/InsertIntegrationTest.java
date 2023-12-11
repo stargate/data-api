@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -653,6 +654,65 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "errors[0].message",
               startsWith(
                   "Document size limitation violated: Number value length (60) exceeds the maximum allowed (50"));
+    }
+
+    @Test
+    public void insertLongestValidString() {
+      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH - 20;
+
+      // Issue with SAI max String length should not require more than 1 doc, so:
+      ObjectNode doc = MAPPER.createObjectNode();
+      final String docId = "docWithLongString";
+      doc.put(DocumentConstants.Fields.DOC_ID, docId);
+      // 1M / 8k means at most 125 max length Strings; add 63 (with _id max of 64
+      // properties per Object)
+      for (int i = 0; i < 63; ++i) {
+        doc.put("text" + i, createBigString(strLen));
+      }
+      _verifyInsert(docId, doc);
+    }
+
+    @Test
+    public void tryInsertTooLongString() {
+      final String tooLongString =
+          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH + 50);
+      String json =
+          """
+                        {
+                          "insertOne": {
+                            "document": {
+                               "_id" : 123,
+                               "bigString" : "%s"
+                            }
+                          }
+                        }
+                        """
+              .formatted(tooLongString);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document size limitation violated: String value length (8056) exceeds maximum allowed"));
+    }
+
+    private String createBigString(int minLen) {
+      // Create random "words" of 7 characters each, and space
+      StringBuilder sb = new StringBuilder(minLen + 8);
+      do {
+        sb.append(RandomStringUtils.randomAlphanumeric(7)).append(' ');
+      } while (sb.length() < minLen);
+      return sb.toString();
     }
 
     @Test
