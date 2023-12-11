@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
-import com.datastax.oss.driver.api.core.NoNodeAvailableException;
-import com.datastax.oss.driver.api.core.NodeUnavailableException;
+import com.datastax.oss.driver.api.core.auth.AuthenticationException;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.grpc.Status;
@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -70,10 +71,40 @@ public final class ThrowableToErrorMapper {
             message = "Mismatched vector dimension";
           }
           return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
-        } else if (throwable instanceof NodeUnavailableException
-            || throwable instanceof DriverException
-            || throwable instanceof AllNodesFailedException
-            || throwable instanceof NoNodeAvailableException) {
+        } else if (throwable instanceof DriverException) {
+          if (throwable instanceof AllNodesFailedException) {
+            Map<Node, List<Throwable>> nodewiseErrors =
+                ((AllNodesFailedException) throwable).getAllErrors();
+            if (!nodewiseErrors.isEmpty()) {
+              List<Throwable> errors = nodewiseErrors.values().iterator().next();
+              if (errors != null && !errors.isEmpty()) {
+                Throwable error =
+                    errors.stream()
+                        .findAny()
+                        .filter(
+                            t ->
+                                t instanceof AuthenticationException
+                                    || t instanceof IllegalArgumentException)
+                        .orElse(null);
+                // connecting to oss cassandra throws AuthenticationException for invalid
+                // credentials connecting to AstraDB throws IllegalArgumentException for invalid
+                // token/credentials
+                if (error instanceof AuthenticationException
+                    || (error instanceof IllegalArgumentException
+                        && (error.getMessage().contains("AUTHENTICATION ERROR")
+                            || error
+                                .getMessage()
+                                .contains(
+                                    "Provided username token and/or password are incorrect")))) {
+                  return new CommandResult.Error(
+                      "UNAUTHENTICATED: Invalid token",
+                      fieldsForMetricsTag,
+                      fields,
+                      Response.Status.UNAUTHORIZED);
+                }
+              }
+            }
+          }
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         } else if (throwable instanceof DriverTimeoutException
