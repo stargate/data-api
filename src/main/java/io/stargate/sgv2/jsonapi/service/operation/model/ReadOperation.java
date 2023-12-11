@@ -62,6 +62,7 @@ public interface ReadOperation extends Operation {
    * @param objectMapper
    * @param projection
    * @param limit - How many documents to return
+   * @param vectorSearch - whether the query uses vector search
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -72,13 +73,21 @@ public interface ReadOperation extends Operation {
       boolean readDocument,
       ObjectMapper objectMapper,
       DocumentProjector projection,
-      int limit) {
+      int limit,
+      boolean vectorSearch) {
 
     return Multi.createFrom()
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query -> queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize))
+            query -> {
+              if (vectorSearch) {
+                return queryExecutor.executeVectorSearch(
+                    query, Optional.ofNullable(pageState), pageSize);
+              } else {
+                return queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize);
+              }
+            })
         .onItem()
         .transform(
             rSet -> {
@@ -155,6 +164,7 @@ public interface ReadOperation extends Operation {
    * @param limit - How many documents to return
    * @param errorLimit - Count of record on which system to error out, this will be (maximum read
    *     count for sort + 1)
+   * @param vectorSearch - whether the query uses vector search
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
@@ -167,7 +177,8 @@ public interface ReadOperation extends Operation {
       int skip,
       int limit,
       int errorLimit,
-      DocumentProjector projection) {
+      DocumentProjector projection,
+      boolean vectorSearch) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()
@@ -180,10 +191,18 @@ public interface ReadOperation extends Operation {
                     .uni(
                         () -> new AtomicReference<String>(null),
                         stateRef -> {
-                          return queryExecutor
-                              .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
-                              .onItem()
-                              .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          if (vectorSearch) {
+                            return queryExecutor
+                                .executeVectorSearch(
+                                    q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .onItem()
+                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          } else {
+                            return queryExecutor
+                                .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .onItem()
+                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                          }
                         })
                     // Read document while pageState exists, limit for read is set at updateLimit
                     // +1
