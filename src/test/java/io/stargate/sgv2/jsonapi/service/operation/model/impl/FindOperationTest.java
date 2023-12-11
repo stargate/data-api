@@ -2199,7 +2199,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2260,7 +2260,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
