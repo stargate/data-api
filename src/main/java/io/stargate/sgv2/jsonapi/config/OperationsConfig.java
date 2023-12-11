@@ -177,7 +177,7 @@ public interface OperationsConfig {
     ConsistencyConfig consistency();
 
     /** @return Serial Consistency for queries. */
-    @WithDefault("SERIAL")
+    @WithDefault("LOCAL_SERIAL")
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
