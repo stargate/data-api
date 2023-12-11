@@ -30,6 +30,12 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
     }
+
+    if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
+      System.setProperty(
+          "cassandra.sai.max_string_term_size_kb",
+          String.valueOf(DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB));
+    }
   }
 
   @Override
@@ -49,7 +55,6 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
-
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
     if (defaultToken != null) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);

@@ -44,8 +44,8 @@ public class ShredderDocLimitsTest {
     @Test
     public void catchTooBigDoc() {
       // Let's construct document above 1 meg limit (but otherwise legal), with
-      // 100 x 10k String values, divided in 10 sub documents of 10 properties
-      final ObjectNode bigDoc = createBigDoc(10, 10);
+      // 144 x 7.5k String values, divided in 12 sub documents of 12 properties
+      final ObjectNode bigDoc = createBigDoc(12, 12);
 
       Exception e = catchException(() -> shredder.shred(bigDoc));
       assertThat(e)
@@ -63,7 +63,7 @@ public class ShredderDocLimitsTest {
       for (int ix1 = 0; ix1 < mainProps; ++ix1) {
         ObjectNode mainProp = bigDoc.putObject("prop" + ix1);
         for (int ix2 = 0; ix2 < subProps; ++ix2) {
-          mainProp.put("sub" + ix2, RandomStringUtils.randomAscii(10_000));
+          mainProp.put("sub" + ix2, RandomStringUtils.randomAscii(7_500));
         }
       }
       return bigDoc;
@@ -243,7 +243,7 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       // Max is 16_000 so do a bit less
-      doc.put("text", RandomStringUtils.randomAscii(12_000));
+      doc.put("text", RandomStringUtils.randomAscii(7_500));
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
