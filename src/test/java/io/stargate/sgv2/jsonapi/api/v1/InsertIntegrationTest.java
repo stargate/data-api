@@ -1372,6 +1372,49 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
+  @Order(4)
+  class InsertManyFailing {
+    @Test
+    public void tryInsertTooLongNumber() {
+      // Max number length: 50; use 100
+      String tooLongNumStr = "1234567890".repeat(10);
+
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "_id": "manyTooLong1",
+                      "value": 123
+                    },
+                    {
+                      "_id": "manyTooLong2",
+                       "value": %s
+                    }
+                  ]
+                }
+              }
+              """
+              .formatted(tooLongNumStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: Number value length"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"));
+    }
+  }
+
+  @Nested
   @Order(99)
   class Metrics {
     @Test
