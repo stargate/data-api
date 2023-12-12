@@ -658,7 +658,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void insertLongestValidString() {
-      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH - 20;
+      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH_IN_BYTES - 20;
 
       // Issue with SAI max String length should not require more than 1 doc, so:
       ObjectNode doc = MAPPER.createObjectNode();
@@ -675,7 +675,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void tryInsertTooLongString() {
       final String tooLongString =
-          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH + 50);
+          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH_IN_BYTES + 50);
       String json =
           """
                         {
@@ -703,7 +703,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: String value length (8056) exceeds maximum allowed"));
+                  "Document size limitation violated: String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {

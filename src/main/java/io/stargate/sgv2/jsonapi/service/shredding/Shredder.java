@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -349,14 +350,16 @@ public class Shredder {
 
   private void validateStringValue(DocumentLimitsConfig limits, JsonNode stringValue) {
     final String value = stringValue.textValue();
-    if (value.length() > limits.maxStringLength()) {
+    OptionalInt encodedLength =
+        JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
+    if (encodedLength.isPresent()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
-              "%s: String value length (%d) exceeds maximum allowed (%s)",
+              "%s: String value length (%d bytes) exceeds maximum allowed (%d bytes)",
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              value.length(),
-              limits.maxStringLength()));
+              encodedLength.getAsInt(),
+              limits.maxStringLengthInBytes()));
     }
   }
 

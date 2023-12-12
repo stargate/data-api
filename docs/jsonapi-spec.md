@@ -408,10 +408,10 @@ has 3 fields: `root`, `root.branch`, and `root.branch.leaf`, for purposes of thi
 
 The maximum size of field values are:
 
-| JSON Type | Maximum Value                              |
-|-----------|--------------------------------------------|
-| `string`  | Maximum length of 8,000 unicode characters |
-| `number`  | Maximum length of 50 number characters     |
+| JSON Type | Maximum Value                                 |
+|-----------|-----------------------------------------------|
+| `string`  | Maximum length of 8,000 bytes (UTF-8 encoded) |
+| `number`  | Maximum length of 50 number characters        |
 
 #### Document Array Limits
 

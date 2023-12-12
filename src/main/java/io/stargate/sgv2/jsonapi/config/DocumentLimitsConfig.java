@@ -40,10 +40,10 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 48;
 
   /**
-   * Defines the default maximum length of a single String value: 8,000 characters with 1.0.0-BETA-6
-   * and later (16,000 before)
+   * Defines the default maximum length of a single String value: 8,000 bytes with 1.0.0-BETA-6 and
+   * later (16,000 characters before)
    */
-  int DEFAULT_MAX_STRING_LENGTH = 8_000;
+  int DEFAULT_MAX_STRING_LENGTH_IN_BYTES = 8_000;
 
   /**
    * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
@@ -96,10 +96,10 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_NUMBER_LENGTH)
   int maxNumberLength();
 
-  /** @return Defines the maximum length of a single String value. */
+  /** @return Defines the maximum length of a single String value (in bytes). */
   @Positive
-  @WithDefault("" + DEFAULT_MAX_STRING_LENGTH)
-  int maxStringLength();
+  @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
+  int maxStringLengthInBytes();
 
   /** @return Maximum length of an array. */
   @Positive
