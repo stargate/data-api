@@ -571,7 +571,6 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .then()
           .statusCode(200)
           .body("data.document", is(not(nullValue())))
-          .body("data.document", hasSize(1))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }

@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -51,8 +50,6 @@ public class QueryExecutor {
         simpleStatement
             .setPageSize(pageSize)
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    Log.error(
-        " cql " + simpleStatement.getQuery() + " values " + simpleStatement.getPositionalValues());
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
