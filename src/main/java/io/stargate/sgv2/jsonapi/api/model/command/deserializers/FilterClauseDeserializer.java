@@ -175,11 +175,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         }
         case NIN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
-            if (list.size() > operationsConfig.maxNinOperatorValueSize()) {
+            if (list.size() > operationsConfig.maxInOperatorValueSize()) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$nin operator must have at most "
-                      + operationsConfig.maxNinOperatorValueSize()
+                      + operationsConfig.maxInOperatorValueSize()
                       + " values");
             }
           } else {

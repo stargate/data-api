@@ -85,17 +85,11 @@ public interface OperationsConfig {
   @WithDefault("20")
   int maxDocumentInsertCount();
 
-  /** @return Maximum size of values array that can be sent in $in operator */
+  /** @return Maximum size of values array that can be sent in $in/$nin operator */
   @Max(100)
   @Positive
   @WithDefault("100")
   int maxInOperatorValueSize();
-
-  /** @return Maximum size of values array that can be sent in $in operator */
-  @Max(100)
-  @Positive
-  @WithDefault("100")
-  int maxNinOperatorValueSize();
 
   /**
    * @return Maximum size of documents returned with vector search, max value supported in cassandra

@@ -19,10 +19,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -70,7 +67,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
        */
       MAP_EQUALS,
       /**
-       * This represents eq to be run against map type index columns like array_size, sub_doc_equals
+       * This represents ne to be run against map type index columns like array_size, sub_doc_equals
        * and array_equals.
        */
       MAP_NOT_EQUALS,
@@ -270,7 +267,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
       EQ,
-      IN;
+      NE,
+      IN
     }
 
     protected final IDFilter.Operator operator;
@@ -313,6 +311,25 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                   BuiltCondition.LHS.column("key"),
                   Predicate.EQ,
                   new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
+        case NE:
+          final DocumentId documentId = (DocumentId) values.get(0);
+          if (documentId.value() instanceof BigDecimal numberId) {
+            return List.of(
+                BuiltCondition.of(
+                    BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                    Predicate.NEQ,
+                    new JsonTerm(DOC_ID, numberId)));
+          } else if (documentId.value() instanceof String strId) {
+            return List.of(
+                BuiltCondition.of(
+                    BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                    Predicate.NEQ,
+                    new JsonTerm(DOC_ID, strId)));
+          } else {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format("Unsupported $ne operand value : %s", documentId.value()));
+          }
         case IN:
           if (values.isEmpty()) return List.of();
           return values.stream()
@@ -414,17 +431,33 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                             new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
                 .collect(Collectors.toList());
           } else {
-            //            List<DocumentId> documentIdList = (List<DocumentId>) values;
-            return values.stream()
-                .map(
-                    v ->
-                        BuiltCondition.of(
-                            BuiltCondition.LHS.mapAccess(QUERY_TEXT_MAP_COLUMN_NAME, Values.NULL),
-                            Predicate.NEQ,
-                            // _id value is deserialized with single quote
-                            new JsonTerm(
-                                DOC_ID, v.toString().substring(1, v.toString().length() - 1))))
-                .collect(Collectors.toList());
+            // can not use stream here, since lambda parameter casting is not allowed
+            List<BuiltCondition> conditions = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof DocumentId) {
+                Object docIdValue = ((DocumentId) value).value();
+                if (docIdValue instanceof BigDecimal numberId) {
+                  BuiltCondition condition =
+                      BuiltCondition.of(
+                          BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                          Predicate.NEQ,
+                          new JsonTerm(DOC_ID, numberId));
+                  conditions.add(condition);
+                } else if (docIdValue instanceof String strId) {
+                  BuiltCondition condition =
+                      BuiltCondition.of(
+                          BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                          Predicate.NEQ,
+                          new JsonTerm(DOC_ID, strId));
+                  conditions.add(condition);
+                } else {
+                  throw new JsonApiException(
+                      ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                      String.format("Unsupported $nin operand value: %s", docIdValue));
+                }
+              }
+            }
+            return conditions;
           }
         default:
           throw new JsonApiException(

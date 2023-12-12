@@ -186,14 +186,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                     (DocumentId) filterOperation.operand().value()));
             break;
           case NE:
-            final String docIdWithSingleQuote =
-                ((DocumentId) filterOperation.operand().value()).toString();
             filters.add(
-                new DBFilterBase.TextFilter(
-                    captureExpression.path(),
-                    DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS,
-                    // _id value is deserialized with single quote
-                    docIdWithSingleQuote.substring(1, docIdWithSingleQuote.length() - 1)));
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.NE,
+                    (DocumentId) filterOperation.operand().value()));
             break;
           default:
             throw new JsonApiException(
@@ -202,7 +198,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                     "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
         }
       }
-
       if (captureExpression.marker() == ID_GROUP_IN) {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case IN:

@@ -37,7 +37,7 @@ public class ExpressionBuilder {
     return expressionBuiltResult;
   }
 
-  // buildExpressionWithId only handles IDFilter ($eq, $in)
+  // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
   private static ExpressionBuiltResult buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
@@ -67,7 +67,7 @@ public class ExpressionBuilder {
       return new ExpressionBuiltResult(null, false); // should find nothing
     }
 
-    // $in, idFilter's operator is IN or EQ, for both, split into n query logic
+    // idFilter's operator is IN/EQ/NE, for both, split into n query logic
     List<BuiltCondition> inSplit =
         idFilters.isEmpty() ? new ArrayList<>() : idFilters.get(0).getAll();
     if (additionalIdFilter != null) {

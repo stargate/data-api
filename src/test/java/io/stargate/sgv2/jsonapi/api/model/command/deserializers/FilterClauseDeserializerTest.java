@@ -940,7 +940,7 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "$nin operator must have at most "
-                            + operationsConfig.maxNinOperatorValueSize()
+                            + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
     }
