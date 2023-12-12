@@ -975,7 +975,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
     }
 
     @Test
-    public void updateWithTooLongNumber() {
+    public void tryUpdateWithTooLongNumber() {
       insertDoc(
           """
                       {

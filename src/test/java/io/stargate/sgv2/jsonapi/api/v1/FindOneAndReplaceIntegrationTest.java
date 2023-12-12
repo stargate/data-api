@@ -689,7 +689,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
   @Order(3)
   class FindOneAndReplaceFailing {
     @Test
-    public void byIdWithDifferentId() {
+    public void tryReplaceWithTooLongNumber() {
       String document =
           """
                 {
