@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -11,6 +12,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 public class JsonUtil {
   public static final String EJSON_VALUE_KEY_DATE = "$date";
@@ -144,5 +146,32 @@ public class JsonUtil {
 
   public static Date createDateFromDocumentId(DocumentId documentId) {
     return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
+  }
+
+  /**
+   * Utility method to check whether UTF-8 encoded length of given String is above given maximum
+   * length, and if so, return actual length (in bytes); otherwise return {@code
+   * OptionalInt.empty()}. This is faster than encoding String as byte[] and checking length as it
+   * not only avoids unnecessary allocation of potentially long String, but also avoids exact
+   * calculation for shorter Strings where we can determine that size cannot exceed the limit (since
+   * we know that UTF-8 encoded length is at most 3x of char length).
+   *
+   * @param value String to check
+   * @param maxLengthInBytes Maximum length in bytes allowed (inclusive)
+   * @return {@code OptionalInt.empty()} if {@code value} is at most {@code maxLengthInBytes};
+   *     actual length if above {@code maxLengthInBytes}.
+   */
+  public static OptionalInt lengthInBytesIfAbove(String value, int maxLengthInBytes) {
+    // First, a quick and cheap check: maximum expansion is 3x, so avoid check if
+    // we know it cannot expand enough to be too long
+    final int charLen = value.length();
+    if ((charLen * 3) > maxLengthInBytes) {
+      // Otherwise calculate actual length, but avoid byte[] allocation:
+      int byteLen = Utf8.encodedLength(value);
+      if (byteLen > maxLengthInBytes) {
+        return OptionalInt.of(byteLen);
+      }
+    }
+    return OptionalInt.empty();
   }
 }

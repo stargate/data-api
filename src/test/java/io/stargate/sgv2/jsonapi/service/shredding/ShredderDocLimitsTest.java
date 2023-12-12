@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -242,18 +243,19 @@ public class ShredderDocLimitsTest {
     public void allowNotTooLongStringValues() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      // Max is 16_000 so do a bit less
-      doc.put("text", RandomStringUtils.randomAscii(7_500));
+      // Use ASCII to keep chars == bytes, use length of just slight below max allowed
+      doc.put("text", RandomStringUtils.randomAscii(docLimits.maxStringLengthInBytes() - 100));
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
-    public void catchTooLongStringValues() {
+    public void catchTooLongStringValueAscii() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ArrayNode arr = doc.putArray("arr");
-      // Let's add 50_000 char one (exceeds max of 16_000)
-      String str = RandomStringUtils.randomAscii(50_000);
+      // Use ASCII to keep chars == bytes, use length of just above max allowed
+      final int tooLongLength = docLimits.maxStringLengthInBytes() + 100;
+      String str = RandomStringUtils.randomAscii(tooLongLength);
       arr.add(str);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -263,9 +265,43 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value length (50000) exceeds maximum allowed ("
-                  + docLimits.maxStringLength()
-                  + ")");
+              " String value length ("
+                  + tooLongLength
+                  + " bytes) exceeds maximum allowed ("
+                  + docLimits.maxStringLengthInBytes()
+                  + " bytes)");
+    }
+
+    // Test to ensure that maximum String length validation catches case where
+    // character length is below maximum byte length but byte length is above it.
+    @Test
+    public void catchTooLongStringValueUTF8() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      // Repeat a 3-byte sequence enough times to exceed maximum
+      final int tooLongCharLength = (docLimits.maxStringLengthInBytes() / 3) + 20;
+      // Unicode char "न" (Devanagari script, U+0928), requires 3 bytes to encode
+      String tooLongString = "\u0928".repeat(tooLongCharLength);
+      doc.put("text", tooLongString);
+
+      // First just validate constraints: String we have has character length BELOW
+      // max length, and byte length ABOVE max length:
+      assertThat(tooLongString).hasSizeLessThan(docLimits.maxStringLengthInBytes());
+      assertThat(tooLongString.getBytes(StandardCharsets.UTF_8))
+          .hasSizeGreaterThan(docLimits.maxStringLengthInBytes());
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " String value length ("
+                  + (tooLongCharLength * 3)
+                  + " bytes) exceeds maximum allowed ("
+                  + docLimits.maxStringLengthInBytes()
+                  + " bytes)");
     }
 
     // Since max-number-len is handled at low-level, it's not strictly speaking

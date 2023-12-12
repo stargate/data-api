@@ -658,7 +658,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void insertLongestValidString() {
-      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH - 20;
+      final int strLen = DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH_IN_BYTES - 20;
 
       // Issue with SAI max String length should not require more than 1 doc, so:
       ObjectNode doc = MAPPER.createObjectNode();
@@ -675,7 +675,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void tryInsertTooLongString() {
       final String tooLongString =
-          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH + 50);
+          createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH_IN_BYTES + 50);
       String json =
           """
                         {
@@ -703,7 +703,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: String value length (8056) exceeds maximum allowed"));
+                  "Document size limitation violated: String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -1368,6 +1368,49 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds", hasSize(2))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(4)
+  class InsertManyFailing {
+    @Test
+    public void tryInsertTooLongNumber() {
+      // Max number length: 50; use 100
+      String tooLongNumStr = "1234567890".repeat(10);
+
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "_id": "manyTooLong1",
+                      "value": 123
+                    },
+                    {
+                      "_id": "manyTooLong2",
+                       "value": %s
+                    }
+                  ]
+                }
+              }
+              """
+              .formatted(tooLongNumStr);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: Number value length"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"));
     }
   }
 

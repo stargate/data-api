@@ -973,6 +973,44 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
+
+    @Test
+    public void tryUpdateWithTooLongNumber() {
+      insertDoc(
+          """
+                      {
+                        "_id": "update_doc_too_long_number",
+                        "value": 123
+                      }
+                      """);
+
+      // Max number length: 50; use 100
+      String tooLongNumStr = "1234567890".repeat(10);
+      String json =
+          """
+                      {
+                        "findOneAndUpdate": {
+                          "filter" : {"_id" : "update_doc_too_long_number"},
+                          "update" : {"$set" : {"value": %s}}
+                        }
+                      }
+                      """
+              .formatted(tooLongNumStr);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: Number value length"));
+    }
   }
 
   @Nested
@@ -1794,7 +1832,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
   }
 
   @Nested
-  @Order(8)
+  @Order(99)
   class Metrics {
     @Test
     public void checkMetrics() {
