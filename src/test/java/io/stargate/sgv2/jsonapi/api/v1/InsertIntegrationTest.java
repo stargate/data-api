@@ -1376,8 +1376,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertManyFailing {
     @Test
     public void tryInsertTooLongNumber() {
-      // Max number length: 50; use 60
-      String tooLongNumStr = "1234567890".repeat(6);
+      // Max number length: 50; use 100
+      String tooLongNumStr = "1234567890".repeat(10);
 
       String json =
           """
