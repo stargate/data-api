@@ -396,9 +396,8 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    final List<Expression<BuiltCondition>> expressions = expressionBuiltResult.expressions();
     if (expressions == null) { // find nothing
       return List.of();
     }
@@ -414,7 +413,6 @@ public record FindOperation(
                     .from(commandContext.namespace(), commandContext.collection())
                     .where(expression)
                     .limit(limit)
-                    .allowFiltering(expressionBuiltResult.allowFiltering())
                     .build();
             final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
             queries.add(simpleStatement.setPositionalValues(collect));
@@ -507,9 +505,8 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    final ExpressionBuilder.ExpressionBuiltResult expressionBuiltResult =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
-    final List<Expression<BuiltCondition>> expressions = expressionBuiltResult.expressions();
     if (expressions == null) { // find nothing
       return List.of();
     }
@@ -532,7 +529,6 @@ public record FindOperation(
                   .from(commandContext.namespace(), commandContext.collection())
                   .where(expression)
                   .limit(maxSortReadLimit())
-                  .allowFiltering(expressionBuiltResult.allowFiltering())
                   .build();
           final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
           queries.add(simpleStatement.setPositionalValues(collect));

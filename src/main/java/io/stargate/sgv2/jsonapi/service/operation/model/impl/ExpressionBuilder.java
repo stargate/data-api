@@ -15,14 +15,11 @@ import java.util.stream.Collectors;
 
 public class ExpressionBuilder {
 
-  public record ExpressionBuiltResult(
-      List<Expression<BuiltCondition>> expressions, Boolean allowFiltering) {}
-
-  public static ExpressionBuiltResult buildExpressions(
+  public static List<Expression<BuiltCondition>> buildExpressions(
       LogicalExpression logicalExpression, DBFilterBase.IDFilter additionalIdFilter) {
     // an empty filter should find everything
     if (logicalExpression.isEmpty() && additionalIdFilter == null) {
-      return new ExpressionBuiltResult(Collections.singletonList(null), false);
+      return Collections.singletonList(null);
     }
     // after validate in FilterClauseDeserializer,
     // partition key column key will not be nested under OR operator
@@ -32,13 +29,13 @@ public class ExpressionBuilder {
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
         buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
-    ExpressionBuiltResult expressionBuiltResult =
+    List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
-    return expressionBuiltResult;
+    return expressions;
   }
 
   // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
-  private static ExpressionBuiltResult buildExpressionWithId(
+  private static List<Expression<BuiltCondition>> buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
@@ -50,10 +47,9 @@ public class ExpressionBuilder {
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
         // no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
-        return new ExpressionBuiltResult(
-            Collections.singletonList(null), false); // should find everything
+        return Collections.singletonList(null); // should find everything
       } else {
-        return new ExpressionBuiltResult(List.of(expressionWithoutId), false);
+        return List.of(expressionWithoutId);
       }
     }
 
@@ -64,7 +60,7 @@ public class ExpressionBuilder {
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
     if (idFilter.operator == DBFilterBase.IDFilter.Operator.IN && idFilter.getAll().isEmpty()) {
-      return new ExpressionBuiltResult(null, false); // should find nothing
+      return null; // should find nothing
     }
 
     // idFilter's operator is IN/EQ/NE, for both, split into n query logic
@@ -82,9 +78,7 @@ public class ExpressionBuilder {
                       : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId);
               return newExpression;
             })
-        .collect(
-            Collectors.collectingAndThen(
-                Collectors.toList(), expressions -> new ExpressionBuiltResult(expressions, false)));
+        .collect(Collectors.toList());
   }
 
   private static Expression<BuiltCondition> buildExpressionRecursive(
