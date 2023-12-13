@@ -80,12 +80,13 @@ public interface ReadOperation extends Operation {
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query -> {
+            simpleStatement -> {
               if (vectorSearch) {
                 return queryExecutor.executeVectorSearch(
-                    query, Optional.ofNullable(pageState), pageSize);
+                    simpleStatement, Optional.ofNullable(pageState), pageSize);
               } else {
-                return queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize);
+                return queryExecutor.executeRead(
+                    simpleStatement, Optional.ofNullable(pageState), pageSize);
               }
             })
         .onItem()
