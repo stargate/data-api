@@ -13,10 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -472,6 +469,76 @@ public class FilterClauseDeserializerTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.SUB_DOC))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleArrayNe() throws Exception {
+      String json = """
+         {"col" : {"$ne": ["1","2"]}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "col",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE,
+                      new JsonLiteral(List.of("1", "2"), JsonType.ARRAY))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleArrayEq() throws Exception {
+      String json = """
+         {"col" : {"$eq": ["3","4"]}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "col",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(List.of("3", "4"), JsonType.ARRAY))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleSubDocNe() throws Exception {
+      String json = """
+         {"sub_doc" : {"$ne" : {"col": 2}}}
+        """;
+      Map<String, Object> value = new LinkedHashMap<>();
+      value.put("col", new BigDecimal(2));
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "sub_doc",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral(value, JsonType.SUB_DOC))),
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
