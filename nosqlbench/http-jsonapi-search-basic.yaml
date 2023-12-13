@@ -16,6 +16,7 @@ scenarios:
     main: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
   get:
     get-eq: run driver=http tags==name:main--main-get-eq,filter:eq cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-ne: run driver=http tags==name:main--main-get-ne,filter:ne cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-lt: run driver=http tags==name:main--main-get-lt cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-and: run driver=http tags==name:main--main-get-and cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-or: run driver=http tags==name:main--main-get-or cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
@@ -164,10 +165,33 @@ blocks:
                 "match3" : {"$eq":true}
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
-          }        
+          }       
+
+      # where={"match3":{"$ne":true}}
+      rampup-get-ne:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_basic>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match3" : {"$ne":true}
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }                 
+
 
       # where={"match1":{"$lt":1}}
       rampup-get-lt:
@@ -209,7 +233,7 @@ blocks:
                 "match2" : {"$eq":"true"}
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -234,7 +258,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -259,7 +283,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -283,7 +307,7 @@ blocks:
                 "match3" : {"$eq":true}
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -305,7 +329,7 @@ blocks:
                 "match1" : {"$lt":1}
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -328,7 +352,7 @@ blocks:
                 "match2" : {"$eq":"true"}
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -353,7 +377,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -378,7 +402,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
