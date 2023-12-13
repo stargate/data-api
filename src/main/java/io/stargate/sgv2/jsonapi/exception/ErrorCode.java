@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
+  INVALID_REQUST("Request not supported by the data store"),
 
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
