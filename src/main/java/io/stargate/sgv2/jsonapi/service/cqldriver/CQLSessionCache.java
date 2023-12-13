@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.DriverException;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -16,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +90,8 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+  private CqlSession getNewSession(SessionCacheKey cacheKey)
+      throws ExecutionException, InterruptedException {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -103,20 +108,52 @@ public class CQLSessionCache {
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
 
-      return new TenantAwareCqlSessionBuilder(
-              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .addContactPoints(seeds)
-          .withAuthCredentials(
-              Objects.requireNonNull(databaseConfig.userName()),
-              Objects.requireNonNull(databaseConfig.password()))
-          .build();
+      try {
+        return Uni.createFrom()
+            .completionStage(
+                new TenantAwareCqlSessionBuilder(
+                        stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+                    .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+                    .addContactPoints(seeds)
+                    .withAuthCredentials(
+                        Objects.requireNonNull(databaseConfig.userName()),
+                        Objects.requireNonNull(databaseConfig.password()))
+                    .buildAsync())
+            .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+            .subscribe()
+            .asCompletionStage()
+            .get();
+      } catch (InterruptedException | ExecutionException ie) {
+        // this is to unwrap any driver exception so this can be mapped appropriately in the
+        // ThrowableToErrorMapper.java
+        if (ie.getCause() != null && ie.getCause() instanceof DriverException) {
+          throw (DriverException) ie.getCause();
+        }
+        throw ie;
+      }
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
-          .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .build();
+      try {
+        return Uni.createFrom()
+            .completionStage(
+                new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
+                    .withAuthCredentials(
+                        TOKEN,
+                        Objects.requireNonNull(
+                            stargateRequestInfo.getCassandraToken().orElseThrow()))
+                    .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+                    .buildAsync())
+            .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+            .subscribe()
+            .asCompletionStage()
+            .get();
+      } catch (InterruptedException | ExecutionException ie) {
+        // this is to unwrap any driver exception so this can be mapped appropriately in the
+        // ThrowableToErrorMapper.java
+        if (ie.getCause() != null && ie.getCause() instanceof DriverException) {
+          throw (DriverException) ie.getCause();
+        }
+        throw ie;
+      }
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
