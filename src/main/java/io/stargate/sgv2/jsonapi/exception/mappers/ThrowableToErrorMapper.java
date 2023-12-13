@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -74,7 +75,8 @@ public final class ThrowableToErrorMapper {
           fields = Map.of("errorCode", ErrorCode.INVALID_REQUST.name());
           return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverTimeoutException
-            || throwable instanceof WriteTimeoutException) {
+            || throwable instanceof WriteTimeoutException
+            || throwable instanceof ReadTimeoutException) {
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
         } else if (throwable instanceof DriverException) {
