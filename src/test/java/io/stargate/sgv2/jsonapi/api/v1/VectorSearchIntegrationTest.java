@@ -839,6 +839,35 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
+    @Order(4)
+    public void failWithZerosVector() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : "1"},
+            "sort" : {"$vector" : [0.0,0.0,0.0,0.0,0.0]}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUST"))
+          .body(
+              "errors[0].message",
+              endsWith("Zero vectors cannot be indexed or queried with cosine similarity"));
+    }
+
+    @Test
     @Order(5)
     public void failWithInvalidVectorElements() {
       String json =

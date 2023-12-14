@@ -27,6 +27,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -620,6 +621,17 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNumber");
       doc.put("num", new BigInteger(LONGEST_NUM));
       _verifyInsert("docWithLongNumber", doc);
+    }
+
+    // For [json-api#726]: avoid "too long number" due to BigDecimal conversion from
+    // Engineering/Scientific notation
+    @Test
+    public void insertLongScientificNumber() {
+      final BigDecimal BIG_NUMBER = new BigDecimal("2.0635595263889274e-35");
+      ObjectNode doc = MAPPER.createObjectNode();
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongScientificNumber");
+      doc.put("num", BIG_NUMBER);
+      _verifyInsert("docWithLongScientificNumber", doc);
     }
 
     @Test
