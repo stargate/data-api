@@ -64,6 +64,8 @@ public enum ErrorCode {
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
+  TOO_MANY_INDEXES("Too many indexes"),
+
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
