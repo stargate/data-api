@@ -30,7 +30,8 @@ class CreateTooManyCollectionsIntegrationTest extends AbstractNamespaceIntegrati
   static final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
 
   // Defaults are changed in `StargateTestResource`, need override to reset back to defaults:
-  static class MyTestResource extends DseTestResource {
+  public static class MyTestResource extends DseTestResource {
+    @Override
     protected int getMaxCollectionsPerDBOverride() {
       return MAX_COLLECTIONS;
     }
