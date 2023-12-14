@@ -73,11 +73,27 @@ public class StargateTestResource
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
 
+      // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
+      propsBuilder.put(
+          "stargate.database.limits.max-collections",
+          String.valueOf(getMaxCollectionsPerDBOverride()));
+      propsBuilder.put(
+          "stargate.database.limits.indexes-available-per-database",
+          String.valueOf(getIndexesPerDBOverride()));
+
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
       LOG.info("Using props map for the integration tests: %s".formatted(props));
       return props;
     }
+  }
+
+  protected int getMaxCollectionsPerDBOverride() {
+    return 10;
+  }
+
+  protected int getIndexesPerDBOverride() {
+    return 100;
   }
 
   private boolean shouldSkip() {
