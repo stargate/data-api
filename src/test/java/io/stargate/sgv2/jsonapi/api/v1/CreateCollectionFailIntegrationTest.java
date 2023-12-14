@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 /**
- * Since Collection creation failures due to maximum limits check across whole DB
- * not just Namespace, cannot isolate within main {@code CreateCollectionIntegrationTest}
- * but need separate IT class.
+ * Since Collection creation failures due to maximum limits check across whole DB not just
+ * Namespace, cannot isolate within main {@code CreateCollectionIntegrationTest} but need separate
+ * IT class.
  */
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
