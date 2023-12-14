@@ -33,8 +33,9 @@ class CreateCollectionFailIntegrationTest extends AbstractNamespaceIntegrationTe
     public void enforceMaxCollections() {
       // Cannot @Inject configs into ITs so rely on constant for default values:
       final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
-      // Now that we are isolated, can just use the default namespace
-      final String NS = namespaceName;
+      // Don't use auto-generated namespace that rest of the test uses
+      final String NS = "ns_too_many_collections";
+      createNamespace(NS);
       final String createTemplate =
           """
               {
