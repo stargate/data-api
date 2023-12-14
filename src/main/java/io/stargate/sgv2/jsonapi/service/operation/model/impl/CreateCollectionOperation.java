@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +36,8 @@ public record CreateCollectionOperation(
     String vectorFunction,
     String vectorize)
     implements Operation {
+  // shared matcher instance used to tell Collections from Tables
+  private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
@@ -192,20 +195,19 @@ public record CreateCollectionOperation(
     }
     // Otherwise we need to check if we can create a new Collection based on limits;
     // limits are calculated across the whole Database, so all Keyspaces need to be checked.
-    List<TableMetadata> allTables =
+    final List<TableMetadata> allTables =
         allKeyspaces.values().stream()
             .map(keyspace -> keyspace.getTables().values())
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
-
-    // !!! TODO: filter out non-Collection tables
+    final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
-    if (allTables.size() >= MAX_COLLECTIONS) {
+    if (collectionCount >= MAX_COLLECTIONS) {
       throw new JsonApiException(
           ErrorCode.TOO_MANY_COLLECTIONS,
           String.format(
               "%s: number of collections in database cannot exceed %d, already have %d",
-              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, allTables.size()));
+              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount));
     }
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
@@ -214,7 +216,7 @@ public record CreateCollectionOperation(
       throw new JsonApiException(
           ErrorCode.TOO_MANY_INDEXES,
           String.format(
-              "%s: cannot create a new Collection; %d indexes already created in database, maximum %d",
+              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
               ErrorCode.TOO_MANY_INDEXES.getMessage(),
               saisUsed,
               dbLimitsConfig.indexesAvailablePerDatabase()));
