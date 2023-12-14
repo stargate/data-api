@@ -80,12 +80,13 @@ public interface ReadOperation extends Operation {
         .items(queries.stream())
         .onItem()
         .transformToUniAndMerge(
-            query -> {
+            simpleStatement -> {
               if (vectorSearch) {
                 return queryExecutor.executeVectorSearch(
-                    query, Optional.ofNullable(pageState), pageSize);
+                    simpleStatement, Optional.ofNullable(pageState), pageSize);
               } else {
-                return queryExecutor.executeRead(query, Optional.ofNullable(pageState), pageSize);
+                return queryExecutor.executeRead(
+                    simpleStatement, Optional.ofNullable(pageState), pageSize);
               }
             })
         .onItem()
@@ -113,7 +114,7 @@ public interface ReadOperation extends Operation {
                           row.getUuid(1), // tx_id
                           root);
                 } catch (JsonProcessingException e) {
-                  throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
+                  throw parsingExceptionToApiException(e);
                 }
                 documents.add(document);
               }
@@ -373,8 +374,18 @@ public interface ReadOperation extends Operation {
         return objectMapper.readTree(docJsonValue);
       } catch (JsonProcessingException e) {
         // These are data stored in the DB so the error should never happen
-        throw new JsonApiException(ErrorCode.DOCUMENT_UNPARSEABLE);
+        throw parsingExceptionToApiException(e);
       }
     }
+  }
+
+  /**
+   * Helper method to handle details of exactly how much information to include in error message.
+   */
+  static JsonApiException parsingExceptionToApiException(JsonProcessingException e) {
+    return new JsonApiException(
+        ErrorCode.DOCUMENT_UNPARSEABLE,
+        String.format(
+            "%s: %s", ErrorCode.DOCUMENT_UNPARSEABLE.getMessage(), e.getOriginalMessage()));
   }
 }
