@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
 /**
  * A retry policy that retries to the same node in the query plan. DefaultRetryPolicy retries to the
  * next node in the query plan in some of the error cases and this implementation overrides that
- * behavior.
+ * behavior. This is useful when we have a proxy like cqlrouter to communicate with the backend
+ * cassandra.
  */
 public class SameNodeRetryPolicy extends DefaultRetryPolicy {
 
