@@ -50,8 +50,14 @@ public class ObjectMapperConfiguration {
         // Verify uniqueness of JSON Object properties
         .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
 
-        // Prevent use of Engineering Notation with trailing zeroes:
-        .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
+        /* 12-Dec-2023, tatu: Must not force use of Plain notation because
+         *  that caused: https://github.com/stargate/jsonapi/issues/726
+         *  where we can insert numbers that are not round-trippable
+         *  as they get expanded from more compact Engineering/Scientific
+         *  notation to longer Plain notation; effectively creating "unreadable"
+         *  Documents.
+         */
+        .disable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
         .build();
   }
 }
