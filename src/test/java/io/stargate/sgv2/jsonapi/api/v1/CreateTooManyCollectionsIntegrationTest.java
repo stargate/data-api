@@ -23,16 +23,24 @@ import org.junit.jupiter.api.TestClassOrder;
  * IT class.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@QuarkusTestResource(CreateTooManyCollectionsIntegrationTest.MyTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionFailIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateTooManyCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+  // Cannot @Inject configs into ITs so rely on constant for default values:
+  static final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
+
+  // Defaults are changed in `StargateTestResource`, need override to reset back to defaults:
+  static class MyTestResource extends DseTestResource {
+    protected int getMaxCollectionsPerDBOverride() {
+      return MAX_COLLECTIONS;
+    }
+  }
+
   @Nested
   @Order(1)
   class TooManyCollections {
     @Test
     public void enforceMaxCollections() {
-      // Cannot @Inject configs into ITs so rely on constant for default values:
-      final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
       // Don't use auto-generated namespace that rest of the test uses
       final String NS = "ns_too_many_collections";
       createNamespace(NS);

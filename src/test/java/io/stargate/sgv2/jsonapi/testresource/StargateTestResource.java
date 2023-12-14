@@ -88,14 +88,6 @@ public class StargateTestResource
     }
   }
 
-  protected int getMaxCollectionsPerDBOverride() {
-    return 10;
-  }
-
-  protected int getIndexesPerDBOverride() {
-    return 100;
-  }
-
   private boolean shouldSkip() {
     return System.getProperty("quarkus.http.test-host") != null;
   }
@@ -264,6 +256,14 @@ public class StargateTestResource
     } catch (Exception var9) {
       throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
     }
+  }
+
+  protected int getMaxCollectionsPerDBOverride() {
+    return 10;
+  }
+
+  protected int getIndexesPerDBOverride() {
+    return 100;
   }
 
   interface Defaults {
