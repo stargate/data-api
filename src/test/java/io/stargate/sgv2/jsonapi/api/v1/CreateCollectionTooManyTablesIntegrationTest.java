@@ -18,14 +18,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 /**
- * Since Collection creation failures due to maximum limits check across whole DB not just
- * Namespace, cannot isolate within main {@code CreateCollectionIntegrationTest} but need separate
- * IT class.
+ * Separate integration test from {@code CreateCollectionIntegrationTest} to test case of too many
+ * Collections per DB being created.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(CreateTooManyCollectionsIntegrationTest.MyTestResource.class)
+@QuarkusTestResource(CreateCollectionTooManyTablesIntegrationTest.MyTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateTooManyCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   // Cannot @Inject configs into ITs so rely on constant for default values:
   static final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
 
