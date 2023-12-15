@@ -32,7 +32,7 @@ class CreateTooManyCollectionsIntegrationTest extends AbstractNamespaceIntegrati
   // Defaults are changed in `StargateTestResource`, need override to reset back to defaults:
   public static class MyTestResource extends DseTestResource {
     @Override
-    protected int getMaxCollectionsPerDBOverride() {
+    public int getMaxCollectionsPerDBOverride() {
       return MAX_COLLECTIONS;
     }
   }

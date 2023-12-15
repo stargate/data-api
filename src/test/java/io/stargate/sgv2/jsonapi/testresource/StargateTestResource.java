@@ -258,11 +258,11 @@ public class StargateTestResource
     }
   }
 
-  protected int getMaxCollectionsPerDBOverride() {
+  public int getMaxCollectionsPerDBOverride() {
     return 10;
   }
 
-  protected int getIndexesPerDBOverride() {
+  public int getIndexesPerDBOverride() {
     return 100;
   }
 
