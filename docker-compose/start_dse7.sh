@@ -9,9 +9,8 @@ fi
 # Default to INFO as root log level
 LOGLEVEL=INFO
 
-# Default to images used in project integration tests
-DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
-SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+# Get the latest DSE7 image tag from Docker Hub
+DSE7TAG="$(curl -s https://registry.hub.docker.com/v2/repositories/datastax/dse-server/tags/ | jq -r '[.results[] | select(.name | startswith("7.0.0"))] | sort_by(.last_updated) | last | .name')"
 
 # Default to latest released version
 JSONTAG="v1"
@@ -52,11 +51,10 @@ done
 
 export LOGLEVEL
 export REQUESTLOG
-export DSETAG
-export SGTAG
+export DSE7TAG
 export JSONTAG
 export JSONIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
+echo "Running with DSE $DSE7TAG, JSON API $JSONIMAGE:$JSONTAG"
 
 docker compose -f docker-compose-dse7.yml up -d --wait
