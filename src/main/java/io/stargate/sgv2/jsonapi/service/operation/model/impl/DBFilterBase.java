@@ -413,14 +413,14 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           if (values.isEmpty()) return List.of();
           final ArrayList<BuiltCondition> inResult = new ArrayList<>();
           for (Object value : values) {
-            if (value.getClass().equals(LinkedHashMap.class)) {
+            if (value instanceof Map) {
               // array element is sub_doc
               inResult.add(
                   BuiltCondition.of(
                       BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
                       Predicate.EQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
-            } else if (value.getClass().equals(ArrayList.class)) {
+            } else if (value instanceof List) {
               // array element is array
               inResult.add(
                   BuiltCondition.of(
@@ -441,14 +441,14 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           if (!this.getPath().equals(DOC_ID)) {
             final ArrayList<BuiltCondition> ninResults = new ArrayList<>();
             for (Object value : values) {
-              if (value.getClass().equals(LinkedHashMap.class)) {
+              if (value instanceof Map) {
                 // array element is sub_doc
                 ninResults.add(
                     BuiltCondition.of(
                         BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
                         Predicate.NEQ,
                         new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
-              } else if (value.getClass().equals(ArrayList.class)) {
+              } else if (value instanceof List) {
                 // array element is array
                 ninResults.add(
                     BuiltCondition.of(

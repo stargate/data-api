@@ -11,6 +11,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import net.javacrumbs.jsonunit.ConfigurableJsonMatcher;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
@@ -27,6 +28,52 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then()
         .statusCode(200);
+  }
+
+  private ConfigurableJsonMatcher[] getJsonEquals(int... docs) {
+    String expected1 =
+        """
+                    {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                    """;
+    String expected2 =
+        """
+                    { "_id": "doc2", "username": "user2", "subdoc" : { "id" : "abc" }, "array" : [ "value1" ] }
+                    """;
+    String expected3 =
+        """
+                    { "_id": "doc3", "username": "user3", "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]] }
+                            """;
+    String expected4 =
+        """
+                    { "_id": "doc4", "username" : "user4", "indexedObject" : { "0": "value_0", "1": "value_1" } }
+                            """;
+    String expected5 =
+        """
+                    { "_id": "doc5", "username": "user5", "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
+                            """;
+    String expected6 =
+        """
+                    { "_id": {"$date": 6}, "username": "user6" }
+                            """;
+
+    ConfigurableJsonMatcher[] result = new ConfigurableJsonMatcher[docs.length];
+    for (int i = 0; i < docs.length; i++) {
+      int doc = docs[i];
+      if (doc == 1) {
+        result[i] = (jsonEquals(expected1));
+      } else if (doc == 2) {
+        result[i] = (jsonEquals(expected2));
+      } else if (doc == 3) {
+        result[i] = (jsonEquals(expected3));
+      } else if (doc == 4) {
+        result[i] = (jsonEquals(expected4));
+      } else if (doc == 5) {
+        result[i] = (jsonEquals(expected5));
+      } else if (doc == 6) {
+        result[i] = (jsonEquals(expected6));
+      }
+    }
+    return result;
   }
 
   @Test
@@ -468,14 +515,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               }
                           }
                           """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      String expected2 =
-          """
-                          {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
-                          """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -487,7 +527,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(2))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 4)));
     }
 
     @Test
@@ -643,7 +683,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(5))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", notNullValue());
+          .body("data.documents", notNullValue())
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 6)));
     }
 
     @Test
@@ -665,11 +706,12 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          // except doc 5
+          // except doc 2
           .body("data.documents", hasSize(5))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", notNullValue());
+          .body("data.documents", notNullValue())
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 3, 4, 5, 6)));
     }
 
     @Test
@@ -694,7 +736,9 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("data.documents", hasSize(6))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
+      ;
     }
 
     @Test
@@ -719,7 +763,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("data.documents", hasSize(6))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
     }
   }
 
@@ -781,7 +826,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("data.documents", hasSize(6))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
     }
 
     @Test
