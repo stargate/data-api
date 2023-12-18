@@ -396,7 +396,7 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    List<Expression<BuiltCondition>> expressions =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();
@@ -505,7 +505,7 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    List<Expression<BuiltCondition>> expressions =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();

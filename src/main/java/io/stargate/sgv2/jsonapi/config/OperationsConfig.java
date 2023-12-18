@@ -85,10 +85,7 @@ public interface OperationsConfig {
   @WithDefault("20")
   int maxDocumentInsertCount();
 
-  /**
-   * @return Maximum size of _id values array that can be sent in $in operator <code>100</code>
-   *     command.
-   */
+  /** @return Maximum size of values array that can be sent in $in/$nin operator */
   @Max(100)
   @Positive
   @WithDefault("100")
