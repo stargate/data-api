@@ -41,6 +41,7 @@ services:
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG}
       - QUARKUS_LOG_LEVEL=${LOGLEVEL}
       - STARGATE_DATA_STORE_IGNORE_BRIDGE=true
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_END_POINTS=dse-7
       - JAVA_OPTS_APPEND=-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager
     healthcheck:
       test: curl -f http://localhost:8181/stargate/health || exit 1
