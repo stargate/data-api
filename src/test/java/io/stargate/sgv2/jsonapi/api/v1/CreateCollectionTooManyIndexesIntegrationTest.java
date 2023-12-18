@@ -22,16 +22,25 @@ import org.junit.jupiter.api.TestClassOrder;
  * Indexes being created: that is, cannot create enough indexes for a new Collection.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(CreateCollectionTooManyIndexesIntegrationTest.MyTestResource.class)
+@QuarkusTestResource(CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-  // Defaults are changed in `StargateTestResource`, need override to reset back to defaults:
-  public static class MyTestResource extends DseTestResource {
-    // We need 10 indexes per collection, so set to 20 to allow 2 collections
-    // (and leave max Collection IT setting at 10).
+  // Number of Collections that can be created without exceeding indexes:
+  private static final int COLLECTIONS_TO_CREATE = 3;
+  // Defaults are changed in `StargateTestResource`, need stricter limits to trigger
+  // test failure
+  public static class TooManyIndexesTestResource extends DseTestResource {
+    // We need 10 indexes per collection, so set to 30 to allow 3 collections
     @Override
     public int getIndexesPerDBOverride() {
-      return 20;
+      return COLLECTIONS_TO_CREATE * 10;
+    }
+
+    // But raise actual maximum collections twice the number we create so that we
+    // will not hit Collection limit (but Index limit)
+    @Override
+    public int getMaxCollectionsPerDBOverride() {
+      return COLLECTIONS_TO_CREATE * 2;
     }
   }
 
@@ -39,7 +48,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
   @Order(1)
   class TooManyIndexes {
     @Test
-    public void enforceMaxCollections() {
+    public void enforceMaxIndexes() {
       // Don't use auto-generated namespace that rest of the test uses
       final String NS = "ns_too_many_indexes";
       createNamespace(NS);
@@ -52,8 +61,8 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
               }
               """;
 
-      // First create 2 collections, should work fine
-      for (int i = 1; i <= 2; ++i) {
+      // First create max collections, should work fine
+      for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
         String json = createTemplate.formatted(i);
         given()
             .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -80,7 +89,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
           .body(
               "errors[0].message",
               matchesPattern(
-                  "Too many indexes: cannot create a new collection; \\d+ indexes already created in database, maximum 20"))
+                  "Too many indexes: cannot create a new collection; \\d+ indexes already created in database, maximum \\d+"))
           .body("errors[0].errorCode", is("TOO_MANY_INDEXES"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 

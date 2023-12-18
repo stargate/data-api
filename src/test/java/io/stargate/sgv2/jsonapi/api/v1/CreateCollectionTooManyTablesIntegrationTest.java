@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -22,17 +21,25 @@ import org.junit.jupiter.api.TestClassOrder;
  * Collections per DB being created.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(CreateCollectionTooManyTablesIntegrationTest.MyTestResource.class)
+@QuarkusTestResource(CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-  // Cannot @Inject configs into ITs so rely on constant for default values:
-  static final int MAX_COLLECTIONS = DatabaseLimitsConfig.DEFAULT_MAX_COLLECTIONS;
+  // Let's limit maximum number to lower than defaults
+  private static final int COLLECTIONS_TO_CREATE = 5;
 
-  // Defaults are changed in `StargateTestResource`, need override to reset back to defaults:
-  public static class MyTestResource extends DseTestResource {
+  // Defaults are changed in `StargateTestResource` (to allow more tables during testing),
+  // need override to reset back to defaults:
+  public static class TooManyTablesTestResource extends DseTestResource {
     @Override
     public int getMaxCollectionsPerDBOverride() {
-      return MAX_COLLECTIONS;
+      return COLLECTIONS_TO_CREATE;
+    }
+
+    // Use looser max for indexes, to avoid triggering that limit (typically
+    // we need up to 10 indexes per table)
+    @Override
+    public int getIndexesPerDBOverride() {
+      return COLLECTIONS_TO_CREATE * 12;
     }
   }
 
@@ -54,7 +61,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
               """;
 
       // First create maximum number of collections
-      for (int i = 1; i <= MAX_COLLECTIONS; ++i) {
+      for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
         String json = createTemplate.formatted(i);
         given()
             .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -82,9 +89,9 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
               "errors[0].message",
               is(
                   "Too many collections: number of collections in database cannot exceed "
-                      + MAX_COLLECTIONS
+                      + COLLECTIONS_TO_CREATE
                       + ", already have "
-                      + MAX_COLLECTIONS))
+                      + COLLECTIONS_TO_CREATE))
           .body("errors[0].errorCode", is("TOO_MANY_COLLECTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -93,7 +100,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(createTemplate.formatted(MAX_COLLECTIONS))
+          .body(createTemplate.formatted(1))
           .when()
           .post(NamespaceResource.BASE_PATH, NS)
           .then()

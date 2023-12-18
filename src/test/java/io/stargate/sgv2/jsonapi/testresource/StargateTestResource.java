@@ -258,10 +258,12 @@ public class StargateTestResource
     }
   }
 
+  // Many tests create more than 5 collections so default to 10
   public int getMaxCollectionsPerDBOverride() {
     return 10;
   }
 
+  // As per requiring up to 10 collections, will also then need 100 SAIs
   public int getIndexesPerDBOverride() {
     return 100;
   }
