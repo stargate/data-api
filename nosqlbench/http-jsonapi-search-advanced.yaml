@@ -1,7 +1,5 @@
 min_version: "5.17.3"
 
-# TODO: This workload relies on features that are not yet implemented in the JSON API
-
 # Example command line (when Stargate is running on localhost):
 # nb5 -v http-jsonapi-search-advanced jsonapi_host=localhost docscount=20000 threads=20
 
