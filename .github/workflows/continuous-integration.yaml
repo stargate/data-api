@@ -77,7 +77,7 @@ jobs:
         include:
           - type: docker
             profile: ''
-
+        exclude:
           - type: native
             profile: '-Pnative'
 

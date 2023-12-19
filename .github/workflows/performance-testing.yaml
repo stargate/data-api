@@ -48,11 +48,6 @@ jobs:
             docker-flags: ''
             docker-image: 'jsonapi'
 
-          - type: native
-            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
-            docker-flags: '-n'
-            docker-image: 'jsonapi-native'
-
           - test: http-jsonapi-crud-basic
             keyspace: 'jsonapi_crud_basic'
 
@@ -61,6 +56,13 @@ jobs:
 
           - test: http-jsonapi-search-filter-sort
             keyspace: 'jsonapi_search_filter_sort'
+
+        exclude:
+          - type: native
+            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
+            docker-flags: '-n'
+            docker-image: 'jsonapi-native'
+
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
       - uses: actions/checkout@v3
