@@ -59,9 +59,9 @@ jobs:
 
         exclude:
           - type: native
-            build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
-            docker-flags: '-n'
-            docker-image: 'jsonapi-native'
+            #build-ops: '-Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true'
+            #docker-flags: '-n'
+            #docker-image: 'jsonapi-native'
 
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR

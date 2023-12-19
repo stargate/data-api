@@ -79,7 +79,7 @@ jobs:
             profile: ''
         exclude:
           - type: native
-            profile: '-Pnative'
+            #profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v3
