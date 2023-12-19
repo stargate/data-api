@@ -1,7 +1,5 @@
 min_version: "5.17.3"
 
-# TODO: This workload relies on features that are not yet implemented in the JSON API
-
 # Example command line (when Stargate is running on localhost):
 # nb5 -v http-jsonapi-search-advanced jsonapi_host=localhost docscount=20000 threads=20
 
@@ -28,6 +26,8 @@ scenarios:
   get:
     get-in: run driver=http tags==name:main--main-get-in,filter:in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-not-in: run driver=http tags==name:main--main-get-not-in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main-get-exists-false: run driver=http tags==name:main-get-exists-false cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main-get-exists-true: run driver=http tags==name:main-get-exists-true cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-mem-and: run driver=http tags==name:main--main-get-mem-and cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-mem-or: run driver=http tags==name:main--main-get-mem-or cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
     get-complex1: run driver=http tags==name:main--main-get-complex1 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
@@ -177,11 +177,11 @@ blocks:
             "find" : {
               "filter" : {
                 "match1" : {
-                  "in": [0]
+                  "$in": [0]
                 }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -205,7 +205,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -228,11 +228,11 @@ blocks:
                   "$eq": "true"
                 },
                 "match3" : {
-                  "ne": false
-                },
+                  "$ne": false
+                }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -265,7 +265,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -307,7 +307,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -358,7 +358,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -409,7 +409,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -435,7 +435,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -459,10 +459,58 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
+
+      # where={"match3":{"$exists":false}}
+      main-get-exists-false:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                    "match3": {
+                      "$exists": false
+                    }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }          
+
+      # where={"match3":{"$exists":true}}
+      main-get-exists-true:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                    "match3": {
+                      "$exists": true
+                    }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }              
 
       # where={"match2":{"$eq":"true"},"match3":{"$ne": false}}
       main-get-mem-and:
@@ -486,7 +534,7 @@ blocks:
                 }
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -519,7 +567,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -561,7 +609,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -612,7 +660,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
@@ -663,7 +711,7 @@ blocks:
                 ]
               },
               "options": {
-                "pageSize": <<page_size,20>> 
+                "limit": <<page_size,20>> 
               }
             }
           }
