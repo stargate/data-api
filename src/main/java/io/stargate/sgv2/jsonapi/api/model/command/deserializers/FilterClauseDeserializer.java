@@ -161,7 +161,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       switch (valueComparisonOperator) {
         case IN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
-            if (list.size() > operationsConfig.defaultPageSize()) {
+            if (list.size() > operationsConfig.maxInOperatorValueSize()) {
               throw new JsonApiException(
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$in operator must have at most "
@@ -173,17 +173,27 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$in operator must have `ARRAY`");
           }
         }
+        case NIN -> {
+          if (filterOperation.operand().value() instanceof List<?> list) {
+            if (list.size() > operationsConfig.maxInOperatorValueSize()) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  "$nin operator must have at most "
+                      + operationsConfig.maxInOperatorValueSize()
+                      + " values");
+            }
+          } else {
+            throw new JsonApiException(
+                ErrorCode.INVALID_FILTER_EXPRESSION, "$nin operator must have `ARRAY`");
+          }
+        }
       }
     }
 
     if (filterOperation.operator() instanceof ElementComparisonOperator elementComparisonOperator) {
       switch (elementComparisonOperator) {
         case EXISTS:
-          if (filterOperation.operand().value() instanceof Boolean b) {
-            if (!b)
-              throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator supports only true");
-          } else {
+          if (!(filterOperation.operand().value() instanceof Boolean)) {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$exists operator must have `BOOLEAN`");
           }

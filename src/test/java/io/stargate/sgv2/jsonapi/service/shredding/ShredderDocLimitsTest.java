@@ -325,6 +325,21 @@ public class ShredderDocLimitsTest {
           .isInstanceOf(StreamConstraintsException.class)
           .hasMessageStartingWith("Number value length (60) exceeds the maximum allowed (50");
     }
+
+    // Different test in that it should NOT fail but work as expected (in
+    // addition to being lower level test wrt ObjectMapper
+    @Test
+    public void handleBigEngineeringNotation() throws Exception {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      final BigDecimal bigValue = new BigDecimal("2.0635595263889274e-35");
+      doc.put("num", bigValue);
+
+      final String json = objectMapper.writeValueAsString(doc);
+      ObjectNode serializedDoc = (ObjectNode) objectMapper.readTree(json);
+      assertThat(serializedDoc).isNotNull();
+      assertThat(serializedDoc.path("num").decimalValue()).isEqualTo(bigValue);
+    }
   }
 
   // Tests for size of atomic value / name length violations

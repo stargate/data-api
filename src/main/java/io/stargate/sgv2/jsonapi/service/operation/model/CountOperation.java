@@ -32,7 +32,7 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
   }
 
   private SimpleStatement buildSelectQuery() {
-    List<Expression<BuiltCondition>> expressions =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
     List<Object> collect = new ArrayList<>();
     if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null) {

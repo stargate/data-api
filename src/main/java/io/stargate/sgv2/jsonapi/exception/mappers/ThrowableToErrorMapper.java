@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -13,6 +14,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -36,7 +38,7 @@ public final class ThrowableToErrorMapper {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
         final boolean debugEnabled = debugModeConfig.enabled();
-        final Map<String, Object> fields =
+        Map<String, Object> fields =
             debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         final Map<String, Object> fieldsForMetricsTag =
             Map.of("exceptionClass", throwable.getClass().getSimpleName());
@@ -70,7 +72,13 @@ public final class ThrowableToErrorMapper {
           if (message.contains("vector<float,")) { // TODO is there a better way?
             message = "Mismatched vector dimension";
           }
+          fields = Map.of("errorCode", ErrorCode.INVALID_REQUST.name());
           return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+        } else if (throwable instanceof DriverTimeoutException
+            || throwable instanceof WriteTimeoutException
+            || throwable instanceof ReadTimeoutException) {
+          return new CommandResult.Error(
+              message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof AllNodesFailedException) {
             Map<Node, List<Throwable>> nodewiseErrors =
@@ -107,10 +115,6 @@ public final class ThrowableToErrorMapper {
           }
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
-        } else if (throwable instanceof DriverTimeoutException
-            || throwable instanceof WriteTimeoutException) {
-          return new CommandResult.Error(
-              message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
         }
         return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };

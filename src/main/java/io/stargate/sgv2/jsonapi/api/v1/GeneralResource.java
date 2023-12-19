@@ -74,7 +74,6 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
-
     // call processor
     return meteredCommandProcessor
         .processCommand(CommandContext.empty(), command)

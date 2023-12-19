@@ -15,6 +15,9 @@ public interface DocumentConstants {
      */
     String DATA_CONTAINS = "array_contains";
 
+    /** Text map support _id $ne and _id $nin on both atomic value and array element */
+    String QUERY_TEXT_MAP_COLUMN_NAME = "query_text_values";
+
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
 
