@@ -411,25 +411,59 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case IN:
           if (values.isEmpty()) return List.of();
-          return values.stream()
-              .map(
-                  v ->
-                      BuiltCondition.of(
-                          DATA_CONTAINS,
-                          Predicate.CONTAINS,
-                          new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
-              .collect(Collectors.toList());
+          final ArrayList<BuiltCondition> inResult = new ArrayList<>();
+          for (Object value : values) {
+            if (value instanceof Map) {
+              // array element is sub_doc
+              inResult.add(
+                  BuiltCondition.of(
+                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      Predicate.EQ,
+                      new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+            } else if (value instanceof List) {
+              // array element is array
+              inResult.add(
+                  BuiltCondition.of(
+                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      Predicate.EQ,
+                      new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+            } else {
+              inResult.add(
+                  BuiltCondition.of(
+                      DATA_CONTAINS,
+                      Predicate.CONTAINS,
+                      new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+            }
+          }
+          return inResult;
         case NIN:
           if (values.isEmpty()) return List.of();
           if (!this.getPath().equals(DOC_ID)) {
-            return values.stream()
-                .map(
-                    v ->
-                        BuiltCondition.of(
-                            DATA_CONTAINS,
-                            Predicate.NOT_CONTAINS,
-                            new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
-                .collect(Collectors.toList());
+            final ArrayList<BuiltCondition> ninResults = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof Map) {
+                // array element is sub_doc
+                ninResults.add(
+                    BuiltCondition.of(
+                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        Predicate.NEQ,
+                        new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+              } else if (value instanceof List) {
+                // array element is array
+                ninResults.add(
+                    BuiltCondition.of(
+                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        Predicate.NEQ,
+                        new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+              } else {
+                ninResults.add(
+                    BuiltCondition.of(
+                        DATA_CONTAINS,
+                        Predicate.NOT_CONTAINS,
+                        new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+              }
+            }
+            return ninResults;
           } else {
             // can not use stream here, since lambda parameter casting is not allowed
             List<BuiltCondition> conditions = new ArrayList<>();
@@ -453,7 +487,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                 } else {
                   throw new JsonApiException(
                       ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-                      String.format("Unsupported $nin operand value: %s", docIdValue));
+                      String.format("Unsupported _id $nin operand value: %s", docIdValue));
                 }
               }
             }
