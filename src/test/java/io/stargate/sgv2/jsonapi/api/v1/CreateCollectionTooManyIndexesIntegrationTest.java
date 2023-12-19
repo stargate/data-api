@@ -22,25 +22,26 @@ import org.junit.jupiter.api.TestClassOrder;
  * Indexes being created: that is, cannot create enough indexes for a new Collection.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class)
+@QuarkusTestResource(
+    value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class,
+    restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-  // Number of Collections that can be created without exceeding indexes:
   private static final int COLLECTIONS_TO_CREATE = 3;
-  // Defaults are changed in `StargateTestResource`, need stricter limits to trigger
-  // test failure
-  public static class TooManyIndexesTestResource extends DseTestResource {
-    // We need 10 indexes per collection, so set to 30 to allow 3 collections
-    @Override
-    public int getIndexesPerDBOverride() {
-      return COLLECTIONS_TO_CREATE * 10;
-    }
 
-    // But raise actual maximum collections twice the number we create so that we
-    // will not hit Collection limit (but Index limit)
+  // Need to limit number of indexes available, relative to max collections
+  // to trigger test failure for "not enough indexes"
+  public static class TooManyIndexesTestResource extends DseTestResource {
+    public TooManyIndexesTestResource() {}
+
     @Override
     public int getMaxCollectionsPerDBOverride() {
       return COLLECTIONS_TO_CREATE * 2;
+    }
+
+    @Override
+    public int getIndexesPerDBOverride() {
+      return COLLECTIONS_TO_CREATE * 9;
     }
   }
 

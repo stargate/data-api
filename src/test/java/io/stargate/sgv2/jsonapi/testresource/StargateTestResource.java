@@ -26,7 +26,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
-public class StargateTestResource
+public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
@@ -72,7 +72,6 @@ public class StargateTestResource
       String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
-
       // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
       propsBuilder.put(
           "stargate.database.limits.max-collections",
@@ -258,15 +257,9 @@ public class StargateTestResource
     }
   }
 
-  // Many tests create more than 5 collections so default to 10
-  public int getMaxCollectionsPerDBOverride() {
-    return 10;
-  }
+  public abstract int getMaxCollectionsPerDBOverride();
 
-  // As per requiring up to 10 collections, will also then need 100 SAIs
-  public int getIndexesPerDBOverride() {
-    return 100;
-  }
+  public abstract int getIndexesPerDBOverride();
 
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";

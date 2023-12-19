@@ -21,25 +21,26 @@ import org.junit.jupiter.api.TestClassOrder;
  * Collections per DB being created.
  */
 @QuarkusIntegrationTest
-@QuarkusTestResource(CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class)
+@QuarkusTestResource(
+    value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class,
+    restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-  // Let's limit maximum number to lower than defaults
-  private static final int COLLECTIONS_TO_CREATE = 5;
+  // Let's use relatively low limit to trigger test failure
+  private static final int COLLECTIONS_TO_CREATE = 3;
 
-  // Defaults are changed in `StargateTestResource` (to allow more tables during testing),
-  // need override to reset back to defaults:
+  // Need to limit max-collections to low value, but max-indexes higher to ensure
+  // we hit former
   public static class TooManyTablesTestResource extends DseTestResource {
     @Override
     public int getMaxCollectionsPerDBOverride() {
       return COLLECTIONS_TO_CREATE;
     }
 
-    // Use looser max for indexes, to avoid triggering that limit (typically
-    // we need up to 10 indexes per table)
+    // As per requiring up to 10 collections, will also then need 100 SAIs
     @Override
     public int getIndexesPerDBOverride() {
-      return COLLECTIONS_TO_CREATE * 12;
+      return COLLECTIONS_TO_CREATE * 20;
     }
   }
 
