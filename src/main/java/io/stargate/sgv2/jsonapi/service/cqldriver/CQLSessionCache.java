@@ -57,7 +57,12 @@ public class CQLSessionCache {
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
             .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-            .evictionListener(
+            // removal listener is invoked after the entry has been removed from the cache. So the
+            // idea is that we no longer return this session for any lookup as a first step, then
+            // close the session in the background asynchronously which is a graceful closing of
+            // channels i.e. any in-flight query will be completed before the session is getting
+            // closed.
+            .removalListener(
                 (RemovalListener<SessionCacheKey, CqlSession>)
                     (sessionCacheKey, session, cause) -> {
                       if (sessionCacheKey != null) {
