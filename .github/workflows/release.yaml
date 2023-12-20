@@ -79,9 +79,9 @@ jobs:
         include:
           - type: docker
             profile: ''
-
+        exclude:
           - type: native
-            profile: '-Pnative'
+            #profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v3
@@ -167,7 +167,8 @@ jobs:
     strategy:
       matrix:
         image: [jsonapi, jsonapi-native]
-
+        exclude:
+          - image: jsonapi-native
     env:
       # not a newest version, this reflects riptano action target version
       COSIGN_VERSION: v1.9.0
