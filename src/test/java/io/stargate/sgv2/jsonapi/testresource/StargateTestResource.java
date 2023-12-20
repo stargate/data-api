@@ -26,7 +26,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
-public class StargateTestResource
+public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
@@ -72,6 +72,13 @@ public class StargateTestResource
       String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
+      // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
+      propsBuilder.put(
+          "stargate.database.limits.max-collections",
+          String.valueOf(getMaxCollectionsPerDBOverride()));
+      propsBuilder.put(
+          "stargate.database.limits.indexes-available-per-database",
+          String.valueOf(getIndexesPerDBOverride()));
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
@@ -249,6 +256,10 @@ public class StargateTestResource
       throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
     }
   }
+
+  public abstract int getMaxCollectionsPerDBOverride();
+
+  public abstract int getIndexesPerDBOverride();
 
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";
