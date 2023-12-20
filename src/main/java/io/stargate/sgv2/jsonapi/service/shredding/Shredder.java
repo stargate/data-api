@@ -317,10 +317,11 @@ public class Shredder {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
           String.format(
-              "%s: Property name length (%d) exceeds maximum allowed (%s)",
+              "%s: Property name length (%d) exceeds maximum allowed (%s) (name '%s')",
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
               key.length(),
-              limits.maxPropertyNameLength()));
+              limits.maxPropertyNameLength(),
+              key));
     }
     if (key.length() == 0) {
       // NOTE: validity failure, not size limit

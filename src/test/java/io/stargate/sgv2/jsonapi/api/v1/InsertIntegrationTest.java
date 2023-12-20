@@ -610,7 +610,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
-              is(
+              startsWith(
                   "Document size limitation violated: Property name length (50) exceeds maximum allowed (48)"));
     }
 
