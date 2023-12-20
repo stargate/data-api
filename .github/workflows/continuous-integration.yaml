@@ -77,9 +77,9 @@ jobs:
         include:
           - type: docker
             profile: ''
-
+        exclude:
           - type: native
-            profile: '-Pnative'
+            #profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v3
