@@ -16,10 +16,14 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
@@ -32,6 +36,8 @@ public record CreateCollectionOperation(
     String vectorFunction,
     String vectorize)
     implements Operation {
+  // shared matcher instance used to tell Collections from Tables
+  private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
@@ -66,13 +72,11 @@ public record CreateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession()
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.namespace()));
-    if (keyspaceMetadata == null) {
+    Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
+        cqlSessionCache.getSession().getMetadata().getKeyspaces();
+    KeyspaceMetadata currKeyspace =
+        allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.namespace()));
+    if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
               new JsonApiException(
@@ -80,8 +84,7 @@ public record CreateCollectionOperation(
                   "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
                       .formatted(commandContext.namespace())));
     }
-    List<TableMetadata> allTables = new ArrayList<>(keyspaceMetadata.getTables().values());
-    TableMetadata table = findTableAndValidateLimits(allTables, name);
+    TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
     // table doesn't exist, continue
     if (table == null) {
@@ -180,20 +183,45 @@ public record CreateCollectionOperation(
    *
    * @return Existing table with given name, if any; {@code null} if not
    */
-  TableMetadata findTableAndValidateLimits(List<TableMetadata> tables, String name) {
-    for (TableMetadata table : tables) {
-      if (table.getName().equals(CqlIdentifier.fromInternal(name))) {
+  TableMetadata findTableAndValidateLimits(
+      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
+      KeyspaceMetadata currKeyspace,
+      String tableName) {
+    // First: do we already have a Table with the same name? If so, return it
+    for (TableMetadata table : currKeyspace.getTables().values()) {
+      if (table.getName().asInternal().equals(tableName)) {
         return table;
       }
     }
+    // Otherwise we need to check if we can create a new Collection based on limits;
+    // limits are calculated across the whole Database, so all Keyspaces need to be checked.
+    final List<TableMetadata> allTables =
+        allKeyspaces.values().stream()
+            .map(keyspace -> keyspace.getTables().values())
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+    final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
-    if (tables.size() >= MAX_COLLECTIONS) {
+    if (collectionCount >= MAX_COLLECTIONS) {
       throw new JsonApiException(
           ErrorCode.TOO_MANY_COLLECTIONS,
           String.format(
               "%s: number of collections in database cannot exceed %d, already have %d",
-              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
+              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount));
     }
+    // And then see how many Indexes have been created, how many available
+    int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
+    if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
+        > dbLimitsConfig.indexesAvailablePerDatabase()) {
+      throw new JsonApiException(
+          ErrorCode.TOO_MANY_INDEXES,
+          String.format(
+              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
+              ErrorCode.TOO_MANY_INDEXES.getMessage(),
+              saisUsed,
+              dbLimitsConfig.indexesAvailablePerDatabase()));
+    }
+
     return null;
   }
 
