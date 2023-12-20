@@ -27,6 +27,8 @@ public interface DocumentConstants {
     /** Document field name that will have text value for which vectorize method in called */
     String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
 
+    String NO_INDEX_FIELD = "$no_index";
+
     /** Key for vector function name definition in cql index. */
     String VECTOR_INDEX_FUNCTION_NAME = "similarity_function";
 

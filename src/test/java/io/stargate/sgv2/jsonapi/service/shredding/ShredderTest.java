@@ -202,6 +202,36 @@ public class ShredderTest {
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
     }
 
+    @Test
+    public void shredSimpleWithNoIndex() throws Exception {
+      final String inputJson =
+          """
+        { "_id" : 123,
+          "name" : "Bob",
+          "$no_index" : {
+            "age" : 39,
+            "address" : "123 Main St"
+          }
+        }
+        """;
+      final JsonNode inputDoc = fromJson(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
+
+      JsonNode jsonFromShredded = fromJson(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.arraySize()).isEmpty();
+      // 1 non-doc-id main-level property
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
+    }
+
     // [json-api#210]: accidental use of Engineering notation with trailing zeroes
     @Test
     public void shredSimpleWithNumberIdWithTrailingZeroes() {
