@@ -612,6 +612,26 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
+  /** Filter for document where all values exists for an array */
+  public static class NotAnyFilter extends SetFilterBase<String> {
+    private final Object arrayValue;
+
+    public NotAnyFilter(DocValueHasher hasher, String path, Object arrayValue) {
+      super("array_contains", path, getHashValue(hasher, path, arrayValue), Operator.NOT_CONTAINS);
+      this.arrayValue = arrayValue;
+    }
+
+    @Override
+    JsonNode asJson(JsonNodeFactory nodeFactory) {
+      return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    }
+
+    @Override
+    boolean canAddField() {
+      return false;
+    }
+  }
+
   /** Filter for document where array has specified number of elements */
   public static class SizeFilter extends MapFilterBase<Integer> {
     public SizeFilter(String path, Operator operator, Integer size) {

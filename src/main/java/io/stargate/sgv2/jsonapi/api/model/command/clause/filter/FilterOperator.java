@@ -29,6 +29,8 @@ public interface FilterOperator {
       for (FilterOperator filterOperator : ArrayComparisonOperator.values()) {
         addComparisonOperator(filterOperator);
       }
+      // This should not be supported from outside
+      operatorMap.remove(ArrayComparisonOperator.NOTANY.getOperator());
     }
 
     private static void addComparisonOperator(FilterOperator filterOperator) {

@@ -39,6 +39,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object DYNAMIC_DATE_GROUP = new Object();
   private static final Object EXISTS_GROUP = new Object();
   private static final Object ALL_GROUP = new Object();
+  private static final Object NOT_ANY_GROUP = new Object();
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
@@ -126,6 +127,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.ALL), JsonType.ARRAY)
+        .capture(NOT_ANY_GROUP)
+        .compareValues("*", EnumSet.of(ArrayComparisonOperator.NOTANY), JsonType.ARRAY)
         .capture(SIZE_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
         .capture(ARRAY_EQUALS)
@@ -296,6 +299,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         for (Object arrayValue : objects) {
           filters.add(
               new DBFilterBase.AllFilter(docValueHasher, captureExpression.path(), arrayValue));
+        }
+      }
+
+      if (captureExpression.marker() == NOT_ANY_GROUP) {
+        final DocValueHasher docValueHasher = new DocValueHasher();
+        List<Object> objects = (List<Object>) filterOperation.operand().value();
+        for (Object arrayValue : objects) {
+          filters.add(
+              new DBFilterBase.NotAnyFilter(docValueHasher, captureExpression.path(), arrayValue));
         }
       }
 
