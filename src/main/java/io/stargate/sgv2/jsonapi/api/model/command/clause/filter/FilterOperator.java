@@ -9,6 +9,13 @@ import java.util.Map;
 public interface FilterOperator {
   String getOperator();
 
+  /**
+   * Flip comparison operator when `$not` is pushed down
+   *
+   * @return
+   */
+  FilterOperator flip();
+
   class FilterOperatorUtils {
     private static Map<String, FilterOperator> operatorMap = new HashMap<>();
 

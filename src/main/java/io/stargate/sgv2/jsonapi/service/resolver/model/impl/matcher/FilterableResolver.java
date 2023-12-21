@@ -301,7 +301,17 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == SIZE_GROUP) {
         BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
-        filters.add(new DBFilterBase.SizeFilter(captureExpression.path(), bigDecimal.intValue()));
+        // Flipping size operator will multiply the value by -1
+        // Negative means check array_size[?] != ?
+        int size = bigDecimal.intValue();
+        DBFilterBase.MapFilterBase.Operator operator;
+        if (size > 0) {
+          operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
+        } else {
+          operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+        }
+        filters.add(
+            new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
       }
 
       if (captureExpression.marker() == ARRAY_EQUALS) {

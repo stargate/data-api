@@ -13,7 +13,8 @@ public class LogicalExpression {
 
   public enum LogicalOperator {
     AND("$and"),
-    OR("$or");
+    OR("$or"),
+    NOT("$not");
     private String operator;
 
     LogicalOperator(String operator) {
@@ -25,9 +26,58 @@ public class LogicalExpression {
     }
   }
 
-  private final LogicalOperator logicalRelation;
+  private LogicalOperator logicalRelation;
   private int totalComparisonExpressionCount;
   private int totalIdComparisonExpressionCount;
+  private boolean notFlip = false;
+
+  /** This method will flip the operators and operand if logical operator is not */
+  public void checkAndFlip() {
+    if (logicalRelation == LogicalOperator.NOT) {
+      flip();
+    }
+    for (LogicalExpression logicalExpression : logicalExpressions) {
+      logicalExpression.checkAndFlip();
+    }
+    handleChild();
+  }
+
+  private void handleChild() {
+    List<LogicalExpression> newLogicalList = new ArrayList<>();
+    List<ComparisonExpression> newComparisonList = new ArrayList<>();
+    for (LogicalExpression logicalExpression : logicalExpressions) {
+      if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
+        newLogicalList.addAll(logicalExpression.logicalExpressions);
+        if (logicalExpression.comparisonExpressions.size() > 1) {
+          // Multiple conditions in not, after push down will become or
+          final LogicalExpression orLogic = LogicalExpression.or();
+          orLogic.comparisonExpressions = logicalExpression.comparisonExpressions;
+          newLogicalList.add(orLogic);
+        } else {
+          // Unary not, after push down will become additional condition
+          newComparisonList.addAll(logicalExpression.comparisonExpressions);
+        }
+      } else {
+        newLogicalList.add(logicalExpression);
+      }
+    }
+    logicalExpressions = newLogicalList;
+    comparisonExpressions.addAll(newComparisonList);
+  }
+
+  private void flip() {
+    if (logicalRelation == LogicalOperator.AND) {
+      logicalRelation = LogicalOperator.OR;
+    } else if (logicalRelation == LogicalOperator.OR) {
+      logicalRelation = LogicalOperator.AND;
+    }
+    for (LogicalExpression logicalExpression : logicalExpressions) {
+      logicalExpression.flip();
+    }
+    for (ComparisonExpression comparisonExpression : comparisonExpressions) {
+      comparisonExpression.flip();
+    }
+  }
 
   public List<LogicalExpression> logicalExpressions;
   public List<ComparisonExpression> comparisonExpressions;
@@ -49,6 +99,10 @@ public class LogicalExpression {
 
   public static LogicalExpression or() {
     return new LogicalExpression(LogicalOperator.OR, 0, new ArrayList<>(), new ArrayList<>());
+  }
+
+  public static LogicalExpression not() {
+    return new LogicalExpression(LogicalOperator.NOT, 0, new ArrayList<>(), new ArrayList<>());
   }
 
   public void addLogicalExpression(LogicalExpression logicalExpression) {

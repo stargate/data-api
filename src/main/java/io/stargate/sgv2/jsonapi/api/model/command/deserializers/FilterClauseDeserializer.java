@@ -45,6 +45,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
     validate(implicitAnd);
+    // push down not operator
+    implicitAnd.checkAndFlip();
     return new FilterClause(implicitAnd);
   }
 
@@ -93,6 +95,9 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           break;
         case "$or":
           innerLogicalExpression = LogicalExpression.or();
+          break;
+        case "$not":
+          innerLogicalExpression = LogicalExpression.not();
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
           throw new JsonApiException(

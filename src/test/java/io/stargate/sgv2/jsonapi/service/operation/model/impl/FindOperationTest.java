@@ -1157,7 +1157,10 @@ public class FindOperationTest extends OperationTestBase {
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of(new DBFilterBase.SizeFilter("tags", 2));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.SizeFilter(
+                  "tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 2));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =

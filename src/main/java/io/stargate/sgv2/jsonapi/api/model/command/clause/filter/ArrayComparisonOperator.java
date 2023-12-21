@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 /** List of element level operator that can be used in Filter clause */
 public enum ArrayComparisonOperator implements FilterOperator {
   ALL("$all"),
-  SIZE("$size");
+  SIZE("$size"),
+  // Will not be supported from outside
+  NOTANY("$notany");
 
   private String operator;
 
@@ -14,5 +16,17 @@ public enum ArrayComparisonOperator implements FilterOperator {
   @Override
   public String getOperator() {
     return operator;
+  }
+
+  @Override
+  public FilterOperator flip() {
+    switch (this) {
+      case ALL:
+        return NOTANY;
+      case NOTANY:
+        return ALL;
+      default:
+        return this;
+    }
   }
 }

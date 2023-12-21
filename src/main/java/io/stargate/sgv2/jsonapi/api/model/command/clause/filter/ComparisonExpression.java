@@ -21,7 +21,7 @@ public class ComparisonExpression {
 
   private final String path;
 
-  @Valid @NotEmpty private final List<FilterOperation<?>> filterOperations;
+  @Valid @NotEmpty private List<FilterOperation<?>> filterOperations;
 
   private List<DBFilterBase> dbFilters;
 
@@ -31,6 +31,32 @@ public class ComparisonExpression {
 
   public List<FilterOperation<?>> getFilterOperations() {
     return filterOperations;
+  }
+
+  /** This method will be called when not operation is pushed down */
+  public void flip() {
+    List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
+    for (FilterOperation<?> filterOperation : this.filterOperations) {
+      final FilterOperator flipedOperator = filterOperation.operator().flip();
+      JsonLiteral<?> operand =
+          getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
+      filterOperations.add(new ValueComparisonOperation<>(flipedOperator, operand));
+    }
+    this.filterOperations = filterOperations;
+  }
+
+  /**
+   * This method is used to flip the operand value when not operator is applied, e.g. $exists, $size
+   */
+  private JsonLiteral<?> getFlippedOperandValue(FilterOperator operator, JsonLiteral<?> operand) {
+    if (operator == ElementComparisonOperator.EXISTS) {
+      return new JsonLiteral<Boolean>(!((Boolean) operand.value()), operand.type());
+    } else if (operator == ArrayComparisonOperator.SIZE) {
+      return new JsonLiteral<BigDecimal>(
+          ((BigDecimal) operand.value()).multiply(new BigDecimal(-1)), operand.type());
+    } else {
+      return operand;
+    }
   }
 
   public ComparisonExpression(
