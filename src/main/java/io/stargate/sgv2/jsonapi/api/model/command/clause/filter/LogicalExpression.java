@@ -31,10 +31,10 @@ public class LogicalExpression {
   private int totalIdComparisonExpressionCount;
 
   /** This method will flip the operators and operand if logical operator is not */
-  public void dfs(LogicalExpression parent) {
+  public void traverseForNot(LogicalExpression parent) {
     List<LogicalExpression> tempLogicalExpressions = new ArrayList<>(logicalExpressions);
     for (LogicalExpression logicalExpression : tempLogicalExpressions) {
-      logicalExpression.dfs(this);
+      logicalExpression.traverseForNot(this);
     }
 
     Iterator<LogicalExpression> iterator = logicalExpressions.iterator();
