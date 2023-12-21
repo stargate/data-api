@@ -46,7 +46,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     populateExpression(implicitAnd, filterNode);
     validate(implicitAnd);
     // push down not operator
-    implicitAnd.checkAndFlip();
+    implicitAnd.dfs(null);
     return new FilterClause(implicitAnd);
   }
 

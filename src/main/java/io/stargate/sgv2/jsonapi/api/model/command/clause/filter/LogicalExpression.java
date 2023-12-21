@@ -29,40 +29,42 @@ public class LogicalExpression {
   private LogicalOperator logicalRelation;
   private int totalComparisonExpressionCount;
   private int totalIdComparisonExpressionCount;
-  private boolean notFlip = false;
 
   /** This method will flip the operators and operand if logical operator is not */
-  public void checkAndFlip() {
-    if (logicalRelation == LogicalOperator.NOT) {
-      flip();
+  public void dfs(LogicalExpression parent) {
+    List<LogicalExpression> tempLogicalExpressions = new ArrayList<>(logicalExpressions);
+    for (LogicalExpression logicalExpression : tempLogicalExpressions) {
+      logicalExpression.dfs(this);
     }
-    for (LogicalExpression logicalExpression : logicalExpressions) {
-      logicalExpression.checkAndFlip();
-    }
-    handleChild();
-  }
 
-  private void handleChild() {
-    List<LogicalExpression> newLogicalList = new ArrayList<>();
-    List<ComparisonExpression> newComparisonList = new ArrayList<>();
-    for (LogicalExpression logicalExpression : logicalExpressions) {
+    Iterator<LogicalExpression> iterator = logicalExpressions.iterator();
+    while (iterator.hasNext()) {
+      LogicalExpression logicalExpression = iterator.next();
       if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
-        newLogicalList.addAll(logicalExpression.logicalExpressions);
-        if (logicalExpression.comparisonExpressions.size() > 1) {
-          // Multiple conditions in not, after push down will become or
-          final LogicalExpression orLogic = LogicalExpression.or();
-          orLogic.comparisonExpressions = logicalExpression.comparisonExpressions;
-          newLogicalList.add(orLogic);
-        } else {
-          // Unary not, after push down will become additional condition
-          newComparisonList.addAll(logicalExpression.comparisonExpressions);
-        }
-      } else {
-        newLogicalList.add(logicalExpression);
+        iterator.remove();
       }
     }
-    logicalExpressions = newLogicalList;
-    comparisonExpressions.addAll(newComparisonList);
+
+    if (logicalRelation == LogicalOperator.NOT) {
+      flip();
+      addToParent(parent);
+    }
+  }
+
+  private void addToParent(LogicalExpression parent) {
+    logicalExpressions.stream().forEach(expression -> parent.addLogicalExpression(expression));
+    if (comparisonExpressions.size() > 1) {
+      // Multiple conditions in not, after push down will become or
+      final LogicalExpression orLogic = LogicalExpression.or();
+      orLogic.comparisonExpressions.addAll(comparisonExpressions);
+      parent.addLogicalExpression(orLogic);
+    } else {
+      if (comparisonExpressions.size() == 1) {
+        // Unary not, after push down will become additional condition
+        parent.addComparisonExpression(comparisonExpressions.get(0));
+      }
+    }
+    comparisonExpressions.clear();
   }
 
   private void flip() {
