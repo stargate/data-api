@@ -47,7 +47,30 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     validate(implicitAnd);
     // push down not operator
     implicitAnd.dfs(null);
+
+    implicitAnd = topDown(implicitAnd);
+
     return new FilterClause(implicitAnd);
+  }
+
+  private LogicalExpression topDown(LogicalExpression logicalExpression) {
+    if (logicalExpression == null) {
+      return null;
+    }
+    LogicalExpression newLogicalExpression;
+    if (logicalExpression.getLogicalRelation() == LogicalExpression.LogicalOperator.AND) {
+      newLogicalExpression = LogicalExpression.and();
+    } else {
+      newLogicalExpression = LogicalExpression.or();
+    }
+    for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
+      newLogicalExpression.addComparisonExpression(comparisonExpression);
+    }
+    for (LogicalExpression innerLogicalExpression : logicalExpression.logicalExpressions) {
+      LogicalExpression newInnerLogicalExpression = topDown(innerLogicalExpression);
+      newLogicalExpression.addLogicalExpression(newInnerLogicalExpression);
+    }
+    return newLogicalExpression;
   }
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
