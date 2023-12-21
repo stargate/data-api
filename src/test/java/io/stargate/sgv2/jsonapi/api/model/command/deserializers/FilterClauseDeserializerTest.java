@@ -1253,6 +1253,130 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void multipleLevel() throws Exception {
+      String json =
+          """
+        {
+          "$and": [
+            {
+                "name": "testName"
+            },
+            {
+                "age": "testAge"
+            },
+            {
+              "$not": [
+                 {
+                    "$or": [
+                        {
+                            "address": "testAddress"
+                        },
+                        {
+                            "tags": { "$size" : 1}
+                        }
+                    ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult3 =
+          new ComparisonExpression(
+              "address",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("testAddress", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult4 =
+          new ComparisonExpression(
+              "tags",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(-1), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+          .isEqualTo(LogicalExpression.LogicalOperator.AND);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .getLogicalRelation())
+          .isEqualTo(LogicalExpression.LogicalOperator.AND);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult3.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult4.getFilterOperations());
+    }
+
+    @Test
     public void mustHandleInArrayNonEmpty() throws Exception {
       String json = """
                {"_id" : {"$in": []}}
