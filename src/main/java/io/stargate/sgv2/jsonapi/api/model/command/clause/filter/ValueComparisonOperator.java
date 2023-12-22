@@ -37,13 +37,13 @@ public enum ValueComparisonOperator implements FilterOperator {
       case NIN:
         return IN;
       case GT:
-        return LT;
-      case GTE:
         return LTE;
+      case GTE:
+        return LT;
       case LT:
-        return GT;
-      case LTE:
         return GTE;
+      case LTE:
+        return GT;
     }
     return this;
   }
