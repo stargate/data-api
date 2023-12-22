@@ -96,6 +96,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     statement
+                        .setIdempotent(true)
                         .setConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
@@ -115,8 +116,10 @@ public class QueryExecutor {
             cqlSessionCache
                 .getSession()
                 .executeAsync(
-                    boundStatement.setSerialConsistencyLevel(
-                        operationsConfig.queriesConfig().consistency().schemaChanges())));
+                    boundStatement
+                        .setIdempotent(true)
+                        .setSerialConsistencyLevel(
+                            operationsConfig.queriesConfig().consistency().schemaChanges())));
   }
 
   /**
