@@ -629,7 +629,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-
   /** Filter for document where array has specified number of elements */
   public static class SizeFilter extends MapFilterBase<Integer> {
     public SizeFilter(String path, Integer size) {

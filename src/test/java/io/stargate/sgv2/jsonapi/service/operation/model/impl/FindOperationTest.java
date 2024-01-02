@@ -1124,11 +1124,11 @@ public class FindOperationTest extends OperationTestBase {
     @Test
     public void findOrWithAllFilter() throws Exception {
       String collectionReadCql =
-              "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains CONTAINS ? AND array_contains CONTAINS ?)) LIMIT 1"
-                      .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains CONTAINS ? AND array_contains CONTAINS ?)) LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
 
       String doc1 =
-              """
+          """
                       {
                         "_id": "doc1",
                         "username": "user1",
@@ -1138,46 +1138,47 @@ public class FindOperationTest extends OperationTestBase {
                       """;
 
       SimpleStatement stmt =
-              SimpleStatement.newInstance(collectionReadCql, "username Suser1","tags Stag1", "tags Stag2");
+          SimpleStatement.newInstance(
+              collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
       List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
-              .then(
-                      invocation -> {
-                        callCount.incrementAndGet();
-                        return Uni.createFrom().item(results);
-                      });
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression explicitOr = LogicalExpression.or();
       explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
 
       List<DBFilterBase> filter1 =
-              List.of(
-                      new DBFilterBase.TextFilter(
-                              "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
       explicitOr.comparisonExpressions.get(0).setDBFilters(filter1);
       List<DBFilterBase> filters2 =
-              List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
       explicitOr.comparisonExpressions.get(1).setDBFilters(filters2);
 
       FindOperation operation =
-              FindOperation.unsortedSingle(
-                      COMMAND_CONTEXT,
-                      explicitOr,
-                      DocumentProjector.identityProjector(),
-                      ReadType.DOCUMENT,
-                      objectMapper);
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              explicitOr,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
 
       Supplier<CommandResult> execute =
-              operation
-                      .execute(queryExecutor)
-                      .subscribe()
-                      .withSubscriber(UniAssertSubscriber.create())
-                      .awaitItem()
-                      .getItem();
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
 
       // assert query execution
       assertThat(callCount.get()).isEqualTo(1);
@@ -1185,12 +1186,11 @@ public class FindOperationTest extends OperationTestBase {
       // then result
       CommandResult result = execute.get();
       assertThat(result.data().getResponseDocuments())
-              .hasSize(1)
-              .containsOnly(objectMapper.readTree(doc1));
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
-
 
     @Test
     public void findWithSizeFilter() throws Exception {
