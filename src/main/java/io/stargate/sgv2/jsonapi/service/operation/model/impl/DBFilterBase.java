@@ -612,9 +612,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
 
     public List<BuiltCondition> getAll() {
-      List<Object> values = arrayValue;
       final ArrayList<BuiltCondition> result = new ArrayList<>();
-      for (Object value : values) {
+      for (Object value : arrayValue) {
         result.add(
             BuiltCondition.of(
                 DATA_CONTAINS,
