@@ -39,6 +39,9 @@ public class ObjectMapperConfiguration {
         JsonFactory.builder()
             .streamReadConstraints(
                 StreamReadConstraints.builder().maxNumberLength(maxNumLen).build())
+            .enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER)
+            .enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER)
+            .enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER)
             .build();
     return JsonMapper.builder(jsonFactory)
         // important for retaining number accuracy!
