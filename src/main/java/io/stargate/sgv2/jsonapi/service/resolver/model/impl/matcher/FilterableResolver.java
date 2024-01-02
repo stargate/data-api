@@ -291,12 +291,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == ALL_GROUP) {
-        final DocValueHasher docValueHasher = new DocValueHasher();
-        List<Object> objects = (List<Object>) filterOperation.operand().value();
-        for (Object arrayValue : objects) {
-          filters.add(
-              new DBFilterBase.AllFilter(docValueHasher, captureExpression.path(), arrayValue));
-        }
+        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {

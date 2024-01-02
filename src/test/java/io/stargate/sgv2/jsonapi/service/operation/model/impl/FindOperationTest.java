@@ -1090,15 +1090,9 @@ public class FindOperationTest extends OperationTestBase {
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
       List<DBFilterBase> filters1 =
-          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
-      List<DBFilterBase> filters2 =
-          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-      implicitAnd.comparisonExpressions.get(1).setDBFilters(filters2);
-
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
@@ -2396,15 +2390,9 @@ public class FindOperationTest extends OperationTestBase {
       for (int i = 0; i < 20; i++) {
         LogicalExpression implicitAnd1 = LogicalExpression.and();
         implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-        implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
-        List<DBFilterBase> filters1_1 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
-        implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1_1);
-        List<DBFilterBase> filters1_2 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-        implicitAnd1.comparisonExpressions.get(1).setDBFilters(filters1_2);
-
+        List<DBFilterBase> filters1 =
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+        implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1);
         FindOperation operation1 =
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
@@ -2418,14 +2406,9 @@ public class FindOperationTest extends OperationTestBase {
 
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-        implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
-        List<DBFilterBase> filters2_1 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
-        implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2_1);
-        List<DBFilterBase> filters2_2 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-        implicitAnd2.comparisonExpressions.get(1).setDBFilters(filters2_2);
+        List<DBFilterBase> filters2 =
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+        implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2);
 
         FindOperation operation2 =
             FindOperation.unsortedSingle(
