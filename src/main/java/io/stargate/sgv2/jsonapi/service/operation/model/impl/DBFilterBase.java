@@ -629,9 +629,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-  //  public static class InFilter extends DBFilterBase {
-  //    private final List<Object> arrayValue;
-  //    protected final InFilter.Operator operator;
 
   /** Filter for document where array has specified number of elements */
   public static class SizeFilter extends MapFilterBase<Integer> {
