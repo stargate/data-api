@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -36,10 +41,20 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
+  private final MeterRegistry meterRegistry;
+
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
   @Inject
-  public Shredder(ObjectMapper objectMapper, DocumentLimitsConfig documentLimits) {
+  public Shredder(
+      ObjectMapper objectMapper,
+      DocumentLimitsConfig documentLimits,
+      MeterRegistry meterRegistry,
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
+    this.meterRegistry = meterRegistry;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
   /**
@@ -48,11 +63,11 @@ public class Shredder {
    * @param document {@link JsonNode} to shred.
    * @return WritableShreddedDocument
    */
-  public WritableShreddedDocument shred(JsonNode document) {
-    return shred(document, null);
+  public WritableShreddedDocument shred(JsonNode document, String commandName) {
+    return shred(document, commandName, null);
   }
 
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
+  public WritableShreddedDocument shred(JsonNode doc, String commandName, UUID txId) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -70,8 +85,13 @@ public class Shredder {
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
     try {
+      Timer.Sample sample = Timer.start(meterRegistry);
       // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
       docJson = objectMapper.writeValueAsString(docWithId);
+      Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
+      Tag serializationTag = Tag.of(jsonApiMetricsConfig.serializationJson(), "true");
+      Tags tags = Tags.of(commandTag, serializationTag);
+      sample.stop(meterRegistry.timer(jsonApiMetricsConfig.serializationMetricsName(), tags));
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
     }

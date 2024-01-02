@@ -172,7 +172,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(
@@ -283,7 +283,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               + "            tx_id = ?";
       String updateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "ReadAndUpdateOperation");
 
       SimpleStatement updateStmt =
           SimpleStatement.newInstance(

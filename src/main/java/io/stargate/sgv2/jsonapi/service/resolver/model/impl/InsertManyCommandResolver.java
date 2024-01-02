@@ -36,7 +36,9 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     ctx.tryVectorize(objectMapper.getNodeFactory(), command.documents());
 
     final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(shredder::shred).toList();
+        command.documents().stream()
+            .map(doc -> shredder.shred(doc, command.getClass().getSimpleName()))
+            .toList();
 
     // resolve ordered
     InsertManyCommand.Options options = command.options();

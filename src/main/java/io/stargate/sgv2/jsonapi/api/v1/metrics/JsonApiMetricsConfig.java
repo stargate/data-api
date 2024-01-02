@@ -27,6 +27,14 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
+  @WithDefault("serialization.json")
+  String serializationJson();
+
+  @NotBlank
+  @WithDefault("command.processor.serialization")
+  String serializationMetricsName();
+
+  @NotBlank
   @WithDefault("command.processor.process")
   String metricsName();
 

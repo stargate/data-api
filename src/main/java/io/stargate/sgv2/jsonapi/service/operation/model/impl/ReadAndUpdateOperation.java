@@ -174,7 +174,11 @@ public record ReadAndUpdateOperation(
               }
 
               final WritableShreddedDocument writableShreddedDocument =
-                  shredder().shred(documentUpdaterResponse.document(), readDocument.txnId());
+                  shredder()
+                      .shred(
+                          documentUpdaterResponse.document(),
+                          this.getClass().getSimpleName(),
+                          readDocument.txnId());
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
