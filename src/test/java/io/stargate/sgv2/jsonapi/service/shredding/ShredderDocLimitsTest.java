@@ -222,7 +222,7 @@ public class ShredderDocLimitsTest {
       doc.put("_id", 123);
       ObjectNode ob = doc.putObject("subdoc");
       final String propName =
-          "property_with_way_too_long_name_123456789_123456789_123456789_123456789";
+          "property_with_way_too_long_name_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789";
       ob.put(propName, true);
 
       Exception e = catchException(() -> shredder.shred(doc));
