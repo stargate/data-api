@@ -1947,7 +1947,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(5))
+          .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
     }
   }
