@@ -52,8 +52,7 @@ public class ComparisonExpression {
     if (operator == ElementComparisonOperator.EXISTS) {
       return new JsonLiteral<Boolean>(!((Boolean) operand.value()), operand.type());
     } else if (operator == ArrayComparisonOperator.SIZE) {
-      return new JsonLiteral<BigDecimal>(
-          ((BigDecimal) operand.value()).multiply(new BigDecimal(-1)), operand.type());
+      return new JsonLiteral<BigDecimal>(((BigDecimal) operand.value()).negate(), operand.type());
     } else {
       return operand;
     }
