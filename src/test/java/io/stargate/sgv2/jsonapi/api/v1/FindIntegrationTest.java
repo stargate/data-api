@@ -1727,6 +1727,168 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   jsonEquals(expected5),
                   jsonEquals(expected6)));
     }
+
+    @Test
+    public void simpleNot() {
+      String json =
+          """
+              {
+                "find": {
+                  "filter" : {
+                    "$not": [
+                      {"username": "user1"}
+                    ]
+                  }
+                }
+              }
+              """;
+      String expected2 =
+          """
+                              {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                                      """;
+      String expected3 =
+          """
+                              {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
+                              """;
+
+      String expected4 =
+          """
+                              {
+                                "_id": "doc4",
+                                "username":"user4",
+                                "indexedObject" : { "0": "value_0", "1": "value_1" }
+                              }
+                              """;
+      String expected5 =
+          """
+                              {
+                                "_id": "doc5",
+                                "username": "user5",
+                                "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                              }
+                              """;
+      String expected6 =
+          """
+                                          {
+                                            "_id": {"$date": 6},
+                                            "user-name": "user6"
+                                          }
+                                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(5))
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4),
+                  jsonEquals(expected5),
+                  jsonEquals(expected6)));
+    }
+
+    @Test
+    public void nestedNotPushDown() {
+      String json =
+          """
+                {
+                    "find": {
+                        "filter": {
+                            "$not": [
+                              {
+                                "$and": [
+                                  {
+                                      "$or": [
+                                          {
+                                              "username": "user3"
+                                          },
+                                          {
+                                              "subdoc.id": {
+                                                  "$eq": "abc"
+                                              }
+                                          }
+                                      ]
+                                  },
+                                  {
+                                      "$or": [
+                                          {
+                                              "username": "user2"
+                                          },
+                                          {
+                                              "subdoc.id": {
+                                                  "$eq": "xyz"
+                                              }
+                                          }
+                                      ]
+                                  }
+                                ]
+                              }
+                            ]
+                        }
+                    }
+                }
+                  """;
+
+      String expected =
+          """
+                      {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", not(containsInAnyOrder(expected)))
+          .body("data.documents", hasSize(5));
+    }
+
+    @Test
+    public void multipleNotCancelling() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {
+                "$not":[
+                  { "$not" : [
+                    {"username" : "user1"}
+                  ]}
+                ]
+              }
+            }
+          }
+          """;
+
+      String expected =
+          """
+                              {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
+    }
   }
 
   @Nested
