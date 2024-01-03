@@ -42,6 +42,11 @@ public class LogicalExpression {
       LogicalExpression logicalExpression = iterator.next();
       if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
         iterator.remove();
+        this.totalComparisonExpressionCount =
+            this.totalComparisonExpressionCount - logicalExpression.totalComparisonExpressionCount;
+        this.totalIdComparisonExpressionCount =
+            this.totalIdComparisonExpressionCount
+                - logicalExpression.totalIdComparisonExpressionCount;
       }
     }
 
@@ -56,7 +61,8 @@ public class LogicalExpression {
     if (comparisonExpressions.size() > 1) {
       // Multiple conditions in not, after push down will become or
       final LogicalExpression orLogic = LogicalExpression.or();
-      orLogic.comparisonExpressions.addAll(comparisonExpressions);
+      comparisonExpressions.stream()
+          .forEach(comparisonExpression -> orLogic.addComparisonExpression(comparisonExpression));
       parent.addLogicalExpression(orLogic);
     } else {
       if (comparisonExpressions.size() == 1) {
