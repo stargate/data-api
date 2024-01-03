@@ -874,7 +874,7 @@ public class FilterClauseDeserializerTest {
               "f5",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.GT,
+                      ValueComparisonOperator.GTE,
                       new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
               null);
 
@@ -883,7 +883,7 @@ public class FilterClauseDeserializerTest {
               "f6",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.GTE,
+                      ValueComparisonOperator.GT,
                       new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
               null);
 
@@ -892,7 +892,7 @@ public class FilterClauseDeserializerTest {
               "f7",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.LT,
+                      ValueComparisonOperator.LTE,
                       new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
               null);
       final ComparisonExpression gte =
@@ -900,7 +900,7 @@ public class FilterClauseDeserializerTest {
               "f8",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.LTE,
+                      ValueComparisonOperator.LT,
                       new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
               null);
 
