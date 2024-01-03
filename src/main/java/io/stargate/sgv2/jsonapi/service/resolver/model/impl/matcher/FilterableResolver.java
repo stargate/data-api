@@ -295,16 +295,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == ALL_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue));
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, false));
       }
 
       if (captureExpression.marker() == NOT_ANY_GROUP) {
-        final DocValueHasher docValueHasher = new DocValueHasher();
-        List<Object> objects = (List<Object>) filterOperation.operand().value();
-        for (Object arrayValue : objects) {
-          filters.add(
-              new DBFilterBase.NotAnyFilter(docValueHasher, captureExpression.path(), arrayValue));
-        }
+        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, true));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {

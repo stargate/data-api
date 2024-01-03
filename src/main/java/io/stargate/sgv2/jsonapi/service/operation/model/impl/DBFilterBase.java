@@ -595,10 +595,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** Filter for document where all values exists for an array */
   public static class AllFilter extends DBFilterBase {
     private final List<Object> arrayValue;
+    private final boolean negation;
 
-    public AllFilter(String path, List<Object> arrayValue) {
+    public AllFilter(String path, List<Object> arrayValue, boolean negation) {
       super(path);
       this.arrayValue = arrayValue;
+      this.negation = negation;
+    }
+
+    public boolean isNegation() {
+      return negation;
     }
 
     @Override
@@ -617,7 +623,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         result.add(
             BuiltCondition.of(
                 DATA_CONTAINS,
-                Predicate.CONTAINS,
+                negation ? Predicate.NOT_CONTAINS : Predicate.CONTAINS,
                 new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
       }
       return result;
@@ -626,26 +632,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     public BuiltCondition get() {
       throw new UnsupportedOperationException("For $all filter we always use getALL() method");
-    }
-  }
-
-  /** Filter for document where all values exists for an array */
-  public static class NotAnyFilter extends SetFilterBase<String> {
-    private final Object arrayValue;
-
-    public NotAnyFilter(DocValueHasher hasher, String path, Object arrayValue) {
-      super("array_contains", path, getHashValue(hasher, path, arrayValue), Operator.NOT_CONTAINS);
-      this.arrayValue = arrayValue;
-    }
-
-    @Override
-    JsonNode asJson(JsonNodeFactory nodeFactory) {
-      return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
-    }
-
-    @Override
-    boolean canAddField() {
-      return false;
     }
   }
 

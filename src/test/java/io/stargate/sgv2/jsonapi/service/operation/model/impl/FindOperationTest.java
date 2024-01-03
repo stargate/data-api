@@ -1091,7 +1091,7 @@ public class FindOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters1 =
-          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
       FindOperation operation =
           FindOperation.unsortedSingle(
@@ -1161,7 +1161,7 @@ public class FindOperationTest extends OperationTestBase {
                   "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
       explicitOr.comparisonExpressions.get(0).setDBFilters(filter1);
       List<DBFilterBase> filters2 =
-          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
       explicitOr.comparisonExpressions.get(1).setDBFilters(filters2);
 
       FindOperation operation =
@@ -2465,7 +2465,7 @@ public class FindOperationTest extends OperationTestBase {
         LogicalExpression implicitAnd1 = LogicalExpression.and();
         implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
         List<DBFilterBase> filters1 =
-            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
         implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1);
         FindOperation operation1 =
             FindOperation.unsortedSingle(
@@ -2481,7 +2481,7 @@ public class FindOperationTest extends OperationTestBase {
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
         List<DBFilterBase> filters2 =
-            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
         implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2);
 
         FindOperation operation2 =
