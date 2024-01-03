@@ -1927,7 +1927,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                     "find": {
                       "filter" : {
                         "$not": [
-                          {"age": {"$gte" : "21"}}
+                          {"age": {"$gte" : 21}}
                         ]
                       }
                     }
