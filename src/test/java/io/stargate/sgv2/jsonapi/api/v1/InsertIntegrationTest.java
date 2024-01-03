@@ -585,9 +585,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void tryInsertTooLongName() {
-      // Max property name: 48 characters, let's try 50
+      // Max property name: 100 characters, let's try 102
       ObjectNode doc = MAPPER.createObjectNode();
-      doc.put("prop_12345_123456789_123456789_123456789_123456789", 72);
+      doc.put(
+          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_x",
+          72);
       final String json =
           """
                   {
@@ -611,7 +613,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Property name length (50) exceeds maximum allowed (48)"));
+                  "Document size limitation violated: Property name length (102) exceeds maximum allowed (100)"));
     }
 
     @Test
