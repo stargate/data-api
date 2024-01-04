@@ -415,7 +415,7 @@ The maximum size of field values are:
 
 #### Document Array Limits
 
-The maximum length of an array is 100 elements.
+The maximum length of an array is 1,000 elements.
 
 ### Equality handling with arrays and subdocs
 
