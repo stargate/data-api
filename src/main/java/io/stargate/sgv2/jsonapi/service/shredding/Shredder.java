@@ -69,23 +69,7 @@ public class Shredder {
       JsonNode doc,
       String commandName,
       JsonSerializationDeserializationMetrics serializationMetrics) {
-    // Use the provided metrics handler or the default one if none is provided
-    JsonSerializationDeserializationMetrics effectiveHandler =
-        serializationMetrics != null
-            ? serializationMetrics
-            : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);
-
-    if (effectiveHandler instanceof DefaultJsonSerializationMetrics) {
-      // Start the timer
-      Timer.Sample sample = Timer.start(meterRegistry);
-      // Call the original shred method
-      WritableShreddedDocument shreddedDocument = shred(doc);
-      // Produce metrics after shredding is done
-      serializationMetrics.addMetrics(sample, meterRegistry, commandName);
-      return shreddedDocument;
-    }
-
-    return shred(doc);
+    return shredWithMetrics(doc, null, commandName, serializationMetrics);
   }
 
   public WritableShreddedDocument shredWithMetrics(
@@ -95,18 +79,18 @@ public class Shredder {
       JsonSerializationDeserializationMetrics serializationMetrics) {
 
     // Use the provided metrics handler or the default one if none is provided
-    JsonSerializationDeserializationMetrics effectiveHandler =
+    JsonSerializationDeserializationMetrics effectiveMetrics =
         serializationMetrics != null
             ? serializationMetrics
             : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);
 
-    if (effectiveHandler instanceof DefaultJsonSerializationMetrics) {
+    if (effectiveMetrics instanceof DefaultJsonSerializationMetrics) {
       // Start the timer
       Timer.Sample sample = Timer.start(meterRegistry);
       // Call the original shred method
       WritableShreddedDocument shreddedDocument = shred(doc, txId);
       // Produce metrics after shredding is done
-      serializationMetrics.addMetrics(sample, meterRegistry, commandName);
+      effectiveMetrics.addMetrics(sample, commandName);
       return shreddedDocument;
     }
 
