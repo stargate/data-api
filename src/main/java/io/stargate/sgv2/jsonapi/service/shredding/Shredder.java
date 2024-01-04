@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.DefaultJsonSerializationMetrics;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonSerializationDeserializationMetrics;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -58,16 +58,72 @@ public class Shredder {
   }
 
   /**
+   * Wrapper function for shred function to add serialization metrics
+   *
+   * @param doc {@link JsonNode} to shred.
+   * @param commandName command name
+   * @param serializationMetrics add metrics for serialization
+   * @return WritableShreddedDocument
+   */
+  public WritableShreddedDocument shredWithMetrics(
+      JsonNode doc,
+      String commandName,
+      JsonSerializationDeserializationMetrics serializationMetrics) {
+    // Use the provided metrics handler or the default one if none is provided
+    JsonSerializationDeserializationMetrics effectiveHandler =
+        serializationMetrics != null
+            ? serializationMetrics
+            : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);
+
+    if (effectiveHandler instanceof DefaultJsonSerializationMetrics) {
+      // Start the timer
+      Timer.Sample sample = Timer.start(meterRegistry);
+      // Call the original shred method
+      WritableShreddedDocument shreddedDocument = shred(doc);
+      // Produce metrics after shredding is done
+      serializationMetrics.addMetrics(sample, meterRegistry, commandName);
+      return shreddedDocument;
+    }
+
+    return shred(doc);
+  }
+
+  public WritableShreddedDocument shredWithMetrics(
+      JsonNode doc,
+      UUID txId,
+      String commandName,
+      JsonSerializationDeserializationMetrics serializationMetrics) {
+
+    // Use the provided metrics handler or the default one if none is provided
+    JsonSerializationDeserializationMetrics effectiveHandler =
+        serializationMetrics != null
+            ? serializationMetrics
+            : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);
+
+    if (effectiveHandler instanceof DefaultJsonSerializationMetrics) {
+      // Start the timer
+      Timer.Sample sample = Timer.start(meterRegistry);
+      // Call the original shred method
+      WritableShreddedDocument shreddedDocument = shred(doc, txId);
+      // Produce metrics after shredding is done
+      serializationMetrics.addMetrics(sample, meterRegistry, commandName);
+      return shreddedDocument;
+    }
+
+    return shred(doc);
+  }
+
+  /**
    * Shreds a single JSON node into a {@link WritableShreddedDocument} representation.
    *
    * @param document {@link JsonNode} to shred.
    * @return WritableShreddedDocument
    */
-  public WritableShreddedDocument shred(JsonNode document, String commandName) {
-    return shred(document, commandName, null);
+  public WritableShreddedDocument shred(JsonNode document) {
+    return shred(document, null);
   }
 
-  public WritableShreddedDocument shred(JsonNode doc, String commandName, UUID txId) {
+  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -85,13 +141,8 @@ public class Shredder {
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
     try {
-      Timer.Sample sample = Timer.start(meterRegistry);
       // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
       docJson = objectMapper.writeValueAsString(docWithId);
-      Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-      Tag serializationTag = Tag.of(jsonApiMetricsConfig.serializationJson(), "true");
-      Tags tags = Tags.of(commandTag, serializationTag);
-      sample.stop(meterRegistry.timer(jsonApiMetricsConfig.serializationMetricsName(), tags));
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
     }

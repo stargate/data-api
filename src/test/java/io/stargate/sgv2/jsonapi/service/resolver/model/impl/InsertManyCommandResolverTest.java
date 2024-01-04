@@ -60,10 +60,8 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first =
-                    shredder.shred(command.documents().get(0), "InsertOperation");
-                WritableShreddedDocument second =
-                    shredder.shred(command.documents().get(1), "InsertOperation");
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
@@ -100,10 +98,8 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first =
-                    shredder.shred(command.documents().get(0), "InsertOperation");
-                WritableShreddedDocument second =
-                    shredder.shred(command.documents().get(1), "InsertOperation");
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
@@ -140,10 +136,8 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first =
-                    shredder.shred(command.documents().get(0), "InsertOperation");
-                WritableShreddedDocument second =
-                    shredder.shred(command.documents().get(1), "InsertOperation");
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
                 assertThat(first.queryVectorValues().length).isEqualTo(3);
                 assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(second.queryVectorValues().length).isEqualTo(3);
@@ -184,10 +178,8 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first =
-                    shredder.shred(command.documents().get(0), "InsertOperation");
-                WritableShreddedDocument second =
-                    shredder.shred(command.documents().get(1), "InsertOperation");
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
@@ -225,10 +217,8 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first =
-                    shredder.shred(command.documents().get(0), "InsertOperation");
-                WritableShreddedDocument second =
-                    shredder.shred(command.documents().get(1), "InsertOperation");
+                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
+                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();

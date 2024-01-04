@@ -88,7 +88,7 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
       SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
@@ -138,7 +138,7 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       final JsonNode jsonNode = objectMapper.readTree(doc1);
-      final WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
+      final WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
       SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
       // Note: FALSE is needed to "fail" insertion, producing failure message
@@ -209,10 +209,10 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -286,10 +286,10 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -366,10 +366,10 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -445,10 +445,10 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -528,9 +528,9 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -612,10 +612,10 @@ public class InsertOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1, "InsertOperation");
+      WritableShreddedDocument shredDocument1 = shredder.shred(jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2, "InsertOperation");
+      WritableShreddedDocument shredDocument2 = shredder.shred(jsonNode2);
 
       SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
       SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
@@ -685,7 +685,7 @@ public class InsertOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
       SimpleStatement insertStmt = vectorInsertStatement(shredDocument);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
@@ -736,7 +736,7 @@ public class InsertOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
       SimpleStatement insertStmt = vectorInsertStatement(shredDocument);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
@@ -788,7 +788,7 @@ public class InsertOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = shredder.shred(jsonNode, "InsertOperation");
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument);
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 

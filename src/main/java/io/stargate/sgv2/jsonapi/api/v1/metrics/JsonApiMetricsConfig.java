@@ -35,6 +35,10 @@ public interface JsonApiMetricsConfig {
   String serializationMetricsName();
 
   @NotBlank
+  @WithDefault("command.processor.deserialization")
+  String deserializationMetricsName();
+
+  @NotBlank
   @WithDefault("command.processor.process")
   String metricsName();
 

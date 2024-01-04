@@ -54,8 +54,7 @@ class InsertOneCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument expected =
-                    shredder.shred(command.document(), "InsertOperation");
+                WritableShreddedDocument expected = shredder.shred(command.document());
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
@@ -84,8 +83,7 @@ class InsertOneCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument expected =
-                    shredder.shred(command.document(), "InsertOperation");
+                WritableShreddedDocument expected = shredder.shred(command.document());
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
@@ -115,8 +113,7 @@ class InsertOneCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument expected =
-                    shredder.shred(command.document(), "InsertOperation");
+                WritableShreddedDocument expected = shredder.shred(command.document());
                 assertThat(expected.queryVectorValues().length).isEqualTo(3);
                 assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(op.commandContext())
