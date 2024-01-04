@@ -593,11 +593,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /** Filter for document where all values exists for an array */
-  public static class AllFilter extends SetFilterBase<String> {
-    private final Object arrayValue;
+  public static class AllFilter extends DBFilterBase {
+    private final List<Object> arrayValue;
 
-    public AllFilter(DocValueHasher hasher, String path, Object arrayValue) {
-      super("array_contains", path, getHashValue(hasher, path, arrayValue), Operator.CONTAINS);
+    public AllFilter(String path, List<Object> arrayValue) {
+      super(path);
       this.arrayValue = arrayValue;
     }
 
@@ -609,6 +609,23 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     boolean canAddField() {
       return false;
+    }
+
+    public List<BuiltCondition> getAll() {
+      final ArrayList<BuiltCondition> result = new ArrayList<>();
+      for (Object value : arrayValue) {
+        result.add(
+            BuiltCondition.of(
+                DATA_CONTAINS,
+                Predicate.CONTAINS,
+                new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+      }
+      return result;
+    }
+
+    @Override
+    public BuiltCondition get() {
+      throw new UnsupportedOperationException("For $all filter we always use getALL() method");
     }
   }
 

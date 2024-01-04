@@ -7,12 +7,12 @@
     <version>2.1.0-BETA-7</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.0-BETA-6-SNAPSHOT</version>
+  <version>1.0.0-BETA-7-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Nov-2023, tatu: but may use 2.16 now that it's available -->
-    <jackson.version>2.16.0</jackson.version>
+    <jackson.version>2.16.1</jackson.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
@@ -101,6 +101,10 @@
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-logging-json</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
