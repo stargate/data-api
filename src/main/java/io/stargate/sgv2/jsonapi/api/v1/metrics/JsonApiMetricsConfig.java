@@ -27,16 +27,12 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
-  @WithDefault("serialization.json")
-  String serializationJson();
+  @WithDefault("json.process.type")
+  String jsonProcessTypeTag();
 
   @NotBlank
-  @WithDefault("command.processor.serialization")
-  String serializationMetricsName();
-
-  @NotBlank
-  @WithDefault("command.processor.deserialization")
-  String deserializationMetricsName();
+  @WithDefault("json.process.metrics")
+  String jsonProcessMetricsName();
 
   @NotBlank
   @WithDefault("command.processor.process")

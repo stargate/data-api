@@ -20,8 +20,8 @@ public class DefaultJsonSerializationMetrics implements JsonSerializationDeseria
   @Override
   public void addMetrics(Timer.Sample sample, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag serializationTag = Tag.of(jsonApiMetricsConfig.serializationJson(), "true");
+    Tag serializationTag = Tag.of(jsonApiMetricsConfig.jsonProcessTypeTag(), "Serialization");
     Tags tags = Tags.of(commandTag, serializationTag);
-    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.serializationMetricsName(), tags));
+    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.jsonProcessMetricsName(), tags));
   }
 }
