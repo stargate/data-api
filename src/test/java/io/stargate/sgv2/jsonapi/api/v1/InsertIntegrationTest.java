@@ -569,18 +569,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       final String LONGEST_NAME = "a".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
       ObjectNode doc = MAPPER.createObjectNode();
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongName");
-      // Max property name: 48 characters
+      // Max property name: 100 characters
       doc.put(LONGEST_NAME, "stuff");
       _verifyInsert("docWithLongName", doc);
-
-      // But let's also ensure nested names longer than this are allowed
-      final String LONGEST_NAME2 =
-          "b".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
-      doc = MAPPER.createObjectNode();
-      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongNestedName");
-      ObjectNode rootProp = doc.putObject(LONGEST_NAME);
-      rootProp.put(LONGEST_NAME2, 123);
-      _verifyInsert("docWithLongNestedName", doc);
     }
 
     @Test
@@ -614,6 +605,53 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "errors[0].message",
               startsWith(
                   "Document size limitation violated: Property name length (102) exceeds maximum allowed (100)"));
+    }
+
+    // Test for nested paths, to ensure longer paths work too.
+    @Test
+    public void insertLongestValidPath() {
+      // Need to hard-code knowledge of defaults here: max path is 250 (max single prop name 100)
+      // Since commas are also counted, let's do 4 x 60 (plus 3 commas) == 243 chars
+      ObjectNode doc = MAPPER.createObjectNode();
+      ObjectNode prop1 = doc.putObject("a123".repeat(15));
+      ObjectNode prop2 = prop1.putObject("b123".repeat(15));
+      ObjectNode prop3 = prop2.putObject("c123".repeat(15));
+      prop3.put("d123".repeat(15), 42);
+      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongPath");
+      _verifyInsert("docWithLongPath", doc);
+    }
+
+    @Test
+    public void tryInsertTooLongPath() {
+      // Max path: 250 characters. Exceed with 272
+      ObjectNode doc = MAPPER.createObjectNode();
+      ObjectNode prop1 = doc.putObject("a".repeat(90));
+      ObjectNode prop2 = prop1.putObject("b".repeat(90));
+      prop2.put("c".repeat(90), true);
+      final String json =
+              """
+                      {
+                        "insertOne": {
+                          "document": %s
+                        }
+                      }
+                      """
+                      .formatted(doc);
+      given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("errors", hasSize(1))
+              .body("errors[0].exceptionClass", is("JsonApiException"))
+              .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+              .body(
+                      "errors[0].message",
+                      startsWith(
+                              "Document size limitation violated: Property path length (272) exceeds maximum allowed (250)"));
     }
 
     @Test
