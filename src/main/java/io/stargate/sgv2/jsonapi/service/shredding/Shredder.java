@@ -8,7 +8,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.DefaultJsonSerializationMetrics;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonSerializationDeserializationMetrics;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessMetrics;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -68,7 +68,7 @@ public class Shredder {
   public WritableShreddedDocument shredWithMetrics(
       JsonNode doc,
       String commandName,
-      JsonSerializationDeserializationMetrics serializationMetrics) {
+      JsonProcessMetrics serializationMetrics) {
     return shredWithMetrics(doc, null, commandName, serializationMetrics);
   }
 
@@ -76,10 +76,10 @@ public class Shredder {
       JsonNode doc,
       UUID txId,
       String commandName,
-      JsonSerializationDeserializationMetrics serializationMetrics) {
+      JsonProcessMetrics serializationMetrics) {
 
     // Use the provided metrics handler or the default one if none is provided
-    JsonSerializationDeserializationMetrics effectiveMetrics =
+    JsonProcessMetrics effectiveMetrics =
         serializationMetrics != null
             ? serializationMetrics
             : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);

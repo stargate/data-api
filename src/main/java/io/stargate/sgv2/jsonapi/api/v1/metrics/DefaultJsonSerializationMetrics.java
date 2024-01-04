@@ -6,7 +6,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Inject;
 
-public class DefaultJsonSerializationMetrics implements JsonSerializationDeserializationMetrics {
+public class DefaultJsonSerializationMetrics implements JsonProcessMetrics {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
