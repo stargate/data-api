@@ -66,17 +66,12 @@ public class Shredder {
    * @return WritableShreddedDocument
    */
   public WritableShreddedDocument shredWithMetrics(
-      JsonNode doc,
-      String commandName,
-      JsonProcessMetrics serializationMetrics) {
+      JsonNode doc, String commandName, JsonProcessMetrics serializationMetrics) {
     return shredWithMetrics(doc, null, commandName, serializationMetrics);
   }
 
   public WritableShreddedDocument shredWithMetrics(
-      JsonNode doc,
-      UUID txId,
-      String commandName,
-      JsonProcessMetrics serializationMetrics) {
+      JsonNode doc, UUID txId, String commandName, JsonProcessMetrics serializationMetrics) {
 
     // Use the provided metrics handler or the default one if none is provided
     JsonProcessMetrics effectiveMetrics =
