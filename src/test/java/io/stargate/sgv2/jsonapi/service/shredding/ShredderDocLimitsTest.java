@@ -272,7 +272,7 @@ public class ShredderDocLimitsTest {
           .hasMessageEndingWith(
               " Property path length (259) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
-                  + ") (name 'longPropertyName')");
+                  + ") (path ends with 'longPropertyName')");
       ;
     }
 
