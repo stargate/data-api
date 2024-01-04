@@ -217,6 +217,18 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
+    public void allowNotTooLongPath() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      // Create 3-levels, 80 chars each, so 242 chars (3 names, 2 dots); below 250 max
+      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
+      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
+      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
+      // and then one short one, for 244 char total path
+      ob3.put("x", 123);
+      assertThat(shredder.shred(doc)).isNotNull();
+    }
+
+    @Test
     public void catchTooLongNames() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
@@ -239,6 +251,28 @@ public class ShredderDocLimitsTest {
                   + ") (name '"
                   + propName
                   + "')");
+      ;
+    }
+
+    @Test
+    public void catchTooLongPaths() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      // Create 3-levels, 80 chars each, so close to 250; and then one bit longer value
+      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
+      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
+      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
+      ob3.put("longPropertyName", 123);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " Property path length (259) exceeds maximum allowed ("
+                  + docLimits.maxPropertyPathLength()
+                  + ") (name 'longPropertyName')");
       ;
     }
 
