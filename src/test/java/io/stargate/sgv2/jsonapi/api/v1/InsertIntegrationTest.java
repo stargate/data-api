@@ -529,7 +529,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void tryInsertTooBigArray() {
-      // Max array elements allowed is 100; add a few more
+      // Max array elements allowed is 1000; add a few more
       ObjectNode doc = MAPPER.createObjectNode();
       ArrayNode arr = doc.putArray("arr");
       final int ARRAY_LEN = MAX_ARRAY_LENGTH + 10;
@@ -561,7 +561,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               is(
                   "Document size limitation violated: number of elements an Array has ("
                       + ARRAY_LEN
-                      + ") exceeds maximum allowed (100)"));
+                      + ") exceeds maximum allowed ("+MAX_ARRAY_LENGTH+")"));
     }
 
     @Test
