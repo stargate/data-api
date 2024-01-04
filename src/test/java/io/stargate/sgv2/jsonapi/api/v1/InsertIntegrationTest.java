@@ -629,29 +629,29 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       ObjectNode prop2 = prop1.putObject("b".repeat(90));
       prop2.put("c".repeat(90), true);
       final String json =
-              """
+          """
                       {
                         "insertOne": {
                           "document": %s
                         }
                       }
                       """
-                      .formatted(doc);
+              .formatted(doc);
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-              .then()
-              .statusCode(200)
-              .body("errors", hasSize(1))
-              .body("errors[0].exceptionClass", is("JsonApiException"))
-              .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
-              .body(
-                      "errors[0].message",
-                      startsWith(
-                              "Document size limitation violated: Property path length (272) exceeds maximum allowed (250)"));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document size limitation violated: Property path length (272) exceeds maximum allowed (250)"));
     }
 
     @Test
