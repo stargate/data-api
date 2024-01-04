@@ -36,8 +36,14 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum length of a single Number value (in characters) */
   int DEFAULT_MAX_NUMBER_LENGTH = 50;
 
-  /** Defines the maximum length of property names in JSON documents */
-  int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 48;
+  /** Defines the default maximum length of individual property names in JSON documents */
+  int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 100;
+
+  /**
+   * Defines the default maximum total length of path to individual properties JSON documents:
+   * composed of individual Object property names separated by dots (".").
+   */
+  int DEFAULT_MAX_PROPERTY_PATH_LENGTH = 250;
 
   /**
    * Defines the default maximum length of a single String value: 8,000 bytes with 1.0.0-BETA-6 and
@@ -58,12 +64,23 @@ public interface DocumentLimitsConfig {
   int maxDepth();
 
   /**
-   * @return Defines the maximum length of property names in JSON documents, defaults to {@code 48
-   *     characters} (note: length is for individual name segments; full dotted names can be longer)
+   * @return Defines the maximum length of property names in JSON documents, defaults to {@code 100
+   *     characters} (note: length is for individual name segments; full dotted names can be longer,
+   *     see {@link #maxPropertyPathLength()}}
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_PROPERTY_NAME_LENGTH)
   int maxPropertyNameLength();
+
+  /**
+   * @return Defines the maximum length of paths to properties in JSON documents, defaults to {@code
+   *     250 characters}. Note that this is the total length of the path (sequence of one or more
+   *     individual property names separated by comma): individual property name lengths are limited
+   *     by {@link #maxPropertyNameLength()}.
+   */
+  @Positive
+  @WithDefault("" + DEFAULT_MAX_PROPERTY_PATH_LENGTH)
+  int maxPropertyPathLength();
 
   /**
    * @return Defines the maximum number of properties any single Object in JSON document can
