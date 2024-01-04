@@ -561,7 +561,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               is(
                   "Document size limitation violated: number of elements an Array has ("
                       + ARRAY_LEN
-                      + ") exceeds maximum allowed ("+MAX_ARRAY_LENGTH+")"));
+                      + ") exceeds maximum allowed ("
+                      + MAX_ARRAY_LENGTH
+                      + ")"));
     }
 
     @Test
