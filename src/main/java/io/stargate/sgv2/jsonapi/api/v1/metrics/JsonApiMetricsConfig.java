@@ -35,10 +35,6 @@ public interface JsonApiMetricsConfig {
   String jsonStringLength();
 
   @NotBlank
-  @WithDefault("json.size")
-  String jsonSize();
-
-  @NotBlank
   @WithDefault("json.shredding.metrics")
   String jsonShreddingMetricsName();
 
