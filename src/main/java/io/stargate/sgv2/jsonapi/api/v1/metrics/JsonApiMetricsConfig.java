@@ -27,12 +27,20 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
-  @WithDefault("json.process.type")
-  String jsonProcessTypeTag();
+  @WithDefault("json.shredding.type")
+  String jsonShreddingTypeTag();
 
   @NotBlank
-  @WithDefault("json.process.metrics")
-  String jsonProcessMetricsName();
+  @WithDefault("json.string.length")
+  String jsonStringLength();
+
+  @NotBlank
+  @WithDefault("json.string.bytes")
+  String jsonStringBytes();
+
+  @NotBlank
+  @WithDefault("json.shredding.metrics")
+  String jsonShreddingMetricsName();
 
   @NotBlank
   @WithDefault("command.processor.process")

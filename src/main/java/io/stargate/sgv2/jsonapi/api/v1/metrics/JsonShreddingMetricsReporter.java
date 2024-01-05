@@ -27,8 +27,17 @@ public class JsonShreddingMetricsReporter {
 
   public void stopTimer(WritableShreddedDocument doc, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag serializationTag = Tag.of(jsonApiMetricsConfig.jsonProcessTypeTag(), "Serialization");
-    Tags tags = Tags.of(commandTag, serializationTag);
-    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.jsonProcessMetricsName(), tags));
+    Tag serializationTag = Tag.of(jsonApiMetricsConfig.jsonShreddingTypeTag(), "Serialization");
+    Tag jsonStringLenTag =
+        Tag.of(jsonApiMetricsConfig.jsonStringLength(), String.valueOf(doc.docJson().length()));
+    Tag jsonStringBytesTag =
+        Tag.of(
+            jsonApiMetricsConfig.jsonStringBytes(),
+            String.valueOf(doc.docJson().getBytes().length));
+    Tag jsonSizeTag =
+        Tag.of(jsonApiMetricsConfig.jsonStringBytes(), String.valueOf(doc.docJsonNode().size()));
+    Tags tags =
+        Tags.of(commandTag, serializationTag, jsonStringLenTag, jsonStringBytesTag, jsonSizeTag);
+    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.jsonShreddingMetricsName(), tags));
   }
 }
