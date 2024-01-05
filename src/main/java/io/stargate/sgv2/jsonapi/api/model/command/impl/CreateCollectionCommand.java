@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import jakarta.validation.constraints.*;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -40,7 +41,15 @@ public record CreateCollectionCommand(
               description = "Embedding api configuration to support `$vectorize`",
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
-          VectorizeConfig vectorize) {
+          VectorizeConfig vectorize,
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional indexing configuration to provide allow/deny list of fields for indexing",
+              type = SchemaType.OBJECT,
+              implementation = IndexingConfig.class)
+          IndexingConfig indexing) {
 
     public record VectorSearchConfig(
         @Positive(message = "dimension should be greater than `0`")
@@ -69,6 +78,22 @@ public record CreateCollectionCommand(
         this.metric = metric == null ? "cosine" : metric;
       }
     }
+
+    public record IndexingConfig(
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(
+                description = "List of allowed indexing fields",
+                type = SchemaType.ARRAY,
+                implementation = String.class)
+            @Nullable
+            List<String> allow,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(
+                description = "List of denied indexing fields",
+                type = SchemaType.ARRAY,
+                implementation = String.class)
+            @Nullable
+            List<String> deny) {}
 
     public record VectorizeConfig(
         @NotNull
