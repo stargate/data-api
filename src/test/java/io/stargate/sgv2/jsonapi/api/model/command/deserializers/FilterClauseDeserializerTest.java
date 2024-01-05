@@ -772,10 +772,7 @@ public class FilterClauseDeserializerTest {
       String json =
           """
           {
-            "$not":[
-                {"name" : "testName"},
-                {"age" : "testAge"}
-             ]
+            "$not": {"name" : "testName"}
           }
           """;
       final ComparisonExpression expectedResult1 =
@@ -785,37 +782,12 @@ public class FilterClauseDeserializerTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
               null);
-      final ComparisonExpression expectedResult2 =
-          new ComparisonExpression(
-              "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testAge", JsonType.STRING))),
-              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-          .isEqualTo(LogicalExpression.LogicalOperator.OR);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
-          .hasSize(2);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
       assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations())
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
           .isEqualTo(expectedResult1.getFilterOperations());
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(1)
-                  .getFilterOperations())
-          .isEqualTo(expectedResult2.getFilterOperations());
     }
 
     @Test
@@ -823,7 +795,8 @@ public class FilterClauseDeserializerTest {
       String json =
           """
               {
-                "$not":[
+                "$not": {
+                  "$and" : [
                     {"f1" : {"$eq" : "testName"}},
                     {"f2" : {"$ne" : "testName"}},
                     {"f3" : {"$in" : ["testName1","testName2"]}},
@@ -836,6 +809,7 @@ public class FilterClauseDeserializerTest {
                     {"f10" : {"$exists" : false}},
                     {"f11" : {"$size" : 1}}
                  ]
+                }
               }
               """;
       final ComparisonExpression eq =
@@ -1038,12 +1012,7 @@ public class FilterClauseDeserializerTest {
       String json =
           """
               {
-                "$not":[
-                  { "$not" : [
-                    {"name" : "testName"},
-                    {"age" : "testAge"}
-                  ]}
-                 ]
+                "$not":{ "$not" : {"name" : "testName"} }
               }
               """;
       final ComparisonExpression expectedResult1 =
@@ -1053,37 +1022,12 @@ public class FilterClauseDeserializerTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
               null);
-      final ComparisonExpression expectedResult2 =
-          new ComparisonExpression(
-              "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
-              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-          .isEqualTo(LogicalExpression.LogicalOperator.AND);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
-          .hasSize(2);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
       assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations())
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
           .isEqualTo(expectedResult1.getFilterOperations());
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(1)
-                  .getFilterOperations())
-          .isEqualTo(expectedResult2.getFilterOperations());
     }
 
     @Test
@@ -1091,14 +1035,7 @@ public class FilterClauseDeserializerTest {
       String json =
           """
             {
-              "$not":[
-                { "$not" : [
-                  { "$not" : [
-                    {"name" : "testName"},
-                    {"age" : "testAge"}
-                  ]}
-                ]}
-               ]
+              "$not": { "$not" : { "$not" : {"name" : "testName"} } }
             }
             """;
       final ComparisonExpression expectedResult1 =
@@ -1108,37 +1045,12 @@ public class FilterClauseDeserializerTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
               null);
-      final ComparisonExpression expectedResult2 =
-          new ComparisonExpression(
-              "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testAge", JsonType.STRING))),
-              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
-          .isEqualTo(LogicalExpression.LogicalOperator.OR);
-      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
-          .hasSize(2);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
       assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(0)
-                  .getFilterOperations())
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
           .isEqualTo(expectedResult1.getFilterOperations());
-      assertThat(
-              filterClause
-                  .logicalExpression()
-                  .logicalExpressions
-                  .get(0)
-                  .comparisonExpressions
-                  .get(1)
-                  .getFilterOperations())
-          .isEqualTo(expectedResult2.getFilterOperations());
     }
 
     @Test
@@ -1265,18 +1177,17 @@ public class FilterClauseDeserializerTest {
                 "age": "testAge"
             },
             {
-              "$not": [
-                 {
-                    "$or": [
-                        {
-                            "address": "testAddress"
-                        },
-                        {
-                            "tags": { "$size" : 1}
-                        }
-                    ]
-                }
-              ]
+              "$not":
+              {
+                "$or": [
+                    {
+                        "address": "testAddress"
+                    },
+                    {
+                        "tags": { "$size" : 1}
+                    }
+                ]
+             }
             }
           ]
         }

@@ -86,8 +86,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private void populateExpression(
       LogicalExpression logicalExpression, Map.Entry<String, JsonNode> entry) {
     if (entry.getValue().isObject()) {
+      if (entry.getKey().equals("$not")) {
+        LogicalExpression innerLogicalExpression = LogicalExpression.not();
+        populateExpression(innerLogicalExpression, entry.getValue());
+        logicalExpression.addLogicalExpression(innerLogicalExpression);
+      } else {
+        logicalExpression.addComparisonExpression(createComparisonExpression(entry));
+      }
       // inside of this entry, only implicit and, no explicit $and/$or
-      logicalExpression.addComparisonExpression(createComparisonExpression(entry));
     } else if (entry.getValue().isArray()) {
       LogicalExpression innerLogicalExpression = null;
       switch (entry.getKey()) {
@@ -96,9 +102,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           break;
         case "$or":
           innerLogicalExpression = LogicalExpression.or();
-          break;
-        case "$not":
-          innerLogicalExpression = LogicalExpression.not();
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
           throw new JsonApiException(

@@ -1735,9 +1735,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               {
                 "find": {
                   "filter" : {
-                    "$not": [
-                      {"username": "user1"}
-                    ]
+                    "$not": {"username": "user1"}
                   }
                 }
               }
@@ -1802,36 +1800,35 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 {
                     "find": {
                         "filter": {
-                            "$not": [
-                              {
-                                "$and": [
-                                  {
-                                      "$or": [
-                                          {
-                                              "username": "user3"
-                                          },
-                                          {
-                                              "subdoc.id": {
-                                                  "$eq": "abc"
-                                              }
-                                          }
-                                      ]
-                                  },
-                                  {
-                                      "$or": [
-                                          {
-                                              "username": "user2"
-                                          },
-                                          {
-                                              "subdoc.id": {
-                                                  "$eq": "xyz"
-                                              }
-                                          }
-                                      ]
-                                  }
-                                ]
-                              }
-                            ]
+                            "$not":
+                            {
+                              "$and": [
+                                {
+                                    "$or": [
+                                        {
+                                            "username": "user3"
+                                        },
+                                        {
+                                            "subdoc.id": {
+                                                "$eq": "abc"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "$or": [
+                                        {
+                                            "username": "user2"
+                                        },
+                                        {
+                                            "subdoc.id": {
+                                                "$eq": "xyz"
+                                            }
+                                        }
+                                    ]
+                                }
+                              ]
+                            }
                         }
                     }
                 }
@@ -1862,11 +1859,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {
             "find": {
               "filter" : {
-                "$not":[
-                  { "$not" : [
-                    {"username" : "user1"}
-                  ]}
-                ]
+                "$not":{ "$not" : {"username" : "user1"} }
               }
             }
           }
@@ -1896,7 +1889,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
               {
                 "find": {
-                  "filter" : {"$not" : [{"tags" : {"$all" : ["tag1", "tag2"]}}] }
+                  "filter" : {"$not" : {"tags" : {"$all" : ["tag1", "tag2"]}} }
                 }
               }
               """;
@@ -1926,9 +1919,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   {
                     "find": {
                       "filter" : {
-                        "$not": [
-                          {"age": {"$gte" : 21}}
-                        ]
+                        "$not": {"age": {"$gte" : 21}}
                       }
                     }
                   }
