@@ -175,15 +175,15 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void allowDocWithManyArrayElements() {
-      // Max allowed 100, add 90
-      final ObjectNode doc = docWithNArrayElems("arr", 90);
+      // Max allowed 1000, test:
+      final ObjectNode doc = docWithNArrayElems("arr", docLimits.maxArrayLength());
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyArrayElements() {
-      // Let's add 120 elements (max allowed: 100)
-      final ObjectNode doc = docWithNArrayElems("arr", 120);
+      final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
+      final ObjectNode doc = docWithNArrayElems("arr", arraySizeAboveMax);
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
           .isNotNull()
@@ -191,7 +191,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has (120) exceeds maximum allowed ("
+              " number of elements an Array has ("
+                  + arraySizeAboveMax
+                  + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
                   + ")");
     }

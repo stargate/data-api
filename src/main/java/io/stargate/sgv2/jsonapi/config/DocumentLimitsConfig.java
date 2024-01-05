@@ -20,7 +20,7 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
 
   /** Defines the default maximum length (in elements) of a single Array value */
-  int DEFAULT_MAX_ARRAY_LENGTH = 100;
+  int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
   /**
    * Defines the default maximum number of properties any single Object in JSON document can contain
@@ -118,7 +118,7 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
   int maxStringLengthInBytes();
 
-  /** @return Maximum length of an array. */
+  /** @return Maximum length of an Array in document, defaults to {@code 1,000} elements. */
   @Positive
   @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();
