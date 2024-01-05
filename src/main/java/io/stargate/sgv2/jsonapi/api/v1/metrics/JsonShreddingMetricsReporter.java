@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import jakarta.inject.Inject;
 
+/** Reports the time and size of json shredding. */
 public class JsonShreddingMetricsReporter {
 
   private final MeterRegistry meterRegistry;

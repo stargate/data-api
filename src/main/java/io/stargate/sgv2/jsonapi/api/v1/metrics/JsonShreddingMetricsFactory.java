@@ -4,7 +4,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
+/**
+ * Configures the {@link JsonShreddingMetricsReporter} instance that going to be injectable and used
+ * in the app.
+ */
 public class JsonShreddingMetricsFactory {
+  /** Replaces the CDI producer for JsonShreddingMetricsReporter built into Quarkus. */
   @Singleton
   @Produces
   JsonShreddingMetricsReporter jsonShreddingMetricsReporter(
