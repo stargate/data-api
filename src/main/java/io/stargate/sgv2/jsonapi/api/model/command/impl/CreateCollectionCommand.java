@@ -5,8 +5,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.constraints.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -93,7 +97,44 @@ public record CreateCollectionCommand(
                 type = SchemaType.ARRAY,
                 implementation = String.class)
             @Nullable
-            List<String> deny) {}
+            List<String> deny) {
+
+      public void validate() {
+        if (allow() != null && deny() != null) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_INDEXING_USAGE,
+              ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                  + " - allow and deny cannot be used together");
+        }
+
+        if (allow() == null && deny() == null) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_INDEXING_USAGE,
+              ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                  + " - allow or deny should be provided");
+        }
+
+        if (allow() != null) {
+          Set<String> dedupe = new HashSet<>(allow());
+          if (dedupe.size() != allow().size()) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_INDEXING_USAGE,
+                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                    + " - allow cannot contain duplicates");
+          }
+        }
+
+        if (deny() != null) {
+          Set<String> dedupe = new HashSet<>(deny());
+          if (dedupe.size() != deny().size()) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_INDEXING_USAGE,
+                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                    + " - deny cannot contain duplicates");
+          }
+        }
+      }
+    }
 
     public record VectorizeConfig(
         @NotNull

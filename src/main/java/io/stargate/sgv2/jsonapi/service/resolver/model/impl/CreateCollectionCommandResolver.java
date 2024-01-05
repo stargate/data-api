@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOpe
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.HashSet;
-import java.util.Set;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -63,45 +61,15 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
       // handling indexing options
       if (command.options().indexing() != null) {
-        if (command.options().indexing().allow() != null
-            && command.options().indexing().deny() != null) {
-          throw new JsonApiException(
-              ErrorCode.INVALID_INDEXING_USAGE,
-              ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                  + " - allow and deny cannot be used together");
-        }
-
-        if (command.options().indexing().allow() != null) {
-          Set<String> dedupe = new HashSet<>(command.options().indexing().allow());
-          if (dedupe.size() != command.options().indexing().allow().size()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_INDEXING_USAGE,
-                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                    + " - allow cannot contain duplicates");
-          }
-        }
-
-        if (command.options().indexing().deny() != null) {
-          Set<String> dedupe = new HashSet<>(command.options().indexing().deny());
-          if (dedupe.size() != command.options().indexing().deny().size()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_INDEXING_USAGE,
-                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                    + " - deny cannot contain duplicates");
-          }
-        }
+        // validation of configuration
+        command.options().indexing().validate();
 
         // No need to process if both are null or empty
-        if (!((command.options().indexing().allow() == null
-                || command.options().indexing().allow().isEmpty())
-            && (command.options().indexing().deny() == null
-                || command.options().indexing().deny().isEmpty()))) {
-          try {
-            indexing = objectMapper.writeValueAsString(command.options().indexing());
-          } catch (JsonProcessingException e) {
-            // This should never happen because the object is extracted from json request
-            throw new RuntimeException(e);
-          }
+        try {
+          indexing = objectMapper.writeValueAsString(command.options().indexing());
+        } catch (JsonProcessingException e) {
+          // This should never happen because the object is extracted from json request
+          throw new RuntimeException(e);
         }
       }
 
