@@ -246,7 +246,7 @@ public class Shredder {
 
     // Second: traverse to check for other constraints
     AtomicInteger totalProperties = new AtomicInteger(0);
-    validateObjectValue(limits, null, doc, 0, totalProperties);
+    validateObjectValue(limits, null, doc, 0, 0, totalProperties);
     if (totalProperties.get() > limits.maxDocumentProperties()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -263,11 +263,14 @@ public class Shredder {
       String referringPropertyName,
       JsonNode value,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     if (value.isObject()) {
-      validateObjectValue(limits, referringPropertyName, value, depth, totalProperties);
+      validateObjectValue(
+          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
     } else if (value.isArray()) {
-      validateArrayValue(limits, referringPropertyName, value, depth, totalProperties);
+      validateArrayValue(
+          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
     } else if (value.isTextual()) {
       validateStringValue(limits, value);
     }
@@ -278,6 +281,7 @@ public class Shredder {
       String referringPropertyName,
       JsonNode arrayValue,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
@@ -307,7 +311,7 @@ public class Shredder {
     }
 
     for (JsonNode element : arrayValue) {
-      validateDocValue(limits, null, element, depth, totalProperties);
+      validateDocValue(limits, null, element, depth, parentPathLength, totalProperties);
     }
   }
 
@@ -316,6 +320,7 @@ public class Shredder {
       String referringPropertyName,
       JsonNode objectValue,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
@@ -335,13 +340,16 @@ public class Shredder {
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      validateObjectKey(limits, entry.getKey(), entry.getValue(), depth);
-      validateDocValue(limits, entry.getKey(), entry.getValue(), depth, totalProperties);
+      final String key = entry.getKey();
+      validateObjectKey(limits, key, entry.getValue(), depth, parentPathLength);
+      // Path through property consists of segements separated by comma:
+      final int propPathLength = parentPathLength + 1 + key.length();
+      validateDocValue(limits, key, entry.getValue(), depth, propPathLength, totalProperties);
     }
   }
 
   private void validateObjectKey(
-      DocumentLimitsConfig limits, String key, JsonNode value, int depth) {
+      DocumentLimitsConfig limits, String key, JsonNode value, int depth, int parentPathLength) {
     if (key.length() > documentLimits.maxPropertyNameLength()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -375,6 +383,17 @@ public class Shredder {
                 "%s: Property name ('%s') contains character(s) not allowed",
                 ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
       }
+    }
+    int totalPathLength = parentPathLength + key.length();
+    if (totalPathLength > documentLimits.maxPropertyPathLength()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: Property path length (%d) exceeds maximum allowed (%s) (path ends with '%s')",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              totalPathLength,
+              limits.maxPropertyPathLength(),
+              key));
     }
   }
 
