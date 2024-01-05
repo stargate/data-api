@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.DefaultJsonSerializationMetrics;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessMetrics;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonShreddingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -41,20 +37,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
-  private final MeterRegistry meterRegistry;
-
-  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+  private final JsonShreddingMetricsReporter jsonShreddingMetricsReporter;
 
   @Inject
   public Shredder(
       ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
-      MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig) {
+      JsonShreddingMetricsReporter jsonShreddingMetricsReporter) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
-    this.meterRegistry = meterRegistry;
-    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+    this.jsonShreddingMetricsReporter = jsonShreddingMetricsReporter;
   }
 
   /**
@@ -62,34 +54,21 @@ public class Shredder {
    *
    * @param doc {@link JsonNode} to shred.
    * @param commandName command name
-   * @param serializationMetrics add metrics for serialization
    * @return WritableShreddedDocument
    */
-  public WritableShreddedDocument shredWithMetrics(
-      JsonNode doc, String commandName, JsonProcessMetrics serializationMetrics) {
-    return shredWithMetrics(doc, null, commandName, serializationMetrics);
+  public WritableShreddedDocument shredWithMetrics(JsonNode doc, String commandName) {
+    return shredWithMetrics(doc, null, commandName);
   }
 
-  public WritableShreddedDocument shredWithMetrics(
-      JsonNode doc, UUID txId, String commandName, JsonProcessMetrics serializationMetrics) {
+  public WritableShreddedDocument shredWithMetrics(JsonNode doc, UUID txId, String commandName) {
+    // Start the timer
+    jsonShreddingMetricsReporter.startTimer();
+    // Perform the shredding operation
+    WritableShreddedDocument result = shred(doc, txId);
+    // Finish timing and report metrics
+    jsonShreddingMetricsReporter.stopTimer(result, commandName);
 
-    // Use the provided metrics handler or the default one if none is provided
-    JsonProcessMetrics effectiveMetrics =
-        serializationMetrics != null
-            ? serializationMetrics
-            : new DefaultJsonSerializationMetrics(meterRegistry, jsonApiMetricsConfig);
-
-    if (effectiveMetrics instanceof DefaultJsonSerializationMetrics) {
-      // Start the timer
-      Timer.Sample sample = Timer.start(meterRegistry);
-      // Call the original shred method
-      WritableShreddedDocument shreddedDocument = shred(doc, txId);
-      // Produce metrics after shredding is done
-      effectiveMetrics.addMetrics(sample, commandName);
-      return shreddedDocument;
-    }
-
-    return shred(doc);
+    return result;
   }
 
   /**

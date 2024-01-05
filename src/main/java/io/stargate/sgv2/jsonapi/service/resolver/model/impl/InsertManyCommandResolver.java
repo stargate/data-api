@@ -37,7 +37,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream()
-            .map(doc -> shredder.shredWithMetrics(doc, command.getClass().getSimpleName(), null))
+            .map(doc -> shredder.shredWithMetrics(doc, null, command.getClass().getSimpleName()))
             .toList();
 
     // resolve ordered
