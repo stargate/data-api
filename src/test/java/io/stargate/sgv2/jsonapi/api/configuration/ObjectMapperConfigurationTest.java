@@ -463,6 +463,72 @@ class ObjectMapperConfigurationTest {
     }
 
     @Test
+    public void happyPathIndexingAllow() throws Exception {
+      String json =
+          """
+              {
+                "createCollection": {
+                  "name": "some_name",
+                  "options": {
+                    "indexing": {
+                      "allow": ["field1", "field2"]
+                    }
+                  }
+                }
+              }
+              """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                String name = createCollection.name();
+                assertThat(name).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().indexing()).isNotNull();
+                assertThat(createCollection.options().indexing().deny()).isNull();
+                assertThat(createCollection.options().indexing().allow()).hasSize(2);
+                assertThat(createCollection.options().indexing().allow())
+                    .contains("field1", "field2");
+              });
+    }
+
+    @Test
+    public void happyPathIndexingDeny() throws Exception {
+      String json =
+          """
+                  {
+                    "createCollection": {
+                      "name": "some_name",
+                      "options": {
+                        "indexing": {
+                          "deny": ["field1", "field2"]
+                        }
+                      }
+                    }
+                  }
+                  """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateCollectionCommand.class,
+              createCollection -> {
+                String name = createCollection.name();
+                assertThat(name).isNotNull();
+                assertThat(createCollection.options()).isNotNull();
+                assertThat(createCollection.options().indexing()).isNotNull();
+                assertThat(createCollection.options().indexing().allow()).isNull();
+                assertThat(createCollection.options().indexing().deny()).hasSize(2);
+                assertThat(createCollection.options().indexing().deny())
+                    .contains("field1", "field2");
+              });
+    }
+
+    @Test
     public void happyPathVectorSearchDefaultFunction() throws Exception {
       String json =
           """
