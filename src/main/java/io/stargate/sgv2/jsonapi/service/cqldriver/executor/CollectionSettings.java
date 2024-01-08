@@ -141,45 +141,44 @@ public record CollectionSettings(
       return new CollectionSettings(
           collectionName, vectorEnabled, vectorSize, function, null, null, null);
     } else {
+      String vectorizeServiceName = null;
+      String modelName = null;
+      JsonNode commentConfig;
       try {
-        String vectorizeServiceName = null;
-        String modelName = null;
-
-        JsonNode commentConfig = objectMapper.readTree(comment);
-        JsonNode vectorizeConfig = commentConfig.path("vectorize");
-        if (!vectorizeConfig.isMissingNode()) {
-          vectorizeServiceName = vectorizeConfig.path("service").textValue();
-          JsonNode optionsNode = vectorizeConfig.path("options");
-          modelName = optionsNode.path("modelName").textValue();
-          if (!(vectorizeServiceName != null
-              && !vectorizeServiceName.isEmpty()
-              && modelName != null
-              && !modelName.isEmpty())) {
-            // This should never happen, VectorizeConfig check null, unless it fails
-            throw new JsonApiException(
-                VECTORIZECONFIG_CHECK_FAIL,
-                "%s, please check 'vectorize' configuration."
-                    .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
-          }
-        }
-        IndexingConfig indexingConfig = null;
-        JsonNode indexing = commentConfig.path("indexing");
-        if (!indexing.isMissingNode()) {
-          indexingConfig = IndexingConfig.fromJson(indexing);
-        }
-        return new CollectionSettings(
-            collectionName,
-            vectorEnabled,
-            vectorSize,
-            function,
-            vectorizeServiceName,
-            modelName,
-            indexingConfig);
+        commentConfig = objectMapper.readTree(comment);
       } catch (JsonProcessingException e) {
         // This should never happen, already check if vectorize is a valid JSON
-        throw new RuntimeException(
-            "Invalid json string, please check 'vectorize' configuration.", e);
+        throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
       }
+      JsonNode vectorizeConfig = commentConfig.path("vectorize");
+      if (!vectorizeConfig.isMissingNode()) {
+        vectorizeServiceName = vectorizeConfig.path("service").textValue();
+        JsonNode optionsNode = vectorizeConfig.path("options");
+        modelName = optionsNode.path("modelName").textValue();
+        if (!(vectorizeServiceName != null
+            && !vectorizeServiceName.isEmpty()
+            && modelName != null
+            && !modelName.isEmpty())) {
+          // This should never happen, VectorizeConfig check null, unless it fails
+          throw new JsonApiException(
+              VECTORIZECONFIG_CHECK_FAIL,
+              "%s, please check 'vectorize' configuration."
+                  .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+        }
+      }
+      IndexingConfig indexingConfig = null;
+      JsonNode indexing = commentConfig.path("indexing");
+      if (!indexing.isMissingNode()) {
+        indexingConfig = IndexingConfig.fromJson(indexing);
+      }
+      return new CollectionSettings(
+          collectionName,
+          vectorEnabled,
+          vectorSize,
+          function,
+          vectorizeServiceName,
+          modelName,
+          indexingConfig);
     }
   }
 }

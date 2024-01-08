@@ -104,14 +104,14 @@ public record CreateCollectionCommand(
           throw new JsonApiException(
               ErrorCode.INVALID_INDEXING_USAGE,
               ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                  + " - allow and deny cannot be used together");
+                  + " - `allow` and `deny` cannot be used together");
         }
 
         if (allow() == null && deny() == null) {
           throw new JsonApiException(
               ErrorCode.INVALID_INDEXING_USAGE,
               ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                  + " - allow or deny should be provided");
+                  + " - `allow` or `deny` should be provided");
         }
 
         if (allow() != null) {
@@ -120,7 +120,7 @@ public record CreateCollectionCommand(
             throw new JsonApiException(
                 ErrorCode.INVALID_INDEXING_USAGE,
                 ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                    + " - allow cannot contain duplicates");
+                    + " - `allow` cannot contain duplicates");
           }
         }
 
@@ -130,7 +130,7 @@ public record CreateCollectionCommand(
             throw new JsonApiException(
                 ErrorCode.INVALID_INDEXING_USAGE,
                 ErrorCode.INVALID_INDEXING_USAGE.getMessage()
-                    + " - deny cannot contain duplicates");
+                    + " - `deny` cannot contain duplicates");
           }
         }
       }

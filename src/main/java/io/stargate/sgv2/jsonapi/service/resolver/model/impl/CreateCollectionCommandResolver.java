@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
@@ -54,8 +53,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
 
     if (command.options() != null) {
-      String vectorize = null;
-      String indexing = null;
+      boolean vectorize = false;
+      boolean indexing = false;
       int vectorSize = 0;
       String function = null;
 
@@ -63,14 +62,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (command.options().indexing() != null) {
         // validation of configuration
         command.options().indexing().validate();
-
+        indexing = true;
         // No need to process if both are null or empty
-        try {
-          indexing = objectMapper.writeValueAsString(command.options().indexing());
-        } catch (JsonProcessingException e) {
-          // This should never happen because the object is extracted from json request
-          throw new RuntimeException(e);
-        }
+
       }
 
       // handling vector and vectorize options
@@ -92,29 +86,19 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                   documentLimitsConfig.maxVectorEmbeddingLength()));
         }
         if (command.options().vectorize() != null) {
-          try {
-            vectorize = objectMapper.writeValueAsString(command.options().vectorize());
-          } catch (JsonProcessingException e) {
-            // This should never happen because the object is extracted from json request
-            throw new RuntimeException(e);
-          }
+          vectorize = true;
         }
       }
 
       String comment = null;
-      if (indexing != null || vectorize != null) {
+      if (indexing || vectorize) {
         final ObjectNode objectNode = objectMapper.createObjectNode();
-        try {
-          if (indexing != null) {
-            objectNode.put("indexing", objectMapper.readTree(indexing));
-          }
-          if (vectorize != null) {
-            objectNode.put("vectorize", objectMapper.readTree(vectorize));
-          }
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
+        if (indexing) {
+          objectNode.putPOJO("indexing", command.options().indexing());
         }
-
+        if (vectorize) {
+          objectNode.putPOJO("vectorize", command.options().vectorize());
+        }
         comment = objectNode.toString();
       }
 

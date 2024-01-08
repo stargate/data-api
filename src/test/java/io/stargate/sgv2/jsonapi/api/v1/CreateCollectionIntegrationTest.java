@@ -94,7 +94,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "function" : "cosine"
                       },
                       "indexing" : {
-                        "allow" : ["field1", "field2"]
+                        "allow" : ["field1", "field2", "address.city", "_id"]
                       }
                     }
                   }
@@ -112,7 +112,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "function" : "cosine"
                       },
                       "indexing" : {
-                        "deny" : ["field1", "field2"]
+                        "deny" : ["field1", "field2", "address.city", "_id"]
                       }
                     }
                   }
@@ -362,7 +362,9 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", is("Invalid indexing usage - allow cannot contain duplicates"))
+          .body(
+              "errors[0].message",
+              is("Invalid indexing definition - `allow` cannot contain duplicates"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_USAGE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -379,7 +381,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid indexing usage - allow and deny cannot be used together"))
+              is("Invalid indexing definition - `allow` and `deny` cannot be used together"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_USAGE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 

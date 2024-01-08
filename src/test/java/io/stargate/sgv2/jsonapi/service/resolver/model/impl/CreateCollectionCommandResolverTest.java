@@ -167,7 +167,7 @@ class CreateCollectionCommandResolverTest {
     }
 
     @Test
-    public void happyPathIndexingError() throws Exception {
+    public void indexingOptionsError() throws Exception {
       String json =
           """
           {
@@ -196,7 +196,8 @@ class CreateCollectionCommandResolverTest {
               e -> {
                 JsonApiException exception = (JsonApiException) e;
                 assertThat(exception.getMessage())
-                    .isEqualTo("Invalid indexing usage - allow and deny cannot be used together");
+                    .isEqualTo(
+                        "Invalid indexing definition - `allow` and `deny` cannot be used together");
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INDEXING_USAGE);
               });
     }
