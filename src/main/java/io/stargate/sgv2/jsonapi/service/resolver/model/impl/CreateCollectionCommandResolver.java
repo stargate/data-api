@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
@@ -51,44 +51,74 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Override
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
-    if (command.options() != null && command.options().vector() != null) {
-      if (!dataStoreConfig.vectorSearchEnabled()) {
-        throw new JsonApiException(
-            ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
-            ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
+
+    if (command.options() != null) {
+      boolean vectorize = false;
+      boolean indexing = false;
+      int vectorSize = 0;
+      String function = null;
+
+      // handling indexing options
+      if (command.options().indexing() != null) {
+        // validation of configuration
+        command.options().indexing().validate();
+        indexing = true;
+        // No need to process if both are null or empty
+
       }
-      final int vectorSize = command.options().vector().dimension();
-      if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
-        throw new JsonApiException(
-            ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG,
-            String.format(
-                "%s: %d (max %d)",
-                ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG.getMessage(),
-                vectorSize,
-                documentLimitsConfig.maxVectorEmbeddingLength()));
-      }
-      String vectorize = null;
-      if (command.options().vectorize() != null) {
-        try {
-          vectorize = objectMapper.writeValueAsString(command.options().vectorize());
-        } catch (JsonProcessingException e) {
-          // This should never happen because the object is extracted from json request
-          throw new RuntimeException(e);
+
+      // handling vector and vectorize options
+      if (command.options().vector() != null) {
+        if (!dataStoreConfig.vectorSearchEnabled()) {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
+              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
+        }
+        function = command.options().vector().metric();
+        vectorSize = command.options().vector().dimension();
+        if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG,
+              String.format(
+                  "%s: %d (max %d)",
+                  ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG.getMessage(),
+                  vectorSize,
+                  documentLimitsConfig.maxVectorEmbeddingLength()));
+        }
+        if (command.options().vectorize() != null) {
+          vectorize = true;
         }
       }
 
-      return CreateCollectionOperation.withVectorSearch(
-          ctx,
-          dbLimitsConfig,
-          objectMapper,
-          cqlSessionCache,
-          command.name(),
-          vectorSize,
-          command.options().vector().metric(),
-          vectorize);
+      String comment = null;
+      if (indexing || vectorize) {
+        final ObjectNode objectNode = objectMapper.createObjectNode();
+        if (indexing) {
+          objectNode.putPOJO("indexing", command.options().indexing());
+        }
+        if (vectorize) {
+          objectNode.putPOJO("vectorize", command.options().vectorize());
+        }
+        comment = objectNode.toString();
+      }
+
+      if (command.options().vector() != null) {
+        return CreateCollectionOperation.withVectorSearch(
+            ctx,
+            dbLimitsConfig,
+            objectMapper,
+            cqlSessionCache,
+            command.name(),
+            vectorSize,
+            function,
+            comment);
+      } else {
+        return CreateCollectionOperation.withoutVectorSearch(
+            ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name(), comment);
+      }
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
-          ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name());
+          ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name(), null);
     }
   }
 }

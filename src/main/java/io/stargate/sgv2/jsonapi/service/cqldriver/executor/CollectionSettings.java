@@ -13,8 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Refactored as seperate class that represent a collection property.
@@ -32,7 +34,22 @@ public record CollectionSettings(
     int vectorSize,
     SimilarityFunction similarityFunction,
     String vectorizeServiceName,
-    String modelName) {
+    String modelName,
+    IndexingConfig indexingConfig) {
+
+  public record IndexingConfig(Set<String> allowed, Set<String> denied) {
+    public static IndexingConfig fromJson(JsonNode jsonNode) {
+      Set<String> allowed = new HashSet<>();
+      Set<String> denied = new HashSet<>();
+      if (jsonNode.has("allow")) {
+        jsonNode.get("allow").forEach(node -> allowed.add(node.asText()));
+      }
+      if (jsonNode.has("deny")) {
+        jsonNode.get("deny").forEach(node -> denied.add(node.asText()));
+      }
+      return new IndexingConfig(allowed, denied);
+    }
+  }
 
   /**
    * The similarity function used for the vector index. This is only applicable if the vector index
@@ -86,21 +103,18 @@ public record CollectionSettings(
           function = CollectionSettings.SimilarityFunction.fromString(functionName);
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
-      if (comment != null && !comment.isBlank()) {
-        return createCollectionSettingsFromJson(
-            collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
-      } else {
-        return new CollectionSettings(
-            collectionName, vectorEnabled, vectorSize, function, null, null);
-      }
+      return createCollectionSettings(
+          collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
     } else { // if not vector collection
-      return new CollectionSettings(
+      // handling comment so get the indexing config from comment
+      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
+      return createCollectionSettings(
           collectionName,
           vectorEnabled,
           0,
           CollectionSettings.SimilarityFunction.UNDEFINED,
-          null,
-          null);
+          comment,
+          objectMapper);
     }
   }
 
@@ -109,46 +123,62 @@ public record CollectionSettings(
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction similarityFunction,
-      String vectorize,
+      String comment,
       ObjectMapper objectMapper) {
-    // parse vectorize to get vectorizeServiceName and modelName
-    if (vectorize != null && !vectorize.isBlank()) {
-      return createCollectionSettingsFromJson(
-          collectionName, vectorEnabled, vectorSize, similarityFunction, vectorize, objectMapper);
-    } else {
-      return new CollectionSettings(
-          collectionName, vectorEnabled, vectorSize, similarityFunction, null, null);
-    }
+    return createCollectionSettings(
+        collectionName, vectorEnabled, vectorSize, similarityFunction, comment, objectMapper);
   }
 
-  private static CollectionSettings createCollectionSettingsFromJson(
+  private static CollectionSettings createCollectionSettings(
       String collectionName,
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction function,
-      String vectorize,
+      String comment,
       ObjectMapper objectMapper) {
-    try {
-      JsonNode vectorizeConfig = objectMapper.readTree(vectorize);
-      String vectorizeServiceName = vectorizeConfig.path("service").textValue();
-      JsonNode optionsNode = vectorizeConfig.path("options");
-      String modelName = optionsNode.path("modelName").textValue();
-      if (vectorizeServiceName != null
-          && !vectorizeServiceName.isEmpty()
-          && modelName != null
-          && !modelName.isEmpty()) {
-        return new CollectionSettings(
-            collectionName, vectorEnabled, vectorSize, function, vectorizeServiceName, modelName);
-      } else {
-        // This should never happen, VectorizeConfig check null, unless it fails
-        throw new JsonApiException(
-            VECTORIZECONFIG_CHECK_FAIL,
-            "%s, please check 'vectorize' configuration."
-                .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+
+    if (comment == null || comment.isBlank()) {
+      return new CollectionSettings(
+          collectionName, vectorEnabled, vectorSize, function, null, null, null);
+    } else {
+      String vectorizeServiceName = null;
+      String modelName = null;
+      JsonNode commentConfig;
+      try {
+        commentConfig = objectMapper.readTree(comment);
+      } catch (JsonProcessingException e) {
+        // This should never happen, already check if vectorize is a valid JSON
+        throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
       }
-    } catch (JsonProcessingException e) {
-      // This should never happen, already check if vectorize is a valid JSON
-      throw new RuntimeException("Invalid json string, please check 'vectorize' configuration.", e);
+      JsonNode vectorizeConfig = commentConfig.path("vectorize");
+      if (!vectorizeConfig.isMissingNode()) {
+        vectorizeServiceName = vectorizeConfig.path("service").textValue();
+        JsonNode optionsNode = vectorizeConfig.path("options");
+        modelName = optionsNode.path("modelName").textValue();
+        if (!(vectorizeServiceName != null
+            && !vectorizeServiceName.isEmpty()
+            && modelName != null
+            && !modelName.isEmpty())) {
+          // This should never happen, VectorizeConfig check null, unless it fails
+          throw new JsonApiException(
+              VECTORIZECONFIG_CHECK_FAIL,
+              "%s, please check 'vectorize' configuration."
+                  .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+        }
+      }
+      IndexingConfig indexingConfig = null;
+      JsonNode indexing = commentConfig.path("indexing");
+      if (!indexing.isMissingNode()) {
+        indexingConfig = IndexingConfig.fromJson(indexing);
+      }
+      return new CollectionSettings(
+          collectionName,
+          vectorEnabled,
+          vectorSize,
+          function,
+          vectorizeServiceName,
+          modelName,
+          indexingConfig);
     }
   }
 }

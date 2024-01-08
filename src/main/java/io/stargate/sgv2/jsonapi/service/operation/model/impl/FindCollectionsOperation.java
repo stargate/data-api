@@ -115,7 +115,7 @@ public record FindCollectionsOperation(
                                 collectionProperty.similarityFunction().name().toLowerCase());
                         options =
                             new CreateCollectionCommand.Options(
-                                vectorSearchConfig, vectorizeConfig);
+                                vectorSearchConfig, vectorizeConfig, null);
                       }
                       // CreateCollectionCommand object is created for convenience to generate json
                       // response. The code is not creating a collection here.

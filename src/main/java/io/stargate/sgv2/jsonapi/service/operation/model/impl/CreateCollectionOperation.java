@@ -34,7 +34,7 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
-    String vectorize)
+    String comment)
     implements Operation {
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
@@ -47,7 +47,7 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
-      String vectorize) {
+      String comment) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -57,7 +57,7 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
-        vectorize);
+        comment);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -65,9 +65,18 @@ public record CreateCollectionOperation(
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
-      String name) {
+      String name,
+      String comment) {
     return new CreateCollectionOperation(
-        commandContext, dbLimitsConfig, objectMapper, cqlSessionCache, name, false, 0, null, null);
+        commandContext,
+        dbLimitsConfig,
+        objectMapper,
+        cqlSessionCache,
+        name,
+        false,
+        0,
+        null,
+        comment);
   }
 
   @Override
@@ -101,7 +110,7 @@ public record CreateCollectionOperation(
             vectorSearch,
             vectorSize,
             CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-            vectorize,
+            comment,
             objectMapper);
     // if table exists and user want to create a vector collection with the same name
     if (vectorSearch) {
@@ -244,8 +253,8 @@ public record CreateCollectionOperation(
               + vectorSize
               + ">, "
               + "    PRIMARY KEY (key))";
-      if (vectorize != null) {
-        createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
+      if (comment != null) {
+        createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
       }
       return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
     } else {
@@ -263,7 +272,9 @@ public record CreateCollectionOperation(
               + "    query_timestamp_values map<text, timestamp>, "
               + "    query_null_values   set<text>, "
               + "    PRIMARY KEY (key))";
-
+      if (comment != null) {
+        createTable = createTable + " WITH comment = '" + comment + "'";
+      }
       return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
     }
   }
