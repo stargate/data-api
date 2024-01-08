@@ -25,13 +25,13 @@ public interface DocumentLimitsConfig {
   /**
    * Defines the default maximum number of properties any single Object in JSON document can contain
    */
-  int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
+  int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
 
   /**
    * Defines the default maximum number of properties the whole JSON document can contain (including
    * Object- and Array-valued properties).
    */
-  int DEFAULT_MAX_DOC_PROPERTIES = 1000;
+  int DEFAULT_MAX_DOC_PROPERTIES = 2000;
 
   /** Defines the default maximum length of a single Number value (in characters) */
   int DEFAULT_MAX_NUMBER_LENGTH = 50;
@@ -50,6 +50,12 @@ public interface DocumentLimitsConfig {
    * later (16,000 characters before)
    */
   int DEFAULT_MAX_STRING_LENGTH_IN_BYTES = 8_000;
+
+  /**
+   * Defines the maximum dimension allowed for {@code $vector} field allowed: defaults to 4096 (as
+   * of 1.0.0-BETA-7).
+   */
+  int DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH = 4096;
 
   /**
    * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
@@ -84,7 +90,7 @@ public interface DocumentLimitsConfig {
 
   /**
    * @return Defines the maximum number of properties any single Object in JSON document can
-   *     contain, defaults to {@code 64} (note: this is not the total number of properties in the
+   *     contain, defaults to {@code 1,000} (note: this is not the total number of properties in the
    *     whole document, only on individual main or sub-document)
    */
   @Positive
@@ -93,16 +99,15 @@ public interface DocumentLimitsConfig {
 
   /**
    * @return Defines the maximum number of properties the whole JSON document can contain, defaults
-   *     to {@code 1000}, including Object- and Array-valued properties.
+   *     to {@code 2,000}, including Object- and Array-valued properties.
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
   int maxDocumentProperties();
 
   /**
-   * @return Defines the max size of filter fields, defaults to {@code 64}, which is tha same as the
-   *     maximum number of properties of a single Json object. (note: this does not count the fields
-   *     in '$operation' such as $in, $all)
+   * @return Defines the max size of filter fields, defaults to {@code 64}. (note: this does not
+   *     count the fields in '$operation' such as $in, $all)
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
@@ -124,12 +129,9 @@ public interface DocumentLimitsConfig {
   int maxArrayLength();
 
   /**
-   * @return Maximum length of Vector ($vector) array JSON API allows -- NOTE: backend data store
-   *     may limit length to a lower value; but we want to prevent handling of huge arrays before
-   *     trying to pass them to DB. Or, conversely, if data store does not limit length, to impose
-   *     something reasonable from JSON API perspective (for service-protection reasons).
+   * @return Maximum length of Vector ($vector) array allowed, defaults to {@code 4096} elements.
    */
   @Positive
-  @WithDefault("16000")
+  @WithDefault("" + DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH)
   int maxVectorEmbeddingLength();
 }

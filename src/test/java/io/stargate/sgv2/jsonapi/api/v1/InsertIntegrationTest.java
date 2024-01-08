@@ -829,10 +829,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
       tooManyPropsDoc.put("_id", 123);
 
-      // About 1200, just needs to be above 1000
+      // About 2100, just needs to be above 2000
       for (int i = 0; i < 40; ++i) {
         ObjectNode branch = tooManyPropsDoc.putObject("root" + i);
-        for (int j = 0; j < 30; ++j) {
+        for (int j = 0; j < 51; ++j) {
           branch.put("prop" + j, j);
         }
       }
@@ -861,7 +861,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith("Document size limitation violated: total number of properties ("))
-          .body("errors[0].message", endsWith(" in document exceeds maximum allowed (1000)"));
+          .body("errors[0].message", endsWith(" in document exceeds maximum allowed (2000)"));
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {
@@ -917,12 +917,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       boolean bigEnough = false;
 
       // Since we add one property before loop, reduce max by 1.
-      // Target is around 1 meg; can have at most 1000 properties, and for
+      // Target is around 1 meg; can have at most 2000 properties, and for
       // big doc we don't want to exceed 1000 bytes per property.
       // So let's make properties arrays of 4 Strings to get there.
-      final int ROOT_PROPS = DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES - 1;
-      final int LEAF_PROPS = 15; // so it's slightly under 1000 total properties, max
-      final String TEXT_2K = "abcd123 ".repeat(120); // 960 chars
+      final int ROOT_PROPS = 99;
+      final int LEAF_PROPS = 20; // so it's slightly under 2000 total properties, max
+      final String TEXT_1K = "abcd123 ".repeat(120); // 960 chars
 
       // Use double loop to create a document with a lot of properties, 2-level nesting
       for (int i = 0; i < ROOT_PROPS && !bigEnough; ++i) {
@@ -932,10 +932,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
         for (int j = 0; j < LEAF_PROPS && !bigEnough; ++j) {
           sb.append(",\n \"sub").append(j).append("\":");
           sb.append('[');
-          sb.append('"').append(TEXT_2K).append("\",");
-          sb.append('"').append(TEXT_2K).append("\",");
-          sb.append('"').append(TEXT_2K).append("\",");
-          sb.append('"').append(TEXT_2K).append("\"");
+          sb.append('"').append(TEXT_1K).append("\",");
+          sb.append('"').append(TEXT_1K).append("\",");
+          sb.append('"').append(TEXT_1K).append("\",");
+          sb.append('"').append(TEXT_1K).append("\"");
           sb.append(']');
           bigEnough = sb.length() >= minDocSize;
         }
