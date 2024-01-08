@@ -9,6 +9,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -29,8 +30,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   private static final String bigVectorCollectionName = "big_vector_collection";
   private static final String vectorSizeTestCollectionName = "vector_size_test_collection";
 
-  // Just has to be bigger than maximum array size
-  private static final int BIG_VECTOR_SIZE = 1000;
+  // Just has to be bigger than maximum array size (1000)
+  private static final int BIG_VECTOR_SIZE = 1536;
 
   @Nested
   @Order(1)
@@ -95,6 +96,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     public void failForTooBigVector() {
+      final int maxDimension = DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH;
+      final int tooHighDimension = maxDimension + 10;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -112,7 +115,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               }
             }
             """
-                  .formatted(99_999))
+                  .formatted(tooHighDimension))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -122,7 +125,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("VECTOR_SEARCH_FIELD_TOO_BIG"))
           .body(
               "errors[0].message",
-              startsWith("Vector embedding field '$vector' length too big: 99999 (max 16000)"));
+              startsWith(
+                  "Vector embedding field '$vector' length too big: "
+                      + tooHighDimension
+                      + " (max "
+                      + maxDimension
+                      + ")"));
     }
   }
 
