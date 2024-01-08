@@ -25,13 +25,13 @@ public interface DocumentLimitsConfig {
   /**
    * Defines the default maximum number of properties any single Object in JSON document can contain
    */
-  int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
+  int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
 
   /**
    * Defines the default maximum number of properties the whole JSON document can contain (including
    * Object- and Array-valued properties).
    */
-  int DEFAULT_MAX_DOC_PROPERTIES = 1000;
+  int DEFAULT_MAX_DOC_PROPERTIES = 2000;
 
   /** Defines the default maximum length of a single Number value (in characters) */
   int DEFAULT_MAX_NUMBER_LENGTH = 50;
@@ -90,7 +90,7 @@ public interface DocumentLimitsConfig {
 
   /**
    * @return Defines the maximum number of properties any single Object in JSON document can
-   *     contain, defaults to {@code 64} (note: this is not the total number of properties in the
+   *     contain, defaults to {@code 1,000} (note: this is not the total number of properties in the
    *     whole document, only on individual main or sub-document)
    */
   @Positive
@@ -99,16 +99,15 @@ public interface DocumentLimitsConfig {
 
   /**
    * @return Defines the maximum number of properties the whole JSON document can contain, defaults
-   *     to {@code 1000}, including Object- and Array-valued properties.
+   *     to {@code 2,000}, including Object- and Array-valued properties.
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
   int maxDocumentProperties();
 
   /**
-   * @return Defines the max size of filter fields, defaults to {@code 64}, which is tha same as the
-   *     maximum number of properties of a single Json object. (note: this does not count the fields
-   *     in '$operation' such as $in, $all)
+   * @return Defines the max size of filter fields, defaults to {@code 64}. (note: this does not
+   *     count the fields in '$operation' such as $in, $all)
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
