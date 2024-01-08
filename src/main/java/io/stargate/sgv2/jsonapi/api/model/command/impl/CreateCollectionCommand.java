@@ -102,15 +102,15 @@ public record CreateCollectionCommand(
       public void validate() {
         if (allow() != null && deny() != null) {
           throw new JsonApiException(
-              ErrorCode.INVALID_INDEXING_USAGE,
-              ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+              ErrorCode.INVALID_INDEXING_DEFINITION,
+              ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                   + " - `allow` and `deny` cannot be used together");
         }
 
         if (allow() == null && deny() == null) {
           throw new JsonApiException(
-              ErrorCode.INVALID_INDEXING_USAGE,
-              ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+              ErrorCode.INVALID_INDEXING_DEFINITION,
+              ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                   + " - `allow` or `deny` should be provided");
         }
 
@@ -118,8 +118,8 @@ public record CreateCollectionCommand(
           Set<String> dedupe = new HashSet<>(allow());
           if (dedupe.size() != allow().size()) {
             throw new JsonApiException(
-                ErrorCode.INVALID_INDEXING_USAGE,
-                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                ErrorCode.INVALID_INDEXING_DEFINITION,
+                ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                     + " - `allow` cannot contain duplicates");
           }
         }
@@ -128,8 +128,8 @@ public record CreateCollectionCommand(
           Set<String> dedupe = new HashSet<>(deny());
           if (dedupe.size() != deny().size()) {
             throw new JsonApiException(
-                ErrorCode.INVALID_INDEXING_USAGE,
-                ErrorCode.INVALID_INDEXING_USAGE.getMessage()
+                ErrorCode.INVALID_INDEXING_DEFINITION,
+                ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                     + " - `deny` cannot contain duplicates");
           }
         }

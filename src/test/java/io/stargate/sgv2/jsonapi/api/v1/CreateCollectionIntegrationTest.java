@@ -365,7 +365,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               is("Invalid indexing definition - `allow` cannot contain duplicates"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_USAGE"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
       // create vector collection with error indexing option
@@ -382,7 +382,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               is("Invalid indexing definition - `allow` and `deny` cannot be used together"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_USAGE"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
       // delete the collection

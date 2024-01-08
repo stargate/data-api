@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.Mock;
@@ -198,7 +197,8 @@ class CreateCollectionCommandResolverTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Invalid indexing definition - `allow` and `deny` cannot be used together");
-                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INDEXING_USAGE);
+                assertThat(exception.getErrorCode())
+                    .isEqualTo(ErrorCode.INVALID_INDEXING_DEFINITION);
               });
     }
 
