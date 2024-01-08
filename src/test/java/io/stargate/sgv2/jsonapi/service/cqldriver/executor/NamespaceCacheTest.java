@@ -166,6 +166,137 @@ public class NamespaceCacheTest {
     }
 
     @Test
+    public void checkValidJsonApiTableWithIndexing() {
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.getSchema(any(), any()))
+          .then(
+              i -> {
+                List<ColumnMetadata> partitionColumn =
+                    Lists.newArrayList(
+                        new DefaultColumnMetadata(
+                            CqlIdentifier.fromInternal("ks"),
+                            CqlIdentifier.fromInternal("table"),
+                            CqlIdentifier.fromInternal("key"),
+                            DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT),
+                            false));
+                Map<CqlIdentifier, ColumnMetadata> columns = new HashMap<>();
+                columns.put(
+                    CqlIdentifier.fromInternal("tx_id"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("tx_id"),
+                        DataTypes.TIMEUUID,
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("doc_json"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("doc_json"),
+                        DataTypes.TEXT,
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("exist_keys"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("exist_keys"),
+                        DataTypes.setOf(DataTypes.TEXT),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("array_size"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("array_size"),
+                        DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("array_contains"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("array_contains"),
+                        DataTypes.setOf(DataTypes.TEXT),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("query_bool_values"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("query_bool_values"),
+                        DataTypes.mapOf(DataTypes.TEXT, DataTypes.TINYINT),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("query_dbl_values"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("query_dbl_values"),
+                        DataTypes.mapOf(DataTypes.TEXT, DataTypes.DECIMAL),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("query_text_values"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("query_text_values"),
+                        DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("query_timestamp_values"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("query_timestamp_values"),
+                        DataTypes.mapOf(DataTypes.TEXT, DataTypes.TIMESTAMP),
+                        false));
+                columns.put(
+                    CqlIdentifier.fromInternal("query_null_values"),
+                    new DefaultColumnMetadata(
+                        CqlIdentifier.fromInternal("ks"),
+                        CqlIdentifier.fromInternal("table"),
+                        CqlIdentifier.fromInternal("query_null_values"),
+                        DataTypes.setOf(DataTypes.TEXT),
+                        false));
+
+                return Uni.createFrom()
+                    .item(
+                        Optional.of(
+                            new DefaultTableMetadata(
+                                CqlIdentifier.fromInternal("ks"),
+                                CqlIdentifier.fromInternal("table"),
+                                UUID.randomUUID(),
+                                false,
+                                false,
+                                partitionColumn,
+                                new HashMap<>(),
+                                columns,
+                                Map.of(
+                                    CqlIdentifier.fromInternal("comment"),
+                                    "{\"indexing\":{\"deny\":[\"comment\"]}}"),
+                                new HashMap<>())));
+              });
+      NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
+      CollectionSettings collectionSettings =
+          namespaceCache
+              .getCollectionProperties("table")
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      assertThat(collectionSettings)
+          .satisfies(
+              s -> {
+                assertThat(s.vectorEnabled()).isFalse();
+                assertThat(s.collectionName()).isEqualTo("table");
+                assertThat(s.indexingConfig().denied()).containsExactly("comment");
+              });
+    }
+
+    @Test
     public void checkInvalidJsonApiTable() {
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.getSchema(any(), any()))
