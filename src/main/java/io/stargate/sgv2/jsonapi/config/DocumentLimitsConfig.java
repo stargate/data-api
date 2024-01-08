@@ -52,6 +52,12 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_STRING_LENGTH_IN_BYTES = 8_000;
 
   /**
+   * Defines the maximum dimension allowed for {@code $vector} field allowed: defaults to 4096 (as
+   * of 1.0.0-BETA-7).
+   */
+  int DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH = 4096;
+
+  /**
    * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
    */
   @Positive
@@ -123,12 +129,9 @@ public interface DocumentLimitsConfig {
   int maxArrayLength();
 
   /**
-   * @return Maximum length of Vector ($vector) array JSON API allows -- NOTE: backend data store
-   *     may limit length to a lower value; but we want to prevent handling of huge arrays before
-   *     trying to pass them to DB. Or, conversely, if data store does not limit length, to impose
-   *     something reasonable from JSON API perspective (for service-protection reasons).
+   * @return Maximum length of Vector ($vector) array allowed, defaults to {@code 4096} elements.
    */
   @Positive
-  @WithDefault("16000")
+  @WithDefault("" + DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH)
   int maxVectorEmbeddingLength();
 }
