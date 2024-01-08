@@ -551,6 +551,53 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleMultiFilterWithOneField() throws Exception {
+      String json =
+          """
+                {
+                   "name": {
+                       "$ne": "Tim",
+                       "$exists": true
+                   }
+                }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("Tim", JsonType.STRING))),
+              null);
+
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
+              null);
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(2);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult1.getPath());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations()
+                  .get(0))
+          .isEqualTo(expectedResult2.getFilterOperations().get(0));
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(1).getPath())
+          .isEqualTo(expectedResult2.getPath());
+    }
+
+    @Test
     public void mustHandleIdFieldIn() throws Exception {
       String json = """
                {"_id" : {"$in": ["2", "3"]}}

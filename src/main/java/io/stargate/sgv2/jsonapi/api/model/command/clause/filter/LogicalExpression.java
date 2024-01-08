@@ -69,6 +69,16 @@ public class LogicalExpression {
     comparisonExpressions.add(comparisonExpression);
   }
 
+  public void addComparisonExpressions(List<ComparisonExpression> comparisonExpressionList) {
+    for (ComparisonExpression comparisonExpression : comparisonExpressionList) {
+      if (comparisonExpression.getPath().equals(DocumentConstants.Fields.DOC_ID)) {
+        totalIdComparisonExpressionCount++;
+      }
+      totalComparisonExpressionCount++;
+      comparisonExpressions.add(comparisonExpression);
+    }
+  }
+
   public LogicalOperator getLogicalRelation() {
     return logicalRelation;
   }
