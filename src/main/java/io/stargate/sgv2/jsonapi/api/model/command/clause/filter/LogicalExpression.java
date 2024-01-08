@@ -62,6 +62,9 @@ public class LogicalExpression {
   }
 
   public void addComparisonExpression(ComparisonExpression comparisonExpression) {
+    // Two counters totalIdComparisonExpressionCount and totalComparisonExpressionCount
+    // They are for validating the filters
+    // e.g. no more than one ID filter, maximum filter amount
     if (comparisonExpression.getPath().equals(DocumentConstants.Fields.DOC_ID)) {
       totalIdComparisonExpressionCount++;
     }
