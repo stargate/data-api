@@ -184,7 +184,8 @@ public class CollectionResource {
                         collection,
                         collectionProperty.vectorEnabled(),
                         collectionProperty.similarityFunction(),
-                        embeddingService);
+                        embeddingService,
+                        collectionProperty.indexingConfig());
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

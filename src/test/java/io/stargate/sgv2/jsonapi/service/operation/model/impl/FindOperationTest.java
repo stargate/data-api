@@ -54,7 +54,12 @@ public class FindOperationTest extends OperationTestBase {
 
   private final CommandContext VECTOR_COMMAND_CONTEXT =
       new CommandContext(
-          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          true,
+          CollectionSettings.SimilarityFunction.COSINE,
+          null,
+          null);
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(

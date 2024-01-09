@@ -13,7 +13,8 @@ public class TestEmbeddingService implements EmbeddingService {
           "collection",
           true,
           CollectionSettings.SimilarityFunction.COSINE,
-          new TestEmbeddingService());
+          new TestEmbeddingService(),
+          null);
 
   @Override
   public List<float[]> vectorize(List<String> texts) {

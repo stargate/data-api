@@ -22,13 +22,15 @@ public record CommandContext(
     String collection,
     boolean isVectorEnabled,
     CollectionSettings.SimilarityFunction similarityFunction,
-    EmbeddingService embeddingService) {
+    EmbeddingService embeddingService,
+    CollectionSettings.IndexingConfig indexingConfig) {
 
   public CommandContext(String namespace, String collection) {
-    this(namespace, collection, false, null, null);
+    this(namespace, collection, false, null, null, null);
   }
 
-  private static final CommandContext EMPTY = new CommandContext(null, null, false, null, null);
+  private static final CommandContext EMPTY =
+      new CommandContext(null, null, false, null, null, null);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}

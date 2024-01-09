@@ -60,7 +60,12 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
   private static final CommandContext COMMAND_VECTOR_CONTEXT =
       new CommandContext(
-          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          true,
+          CollectionSettings.SimilarityFunction.COSINE,
+          null,
+          null);
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
