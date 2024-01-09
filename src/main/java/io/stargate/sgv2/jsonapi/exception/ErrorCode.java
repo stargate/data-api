@@ -29,6 +29,8 @@ public enum ErrorCode {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
+  UNINDEXED_FILTER_PATH("Unindexed filter path"),
+
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),

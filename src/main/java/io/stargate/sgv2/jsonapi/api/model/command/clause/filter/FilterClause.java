@@ -33,12 +33,20 @@ public record FilterClause(LogicalExpression logicalExpression) {
   public void validatePath(String path, CollectionSettings.IndexingConfig indexingConfig) {
     if (!indexingConfig.allowed().isEmpty()) {
       if (!indexingConfig.allowed().contains(path)) {
-        throw new JsonApiException(ErrorCode.INVALID_INDEXING_DEFINITION);
+        throw new JsonApiException(
+            ErrorCode.UNINDEXED_FILTER_PATH,
+            String.format(
+                "%s: The filter path ('%s') is not indexed",
+                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
       }
     }
     if (!indexingConfig.denied().isEmpty()) {
       if (indexingConfig.denied().contains(path)) {
-        throw new JsonApiException(ErrorCode.INVALID_INDEXING_DEFINITION);
+        throw new JsonApiException(
+            ErrorCode.UNINDEXED_FILTER_PATH,
+            String.format(
+                "%s: The filter path ('%s') is not indexed",
+                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
       }
     }
   }
