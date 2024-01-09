@@ -34,7 +34,8 @@ public record CreateCollectionCommand(
   public record Options(
 
       // limit of returned documents
-      @Schema(
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Schema(
               description = "Vector search index configuration for the collection",
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
