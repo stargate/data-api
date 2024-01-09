@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -85,6 +86,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
+                    },
+                    "indexing": {
+                      "deny" : ["comment"]
                     }
                   }
                 }
@@ -117,6 +121,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
+                    },"indexing": {
+                      "deny" : ["comment"]
                     }
                   }
                 }
@@ -303,6 +309,69 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "errors[0].message",
               is("Unknown namespace should_not_be_there, you must create it first."));
+    }
+
+    @Test
+    @Order(7)
+    public void happyPathIndexingWithExplain() {
+      String json =
+          """
+                  {
+                    "createCollection": {
+                      "name": "%s",
+                      "options": {
+                        "indexing": {
+                          "deny" : ["comment"]
+                        }
+                      }
+                    }
+                  }
+                  """
+              .formatted("collection4");
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      String expected1 =
+          """
+                      {
+                        "name": "%s",
+                        "options" : {
+                          "indexing": {
+                            "deny" : ["comment"]
+                          }
+                        }
+                      }
+                        """
+              .formatted("collection4");
+      json =
+          """
+                  {
+                    "findCollections": {
+                      "options": {
+                        "explain" : true
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(4))
+          .body("status.collections", arrayContaining(jsonEquals(expected1)));
     }
   }
 
