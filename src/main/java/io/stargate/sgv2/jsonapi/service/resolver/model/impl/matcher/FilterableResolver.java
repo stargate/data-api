@@ -139,6 +139,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
+    // verify if filter fields are in deny list or not in allow list
+    command.filterClause().validate(commandContext.indexingConfig());
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > docLimits.maxFilterObjectProperties()) {
       throw new JsonApiException(

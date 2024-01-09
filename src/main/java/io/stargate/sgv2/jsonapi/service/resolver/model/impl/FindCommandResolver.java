@@ -59,10 +59,6 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
       includeSimilarity = options.includeSimilarity();
     }
 
-    // verify if filter fields are in deny list or not in allow list
-
-    command.filterClause().validate(commandContext.indexingConfig());
-
     // resolve sort clause
     SortClause sortClause = command.sortClause();
 
