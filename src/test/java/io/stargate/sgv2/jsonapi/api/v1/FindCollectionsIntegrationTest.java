@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -339,18 +338,20 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
-      String expected1 =
+      String expected1 = """
+      {name=TableName}
+      """;
+      String expected2 = """
+              {name=collection1}
+              """;
+      String expected3 =
           """
-                      {
-                        "name": "%s",
-                        "options" : {
-                          "indexing": {
-                            "deny" : ["comment"]
-                          }
-                        }
-                      }
-                        """
-              .formatted("collection4");
+      {name=collection2, options={vector={dimension=5, metric=cosine}, indexing={deny=[comment]}}}
+      """;
+      String expected4 =
+          """
+              {name=collection4, options={vector=null, indexing={deny=[comment]}}}
+              """;
       json =
           """
                   {
@@ -371,7 +372,13 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(4))
-          .body("status.collections", contains(jsonEquals(expected1)));
+          .body(
+              "status.collections",
+              containsInAnyOrder(
+                  jsonEquals(expected1),
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4)));
     }
   }
 
