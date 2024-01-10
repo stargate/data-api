@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Helper class that implements functionality needed to support projections on documents fetched via
@@ -48,7 +49,7 @@ public class DocumentProjector {
       JsonNode projectionDefinition, boolean includeSimilarity) {
     if (projectionDefinition == null) {
       if (includeSimilarity) {
-        return IDENTITY_PROJECTOR_WITH_SIMILARITY;
+        return identityProjectorWithSimilarity();
       } else {
         return identityProjector();
       }
@@ -63,11 +64,16 @@ public class DocumentProjector {
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
+  public static DocumentProjector createForIndexing(Set<String> allowed, Set<String> denied) {
+    // !!! TO IMPLEMENT
+    return identityProjector();
+  }
+
   public static DocumentProjector identityProjector() {
     return IDENTITY_PROJECTOR;
   }
 
-  public static DocumentProjector getIdentityProjectorWithSimilarity() {
+  public static DocumentProjector identityProjectorWithSimilarity() {
     return IDENTITY_PROJECTOR;
   }
 

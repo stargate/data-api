@@ -179,12 +179,7 @@ public class CollectionResource {
                 }
 
                 CommandContext commandContext =
-                    new CommandContext(
-                        namespace,
-                        collection,
-                        collectionProperty.vectorEnabled(),
-                        collectionProperty.similarityFunction(),
-                        embeddingService);
+                    new CommandContext(namespace, collection, collectionProperty, embeddingService);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);
