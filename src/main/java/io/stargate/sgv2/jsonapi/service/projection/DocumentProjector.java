@@ -72,19 +72,18 @@ public class DocumentProjector {
     // 3. Empty/null "allowed" and "denied" -> return identity projection
     // We need not (and should not) do further validation here
     if (allowed != null && !allowed.isEmpty()) {
-      return new DocumentProjector(
-          ProjectionLayer.buildLayers(allowed, null, false), true, false);
+      return new DocumentProjector(ProjectionLayer.buildLayers(allowed, null, false), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
-      // One special case: single "*" entry for exclusions means "exclude add" (that is, include nothing).
+      // One special case: single "*" entry for exclusions means "exclude add" (that is, include
+      // nothing).
       // This is reverse of identity projector.
       if (denied.size() == 1 && denied.contains("*")) {
         // Basically inclusion projector with nothing to include
         return new DocumentProjector(
-                ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
+            ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
       }
-      return new DocumentProjector(
-              ProjectionLayer.buildLayers(allowed, null, false), false, false);
+      return new DocumentProjector(ProjectionLayer.buildLayers(allowed, null, false), false, false);
     }
     return identityProjector();
   }
