@@ -45,8 +45,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
               && indexingConfig.denied().iterator().next().equals("*"))) {
         FilterOperator filterOperator =
             comparisonExpression.getFilterOperations().get(0).operator();
-        if (!(filterOperator.equals(ValueComparisonOperator.EQ)
-            || filterOperator.equals(ValueComparisonOperator.IN))) {
+        if (!(filterOperator.equals(ValueComparisonOperator.EQ))
+            || !(filterOperator.equals(ValueComparisonOperator.IN))) {
           throw new JsonApiException(
               ErrorCode.ID_NOT_INDEXED,
               String.format(
