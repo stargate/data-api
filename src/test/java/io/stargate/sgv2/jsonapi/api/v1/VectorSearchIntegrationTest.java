@@ -397,7 +397,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                                 "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
                                 "$vector": [0.12, 0.05, 0.08, 0.32, 0.6]
                               }
-                            ]
+                            ],
+                            "options" : {
+                              "ordered" : true
+                            }
                          }
                       }
                       """;
