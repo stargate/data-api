@@ -662,6 +662,7 @@ class ObjectMapperConfigurationTest {
                 assertThat(documents).hasSize(2);
                 final InsertManyCommand.Options options = insertManyCommand.options();
                 assertThat(options).isNotNull();
+                assertThat(options.ordered()).isFalse();
               });
     }
   }

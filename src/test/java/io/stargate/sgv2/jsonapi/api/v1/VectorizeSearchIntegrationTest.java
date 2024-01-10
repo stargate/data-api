@@ -205,7 +205,10 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   "description": "A deep learning display that controls your mood",
                   "$vectorize": "A deep learning display that controls your mood"
                 }
-              ]
+              ],
+              "options" : {
+                "ordered" : true
+              }
            }
         }
         """;
