@@ -59,8 +59,10 @@ class ProjectionLayer {
     }
     // Slices similar to path but processed differently (and while "exclusions"
     // in a way do not count as ones wrt compatibility)
-    for (SliceDef slice : slices) {
-      buildSlicer(slice, root);
+    if (slices != null) {
+      for (SliceDef slice : slices) {
+        buildSlicer(slice, root);
+      }
     }
 
     // May need to add doc-id inclusion/exclusion as well

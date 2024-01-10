@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -65,7 +66,26 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector createForIndexing(Set<String> allowed, Set<String> denied) {
-    // !!! TO IMPLEMENT
+    // Sets are expected to be validated to have one of 3 main cases:
+    // 1. Non-empty "allowed" (but empty/null "denied") -> build inclusion projection
+    // 2. Non-empty "denied" (but empty/null "allowed") -> build exclusion projection
+    // 3. Empty/null "allowed" and "denied" -> return identity projection
+    // We need not (and should not) do further validation here
+    if (allowed != null && !allowed.isEmpty()) {
+      return new DocumentProjector(
+          ProjectionLayer.buildLayers(allowed, null, false), true, false);
+    }
+    if (denied != null && !denied.isEmpty()) {
+      // One special case: single "*" entry for exclusions means "exclude add" (that is, include nothing).
+      // This is reverse of identity projector.
+      if (denied.size() == 1 && denied.contains("*")) {
+        // Basically inclusion projector with nothing to include
+        return new DocumentProjector(
+                ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
+      }
+      return new DocumentProjector(
+              ProjectionLayer.buildLayers(allowed, null, false), false, false);
+    }
     return identityProjector();
   }
 
