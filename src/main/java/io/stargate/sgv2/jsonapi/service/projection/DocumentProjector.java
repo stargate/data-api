@@ -83,7 +83,7 @@ public class DocumentProjector {
         return new DocumentProjector(
             ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
       }
-      return new DocumentProjector(ProjectionLayer.buildLayers(allowed, null, false), false, false);
+      return new DocumentProjector(ProjectionLayer.buildLayers(denied, null, false), false, false);
     }
     return identityProjector();
   }
