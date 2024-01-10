@@ -294,7 +294,14 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
               """
                   {
                     "find": {
-                      "filter": {"address": "whatever"}
+                      "filter": {
+                        "address": {
+                          "$eq": {
+                            "street": "1 banana street",
+                            "city": "monkey town"
+                          }
+                        }
+                      }
                     }
                   }
                     """;
@@ -308,7 +315,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", hasSize(0));
+          .body("data.documents", hasSize(1));
     }
 
     @Test
