@@ -67,6 +67,10 @@ public class Shredder {
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
+    // Now that we have both the traversable document and serialization, verify
+    // it does not violate structure and value length limits, before serializing
+    validateDocumentStructure(documentLimits, docWithId);
+
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
     try {
@@ -75,9 +79,9 @@ public class Shredder {
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
     }
-    // Now that we have both the traversable document and serialization, verify
-    // it does not violate document limits:
-    validateDocument(documentLimits, docWithId, docJson);
+
+    // And then we can validate the document size
+    validateDocumentSize(documentLimits, docJson);
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
@@ -99,7 +103,7 @@ public class Shredder {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 
-    // If not, generateone
+    // If not, generate one
     if (idNode == null) {
       idNode = generateDocumentId();
     }
@@ -203,18 +207,7 @@ public class Shredder {
     }
   }
 
-  private void validateDocument(DocumentLimitsConfig limits, ObjectNode doc, String docJson) {
-    // First: is the resulting document size (as serialized) too big?
-    if (docJson.length() > limits.maxSize()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: document size (%d chars) exceeds maximum allowed (%d)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              docJson.length(),
-              limits.maxSize()));
-    }
-
+  private void validateDocumentStructure(DocumentLimitsConfig limits, ObjectNode doc) {
     // Second: traverse to check for other constraints
     AtomicInteger totalProperties = new AtomicInteger(0);
     validateObjectValue(limits, null, doc, 0, 0, totalProperties);
@@ -226,6 +219,19 @@ public class Shredder {
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
               totalProperties.get(),
               limits.maxDocumentProperties()));
+    }
+  }
+
+  private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
+    // First: is the resulting document size (as serialized) too big?
+    if (docJson.length() > limits.maxSize()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: document size (%d chars) exceeds maximum allowed (%d)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              docJson.length(),
+              limits.maxSize()));
     }
   }
 
