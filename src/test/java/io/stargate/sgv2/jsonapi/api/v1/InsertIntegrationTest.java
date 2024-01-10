@@ -1152,7 +1152,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   "_id": "doc5",
                   "username": "user5"
                 }
-              ]
+              ],
+              "options" : {
+                "ordered" : true
+              }
             }
           }
           """;
@@ -1188,8 +1191,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   "_id": "doc5",
                   "username": "user5"
                 }
-              ],
-              "options": { "ordered": false }
+              ]
             }
           }
           """;

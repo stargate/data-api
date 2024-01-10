@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -50,7 +48,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeCount(eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -91,7 +89,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeCount(eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -141,7 +139,7 @@ public class CountOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeCount(eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -189,7 +187,7 @@ public class CountOperationTest extends OperationTestBase {
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeCount(eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();

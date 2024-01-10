@@ -59,6 +59,22 @@ public class QueryExecutor {
   }
 
   /**
+   * Execute count query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
+    simpleStatement =
+        simpleStatement
+            .setExecutionProfileName("count")
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+  }
+
+  /**
    * Execute vector search query with bound statement.
    *
    * @param simpleStatement - Simple statement with query and parameters. The table name used in the
@@ -117,6 +133,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     boundStatement
+                        .setExecutionProfileName("ddl")
                         .setIdempotent(true)
                         .setSerialConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().schemaChanges())));

@@ -353,7 +353,7 @@ public interface ReadOperation extends Operation {
   default Uni<CountResponse> countDocuments(
       QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
     return queryExecutor
-        .executeRead(simpleStatement, Optional.empty(), 1)
+        .executeCount(simpleStatement)
         .onItem()
         .transform(
             rSet -> {
