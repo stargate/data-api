@@ -17,6 +17,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               """)
 public record FilterClause(LogicalExpression logicalExpression) {
   public void validate(CollectionSettings.IndexingConfig indexingConfig) {
+    // If nothing specified, everything indexed
+    if (indexingConfig == null) {
+      return;
+    }
     validateLogicalExpression(logicalExpression, indexingConfig);
   }
 
@@ -26,13 +30,57 @@ public record FilterClause(LogicalExpression logicalExpression) {
       validateLogicalExpression(subLogicalExpression, indexingConfig);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
-      validatePath(subComparisonExpression.getPath(), indexingConfig);
+      validateComparisonExpression(subComparisonExpression, indexingConfig);
     }
   }
 
-  public void validatePath(String path, CollectionSettings.IndexingConfig indexingConfig) {
-    if (!indexingConfig.allowed().isEmpty()) {
-      if (!indexingConfig.allowed().contains(path)) {
+  public void validateComparisonExpression(ComparisonExpression comparisonExpression, CollectionSettings.IndexingConfig indexingConfig) {
+    String path = comparisonExpression.getPath();
+    // If _id is denied, the operator can only be $eq or $in
+    if (path.equals("_id")) {
+      if ((!indexingConfig.denied().isEmpty() && indexingConfig.denied().contains("_id"))
+              || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains("_id"))
+              || (!indexingConfig.denied().isEmpty() && indexingConfig.denied().iterator().next().equals("*"))) {
+        FilterOperator filterOperator = comparisonExpression.getFilterOperations().get(0).operator();
+        if (!(filterOperator.equals(ValueComparisonOperator.EQ) || filterOperator.equals(ValueComparisonOperator.IN))) {
+          throw new JsonApiException(
+                  ErrorCode.ID_NOT_INDEXED,
+                  String.format(
+                          "%s: The filter path ('_id') is not indexed, you can only use $eq or $in as the operator",
+                          ErrorCode.ID_NOT_INDEXED.getMessage()));
+        }
+      }
+    }
+    // If all fields are denied, throw error
+    if (!indexingConfig.denied().isEmpty()
+            && indexingConfig.denied().iterator().next().equals("*")) {
+      throw new JsonApiException(
+              ErrorCode.UNINDEXED_FILTER_PATH,
+              String.format(
+                      "%s: All fields are not indexed, you can only use ('_id') in filter", ErrorCode.UNINDEXED_FILTER_PATH.getMessage()));
+    }
+    // Split the path into parts
+    String[] pathParts = path.split("\\.");
+    StringBuilder incrementalPath = new StringBuilder();
+    // Check the path from high level to low level
+    for (String part : pathParts) {
+      // Construct the incremental path
+      if (incrementalPath.length() > 0) {
+        incrementalPath.append(".");
+      }
+      incrementalPath.append(part);
+
+      // If allowed list exists - check if the incremental path is in the allowed paths
+      if (!indexingConfig.allowed().isEmpty()
+          && indexingConfig.allowed().contains(incrementalPath.toString())) {
+        // Path is allowed, no need to check further
+        return;
+      }
+
+      // If denied list exists - check if the incremental path is in the denied paths
+      if (!indexingConfig.denied().isEmpty()
+          && indexingConfig.denied().contains(incrementalPath.toString())) {
+        // Path is denied, throw error
         throw new JsonApiException(
             ErrorCode.UNINDEXED_FILTER_PATH,
             String.format(
@@ -40,14 +88,14 @@ public record FilterClause(LogicalExpression logicalExpression) {
                 ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
       }
     }
-    if (!indexingConfig.denied().isEmpty()) {
-      if (indexingConfig.denied().contains(path)) {
-        throw new JsonApiException(
-            ErrorCode.UNINDEXED_FILTER_PATH,
-            String.format(
-                "%s: The filter path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
-      }
+
+    // If allowed list exists - path is not in the allowed list
+    if (!indexingConfig.allowed().isEmpty()) {
+      throw new JsonApiException(
+          ErrorCode.UNINDEXED_FILTER_PATH,
+          String.format(
+              "%s: The filter path ('%s') is not indexed",
+              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
     }
   }
 }
