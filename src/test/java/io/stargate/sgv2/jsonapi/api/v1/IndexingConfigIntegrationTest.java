@@ -30,7 +30,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
   @Order(1)
   class CreateCollectionAndData {
     String insertData =
-          """
+        """
               {
                 "insertOne": {
                   "document": {
@@ -291,7 +291,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .body("data.documents", hasSize(1));
       // deny "address.city", only this as a string, not "address" as an object
       String filterData2 =
-              """
+          """
                   {
                     "find": {
                       "filter": {
@@ -322,7 +322,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
     public void filterFieldInDenyMany() {
       // deny "address", "address.city" should also be included
       String filterData =
-              """
+          """
                   {
                     "find": {
                       "filter": {"address.city": "monkey town"}
@@ -330,23 +330,130 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                   }
                     """;
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(filterData)
-              .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
-              .then()
-              .statusCode(200)
-              .body("status", is(nullValue()))
-              .body("data", is(nullValue()))
-              .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
-              .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
-              .body("errors[0].exceptionClass", is("JsonApiException"));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
-    public void filterFieldNotInDenyMany() {
+    public void filterFieldInDenyAll() {
+      String filterData =
+          """
+                  {
+                    "find": {
+                      "filter": {"address.city": "monkey town"}
+                    }
+                  }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              endsWith("All fields are not indexed, you can only use ('_id') in filter"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
 
+    @Test
+    public void filterIdInDenyAllWithEqAndIn() {
+      String filterId1 =
+          """
+                  {
+                    "find": {
+                      "filter": {"_id": "1"}
+                    }
+                  }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterId1)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1));
+
+      String filterId2 =
+          """
+                {
+                    "find": {
+                        "filter": {
+                            "_id": {
+                                "$in": [
+                                    "1",
+                                    "2"
+                                ]
+                            }
+                        }
+                    }
+                }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterId2)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1));
+    }
+
+    @Test
+    public void filterIdInDenyAllWithoutEqAndIn() {
+      String filterId3 =
+          """
+                {
+                    "find": {
+                        "filter": {
+                            "_id": {
+                                "$nin": [
+                                    "1",
+                                    "2"
+                                ]
+                            }
+                        }
+                    }
+                }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterId3)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              endsWith(
+                  "The filter path ('_id') is not indexed, you can only use $eq or $in as the operator"))
+          .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 }
