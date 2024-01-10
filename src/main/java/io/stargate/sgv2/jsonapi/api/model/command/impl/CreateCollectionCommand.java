@@ -85,14 +85,14 @@ public record CreateCollectionCommand(
     }
 
     public record IndexingConfig(
-        @JsonInclude(JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of allowed indexing fields",
                 type = SchemaType.ARRAY,
                 implementation = String.class)
             @Nullable
             List<String> allow,
-        @JsonInclude(JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of denied indexing fields",
                 type = SchemaType.ARRAY,

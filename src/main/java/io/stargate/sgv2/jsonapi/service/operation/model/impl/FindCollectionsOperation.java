@@ -122,16 +122,8 @@ public record FindCollectionsOperation(
                       if (collectionProperty.indexingConfig() != null) {
                         indexingConfig =
                             new CreateCollectionCommand.Options.IndexingConfig(
-                                collectionProperty.indexingConfig().allowed() != null
-                                        && !collectionProperty.indexingConfig().allowed().isEmpty()
-                                    ? Lists.newArrayList(
-                                        collectionProperty.indexingConfig().allowed())
-                                    : null,
-                                collectionProperty.indexingConfig().denied() != null
-                                        && !collectionProperty.indexingConfig().denied().isEmpty()
-                                    ? Lists.newArrayList(
-                                        collectionProperty.indexingConfig().denied())
-                                    : null);
+                                Lists.newArrayList(collectionProperty.indexingConfig().allowed()),
+                                Lists.newArrayList(collectionProperty.indexingConfig().denied()));
                       }
                       if (vectorSearchConfig != null
                           || vectorizeConfig != null
