@@ -34,30 +34,35 @@ public record FilterClause(LogicalExpression logicalExpression) {
     }
   }
 
-  public void validateComparisonExpression(ComparisonExpression comparisonExpression, CollectionSettings.IndexingConfig indexingConfig) {
+  public void validateComparisonExpression(
+      ComparisonExpression comparisonExpression, CollectionSettings.IndexingConfig indexingConfig) {
     String path = comparisonExpression.getPath();
     // If _id is denied, the operator can only be $eq or $in
     if (path.equals("_id")) {
       if ((!indexingConfig.denied().isEmpty() && indexingConfig.denied().contains("_id"))
-              || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains("_id"))
-              || (!indexingConfig.denied().isEmpty() && indexingConfig.denied().iterator().next().equals("*"))) {
-        FilterOperator filterOperator = comparisonExpression.getFilterOperations().get(0).operator();
-        if (!(filterOperator.equals(ValueComparisonOperator.EQ) || filterOperator.equals(ValueComparisonOperator.IN))) {
+          || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains("_id"))
+          || (!indexingConfig.denied().isEmpty()
+              && indexingConfig.denied().iterator().next().equals("*"))) {
+        FilterOperator filterOperator =
+            comparisonExpression.getFilterOperations().get(0).operator();
+        if (!(filterOperator.equals(ValueComparisonOperator.EQ)
+            || filterOperator.equals(ValueComparisonOperator.IN))) {
           throw new JsonApiException(
-                  ErrorCode.ID_NOT_INDEXED,
-                  String.format(
-                          "%s: The filter path ('_id') is not indexed, you can only use $eq or $in as the operator",
-                          ErrorCode.ID_NOT_INDEXED.getMessage()));
+              ErrorCode.ID_NOT_INDEXED,
+              String.format(
+                  "%s: The filter path ('_id') is not indexed, you can only use $eq or $in as the operator",
+                  ErrorCode.ID_NOT_INDEXED.getMessage()));
         }
       }
     }
     // If all fields are denied, throw error
     if (!indexingConfig.denied().isEmpty()
-            && indexingConfig.denied().iterator().next().equals("*")) {
+        && indexingConfig.denied().iterator().next().equals("*")) {
       throw new JsonApiException(
-              ErrorCode.UNINDEXED_FILTER_PATH,
-              String.format(
-                      "%s: All fields are not indexed, you can only use ('_id') in filter", ErrorCode.UNINDEXED_FILTER_PATH.getMessage()));
+          ErrorCode.UNINDEXED_FILTER_PATH,
+          String.format(
+              "%s: All fields are not indexed, you can only use ('_id') in filter",
+              ErrorCode.UNINDEXED_FILTER_PATH.getMessage()));
     }
     // Split the path into parts
     String[] pathParts = path.split("\\.");
