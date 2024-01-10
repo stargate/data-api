@@ -74,7 +74,7 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector identityProjectorWithSimilarity() {
-    return IDENTITY_PROJECTOR;
+    return IDENTITY_PROJECTOR_WITH_SIMILARITY;
   }
 
   public boolean isInclusion() {
