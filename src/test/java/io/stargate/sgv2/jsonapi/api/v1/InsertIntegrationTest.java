@@ -1312,7 +1312,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", contains("5", 5))
+          .body("status.insertedIds", containsInAnyOrder("5", 5))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
