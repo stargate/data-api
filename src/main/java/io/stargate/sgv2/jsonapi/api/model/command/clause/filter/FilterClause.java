@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -18,30 +19,53 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
              {"name": "Aaron", "country": "US"}
               """)
 public record FilterClause(LogicalExpression logicalExpression) {
-  public void validate(CollectionSettings.IndexingConfig indexingConfig) {
+  public void validate(CommandContext commandContext) {
+    DocumentProjector indexingProjector = commandContext.indexingProjector();
     // If nothing specified, everything indexed
-    if (indexingConfig == null) {
+    if (indexingProjector.equals(DocumentProjector.identityProjector())) {
       return;
     }
-    validateLogicalExpression(logicalExpression, indexingConfig);
+    validateLogicalExpression(logicalExpression, indexingProjector);
   }
 
   public void validateLogicalExpression(
-      LogicalExpression logicalExpression, CollectionSettings.IndexingConfig indexingConfig) {
+      LogicalExpression logicalExpression, DocumentProjector indexingProjector) {
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validateLogicalExpression(subLogicalExpression, indexingConfig);
+      validateLogicalExpression(subLogicalExpression, indexingProjector);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
-      //      validateComparisonExpression(subComparisonExpression, indexingConfig);
-      boolean isPathIndexed =
-          DocumentProjector.identityProjector().isPathIncluded(subComparisonExpression.getPath());
-      if (!isPathIndexed) {
+      validateComparisonExpression(subComparisonExpression, indexingProjector);
+    }
+  }
+
+  public void validateComparisonExpression(
+      ComparisonExpression comparisonExpression, DocumentProjector indexingProjector) {
+    String path = comparisonExpression.getPath();
+    boolean isPathIndexed = indexingProjector.isPathIncluded(path);
+
+    // If path is "_id" and it's denied, the operator can only be $eq or $in
+    if (path.equals(DocumentConstants.Fields.DOC_ID) && !isPathIndexed) {
+      FilterOperator filterOperator = comparisonExpression.getFilterOperations().get(0).operator();
+      // if operator is not $eq or $in, throw error
+      if (!filterOperator.equals(ValueComparisonOperator.EQ)
+          && !filterOperator.equals(ValueComparisonOperator.IN)) {
         throw new JsonApiException(
-            ErrorCode.UNINDEXED_FILTER_PATH,
+            ErrorCode.ID_NOT_INDEXED,
             String.format(
-                "%s: The filter path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), subComparisonExpression.getPath()));
+                "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
+                ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
+      } else {
+        // else, _id can be used, return
+        return;
       }
+    }
+    // if path is not indexed, throw error
+    if (!isPathIndexed) {
+      throw new JsonApiException(
+          ErrorCode.UNINDEXED_FILTER_PATH,
+          String.format(
+              "%s: The filter path ('%s') is not indexed",
+              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
     }
   }
 

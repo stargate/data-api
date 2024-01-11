@@ -368,9 +368,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              endsWith("All fields are not indexed, you can only use ('_id') in filter"))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
