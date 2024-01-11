@@ -70,21 +70,31 @@ public class DocumentProjector {
     // 1. Non-empty "allowed" (but empty/null "denied") -> build inclusion projection
     // 2. Non-empty "denied" (but empty/null "allowed") -> build exclusion projection
     // 3. Empty/null "allowed" and "denied" -> return identity projection
-    // We need not (and should not) do further validation here
+    // as well as 2 special cases:
+    // 4. Empty "allowed" and single "*" entry for "denied" -> return exclude-all projection
+    // 5. Empty "deny" and single "*" entry for "allowed" -> return include-all ("identity")
+    // projection
+    // We need not (and should not) do further validation here.
+    // Note that (5) is effectively same as (3) and included for sake of uniformity
     if (allowed != null && !allowed.isEmpty()) {
+      // (special) Case 5:
+      if (allowed.size() == 1 && allowed.contains("*")) {
+        return identityProjector();
+      }
+      // Case 1: inclusion-based projection
       return new DocumentProjector(ProjectionLayer.buildLayers(allowed, null, false), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
-      // One special case: single "*" entry for exclusions means "exclude add" (that is, include
-      // nothing).
-      // This is reverse of identity projector.
+      // (special) Case 4:
       if (denied.size() == 1 && denied.contains("*")) {
         // Basically inclusion projector with nothing to include
         return new DocumentProjector(
             ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
       }
+      // Case 2: exclusion-based projection
       return new DocumentProjector(ProjectionLayer.buildLayers(denied, null, false), false, false);
     }
+    // Case 3: include-all (identity) projection
     return identityProjector();
   }
 

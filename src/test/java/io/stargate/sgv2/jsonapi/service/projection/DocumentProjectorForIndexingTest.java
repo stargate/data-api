@@ -31,6 +31,25 @@ public class DocumentProjectorForIndexingTest {
                         { "b": 6, "d": 8 }
                     """);
     }
+
+    @Test
+    public void testSimpleNestedAllow() {
+      assertAllowProjection(
+          Arrays.asList("a.y", "c"),
+          """
+                      {
+                        "a": { "x":1, "y":2 },
+                        "b": { "x":3, "y":4 },
+                        "c": { "x":2, "y":3 }
+                      }
+                  """,
+          """
+                        {
+                          "a": { "y":2 },
+                          "c": { "x":2, "y":3 }
+                        }
+                    """);
+    }
   }
 
   @Nested
@@ -45,6 +64,50 @@ public class DocumentProjectorForIndexingTest {
           """
                         { "a": 5, "c": 7 }
                     """);
+    }
+
+    @Test
+    public void testSimpleNestedDeny() {
+      assertDenyProjection(
+          Arrays.asList("a.y", "c"),
+          """
+                      {
+                        "a": { "x":1, "y":2 },
+                        "b": { "x":3, "y":4 },
+                        "c": { "x":2, "y":3 }
+                      }
+                  """,
+          """
+                        {
+                          "a": { "x":1 },
+                          "b": { "x":3, "y":4 }
+                        }
+                    """);
+    }
+  }
+
+  @Nested
+  class SpecialCases {
+    @Test
+    public void testAllowAll() {
+      final String DOC =
+          """
+              { "a": 5, "b": { "enabled": true}, "c": 7, "d": [ { "value": 42} ] }
+          """;
+      // First with empty Sets:
+      assertAllowProjection(Arrays.asList(), DOC, DOC);
+      // And then "*" notation
+      assertAllowProjection(Arrays.asList("*"), DOC, DOC);
+    }
+
+    @Test
+    public void testDenyAll() {
+      final String DOC =
+          """
+              { "a": 5, "b": { "enabled": true}, "c": 7, "d": [ { "value": 42} ] }
+          """;
+      // Only "*" notation available
+      assertDenyProjection(Arrays.asList("*"), DOC, "{ }");
     }
   }
 
