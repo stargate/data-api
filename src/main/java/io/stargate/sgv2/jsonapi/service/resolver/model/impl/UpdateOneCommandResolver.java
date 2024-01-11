@@ -73,6 +73,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     LogicalExpression logicalExpression = resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
+    sortClause.validate(commandContext.indexingConfig());
 
     // vectorize sort clause
     commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);

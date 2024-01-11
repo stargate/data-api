@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -36,5 +37,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .get(0)
             .path()
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+  }
+
+  public void validate(CollectionSettings.IndexingConfig indexingConfig) {
+    //TODO: valid path
   }
 }
