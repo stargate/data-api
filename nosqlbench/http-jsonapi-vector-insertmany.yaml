@@ -53,7 +53,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
@@ -67,7 +67,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
@@ -90,7 +90,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2
