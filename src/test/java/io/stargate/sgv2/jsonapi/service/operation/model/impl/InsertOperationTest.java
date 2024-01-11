@@ -49,7 +49,17 @@ public class InsertOperationTest extends OperationTestBase {
 
   private final CommandContext COMMAND_CONTEXT_VECTOR =
       new CommandContext(
-          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          new CollectionSettings(
+              COLLECTION_NAME,
+              true,
+              -1,
+              CollectionSettings.SimilarityFunction.COSINE,
+              null,
+              null,
+              null),
+          null);
 
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));

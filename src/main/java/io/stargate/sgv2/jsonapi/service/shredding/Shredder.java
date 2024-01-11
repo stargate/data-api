@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -53,6 +54,10 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
+    return shred(doc, txId, DocumentProjector.identityProjector());
+  }
+
+  public WritableShreddedDocument shred(JsonNode doc, UUID txId, DocumentProjector indexProjector) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -67,6 +72,10 @@ public class Shredder {
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
+    // Now that we have both the traversable document and serialization, verify
+    // it does not violate structure and value length limits, before serializing
+    validateDocumentStructure(documentLimits, docWithId);
+
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
     try {
@@ -75,9 +84,14 @@ public class Shredder {
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
     }
-    // Now that we have both the traversable document and serialization, verify
-    // it does not violate document limits:
-    validateDocument(documentLimits, docWithId, docJson);
+
+    // And then we can validate the document size
+    validateDocumentSize(documentLimits, docJson);
+
+    // Before shredding, may need to drop "non-indexed" fields:
+    if (indexProjector != null) {
+      indexProjector.applyProjection(docWithId);
+    }
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
@@ -99,7 +113,7 @@ public class Shredder {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 
-    // If not, generateone
+    // If not, generate one
     if (idNode == null) {
       idNode = generateDocumentId();
     }
@@ -203,21 +217,10 @@ public class Shredder {
     }
   }
 
-  private void validateDocument(DocumentLimitsConfig limits, ObjectNode doc, String docJson) {
-    // First: is the resulting document size (as serialized) too big?
-    if (docJson.length() > limits.maxSize()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: document size (%d chars) exceeds maximum allowed (%d)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              docJson.length(),
-              limits.maxSize()));
-    }
-
+  private void validateDocumentStructure(DocumentLimitsConfig limits, ObjectNode doc) {
     // Second: traverse to check for other constraints
     AtomicInteger totalProperties = new AtomicInteger(0);
-    validateObjectValue(limits, null, doc, 0, totalProperties);
+    validateObjectValue(limits, null, doc, 0, 0, totalProperties);
     if (totalProperties.get() > limits.maxDocumentProperties()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -229,16 +232,32 @@ public class Shredder {
     }
   }
 
+  private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
+    // First: is the resulting document size (as serialized) too big?
+    if (docJson.length() > limits.maxSize()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: document size (%d chars) exceeds maximum allowed (%d)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              docJson.length(),
+              limits.maxSize()));
+    }
+  }
+
   private void validateDocValue(
       DocumentLimitsConfig limits,
       String referringPropertyName,
       JsonNode value,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     if (value.isObject()) {
-      validateObjectValue(limits, referringPropertyName, value, depth, totalProperties);
+      validateObjectValue(
+          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
     } else if (value.isArray()) {
-      validateArrayValue(limits, referringPropertyName, value, depth, totalProperties);
+      validateArrayValue(
+          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
     } else if (value.isTextual()) {
       validateStringValue(limits, value);
     }
@@ -249,6 +268,7 @@ public class Shredder {
       String referringPropertyName,
       JsonNode arrayValue,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
@@ -278,7 +298,7 @@ public class Shredder {
     }
 
     for (JsonNode element : arrayValue) {
-      validateDocValue(limits, null, element, depth, totalProperties);
+      validateDocValue(limits, null, element, depth, parentPathLength, totalProperties);
     }
   }
 
@@ -287,6 +307,7 @@ public class Shredder {
       String referringPropertyName,
       JsonNode objectValue,
       int depth,
+      int parentPathLength,
       AtomicInteger totalProperties) {
     ++depth;
     validateDocDepth(limits, depth);
@@ -306,13 +327,16 @@ public class Shredder {
     var it = objectValue.fields();
     while (it.hasNext()) {
       var entry = it.next();
-      validateObjectKey(limits, entry.getKey(), entry.getValue(), depth);
-      validateDocValue(limits, entry.getKey(), entry.getValue(), depth, totalProperties);
+      final String key = entry.getKey();
+      validateObjectKey(limits, key, entry.getValue(), depth, parentPathLength);
+      // Path through property consists of segements separated by comma:
+      final int propPathLength = parentPathLength + 1 + key.length();
+      validateDocValue(limits, key, entry.getValue(), depth, propPathLength, totalProperties);
     }
   }
 
   private void validateObjectKey(
-      DocumentLimitsConfig limits, String key, JsonNode value, int depth) {
+      DocumentLimitsConfig limits, String key, JsonNode value, int depth, int parentPathLength) {
     if (key.length() > documentLimits.maxPropertyNameLength()) {
       throw new JsonApiException(
           ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
@@ -346,6 +370,17 @@ public class Shredder {
                 "%s: Property name ('%s') contains character(s) not allowed",
                 ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
       }
+    }
+    int totalPathLength = parentPathLength + key.length();
+    if (totalPathLength > documentLimits.maxPropertyPathLength()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: Property path length (%d) exceeds maximum allowed (%s) (path ends with '%s')",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              totalPathLength,
+              limits.maxPropertyPathLength(),
+              key));
     }
   }
 
