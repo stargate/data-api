@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,9 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
+
+  @ConfigProperty(name = "quarkus.application.name")
+  private String APPLICATION_NAME;
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
@@ -115,12 +119,14 @@ public class CQLSessionCache {
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
+          .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          .withApplicationName(APPLICATION_NAME)
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
