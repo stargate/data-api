@@ -188,6 +188,12 @@ public class DocumentProjectorForIndexingTest {
       DocumentProjector nestedProj = createAllowProjection(Arrays.asList("a.b"));
       assertIsIncluded(nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure");
       assertIsNotIncluded(nestedProj, "a", "b", "c", "a.c", "a.x", "a.x.y.z", "_id");
+
+      // Let's also check overlapping (redundant) case; most generic used (specific ignored)
+      // same as just "c":
+      DocumentProjector overlapProj = createAllowProjection(Arrays.asList("c", "c.x"));
+      assertIsIncluded(overlapProj, "c", "c.abc", "c.d.e.f");
+      assertIsNotIncluded(overlapProj, "a", "b", "d", "a.c", "a.x.y.z", "_id");
     }
 
     @Test
@@ -201,6 +207,12 @@ public class DocumentProjectorForIndexingTest {
       assertIsNotIncluded(
           nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure", "a.noindex", "a.noindex.x");
       assertIsIncluded(nestedProj, "a", "b", "_id", "a.c", "a.x", "a.x.y.z");
+
+      // Let's also check overlapping (redundant) case; most generic used (specific ignored)
+      // same as just "c":
+      DocumentProjector overlapProj = createDenyProjection(Arrays.asList("c", "c.x"));
+      assertIsNotIncluded(overlapProj, "c", "c.abc", "c.d.e.f");
+      assertIsIncluded(overlapProj, "a", "b", "d", "a.c", "a.x.y.z", "_id");
     }
   }
 
