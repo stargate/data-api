@@ -116,6 +116,7 @@ public class CQLSessionCache {
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
+          .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
@@ -126,6 +127,7 @@ public class CQLSessionCache {
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
           .build();
     }
