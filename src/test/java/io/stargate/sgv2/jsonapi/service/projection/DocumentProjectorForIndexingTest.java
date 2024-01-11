@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.*;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +15,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DocumentProjectorForIndexingTest {
-  @Inject ObjectMapper objectMapper;
+  final ObjectMapper objectMapper = new ObjectMapper();
 
   @Nested
   class AllowFiltering {
@@ -177,9 +176,37 @@ public class DocumentProjectorForIndexingTest {
     }
   }
 
-  private void assertAllowProjection(List<String> allows, String inputDoc, String expectedDoc) {
-    DocumentProjector projector =
-        DocumentProjector.createForIndexing(new LinkedHashSet<>(allows), Collections.emptySet());
+  @Nested
+  class PathInclusion {
+    @Test
+    public void testPathInclusion() {
+      DocumentProjector rootProj = createAllowProjection(Arrays.asList("a", "c"));
+      assertIsIncluded(rootProj, "a", "a.x", "a.b.c.d");
+      assertIsIncluded(rootProj, "c", "c.a", "c.x.y.z");
+      assertIsNotIncluded(rootProj, "b", "d", "b.a", "abc", "cef", "_id");
+
+      DocumentProjector nestedProj = createAllowProjection(Arrays.asList("a.b"));
+      assertIsIncluded(nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure");
+      assertIsNotIncluded(nestedProj, "a", "b", "c", "a.c", "a.x", "a.x.y.z", "_id");
+    }
+
+    @Test
+    public void testPathExclusion() {
+      DocumentProjector rootProj = createDenyProjection(Arrays.asList("a", "c"));
+      assertIsNotIncluded(rootProj, "a", "a.x", "a.b.c.d");
+      assertIsNotIncluded(rootProj, "c", "c.a", "c.x.y.z");
+      assertIsIncluded(rootProj, "b", "d", "b.a", "abc", "cef", "_id");
+
+      DocumentProjector nestedProj = createDenyProjection(Arrays.asList("a.b", "a.noindex"));
+      assertIsNotIncluded(
+          nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure", "a.noindex", "a.noindex.x");
+      assertIsIncluded(nestedProj, "a", "b", "_id", "a.c", "a.x", "a.x.y.z");
+    }
+  }
+
+  private void assertAllowProjection(
+      Collection<String> allows, String inputDoc, String expectedDoc) {
+    DocumentProjector projector = createAllowProjection(allows);
     try {
       JsonNode input = objectMapper.readTree(inputDoc);
       projector.applyProjection(input);
@@ -189,15 +216,39 @@ public class DocumentProjectorForIndexingTest {
     }
   }
 
-  private void assertDenyProjection(List<String> denies, String inputDoc, String expectedDoc) {
-    DocumentProjector projector =
-        DocumentProjector.createForIndexing(Collections.emptySet(), new LinkedHashSet<>(denies));
+  private void assertDenyProjection(
+      Collection<String> denies, String inputDoc, String expectedDoc) {
+    DocumentProjector projector = createDenyProjection(denies);
     try {
       JsonNode input = objectMapper.readTree(inputDoc);
       projector.applyProjection(input);
       assertThat(input).isEqualTo(objectMapper.readTree(expectedDoc));
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  private DocumentProjector createAllowProjection(Collection<String> allows) {
+    return DocumentProjector.createForIndexing(new LinkedHashSet<>(allows), null);
+  }
+
+  private DocumentProjector createDenyProjection(Collection<String> denies) {
+    return DocumentProjector.createForIndexing(null, new LinkedHashSet<>(denies));
+  }
+
+  private void assertIsIncluded(DocumentProjector proj, String... paths) {
+    for (String path : paths) {
+      assertThat(proj.isPathIncluded(path))
+          .withFailMessage("Path '%s' should be included", path)
+          .isTrue();
+    }
+  }
+
+  private void assertIsNotIncluded(DocumentProjector proj, String... paths) {
+    for (String path : paths) {
+      assertThat(proj.isPathIncluded(path))
+          .withFailMessage("Path '%s' should NOT be included", path)
+          .isFalse();
     }
   }
 }

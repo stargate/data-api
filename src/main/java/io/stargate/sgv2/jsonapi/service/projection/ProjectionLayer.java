@@ -166,6 +166,35 @@ class ProjectionLayer {
   }
 
   /**
+   * Method called to check if given path is included in the projection for which this is the root
+   * layer: this is done by traversing layers until determination can be made.
+   *
+   * @param path Dot-notation path to check
+   * @return {@code true} if path is included; {@code false} if not.
+   */
+  public boolean isPathIncluded(String path) {
+    final String[] segments = DOT.split(path);
+    return isPathIncluded(segments, 0);
+  }
+
+  private boolean isPathIncluded(String[] segments, int index) {
+    // If we are at a terminal layer, we are done
+    if (isTerminal) {
+      return true;
+    }
+    // Otherwise if we are at the end of path, we are not included
+    if (index == segments.length) {
+      return false;
+    }
+    // Otherwise we need to traverse further
+    ProjectionLayer next = nextLayers.get(segments[index]);
+    if (next == null) {
+      return false;
+    }
+    return next.isPathIncluded(segments, index + 1);
+  }
+
+  /**
    * Method called to apply Inclusion-based projection, in which everything to be included is
    * enumerated, and the rest need to be removed (this includes document id as well as regular
    * properties).
