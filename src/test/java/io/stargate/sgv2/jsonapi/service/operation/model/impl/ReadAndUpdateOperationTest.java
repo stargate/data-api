@@ -62,9 +62,14 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       new CommandContext(
           KEYSPACE_NAME,
           COLLECTION_NAME,
-          true,
-          CollectionSettings.SimilarityFunction.COSINE,
-          null,
+          new CollectionSettings(
+              COLLECTION_NAME,
+              true,
+              -1,
+              CollectionSettings.SimilarityFunction.COSINE,
+              null,
+              null,
+              null),
           null);
 
   @Inject Shredder shredder;

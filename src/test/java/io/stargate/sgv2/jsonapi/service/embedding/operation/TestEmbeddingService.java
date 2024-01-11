@@ -11,10 +11,15 @@ public class TestEmbeddingService implements EmbeddingService {
       new CommandContext(
           "namespace",
           "collection",
-          true,
-          CollectionSettings.SimilarityFunction.COSINE,
-          new TestEmbeddingService(),
-          null);
+          new CollectionSettings(
+              "collection",
+              true,
+              3,
+              CollectionSettings.SimilarityFunction.COSINE,
+              null,
+              null,
+              null),
+          new TestEmbeddingService());
 
   @Override
   public List<float[]> vectorize(List<String> texts) {

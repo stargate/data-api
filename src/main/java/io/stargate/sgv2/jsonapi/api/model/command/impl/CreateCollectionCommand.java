@@ -34,7 +34,8 @@ public record CreateCollectionCommand(
   public record Options(
 
       // limit of returned documents
-      @Schema(
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Schema(
               description = "Vector search index configuration for the collection",
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
@@ -84,14 +85,14 @@ public record CreateCollectionCommand(
     }
 
     public record IndexingConfig(
-        @JsonInclude(JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of allowed indexing fields",
                 type = SchemaType.ARRAY,
                 implementation = String.class)
             @Nullable
             List<String> allow,
-        @JsonInclude(JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of denied indexing fields",
                 type = SchemaType.ARRAY,

@@ -10,13 +10,16 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Refactored as seperate class that represent a collection property.
@@ -37,7 +40,35 @@ public record CollectionSettings(
     String modelName,
     IndexingConfig indexingConfig) {
 
-  public record IndexingConfig(Set<String> allowed, Set<String> denied) {
+  private static final CollectionSettings EMPTY =
+      new CollectionSettings("", false, 0, null, null, null, null);
+
+  public static CollectionSettings empty() {
+    return EMPTY;
+  }
+
+  public DocumentProjector indexingProjector() {
+    // IndexingConfig null if no indexing definitions: default, index all:
+    if (indexingConfig == null) {
+      return DocumentProjector.identityProjector();
+    }
+    // otherwise get lazily initialized indexing projector from config
+    return indexingConfig.indexingProjector();
+  }
+
+  public record IndexingConfig(
+      Set<String> allowed, Set<String> denied, Supplier<DocumentProjector> indexedProject) {
+    public IndexingConfig(Set<String> allowed, Set<String> denied) {
+      this(
+          allowed,
+          denied,
+          Suppliers.memoize(() -> DocumentProjector.createForIndexing(allowed, denied)));
+    }
+
+    public DocumentProjector indexingProjector() {
+      return indexedProject.get();
+    }
+
     public static IndexingConfig fromJson(JsonNode jsonNode) {
       Set<String> allowed = new HashSet<>();
       Set<String> denied = new HashSet<>();
