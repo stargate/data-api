@@ -82,17 +82,17 @@ public class DocumentProjector {
         return identityProjector();
       }
       // Case 1: inclusion-based projection
-      return new DocumentProjector(ProjectionLayer.buildLayers(allowed, null, false), true, false);
+      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
       // (special) Case 4:
       if (denied.size() == 1 && denied.contains("*")) {
         // Basically inclusion projector with nothing to include
         return new DocumentProjector(
-            ProjectionLayer.buildLayers(Collections.emptySet(), null, false), true, false);
+            ProjectionLayer.buildLayersOverlapOk(Collections.emptySet()), true, false);
       }
       // Case 2: exclusion-based projection
-      return new DocumentProjector(ProjectionLayer.buildLayers(denied, null, false), false, false);
+      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
     }
     // Case 3: include-all (identity) projection
     return identityProjector();
@@ -186,13 +186,13 @@ public class DocumentProjector {
       if (inclusions > 0) { // inclusion-based projection
         // doc-id included unless explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayers(paths, slices, !Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayers(paths, slices, Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
             includeSimilarityScore);
       }

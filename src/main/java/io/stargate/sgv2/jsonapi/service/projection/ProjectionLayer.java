@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,55 +50,76 @@ class ProjectionLayer {
     nextLayers = null;
   }
 
-  public static ProjectionLayer buildLayers(
+  public static ProjectionLayer buildLayersNoOverlap(
       Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
+    return buildLayers(dotPaths, slices, addDocId, true);
+  }
+
+  public static ProjectionLayer buildLayersOverlapOk(Collection<String> dotPaths) {
+    return buildLayers(dotPaths, Collections.emptyList(), false, false);
+  }
+
+  private static ProjectionLayer buildLayers(
+      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId, boolean failOnOverlap) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
       String[] segments = DOT.split(fullPath);
-      buildPath(fullPath, root, segments);
+      buildPath(failOnOverlap, fullPath, root, segments);
     }
     // Slices similar to path but processed differently (and while "exclusions"
     // in a way do not count as ones wrt compatibility)
     if (slices != null) {
       for (SliceDef slice : slices) {
-        buildSlicer(slice, root);
+        buildSlicer(failOnOverlap, slice, root);
       }
     }
 
     // May need to add doc-id inclusion/exclusion as well
     if (addDocId) {
       buildPath(
-          DocumentConstants.Fields.DOC_ID, root, new String[] {DocumentConstants.Fields.DOC_ID});
+          failOnOverlap,
+          DocumentConstants.Fields.DOC_ID,
+          root,
+          new String[] {DocumentConstants.Fields.DOC_ID});
     }
     return root;
   }
 
-  static void buildPath(String fullPath, ProjectionLayer layer, String[] segments) {
+  static void buildPath(
+      boolean failOnOverlap, String fullPath, ProjectionLayer layer, String[] segments) {
     // First create branches
     final int last = segments.length - 1;
     for (int i = 0; i < last; ++i) {
       // Try to find or create branch
-      layer = layer.findOrCreateBranch(fullPath, segments[i]);
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
+      // May be null if terminal layer found (shorter existing path); if so, we are done
+      if (layer == null) {
+        return;
+      }
     }
     // And then attach terminal (leaf)
-    layer.addTerminal(fullPath, segments[last]);
+    layer.addTerminal(failOnOverlap, fullPath, segments[last]);
   }
 
-  static void buildSlicer(SliceDef slice, ProjectionLayer layer) {
+  static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
     String[] segments = DOT.split(fullPath);
     final int last = segments.length - 1;
     for (int i = 0; i < last; ++i) {
-      layer = layer.findOrCreateBranch(fullPath, segments[i]);
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
     }
-    layer.addSlicer(fullPath, segments[last], slice.slicer());
+    layer.addSlicer(failOnOverlap, fullPath, segments[last], slice.slicer());
   }
 
-  ProjectionLayer findOrCreateBranch(String fullPath, String segment) {
+  ProjectionLayer findOrCreateBranch(boolean failOnOverlap, String fullPath, String segment) {
     // Cannot proceed past terminal layer (shorter path):
     if (isTerminal) {
-      reportPathConflict(this.fullPath, fullPath);
+      if (failOnOverlap) {
+        reportPathConflict(this.fullPath, fullPath);
+      }
+      // Otherwise leave node as-is, return null to indicate no further traversal
+      return null;
     }
     ProjectionLayer next = nextLayers.get(segment);
     if (next == null) {
@@ -107,27 +129,38 @@ class ProjectionLayer {
     return next;
   }
 
-  void addTerminal(String fullPath, String segment) {
+  void addTerminal(boolean failOnOverlap, String fullPath, String segment) {
     // Cannot proceed past terminal layer (shorter path):
     if (isTerminal) {
-      reportPathConflict(this.fullPath, fullPath);
+      if (failOnOverlap) {
+        reportPathConflict(this.fullPath, fullPath);
+      }
+      // Otherwise leave node as-is, return null to indicate no further traversal
+      return;
     }
     // But will also not allow existing longer path:
-    ProjectionLayer next = nextLayers.get(segment);
-    if (next != null) {
-      reportPathConflict(fullPath, next.fullPath);
+    if (failOnOverlap) {
+      ProjectionLayer next = nextLayers.get(segment);
+      if (next != null) {
+        reportPathConflict(fullPath, next.fullPath);
+      }
     }
     nextLayers.put(segment, new ProjectionLayer(fullPath, true));
   }
 
-  void addSlicer(String fullPath, String segment, Slicer slicer) {
+  void addSlicer(boolean failOnOverlap, String fullPath, String segment, Slicer slicer) {
     // Similar checks to "regular" paths
     if (isTerminal) {
-      reportPathConflict(this.fullPath, fullPath);
+      if (failOnOverlap) {
+        reportPathConflict(this.fullPath, fullPath);
+      }
+      return;
     }
-    ProjectionLayer next = nextLayers.get(segment);
-    if (next != null) {
-      reportPathConflict(fullPath, next.fullPath);
+    if (failOnOverlap) {
+      ProjectionLayer next = nextLayers.get(segment);
+      if (next != null) {
+        reportPathConflict(fullPath, next.fullPath);
+      }
     }
     nextLayers.put(segment, new ProjectionLayer(fullPath, slicer));
   }
