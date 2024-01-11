@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
@@ -38,9 +39,9 @@ public record FilterClause(LogicalExpression logicalExpression) {
       ComparisonExpression comparisonExpression, CollectionSettings.IndexingConfig indexingConfig) {
     String path = comparisonExpression.getPath();
     // If _id is denied, the operator can only be $eq or $in
-    if (path.equals("_id")) {
-      if ((!indexingConfig.denied().isEmpty() && indexingConfig.denied().contains("_id"))
-          || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains("_id"))
+    if (path.equals(DocumentConstants.Fields.DOC_ID)) {
+      if ((!indexingConfig.denied().isEmpty() && indexingConfig.denied().contains(DocumentConstants.Fields.DOC_ID))
+          || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains(DocumentConstants.Fields.DOC_ID))
           || (!indexingConfig.denied().isEmpty()
               && indexingConfig.denied().iterator().next().equals("*"))) {
         FilterOperator filterOperator =
@@ -50,8 +51,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
           throw new JsonApiException(
               ErrorCode.ID_NOT_INDEXED,
               String.format(
-                  "%s: The filter path ('_id') is not indexed, you can only use $eq or $in as the operator",
-                  ErrorCode.ID_NOT_INDEXED.getMessage()));
+                  "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
+                  ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
         }
       }
       return;
@@ -62,8 +63,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
       throw new JsonApiException(
           ErrorCode.UNINDEXED_FILTER_PATH,
           String.format(
-              "%s: All fields are not indexed, you can only use ('_id') in filter",
-              ErrorCode.UNINDEXED_FILTER_PATH.getMessage()));
+              "%s: All fields are not indexed, you can only use ('%s') in filter",
+              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), DocumentConstants.Fields.DOC_ID));
     }
     // Split the path into parts
     String[] pathParts = path.split("\\.");
