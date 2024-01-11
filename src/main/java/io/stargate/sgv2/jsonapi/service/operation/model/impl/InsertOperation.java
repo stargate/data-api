@@ -28,7 +28,7 @@ public record InsertOperation(
     implements ModifyOperation {
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), true);
+    this(commandContext, List.of(document), false);
   }
 
   /** {@inheritDoc} */
