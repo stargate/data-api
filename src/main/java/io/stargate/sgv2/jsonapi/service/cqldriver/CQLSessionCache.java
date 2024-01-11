@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
@@ -15,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,22 +43,30 @@ public class CQLSessionCache {
   private static final String DEFAULT_TENANT = "default_tenant";
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
-
   /** CQLSession cache. */
-  private final Cache<SessionCacheKey, CqlSession> sessionCache;
-
+  private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
+  /** Database type Astra */
   public static final String ASTRA = "astra";
+  /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
-  /** Default token property name which will be used by the integration tests */
+
+  @ConfigProperty(name = "quarkus.application.name")
+  private String APPLICATION_NAME;
+
   @Inject
-  public CQLSessionCache(OperationsConfig operationsConfig) {
+  public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
     this.operationsConfig = operationsConfig;
-    sessionCache =
+    LoadingCache<SessionCacheKey, CqlSession> sessionCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
             .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-            .evictionListener(
+            // removal listener is invoked after the entry has been removed from the cache. So the
+            // idea is that we no longer return this session for any lookup as a first step, then
+            // close the session in the background asynchronously which is a graceful closing of
+            // channels i.e. any in-flight query will be completed before the session is getting
+            // closed.
+            .removalListener(
                 (RemovalListener<SessionCacheKey, CqlSession>)
                     (sessionCacheKey, session, cause) -> {
                       if (sessionCacheKey != null) {
@@ -68,7 +79,10 @@ public class CQLSessionCache {
                         session.close();
                       }
                     })
-            .build();
+            .recordStats()
+            .build(this::getNewSession);
+    this.sessionCache =
+        CaffeineCacheMetrics.monitor(meterRegistry, sessionCache, "cql_sessions_cache");
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -102,15 +116,19 @@ public class CQLSessionCache {
               stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
+          .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withAuthCredentials(
               Objects.requireNonNull(databaseConfig.userName()),
               Objects.requireNonNull(databaseConfig.password()))
+          .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
           .withAuthCredentials(
               TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+          .withClassLoader(Thread.currentThread().getContextClassLoader())
+          .withApplicationName(APPLICATION_NAME)
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
@@ -127,7 +145,7 @@ public class CQLSessionCache {
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
-    return sessionCache.get(getSessionCacheKey(), this::getNewSession);
+    return sessionCache.get(getSessionCacheKey());
   }
 
   /**
@@ -135,9 +153,7 @@ public class CQLSessionCache {
    * token from the request will be compared with this to perform authentication.
    */
   private String getFixedToken() {
-    return operationsConfig.databaseConfig().fixedToken().isPresent()
-        ? operationsConfig.databaseConfig().fixedToken().get()
-        : null;
+    return operationsConfig.databaseConfig().fixedToken().orElse(null);
   }
 
   /**
@@ -169,6 +185,16 @@ public class CQLSessionCache {
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
+  }
+
+  /**
+   * Get cache size.
+   *
+   * @return cache size
+   */
+  public long cacheSize() {
+    sessionCache.cleanUp();
+    return sessionCache.estimatedSize();
   }
 
   /**

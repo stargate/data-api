@@ -385,7 +385,8 @@ nested document or array adds another level.
 
 #### Document Field Limits
 
-The maximum length of a [field name](#json-document-field-names) is 48 characters.
+The maximum length of a [field name](#json-document-field-names) is 100 characters.
+The maximum total Document path length for individual fields (see [Document Paths] section) is 250 characters.
 
 The maximum number of fields allowed in a single JSON object is 64.
 
@@ -408,16 +409,14 @@ has 3 fields: `root`, `root.branch`, and `root.branch.leaf`, for purposes of thi
 
 The maximum size of field values are:
 
-| JSON Type | Maximum Value                               |
-|-----------|---------------------------------------------|
-| `string`  | Maximum length of 16,000 unicode characters |
-| `number`  | Maximum length of 50 number characters      |
-
+| JSON Type | Maximum Value                                 |
+|-----------|-----------------------------------------------|
+| `string`  | Maximum length of 8,000 bytes (UTF-8 encoded) |
+| `number`  | Maximum length of 50 number characters        |
 
 #### Document Array Limits
 
-The maximum length of an array is 100 elements.
-
+The maximum length of an array is 1,000 elements.
 
 ### Equality handling with arrays and subdocs
 

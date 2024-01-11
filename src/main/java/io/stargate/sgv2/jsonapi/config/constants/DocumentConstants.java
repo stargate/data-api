@@ -15,6 +15,9 @@ public interface DocumentConstants {
      */
     String DATA_CONTAINS = "array_contains";
 
+    /** Text map support _id $ne and _id $nin on both atomic value and array element */
+    String QUERY_TEXT_MAP_COLUMN_NAME = "query_text_values";
+
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
 
@@ -34,6 +37,9 @@ public interface DocumentConstants {
     // characters, not length limits (nor empty nor "too long" allowed but validated
     // separately)
     Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-]*");
+
+    /** Field name pattern in sort and filter clause. */
+    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
   }
 
   interface KeyTypeId {

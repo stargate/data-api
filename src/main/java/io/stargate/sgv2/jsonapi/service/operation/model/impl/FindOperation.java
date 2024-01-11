@@ -325,7 +325,8 @@ public record FindOperation(
             skip(),
             limit(),
             maxSortReadLimit(),
-            projection());
+            projection(),
+            vector() != null);
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -337,7 +338,8 @@ public record FindOperation(
             ReadType.DOCUMENT == readType,
             objectMapper,
             projection,
-            limit());
+            limit(),
+            vector() != null);
       }
       default -> {
         JsonApiException failure =
@@ -394,7 +396,7 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    List<Expression<BuiltCondition>> expressions =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();
@@ -503,7 +505,7 @@ public record FindOperation(
    *     buildConditions method.
    */
   private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
-    List<Expression<BuiltCondition>> expressions =
+    final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();

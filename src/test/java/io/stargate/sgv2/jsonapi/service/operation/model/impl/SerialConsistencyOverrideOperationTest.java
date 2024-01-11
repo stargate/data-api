@@ -1,19 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.bridge.grpc.TypeSpecs;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.common.bridge.AbstractValidatingStargateBridgeTest;
-import io.stargate.sgv2.common.bridge.ValidatingStargateBridge;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -21,7 +26,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -29,26 +34,28 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 // import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
+import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.inject.Inject;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Disabled;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@Disabled
 @TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
-public class SerialConsistencyOverrideOperationTest extends AbstractValidatingStargateBridgeTest {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-  @Inject QueryExecutor queryExecutor;
+public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
+  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private final ColumnDefinitions COLUMNS_APPLIED =
+      buildColumnDefs(TestColumn.ofBoolean("[applied]"));
+
   @Inject ObjectMapper objectMapper;
   @Inject Shredder shredder;
 
@@ -71,45 +78,41 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
     @Test
     public void delete() {
       UUID tx_id = UUID.randomUUID();
-
       String collectionReadCql =
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert readAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id))));
+
+      final ColumnDefinitions keyAndTxtIdColumns =
+          buildColumnDefs(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"));
+      SimpleStatement selectStmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> selectRows =
+          Arrays.asList(resultRow(keyAndTxtIdColumns, 0, byteBufferForKey("doc1"), tx_id));
+      AsyncResultSet selectResults = new MockAsyncResultSet(keyAndTxtIdColumns, selectRows, null);
+      final AtomicInteger callCountSelect = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCountSelect.incrementAndGet();
+                return Uni.createFrom().item(selectResults);
+              });
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert deleteAssert =
-          withQuery(
-                  collectionDeleteCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))),
-                  Values.of(tx_id))
-              .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
-              .returning(List.of(List.of(Values.of(true))));
+      SimpleStatement deleteStmt =
+          SimpleStatement.newInstance(collectionDeleteCql, boundKeyForStatement("doc1"), tx_id);
+      List<Row> deleteRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet deleteResults = new MockAsyncResultSet(COLUMNS_APPLIED, deleteRows, null);
+      final AtomicInteger callCountDelete = new AtomicInteger();
+      when(queryExecutor.executeWrite(eq(deleteStmt)))
+          .then(
+              invocation -> {
+                SimpleStatement stmt = invocation.getArgument(0);
+                callCountDelete.incrementAndGet();
+                return Uni.createFrom().item(deleteResults);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
@@ -136,8 +139,8 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               .getItem();
 
       // assert query execution
-      readAssert.assertExecuteCount().isOne();
-      deleteAssert.assertExecuteCount().isOne();
+      assertThat(callCountSelect.get()).isEqualTo(1);
+      assertThat(callCountDelete.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -154,7 +157,6 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
             + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
-    @Disabled
     public void insert() throws Exception {
       String document =
           """
@@ -172,34 +174,30 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
       JsonNode jsonNode = objectMapper.readTree(document);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      ValidatingStargateBridge.QueryAssert insertAssert =
-          withQuery(
-                  insertCql,
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
-              .returning(List.of(List.of(Values.of(true))));
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              CQLBindValues.getDocumentIdValue(shredDocument.id()),
+              shredDocument.docJson(),
+              CQLBindValues.getSetValue(shredDocument.existKeys()),
+              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+              shredDocument.arrayContains(),
+              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()));
+
+      List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeWrite(eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
@@ -211,7 +209,7 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               .getItem();
 
       // assert query execution
-      insertAssert.assertExecuteCount().isOne();
+      assertThat(callCount.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -226,7 +224,6 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
   class ReadAndUpdate {
 
     @Test
-    @Disabled
     public void readAndUpdate() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
@@ -241,42 +238,31 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
                       }
                       """;
 
+      final ColumnDefinitions keyTxIdDocColumns =
+          buildColumnDefs(
+              TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
+      SimpleStatement selectStmt =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> selectRows =
+          Arrays.asList(resultRow(keyTxIdDocColumns, 0, byteBufferForKey("doc1"), tx_id, doc1));
+      AsyncResultSet selectResults = new MockAsyncResultSet(keyTxIdDocColumns, selectRows, null);
+      final AtomicInteger callCountSelect = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(selectStmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCountSelect.incrementAndGet();
+                return Uni.createFrom().item(selectResults);
+              });
+
       String doc1Updated =
           """
-                      {
-                        "_id": "doc1",
-                        "username": "user1",
-                        "name" : "test"
-                      }
-                      """;
-      ValidatingStargateBridge.QueryAssert selectQueryAssert =
-          withQuery(
-                  collectionReadCql,
-                  Values.of(
-                      CustomValueSerializers.getDocumentIdValue(DocumentId.fromString("doc1"))))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(tx_id),
-                          Values.of(doc1))));
+                          {
+                            "_id": "doc1",
+                            "username": "user1",
+                            "name" : "test"
+                          }
+                          """;
 
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -295,38 +281,34 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      String collectionUpdateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String updateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
 
-      ValidatingStargateBridge.QueryAssert updateQueryAssert =
-          withQuery(
-                  collectionUpdateCql,
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.existKeys())),
-                  Values.of(CustomValueSerializers.getIntegerMapValues(shredDocument.arraySize())),
-                  Values.of(
-                      CustomValueSerializers.getStringSetValue(shredDocument.arrayContains())),
-                  Values.of(
-                      CustomValueSerializers.getBooleanMapValues(shredDocument.queryBoolValues())),
-                  Values.of(
-                      CustomValueSerializers.getDoubleMapValues(shredDocument.queryNumberValues())),
-                  Values.of(
-                      CustomValueSerializers.getStringMapValues(shredDocument.queryTextValues())),
-                  Values.of(CustomValueSerializers.getSetValue(shredDocument.queryNullValues())),
-                  Values.of(
-                      CustomValueSerializers.getTimestampMapValues(
-                          shredDocument.queryTimestampValues())),
-                  Values.of(shredDocument.docJson()),
-                  Values.of(CustomValueSerializers.getDocumentIdValue(shredDocument.id())),
-                  Values.of(tx_id))
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("applied")
-                          .setType(TypeSpecs.BOOLEAN)
-                          .build()))
-              .withSerialConsistency(QueryOuterClass.Consistency.LOCAL_SERIAL)
-              .returning(List.of(List.of(Values.of(true))));
+      SimpleStatement updateStmt =
+          SimpleStatement.newInstance(
+              updateCql.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              CQLBindValues.getSetValue(shredDocument.existKeys()),
+              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
+              shredDocument.arrayContains(),
+              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
+              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
+              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
+              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
+              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
+              shredDocument.docJson(),
+              CQLBindValues.getDocumentIdValue(shredDocument.id()),
+              tx_id);
+
+      List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
+      AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
+      final AtomicInteger callCountUpdate = new AtomicInteger();
+      when(queryExecutor.executeWrite(eq(updateStmt)))
+          .then(
+              invocation -> {
+                callCountUpdate.incrementAndGet();
+                return Uni.createFrom().item(updateResults);
+              });
 
       DBFilterBase.IDFilter filter =
           new DBFilterBase.IDFilter(
@@ -370,8 +352,8 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
               .getItem();
 
       // assert query execution
-      selectQueryAssert.assertExecuteCount().isOne();
-      updateQueryAssert.assertExecuteCount().isOne();
+      assertThat(callCountSelect.get()).isEqualTo(1);
+      assertThat(callCountUpdate.get()).isEqualTo(1);
 
       // then result
       CommandResult result = execute.get();
@@ -381,5 +363,10 @@ public class SerialConsistencyOverrideOperationTest extends AbstractValidatingSt
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
       assertThat(result.errors()).isNull();
     }
+  }
+
+  private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
+    List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
+    return new MockRow(columnDefs, index, buffers);
   }
 }

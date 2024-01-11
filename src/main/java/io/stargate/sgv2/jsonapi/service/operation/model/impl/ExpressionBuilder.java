@@ -31,16 +31,14 @@ public class ExpressionBuilder {
         buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
     List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
-
     return expressions;
   }
 
+  // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
   private static List<Expression<BuiltCondition>> buildExpressionWithId(
       DBFilterBase.IDFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
-    List<Expression<BuiltCondition>> expressionsWithId = new ArrayList<>();
-
     if (idFilters.size() > 1) {
       throw new JsonApiException(
           ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
@@ -48,7 +46,8 @@ public class ExpressionBuilder {
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
-        return null; // should find nothing
+        // no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
+        return Collections.singletonList(null); // should find everything
       } else {
         return List.of(expressionWithoutId);
       }
@@ -57,16 +56,19 @@ public class ExpressionBuilder {
     // have an idFilter
     DBFilterBase.IDFilter idFilter =
         additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+
+    // _id: {$in: []} should find nothing in the entire query
+    // since _id can not work with $or, entire $and should find nothing
     if (idFilter.operator == DBFilterBase.IDFilter.Operator.IN && idFilter.getAll().isEmpty()) {
       return null; // should find nothing
     }
-    // idFilter's operator is IN or EQ, for both, we can follow the split query logic
+
+    // idFilter's operator is IN/EQ/NE, for both, split into n query logic
     List<BuiltCondition> inSplit =
         idFilters.isEmpty() ? new ArrayList<>() : idFilters.get(0).getAll();
     if (additionalIdFilter != null) {
       inSplit = additionalIdFilter.getAll(); // override the existed id filter
     }
-    // split n queries by id
     return inSplit.stream()
         .map(
             idCondition -> {
@@ -96,19 +98,46 @@ public class ExpressionBuilder {
       conditionExpressions.add(subExpressionCondition);
     }
 
+    // if seeing $in, set hasInFilterThisLevel as true
     boolean hasInFilterThisLevel = false;
+    // if seeing $nin, set hasNinFilterThisLevel as true
+    boolean hasNinFilterThisLevel = false;
     boolean inFilterThisLevelWithEmptyArray = true;
+    boolean ninFilterThisLevelWithEmptyArray = true;
+
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
-        if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
-          hasInFilterThisLevel = true;
+        if (dbFilter instanceof DBFilterBase.AllFilter allFilter) {
+          List<BuiltCondition> allFilterConditions = allFilter.getAll();
+          List<Variable<BuiltCondition>> allFilterVariables =
+              allFilterConditions.stream().map(Variable::of).toList();
+          conditionExpressions.add(ExpressionUtils.andOf(allFilterVariables));
+        } else if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
+          if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)) {
+            hasInFilterThisLevel = true;
+          } else if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.NIN)) {
+            hasNinFilterThisLevel = true;
+          }
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
-            inFilterThisLevelWithEmptyArray = false;
+            // store information of an empty array happens with $in or $nin
+            if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)) {
+              inFilterThisLevelWithEmptyArray = false;
+            } else if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.NIN)) {
+              ninFilterThisLevelWithEmptyArray = false;
+            }
             List<Variable<BuiltCondition>> inConditionsVariables =
                 inFilterConditions.stream().map(Variable::of).toList();
-            conditionExpressions.add(ExpressionUtils.orOf(inConditionsVariables));
+            // non_id $in:["A","B"] -> array_contains contains A or array_contains contains B
+            // non_id $nin:["A","B"] -> array_contains not contains A and array_contains not
+            // contains B
+            // _id $nin: ["A","B"] -> query_text_values['_id'] != A and query_text_values['_id'] !=
+            // B
+            conditionExpressions.add(
+                inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)
+                    ? ExpressionUtils.orOf(inConditionsVariables)
+                    : ExpressionUtils.andOf(inConditionsVariables));
           }
         } else if (dbFilter instanceof DBFilterBase.IDFilter idFilter) {
           if (additionalIdFilter == null) {
@@ -119,16 +148,42 @@ public class ExpressionBuilder {
         }
       }
     }
-    // current logicalExpression is empty (implies sub-logicalExpression and
-    // sub-comparisonExpression are all empty)
-    if (conditionExpressions.isEmpty()) {
-      return null;
+
+    // when having an empty array $nin, if $nin occurs within an $or logic, entire $or should match
+    // everything
+    if (hasNinFilterThisLevel
+        && ninFilterThisLevelWithEmptyArray
+        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.OR)) {
+      // TODO: find a better CQL TRUE placeholder
+      conditionExpressions.clear();
+      conditionExpressions.add(
+          Variable.of(
+              new DBFilterBase.IsNullFilter(
+                      "something user never use", DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS)
+                  .get()));
+      return ExpressionUtils.buildExpression(
+          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
     }
+
     // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
     // nothing
     if (hasInFilterThisLevel
         && inFilterThisLevelWithEmptyArray
         && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
+      // TODO: find a better CQL FALSE placeholder
+      conditionExpressions.clear();
+      conditionExpressions.add(
+          Variable.of(
+              new DBFilterBase.IsNullFilter(
+                      "something user never use", DBFilterBase.SetFilterBase.Operator.CONTAINS)
+                  .get()));
+      return ExpressionUtils.buildExpression(
+          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+    }
+
+    // current logicalExpression is empty (implies sub-logicalExpression and
+    // sub-comparisonExpression are all empty)
+    if (conditionExpressions.isEmpty()) {
       return null;
     }
 

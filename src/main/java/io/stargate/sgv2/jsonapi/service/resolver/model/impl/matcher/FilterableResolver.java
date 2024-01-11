@@ -5,11 +5,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
@@ -28,6 +30,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
+  private static final Object ID_GROUP_RANGE = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
@@ -39,6 +42,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+
   @Inject DocumentLimitsConfig docLimits;
 
   @Inject
@@ -56,26 +60,68 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
-    //     NOTE - can only do eq ops on fields until SAI changes
     matchRules
         .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID)
+        .compareValues(
+            "_id",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.DOCUMENT_ID)
         .capture(ID_GROUP_IN)
-        .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .compareValues(
+            "_id",
+            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+            JsonType.ARRAY)
+        .capture(ID_GROUP_RANGE)
+        .compareValues(
+            "_id",
+            EnumSet.of(
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_GROUP_IN)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+            JsonType.ARRAY)
         .capture(DYNAMIC_NUMBER_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.NUMBER)
         .capture(DYNAMIC_TEXT_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.BOOLEAN)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.BOOLEAN)
         .capture(DYNAMIC_NULL_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL)
+        .compareValues(
+            "*", EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE), JsonType.NULL)
         .capture(DYNAMIC_DATE_GROUP)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DATE)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DATE)
         .capture(EXISTS_GROUP)
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
@@ -83,9 +129,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .capture(SIZE_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
         .capture(ARRAY_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.ARRAY)
+        .compareValues(
+            "*", EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE), JsonType.ARRAY)
         .capture(SUB_DOC_EQUALS)
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.SUB_DOC);
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.SUB_DOC);
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
@@ -103,7 +153,6 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   public static List<DBFilterBase> findById(CaptureExpression captureExpression) {
-
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
@@ -128,24 +177,72 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-
       if (captureExpression.marker() == ID_GROUP) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case EQ:
+            filters.add(
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.EQ,
+                    (DocumentId) filterOperation.operand().value()));
+            break;
+          case NE:
+            filters.add(
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.NE,
+                    (DocumentId) filterOperation.operand().value()));
+            break;
+          default:
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format(
+                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+        }
+      }
+      if (captureExpression.marker() == ID_GROUP_IN) {
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case IN:
+            filters.add(
+                new DBFilterBase.IDFilter(
+                    DBFilterBase.IDFilter.Operator.IN,
+                    (List<DocumentId>) filterOperation.operand().value()));
+            break;
+          case NIN:
+            filters.add(
+                new DBFilterBase.InFilter(
+                    getInFilterBaseOperator(filterOperation.operator()),
+                    captureExpression.path(),
+                    (List<Object>) filterOperation.operand().value()));
+            break;
+          default:
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format(
+                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+        }
       }
 
-      if (captureExpression.marker() == ID_GROUP_IN) {
-        filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.IN,
-                (List<DocumentId>) filterOperation.operand().value()));
+      if (captureExpression.marker() == ID_GROUP_RANGE) {
+        final DocumentId value = (DocumentId) filterOperation.operand().value();
+        if (value.value() instanceof BigDecimal bdv) {
+          filters.add(
+              new DBFilterBase.NumberFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getMapFilterBaseOperator(filterOperation.operator()),
+                  bdv));
+        }
+        if (value.value() instanceof Map) {
+          filters.add(
+              new DBFilterBase.DateFilter(
+                  DocumentConstants.Fields.DOC_ID,
+                  getMapFilterBaseOperator(filterOperation.operator()),
+                  JsonUtil.createDateFromDocumentId(value)));
+        }
       }
 
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
         filters.add(
             new DBFilterBase.InFilter(
-                DBFilterBase.InFilter.Operator.IN,
+                getInFilterBaseOperator(filterOperation.operator()),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value()));
       }
@@ -154,7 +251,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.TextFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (String) filterOperation.operand().value()));
       }
 
@@ -162,7 +259,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.BoolFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (Boolean) filterOperation.operand().value()));
       }
 
@@ -170,38 +267,32 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         filters.add(
             new DBFilterBase.NumberFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
       }
 
       if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
-        filters.add(new DBFilterBase.IsNullFilter(captureExpression.path()));
+        filters.add(
+            new DBFilterBase.IsNullFilter(
+                captureExpression.path(), getSetFilterBaseOperator(filterOperation.operator())));
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
         filters.add(
             new DBFilterBase.DateFilter(
                 captureExpression.path(),
-                DBFilterBase.MapFilterBase.Operator.EQ,
+                getMapFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
       }
 
       if (captureExpression.marker() == EXISTS_GROUP) {
         Boolean bool = (Boolean) filterOperation.operand().value();
-        if (bool) {
-          filters.add(new DBFilterBase.ExistsFilter(captureExpression.path(), bool));
-        } else {
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE, "$exists is supported only with true option");
-        }
+        filters.add(new DBFilterBase.ExistsFilter(captureExpression.path(), bool));
       }
+
       if (captureExpression.marker() == ALL_GROUP) {
-        final DocValueHasher docValueHasher = new DocValueHasher();
-        List<Object> objects = (List<Object>) filterOperation.operand().value();
-        for (Object arrayValue : objects) {
-          filters.add(
-              new DBFilterBase.AllFilter(docValueHasher, captureExpression.path(), arrayValue));
-        }
+        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {
@@ -214,7 +305,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new DBFilterBase.ArrayEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
-                (List<Object>) filterOperation.operand().value()));
+                (List<Object>) filterOperation.operand().value(),
+                filterOperation.operator().equals(ValueComparisonOperator.EQ)
+                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
+                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
@@ -222,10 +316,63 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new DBFilterBase.SubDocEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
-                (Map<String, Object>) filterOperation.operand().value()));
+                (Map<String, Object>) filterOperation.operand().value(),
+                filterOperation.operator().equals(ValueComparisonOperator.EQ)
+                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
+                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
     }
 
     return filters;
+  }
+
+  private static DBFilterBase.MapFilterBase.Operator getMapFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
+      case EQ:
+        return DBFilterBase.MapFilterBase.Operator.EQ;
+      case NE:
+        return DBFilterBase.MapFilterBase.Operator.NE;
+      case GT:
+        return DBFilterBase.MapFilterBase.Operator.GT;
+      case GTE:
+        return DBFilterBase.MapFilterBase.Operator.GTE;
+      case LT:
+        return DBFilterBase.MapFilterBase.Operator.LT;
+      case LTE:
+        return DBFilterBase.MapFilterBase.Operator.LTE;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+    }
+  }
+
+  private static DBFilterBase.InFilter.Operator getInFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
+      case IN:
+        return DBFilterBase.InFilter.Operator.IN;
+      case NIN:
+        return DBFilterBase.InFilter.Operator.NIN;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+    }
+  }
+
+  private static DBFilterBase.SetFilterBase.Operator getSetFilterBaseOperator(
+      FilterOperator filterOperator) {
+    switch ((ValueComparisonOperator) filterOperator) {
+      case EQ:
+        return DBFilterBase.SetFilterBase.Operator.CONTAINS;
+      case NE:
+        return DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS;
+      default:
+        throw new JsonApiException(
+            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+    }
   }
 }

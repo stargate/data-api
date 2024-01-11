@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -686,6 +687,52 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
 
   @Nested
   @Order(3)
+  class FindOneAndReplaceFailing {
+    @Test
+    public void tryReplaceWithTooLongNumber() {
+      String document =
+          """
+                {
+                  "_id": "tooLongNumber1",
+                  "value" : 123
+                }
+                """;
+      insertDoc(document);
+
+      // Max number length: 50; use 100
+      String tooLongNumStr = "1234567890".repeat(10);
+      String json =
+          """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {"_id" : "tooLongNumber1"},
+                    "replacement" : {
+                        "_id" : "tooLongNumber1",
+                        "value" : %s
+                    }
+                  }
+                }
+                """
+              .formatted(tooLongNumStr);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: Number value length"));
+    }
+  }
+
+  @Nested
+  @Order(99)
   class Metrics {
     @Test
     public void checkMetrics() {

@@ -26,9 +26,12 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
-public class StargateTestResource
+public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
+
+  // Astra will have 8kB limit some time around or after 1.0.0-BETA-6:
+  protected static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 8;
   private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
   private Network network;
@@ -69,6 +72,14 @@ public class StargateTestResource
       String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
       propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
+      // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
+      propsBuilder.put(
+          "stargate.database.limits.max-collections",
+          String.valueOf(getMaxCollectionsPerDBOverride()));
+      propsBuilder.put(
+          "stargate.database.limits.indexes-available-per-database",
+          String.valueOf(getIndexesPerDBOverride()));
+
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
       LOG.info("Using props map for the integration tests: %s".formatted(props));
@@ -153,9 +164,15 @@ public class StargateTestResource
 
   private GenericContainer<?> baseCoordinatorContainer(boolean reuse) {
     String image = this.getStargateImage();
+
+    String javaOpts =
+        String.format(
+            "-Xmx1G -D%s=%d",
+            "cassandra.sai.max_string_term_size_kb", DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB);
+
     GenericContainer<?> container =
         (new GenericContainer(image))
-            .withEnv("JAVA_OPTS", "-Xmx1G")
+            .withEnv("JAVA_OPTS", javaOpts)
             .withEnv("CLUSTER_NAME", getClusterName())
             .withEnv("SIMPLE_SNITCH", "true")
             .withEnv("ENABLE_AUTH", "true")
@@ -239,6 +256,10 @@ public class StargateTestResource
       throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
     }
   }
+
+  public abstract int getMaxCollectionsPerDBOverride();
+
+  public abstract int getIndexesPerDBOverride();
 
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";

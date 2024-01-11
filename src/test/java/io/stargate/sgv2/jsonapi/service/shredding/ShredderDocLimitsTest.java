@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,8 +45,8 @@ public class ShredderDocLimitsTest {
     @Test
     public void catchTooBigDoc() {
       // Let's construct document above 1 meg limit (but otherwise legal), with
-      // 100 x 10k String values, divided in 10 sub documents of 10 properties
-      final ObjectNode bigDoc = createBigDoc(10, 10);
+      // 144 x 7.5k String values, divided in 12 sub documents of 12 properties
+      final ObjectNode bigDoc = createBigDoc(12, 12);
 
       Exception e = catchException(() -> shredder.shred(bigDoc));
       assertThat(e)
@@ -63,7 +64,7 @@ public class ShredderDocLimitsTest {
       for (int ix1 = 0; ix1 < mainProps; ++ix1) {
         ObjectNode mainProp = bigDoc.putObject("prop" + ix1);
         for (int ix2 = 0; ix2 < subProps; ++ix2) {
-          mainProp.put("sub" + ix2, RandomStringUtils.randomAscii(10_000));
+          mainProp.put("sub" + ix2, RandomStringUtils.randomAscii(7_500));
         }
       }
       return bigDoc;
@@ -110,15 +111,17 @@ public class ShredderDocLimitsTest {
   class ValidationDocCountViolations {
     @Test
     public void allowDocWithManyObjectProps() {
-      // Max allowed is 64, so add 50
-      final ObjectNode doc = docWithNProps(50);
+      // Max allowed is 1,000
+      final ObjectNode doc = docWithNProps(docLimits.maxObjectProperties());
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyObjectProps() {
-      // Max allowed 64, so fail with 100
-      final ObjectNode doc = docWithNProps(100);
+      // Max allowed 100, so fail with just one above
+      final int maxObProps = docLimits.maxObjectProperties();
+      final int tooManyProps = maxObProps + 1;
+      final ObjectNode doc = docWithNProps(tooManyProps);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -127,8 +130,10 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an Object has (100) exceeds maximum allowed ("
-                  + docLimits.maxObjectProperties()
+              " number of properties an Object has ("
+                  + tooManyProps
+                  + ") exceeds maximum allowed ("
+                  + maxObProps
                   + ")");
     }
 
@@ -144,8 +149,8 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void catchTooManyDocProps() {
-      // Max allowed 1000, create one with ~1200
-      final ObjectNode doc = docWithNestedProps(40, 30);
+      // Max allowed 2000, create one with bit more
+      final ObjectNode doc = docWithNestedProps(50, 41);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -154,7 +159,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " total number of properties (1241) in document exceeds maximum allowed ("
+              " total number of properties (2101) in document exceeds maximum allowed ("
                   + docLimits.maxDocumentProperties()
                   + ")");
     }
@@ -174,15 +179,15 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void allowDocWithManyArrayElements() {
-      // Max allowed 100, add 90
-      final ObjectNode doc = docWithNArrayElems("arr", 90);
+      // Max allowed 1000, test:
+      final ObjectNode doc = docWithNArrayElems("arr", docLimits.maxArrayLength());
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyArrayElements() {
-      // Let's add 120 elements (max allowed: 100)
-      final ObjectNode doc = docWithNArrayElems("arr", 120);
+      final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
+      final ObjectNode doc = docWithNArrayElems("arr", arraySizeAboveMax);
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
           .isNotNull()
@@ -190,7 +195,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has (120) exceeds maximum allowed ("
+              " number of elements an Array has ("
+                  + arraySizeAboveMax
+                  + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
                   + ")");
     }
@@ -216,12 +223,24 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
+    public void allowNotTooLongPath() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      // Create 3-levels, 80 chars each, so 242 chars (3 names, 2 dots); below 250 max
+      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
+      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
+      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
+      // and then one short one, for 244 char total path
+      ob3.put("x", 123);
+      assertThat(shredder.shred(doc)).isNotNull();
+    }
+
+    @Test
     public void catchTooLongNames() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ObjectNode ob = doc.putObject("subdoc");
       final String propName =
-          "property_with_way_too_long_name_123456789_123456789_123456789_123456789";
+          "property_with_way_too_long_name_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789";
       ob.put(propName, true);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -235,25 +254,51 @@ public class ShredderDocLimitsTest {
                   + propName.length()
                   + ") exceeds maximum allowed ("
                   + docLimits.maxPropertyNameLength()
-                  + ")");
+                  + ") (name '"
+                  + propName
+                  + "')");
+      ;
+    }
+
+    @Test
+    public void catchTooLongPaths() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      // Create 3-levels, 80 chars each, so close to 250; and then one bit longer value
+      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
+      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
+      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
+      ob3.put("longPropertyName", 123);
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " Property path length (259) exceeds maximum allowed ("
+                  + docLimits.maxPropertyPathLength()
+                  + ") (path ends with 'longPropertyName')");
+      ;
     }
 
     @Test
     public void allowNotTooLongStringValues() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      // Max is 16_000 so do a bit less
-      doc.put("text", RandomStringUtils.randomAscii(12_000));
+      // Use ASCII to keep chars == bytes, use length of just slight below max allowed
+      doc.put("text", RandomStringUtils.randomAscii(docLimits.maxStringLengthInBytes() - 100));
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
-    public void catchTooLongStringValues() {
+    public void catchTooLongStringValueAscii() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ArrayNode arr = doc.putArray("arr");
-      // Let's add 50_000 char one (exceeds max of 16_000)
-      String str = RandomStringUtils.randomAscii(50_000);
+      // Use ASCII to keep chars == bytes, use length of just above max allowed
+      final int tooLongLength = docLimits.maxStringLengthInBytes() + 100;
+      String str = RandomStringUtils.randomAscii(tooLongLength);
       arr.add(str);
 
       Exception e = catchException(() -> shredder.shred(doc));
@@ -263,9 +308,43 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value length (50000) exceeds maximum allowed ("
-                  + docLimits.maxStringLength()
-                  + ")");
+              " String value length ("
+                  + tooLongLength
+                  + " bytes) exceeds maximum allowed ("
+                  + docLimits.maxStringLengthInBytes()
+                  + " bytes)");
+    }
+
+    // Test to ensure that maximum String length validation catches case where
+    // character length is below maximum byte length but byte length is above it.
+    @Test
+    public void catchTooLongStringValueUTF8() {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      // Repeat a 3-byte sequence enough times to exceed maximum
+      final int tooLongCharLength = (docLimits.maxStringLengthInBytes() / 3) + 20;
+      // Unicode char "न" (Devanagari script, U+0928), requires 3 bytes to encode
+      String tooLongString = "\u0928".repeat(tooLongCharLength);
+      doc.put("text", tooLongString);
+
+      // First just validate constraints: String we have has character length BELOW
+      // max length, and byte length ABOVE max length:
+      assertThat(tooLongString).hasSizeLessThan(docLimits.maxStringLengthInBytes());
+      assertThat(tooLongString.getBytes(StandardCharsets.UTF_8))
+          .hasSizeGreaterThan(docLimits.maxStringLengthInBytes());
+
+      Exception e = catchException(() -> shredder.shred(doc));
+      assertThat(e)
+          .isNotNull()
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
+          .hasMessageEndingWith(
+              " String value length ("
+                  + (tooLongCharLength * 3)
+                  + " bytes) exceeds maximum allowed ("
+                  + docLimits.maxStringLengthInBytes()
+                  + " bytes)");
     }
 
     // Since max-number-len is handled at low-level, it's not strictly speaking
@@ -288,6 +367,21 @@ public class ShredderDocLimitsTest {
           .isNotNull()
           .isInstanceOf(StreamConstraintsException.class)
           .hasMessageStartingWith("Number value length (60) exceeds the maximum allowed (50");
+    }
+
+    // Different test in that it should NOT fail but work as expected (in
+    // addition to being lower level test wrt ObjectMapper
+    @Test
+    public void handleBigEngineeringNotation() throws Exception {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      final BigDecimal bigValue = new BigDecimal("2.0635595263889274e-35");
+      doc.put("num", bigValue);
+
+      final String json = objectMapper.writeValueAsString(doc);
+      ObjectNode serializedDoc = (ObjectNode) objectMapper.readTree(json);
+      assertThat(serializedDoc).isNotNull();
+      assertThat(serializedDoc.path("num").decimalValue()).isEqualTo(bigValue);
     }
   }
 

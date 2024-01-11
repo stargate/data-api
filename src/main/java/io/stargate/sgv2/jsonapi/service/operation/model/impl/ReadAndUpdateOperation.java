@@ -147,7 +147,6 @@ public record ReadAndUpdateOperation(
         // perform update operation and save only if data is modified.
         .flatMap(
             readDocument -> {
-
               // if there is no document return null item
               if (readDocument == null) {
                 return Uni.createFrom().nullItem();
@@ -175,11 +174,14 @@ public record ReadAndUpdateOperation(
               }
 
               final WritableShreddedDocument writableShreddedDocument =
-                  shredder().shred(documentUpdaterResponse.document(), readDocument.txnId());
+                  shredder()
+                      .shred(
+                          documentUpdaterResponse.document(),
+                          readDocument.txnId(),
+                          commandContext().indexingProjector());
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
-
               // update the document
               return updatedDocument(queryExecutor, writableShreddedDocument)
 

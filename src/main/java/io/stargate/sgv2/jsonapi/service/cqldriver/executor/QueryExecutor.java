@@ -59,6 +59,46 @@ public class QueryExecutor {
   }
 
   /**
+   * Execute count query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
+    simpleStatement =
+        simpleStatement
+            .setExecutionProfileName("count")
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+  }
+
+  /**
+   * Execute vector search query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @param pagingState - In case of pagination, the paging state needs to be passed to fetch
+   *     subsequent pages
+   * @param pageSize - page size
+   * @return
+   */
+  public Uni<AsyncResultSet> executeVectorSearch(
+      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+    simpleStatement =
+        simpleStatement
+            .setPageSize(pageSize)
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().vectorSearch());
+    if (pagingState.isPresent()) {
+      simpleStatement =
+          simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
+    }
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+  }
+
+  /**
    * Execute write query with bound statement.
    *
    * @param statement - Bound statement with query and parameters. The table name used in the query
@@ -72,6 +112,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     statement
+                        .setIdempotent(true)
                         .setConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
@@ -91,8 +132,11 @@ public class QueryExecutor {
             cqlSessionCache
                 .getSession()
                 .executeAsync(
-                    boundStatement.setSerialConsistencyLevel(
-                        operationsConfig.queriesConfig().consistency().schemaChanges())));
+                    boundStatement
+                        .setExecutionProfileName("ddl")
+                        .setIdempotent(true)
+                        .setSerialConsistencyLevel(
+                            operationsConfig.queriesConfig().consistency().schemaChanges())));
   }
 
   /**

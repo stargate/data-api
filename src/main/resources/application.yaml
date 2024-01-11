@@ -3,6 +3,9 @@
 
 stargate:
 
+  data-store:
+    ignore-bridge: true
+
   database:
     limits:
       max-collections: 5
@@ -110,3 +113,9 @@ quarkus:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+"%dev":
+   quarkus:
+     log:
+       console:
+         json: false

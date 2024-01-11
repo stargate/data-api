@@ -33,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.inject.Inject;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
@@ -53,7 +54,17 @@ public class FindOperationTest extends OperationTestBase {
 
   private final CommandContext VECTOR_COMMAND_CONTEXT =
       new CommandContext(
-          KEYSPACE_NAME, COLLECTION_NAME, true, CollectionSettings.SimilarityFunction.COSINE, null);
+          KEYSPACE_NAME,
+          COLLECTION_NAME,
+          new CollectionSettings(
+              COLLECTION_NAME,
+              true,
+              -1,
+              CollectionSettings.SimilarityFunction.COSINE,
+              null,
+              null,
+              null),
+          null);
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -611,6 +622,264 @@ public class FindOperationTest extends OperationTestBase {
     }
 
     @Test
+    public void findWithDynamicGT() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_dbl_values[?] > ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "amount" : "200"
+                      }
+                      """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, "amount", new BigDecimal(100));
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.NumberFilter(
+                  "amount", DBFilterBase.MapFilterBase.Operator.GT, new BigDecimal(100)));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithDynamicGTE() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_dbl_values[?] >= ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "amount" : "200"
+                      }
+                      """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, "amount", new BigDecimal(200));
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.NumberFilter(
+                  "amount", DBFilterBase.MapFilterBase.Operator.GTE, new BigDecimal(200)));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithDynamicLT() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_timestamp_values[?] < ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "dob" : {"$date" : 1672531200000}
+                      }
+                      """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "dob", Instant.ofEpochMilli(1672531200000L));
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.DateFilter(
+                  "dob", DBFilterBase.MapFilterBase.Operator.LT, new Date(1672531200000L)));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithDynamicLTE() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_timestamp_values[?] <= ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "dob" : {"$date" : 1672531200000}
+                      }
+                      """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "dob", Instant.ofEpochMilli(1672531200000L));
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.DateFilter(
+                  "dob", DBFilterBase.MapFilterBase.Operator.LTE, new Date(1672531200000L)));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
@@ -831,19 +1100,84 @@ public class FindOperationTest extends OperationTestBase {
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
       List<DBFilterBase> filters1 =
-          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
-      List<DBFilterBase> filters2 =
-          List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-      implicitAnd.comparisonExpressions.get(1).setDBFilters(filters2);
-
       FindOperation operation =
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findOrWithAllFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains CONTAINS ? AND array_contains CONTAINS ?)) LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "registration_active" : true,
+                        "tags": ["tag1", "tag2"]
+                      }
+                      """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression explicitOr = LogicalExpression.or();
+      explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+      List<DBFilterBase> filter1 =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      explicitOr.comparisonExpressions.get(0).setDBFilters(filter1);
+      List<DBFilterBase> filters2 =
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+      explicitOr.comparisonExpressions.get(1).setDBFilters(filters2);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              explicitOr,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
               objectMapper);
@@ -962,41 +1296,83 @@ public class FindOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results);
               });
 
-      /*
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("tags"), Values.of(hash))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.ArrayEqualsFilter(
+                  new DocValueHasher(),
+                  "tags",
+                  List.of("tag1", "tag2"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
-       */
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithArrayNotEqualFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] != ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "registration_active" : true,
+                        "tags" : ["tag1","tag3"] }
+                      }
+                      """;
+
+      final String tagsHash = new DocValueHasher().getHash(List.of("tag1", "tag3")).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", tagsHash);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
           List.of(
               new DBFilterBase.ArrayEqualsFilter(
-                  new DocValueHasher(), "tags", List.of("tag1", "tag2")));
+                  new DocValueHasher(),
+                  "tags",
+                  List.of("tag1", "tag3"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
@@ -1055,41 +1431,82 @@ public class FindOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results);
               });
 
-      /*
-      ValidatingStargateBridge.QueryAssert candidatesAssert =
-          withQuery(collectionReadCql, Values.of("sub_doc"), Values.of(hash))
-              .withPageSize(1)
-              .withColumnSpec(
-                  List.of(
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("key")
-                          .setType(TypeSpecs.tuple(TypeSpecs.TINYINT, TypeSpecs.VARCHAR))
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("tx_id")
-                          .setType(TypeSpecs.UUID)
-                          .build(),
-                      QueryOuterClass.ColumnSpec.newBuilder()
-                          .setName("doc_json")
-                          .setType(TypeSpecs.VARCHAR)
-                          .build()))
-              .returning(
-                  List.of(
-                      List.of(
-                          Values.of(
-                              CustomValueSerializers.getDocumentIdValue(
-                                  DocumentId.fromString("doc1"))),
-                          Values.of(UUID.randomUUID()),
-                          Values.of(doc1))));
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.SubDocEqualsFilter(
+                  new DocValueHasher(),
+                  "sub_doc",
+                  Map.of("col", "val"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_EQUALS));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
-       */
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findWithSubDocNotEqualFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] != ? LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1",
+                        "registration_active" : true,
+                        "sub_doc" : {"col":"invalid"}
+                      }
+                      """;
+      final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "sub_doc", hash);
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
           List.of(
               new DBFilterBase.SubDocEqualsFilter(
-                  new DocValueHasher(), "sub_doc", Map.of("col", "val")));
+                  new DocValueHasher(),
+                  "sub_doc",
+                  Map.of("col", "val"),
+                  DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
@@ -1940,7 +2357,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2001,7 +2418,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2054,15 +2471,9 @@ public class FindOperationTest extends OperationTestBase {
       for (int i = 0; i < 20; i++) {
         LogicalExpression implicitAnd1 = LogicalExpression.and();
         implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-        implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
-        List<DBFilterBase> filters1_1 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
-        implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1_1);
-        List<DBFilterBase> filters1_2 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-        implicitAnd1.comparisonExpressions.get(1).setDBFilters(filters1_2);
-
+        List<DBFilterBase> filters1 =
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+        implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1);
         FindOperation operation1 =
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
@@ -2076,14 +2487,9 @@ public class FindOperationTest extends OperationTestBase {
 
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-        implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-
-        List<DBFilterBase> filters2_1 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag1"));
-        implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2_1);
-        List<DBFilterBase> filters2_2 =
-            List.of(new DBFilterBase.AllFilter(new DocValueHasher(), "tags", "tag2"));
-        implicitAnd2.comparisonExpressions.get(1).setDBFilters(filters2_2);
+        List<DBFilterBase> filters2 =
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+        implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2);
 
         FindOperation operation2 =
             FindOperation.unsortedSingle(

@@ -85,10 +85,7 @@ public interface OperationsConfig {
   @WithDefault("20")
   int maxDocumentInsertCount();
 
-  /**
-   * @return Maximum size of _id values array that can be sent in $in operator <code>100</code>
-   *     command.
-   */
+  /** @return Maximum size of values array that can be sent in $in/$nin operator */
   @Max(100)
   @Positive
   @WithDefault("100")
@@ -139,7 +136,6 @@ public interface OperationsConfig {
     String password();
 
     /** Fixed Token used for Integration Test authentication */
-    @Nullable
     Optional<String> fixedToken();
 
     /** Cassandra contact points (when type is <code>cassandra</code>) */
@@ -162,8 +158,8 @@ public interface OperationsConfig {
     long sessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
-    @WithDefault("100")
-    long sessionCacheMaxSize();
+    @WithDefault("50")
+    int sessionCacheMaxSize();
   }
 
   /** Query consistency related configs. */
@@ -178,7 +174,7 @@ public interface OperationsConfig {
     ConsistencyConfig consistency();
 
     /** @return Serial Consistency for queries. */
-    @WithDefault("SERIAL")
+    @WithDefault("LOCAL_SERIAL")
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
@@ -202,6 +198,12 @@ public interface OperationsConfig {
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel reads();
+
+      /** @return Consistency for vector search queries. */
+      @WithDefault("LOCAL_ONE")
+      @NotNull
+      @WithConverter(ConsistencyLevelConverter.class)
+      ConsistencyLevel vectorSearch();
     }
   }
 }

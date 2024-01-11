@@ -5,7 +5,6 @@ import java.util.Map;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 public class DseTestResource extends StargateTestResource {
-
   // set default props if not set, so we launch DSE
   // this is only needed for test from the IDE
   public DseTestResource() {
@@ -13,12 +12,14 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-49a1eecaf3e4");
+          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-b259738f492f");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
+      // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
+      //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-6");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {
@@ -28,6 +29,24 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cluster-dse")) {
       System.setProperty("testing.containers.cluster-dse", "false");
     }
+
+    if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
+      System.setProperty(
+          "cassandra.sai.max_string_term_size_kb",
+          String.valueOf(DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB));
+    }
+  }
+
+  // Many tests create more than 5 collections so default to 10
+  @Override
+  public int getMaxCollectionsPerDBOverride() {
+    return 10;
+  }
+
+  // As per requiring up to 10 collections, will also then need 100 SAIs
+  @Override
+  public int getIndexesPerDBOverride() {
+    return 100;
   }
 
   @Override
@@ -47,7 +66,6 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
-
     String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
     if (defaultToken != null) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);

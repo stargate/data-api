@@ -13,12 +13,13 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -54,28 +55,56 @@ public class FilterClauseDeserializerTest {
           .isEqualTo(expectedResult.getPath());
     }
 
-    @Test
-    public void eqComparisonOperator() throws Exception {
-      String json = """
-                    {"username": {"$eq" : "aaron"}}
-                    """;
+    private static Stream<Arguments> provideRangeQueries() {
+      return Stream.of(
+          Arguments.of(
+              "{\"username\": {\"$eq\" : \"aaron\"}}", ValueComparisonOperator.EQ, "username"),
+          Arguments.of("{\"amount\": {\"$gt\" : 5000}}", ValueComparisonOperator.GT, "amount"),
+          Arguments.of("{\"amount\": {\"$gte\" : 5000}}", ValueComparisonOperator.GTE, "amount"),
+          Arguments.of("{\"amount\": {\"$lt\" : 5000}}", ValueComparisonOperator.LT, "amount"),
+          Arguments.of("{\"amount\": {\"$lte\" : 5000}}", ValueComparisonOperator.LTE, "amount"),
+          Arguments.of(
+              "{\"dob\": {\"$gte\" : {\"$date\" : 1672531200000}}}",
+              ValueComparisonOperator.GTE,
+              "dob"));
+    }
 
+    @ParameterizedTest
+    @MethodSource("provideRangeQueries")
+    public void testRangeComparisonOperator(
+        String json, ValueComparisonOperator operator, String column) throws Exception {
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
-      final ComparisonExpression expectedResult =
-          new ComparisonExpression(
-              "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
-              null);
       assertThat(filterClause).isNotNull();
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
-              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
-          .isEqualTo(expectedResult.getFilterOperations());
+              filterClause
+                  .logicalExpression()
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations()
+                  .get(0)
+                  .operator())
+          .isEqualTo(operator);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo(expectedResult.getPath());
+          .isEqualTo(column);
+    }
+
+    @Test
+    public void mustErrorNonNumberAndDateRange() throws Exception {
+      String json = """
+        {"amount": {"$gte" : "ABC"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression, $gte operator must have `DATE` or `NUMBER` value");
+              });
     }
 
     @Test
@@ -252,22 +281,6 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
-              });
-    }
-
-    @Test
-    public void mustHandleExists() throws Exception {
-      String json =
-          """
-                        {"existsPath" : {"$exists": false}}
-                        """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage()).isEqualTo("$exists operator supports only true");
               });
     }
 
@@ -465,6 +478,123 @@ public class FilterClauseDeserializerTest {
           .isEqualTo(expectedResult.getFilterOperations());
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
           .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleArrayNe() throws Exception {
+      String json = """
+         {"col" : {"$ne": ["1","2"]}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "col",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE,
+                      new JsonLiteral(List.of("1", "2"), JsonType.ARRAY))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleArrayEq() throws Exception {
+      String json = """
+         {"col" : {"$eq": ["3","4"]}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "col",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(List.of("3", "4"), JsonType.ARRAY))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleSubDocNe() throws Exception {
+      String json = """
+         {"sub_doc" : {"$ne" : {"col": 2}}}
+        """;
+      Map<String, Object> value = new LinkedHashMap<>();
+      value.put("col", new BigDecimal(2));
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "sub_doc",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral(value, JsonType.SUB_DOC))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleMultiFilterWithOneField() throws Exception {
+      String json =
+          """
+                {
+                   "name": {
+                       "$ne": "Tim",
+                       "$exists": true
+                   }
+                }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("Tim", JsonType.STRING))),
+              null);
+
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
+              null);
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(2);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult1.getPath());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations()
+                  .get(0))
+          .isEqualTo(expectedResult2.getFilterOperations().get(0));
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(1).getPath())
+          .isEqualTo(expectedResult2.getPath());
     }
 
     @Test
@@ -818,6 +948,28 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleNinArrayNonEmpty() throws Exception {
+      String json = """
+               {"_id" : {"$nin": []}}
+              """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NIN, new JsonLiteral(List.of(), JsonType.ARRAY))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
     public void mustHandleInArrayOnly() throws Exception {
       String json = """
                {"_id" : {"$in": "aaa"}}
@@ -832,12 +984,26 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
-    public void mustHandleInArrayOnlyAnd() throws Exception {
+    public void mustHandleNinArrayOnly() throws Exception {
+      String json = """
+               {"_id" : {"$nin": "random"}}
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
+              });
+    }
+
+    @Test
+    public void mustHandleNinArrayOnlyAnd() throws Exception {
       String json =
           """
                {
                            "$and": [
-                               {"_id" : {"$in": "aaa"}},
+                               {"age" : {"$nin": "aaa"}},
                                {
                                    "name": "testName"
                                }
@@ -849,7 +1015,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$in operator must have `ARRAY`");
+                assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
               });
     }
 
@@ -868,6 +1034,26 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "$in operator must have at most "
+                            + operationsConfig.maxInOperatorValueSize()
+                            + " values");
+              });
+    }
+
+    @Test
+    public void mustHandleNinArrayWithBigArray() throws Exception {
+      // String array with 100 unique numbers
+      String json =
+          """
+            {"_id" : {"$nin": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
+           """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "$nin operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
@@ -900,6 +1086,78 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal");
+              });
+    }
+
+    @Test
+    public void invalidPathName() throws Exception {
+      String json = """
+              {"$gt" : {"test" : 5}}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: filter clause path ('$gt') contains character(s) not allowed");
+              });
+    }
+
+    @Test
+    public void valid$vectorPathName() throws Exception {
+      String json = """
+              {"$vector" : {"$exists": true}}
+              """;
+
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo("$vector");
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations()
+                  .get(0)
+                  .operator())
+          .isEqualTo(ElementComparisonOperator.EXISTS);
+    }
+
+    @Test
+    public void invalid$vectorPathName() throws Exception {
+      String json = """
+              {"$exists" : {"$vector": true}}
+              """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator $vector");
+              });
+    }
+
+    @Test
+    public void invalidPathNameWithValidOperator() {
+      String json = """
+              {"$exists" : {"$exists": true}}
+              """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: filter clause path ('$exists') contains character(s) not allowed");
               });
     }
   }

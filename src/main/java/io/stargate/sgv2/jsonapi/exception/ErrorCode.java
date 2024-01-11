@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.exception;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
-
   /** Command error codes. */
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
 
@@ -25,6 +24,10 @@ public enum ErrorCode {
       "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
+
+  INVALID_REQUST("Request not supported by the data store"),
+
+  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
@@ -59,13 +62,17 @@ public enum ErrorCode {
 
   INVALID_COLLECTION_NAME("Invalid collection name "),
 
+  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
+
   TOO_MANY_COLLECTIONS("Too many collections"),
+
+  TOO_MANY_INDEXES("Too many indexes"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
-  INVALID_SORT_CLAUSE_PATH("Sort clause path must be represented as not-blank strings."),
+  INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
 
   INVALID_SORT_CLAUSE_VALUE(
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),

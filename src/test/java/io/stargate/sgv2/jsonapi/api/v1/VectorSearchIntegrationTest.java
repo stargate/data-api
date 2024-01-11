@@ -9,6 +9,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -29,8 +30,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   private static final String bigVectorCollectionName = "big_vector_collection";
   private static final String vectorSizeTestCollectionName = "vector_size_test_collection";
 
-  // Just has to be bigger than maximum array size
-  private static final int BIG_VECTOR_SIZE = 1000;
+  // Just has to be bigger than maximum array size (1000)
+  private static final int BIG_VECTOR_SIZE = 1536;
 
   @Nested
   @Order(1)
@@ -95,6 +96,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     public void failForTooBigVector() {
+      final int maxDimension = DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH;
+      final int tooHighDimension = maxDimension + 10;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -112,7 +115,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               }
             }
             """
-                  .formatted(99_999))
+                  .formatted(tooHighDimension))
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -122,7 +125,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("VECTOR_SEARCH_FIELD_TOO_BIG"))
           .body(
               "errors[0].message",
-              startsWith("Vector embedding field '$vector' length too big: 99999 (max 16000)"));
+              startsWith(
+                  "Vector embedding field '$vector' length too big: "
+                      + tooHighDimension
+                      + " (max "
+                      + maxDimension
+                      + ")"));
     }
   }
 
@@ -389,7 +397,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                                 "description": "Vision Vector Frame', 'A deep learning display that controls your mood",
                                 "$vector": [0.12, 0.05, 0.08, 0.32, 0.6]
                               }
-                            ]
+                            ],
+                            "options" : {
+                              "ordered" : true
+                            }
                          }
                       }
                       """;
@@ -836,6 +847,35 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
           .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
+    }
+
+    @Test
+    @Order(4)
+    public void failWithZerosVector() {
+      String json =
+          """
+        {
+          "findOne": {
+            "filter" : {"_id" : "1"},
+            "sort" : {"$vector" : [0.0,0.0,0.0,0.0,0.0]}
+          }
+        }
+        """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUST"))
+          .body(
+              "errors[0].message",
+              endsWith("Zero vectors cannot be indexed or queried with cosine similarity"));
     }
 
     @Test

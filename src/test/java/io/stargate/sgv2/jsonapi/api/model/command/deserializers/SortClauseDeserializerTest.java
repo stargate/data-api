@@ -258,5 +258,15 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
+
+    @Test
+    public void invalidPathName() {
+      String json = """
+              {"$gt": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+    }
   }
 }

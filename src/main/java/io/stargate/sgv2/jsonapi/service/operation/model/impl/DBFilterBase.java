@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -10,7 +10,6 @@ import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.Predicate;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -20,10 +19,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -71,10 +67,39 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
        */
       MAP_EQUALS,
       /**
-       * This represents eq operation for array element or automic value operation against
+       * This represents ne to be run against map type index columns like array_size, sub_doc_equals
+       * and array_equals.
+       */
+      MAP_NOT_EQUALS,
+      /**
+       * This represents eq operation for array element or atomic value operation against
        * array_contains
        */
-      EQ
+      EQ,
+      /**
+       * This represents NE operation for array element or atomic value operation against
+       * array_contains
+       */
+      NE,
+      /**
+       * This represents greater than to be run against map type index columns for number and date
+       * type
+       */
+      GT,
+      /**
+       * This represents greater than or equal to be run against map type index columns for number
+       * and date type
+       */
+      GTE,
+      /**
+       * This represents less than to be run against map type index columns for number and date type
+       */
+      LT,
+      /**
+       * This represents lesser than or equal to be run against map type index columns for number
+       * and date type
+       */
+      LTE
     }
 
     private final String columnName;
@@ -115,10 +140,40 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               DATA_CONTAINS,
               Predicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
+        case NE:
+          return BuiltCondition.of(
+              DATA_CONTAINS,
+              Predicate.NOT_CONTAINS,
+              new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case MAP_EQUALS:
           return BuiltCondition.of(
               BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
               Predicate.EQ,
+              new JsonTerm(key, value));
+        case MAP_NOT_EQUALS:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.NEQ,
+              new JsonTerm(key, value));
+        case GT:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.GT,
+              new JsonTerm(key, value));
+        case GTE:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.GTE,
+              new JsonTerm(key, value));
+        case LT:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.LT,
+              new JsonTerm(key, value));
+        case LTE:
+          return BuiltCondition.of(
+              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              Predicate.LTE,
               new JsonTerm(key, value));
         default:
           throw new JsonApiException(
@@ -212,7 +267,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IDFilter extends DBFilterBase {
     public enum Operator {
       EQ,
-      IN;
+      NE,
+      IN
     }
 
     protected final IDFilter.Operator operator;
@@ -223,7 +279,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
 
     public IDFilter(IDFilter.Operator operator, List<DocumentId> values) {
-      super(DocumentConstants.Fields.DOC_ID);
+      super(DOC_ID);
       this.operator = operator;
       this.values = values;
     }
@@ -255,7 +311,25 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                   BuiltCondition.LHS.column("key"),
                   Predicate.EQ,
                   new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
-
+        case NE:
+          final DocumentId documentId = (DocumentId) values.get(0);
+          if (documentId.value() instanceof BigDecimal numberId) {
+            return List.of(
+                BuiltCondition.of(
+                    BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                    Predicate.NEQ,
+                    new JsonTerm(DOC_ID, numberId)));
+          } else if (documentId.value() instanceof String strId) {
+            return List.of(
+                BuiltCondition.of(
+                    BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                    Predicate.NEQ,
+                    new JsonTerm(DOC_ID, strId)));
+          } else {
+            throw new JsonApiException(
+                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                String.format("Unsupported $ne operand value : %s", documentId.value()));
+          }
         case IN:
           if (values.isEmpty()) return List.of();
           return values.stream()
@@ -266,7 +340,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                           Predicate.EQ,
                           new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
               .collect(Collectors.toList());
-
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -289,9 +362,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
-  /**
-   * based on values of fields other than document id: for filtering on non-id field use InFilter.
-   */
+  /** non_id($in, $nin), _id($nin) */
   public static class InFilter extends DBFilterBase {
     private final List<Object> arrayValue;
     protected final InFilter.Operator operator;
@@ -305,9 +376,10 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     boolean canAddField() {
       return false;
     }
-    // IN operator for non-id field filtering
+
     public enum Operator {
-      IN;
+      IN,
+      NIN,
     }
 
     public InFilter(InFilter.Operator operator, String path, List<Object> arrayValue) {
@@ -339,15 +411,88 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case IN:
           if (values.isEmpty()) return List.of();
-          return values.stream()
-              .map(
-                  v ->
+          final ArrayList<BuiltCondition> inResult = new ArrayList<>();
+          for (Object value : values) {
+            if (value instanceof Map) {
+              // array element is sub_doc
+              inResult.add(
+                  BuiltCondition.of(
+                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      Predicate.EQ,
+                      new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+            } else if (value instanceof List) {
+              // array element is array
+              inResult.add(
+                  BuiltCondition.of(
+                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      Predicate.EQ,
+                      new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+            } else {
+              inResult.add(
+                  BuiltCondition.of(
+                      DATA_CONTAINS,
+                      Predicate.CONTAINS,
+                      new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+            }
+          }
+          return inResult;
+        case NIN:
+          if (values.isEmpty()) return List.of();
+          if (!this.getPath().equals(DOC_ID)) {
+            final ArrayList<BuiltCondition> ninResults = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof Map) {
+                // array element is sub_doc
+                ninResults.add(
+                    BuiltCondition.of(
+                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        Predicate.NEQ,
+                        new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+              } else if (value instanceof List) {
+                // array element is array
+                ninResults.add(
+                    BuiltCondition.of(
+                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        Predicate.NEQ,
+                        new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
+              } else {
+                ninResults.add(
+                    BuiltCondition.of(
+                        DATA_CONTAINS,
+                        Predicate.NOT_CONTAINS,
+                        new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+              }
+            }
+            return ninResults;
+          } else {
+            // can not use stream here, since lambda parameter casting is not allowed
+            List<BuiltCondition> conditions = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof DocumentId) {
+                Object docIdValue = ((DocumentId) value).value();
+                if (docIdValue instanceof BigDecimal numberId) {
+                  BuiltCondition condition =
                       BuiltCondition.of(
-                          DATA_CONTAINS,
-                          Predicate.CONTAINS,
-                          new JsonTerm(getHashValue(new DocValueHasher(), getPath(), v))))
-              .collect(Collectors.toList());
-
+                          BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                          Predicate.NEQ,
+                          new JsonTerm(DOC_ID, numberId));
+                  conditions.add(condition);
+                } else if (docIdValue instanceof String strId) {
+                  BuiltCondition condition =
+                      BuiltCondition.of(
+                          BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                          Predicate.NEQ,
+                          new JsonTerm(DOC_ID, strId));
+                  conditions.add(condition);
+                } else {
+                  throw new JsonApiException(
+                      ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                      String.format("Unsupported _id $nin operand value: %s", docIdValue));
+                }
+              }
+            }
+            return conditions;
+          }
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -359,7 +504,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** DB filter / condition for testing a set value */
   public abstract static class SetFilterBase<T> extends DBFilterBase {
     public enum Operator {
-      CONTAINS;
+      CONTAINS,
+      NOT_CONTAINS;
     }
 
     protected final String columnName;
@@ -394,6 +540,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case CONTAINS:
           return BuiltCondition.of(columnName, Predicate.CONTAINS, new JsonTerm(value));
+        case NOT_CONTAINS:
+          return BuiltCondition.of(columnName, Predicate.NOT_CONTAINS, new JsonTerm(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -408,8 +556,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
    */
   public static class IsNullFilter extends SetFilterBase<String> {
-    public IsNullFilter(String path) {
-      super("query_null_values", path, path, Operator.CONTAINS);
+    public IsNullFilter(String path, SetFilterBase.Operator operator) {
+      super("query_null_values", path, path, operator);
     }
 
     @Override
@@ -424,13 +572,13 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /**
-   * Filter for document where a field exists
+   * Filter for document where a field exists or not
    *
-   * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
+   * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set ?????TODO
    */
   public static class ExistsFilter extends SetFilterBase<String> {
     public ExistsFilter(String path, boolean existFlag) {
-      super("exist_keys", path, path, Operator.CONTAINS);
+      super("exist_keys", path, path, existFlag ? Operator.CONTAINS : Operator.NOT_CONTAINS);
     }
 
     @Override
@@ -445,11 +593,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   }
 
   /** Filter for document where all values exists for an array */
-  public static class AllFilter extends SetFilterBase<String> {
-    private final Object arrayValue;
+  public static class AllFilter extends DBFilterBase {
+    private final List<Object> arrayValue;
 
-    public AllFilter(DocValueHasher hasher, String path, Object arrayValue) {
-      super("array_contains", path, getHashValue(hasher, path, arrayValue), Operator.CONTAINS);
+    public AllFilter(String path, List<Object> arrayValue) {
+      super(path);
       this.arrayValue = arrayValue;
     }
 
@@ -461,6 +609,23 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     @Override
     boolean canAddField() {
       return false;
+    }
+
+    public List<BuiltCondition> getAll() {
+      final ArrayList<BuiltCondition> result = new ArrayList<>();
+      for (Object value : arrayValue) {
+        result.add(
+            BuiltCondition.of(
+                DATA_CONTAINS,
+                Predicate.CONTAINS,
+                new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
+      }
+      return result;
+    }
+
+    @Override
+    public BuiltCondition get() {
+      throw new UnsupportedOperationException("For $all filter we always use getALL() method");
     }
   }
 
@@ -480,13 +645,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return false;
     }
   }
-
   /** Filter for document where array matches (data in same order) as the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     private final List<Object> arrayValue;
 
-    public ArrayEqualsFilter(DocValueHasher hasher, String path, List<Object> arrayData) {
-      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, arrayData));
+    public ArrayEqualsFilter(
+        DocValueHasher hasher,
+        String path,
+        List<Object> arrayData,
+        MapFilterBase.Operator operator) {
+      super("query_text_values", path, operator, getHash(hasher, arrayData));
       this.arrayValue = arrayData;
     }
 
@@ -508,8 +676,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class SubDocEqualsFilter extends MapFilterBase<String> {
     private final Map<String, Object> subDocValue;
 
-    public SubDocEqualsFilter(DocValueHasher hasher, String path, Map<String, Object> subDocData) {
-      super("query_text_values", path, Operator.MAP_EQUALS, getHash(hasher, subDocData));
+    public SubDocEqualsFilter(
+        DocValueHasher hasher,
+        String path,
+        Map<String, Object> subDocData,
+        MapFilterBase.Operator operator) {
+      super("query_text_values", path, operator, getHash(hasher, subDocData));
       this.subDocValue = subDocData;
     }
 

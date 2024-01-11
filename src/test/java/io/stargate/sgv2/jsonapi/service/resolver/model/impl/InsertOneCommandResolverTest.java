@@ -57,7 +57,7 @@ class InsertOneCommandResolverTest {
                 WritableShreddedDocument expected = shredder.shred(command.document());
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).singleElement().isEqualTo(expected);
               });
     }
@@ -86,7 +86,7 @@ class InsertOneCommandResolverTest {
                 WritableShreddedDocument expected = shredder.shred(command.document());
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).singleElement().isEqualTo(expected);
               });
     }
@@ -118,7 +118,7 @@ class InsertOneCommandResolverTest {
                 assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(op.commandContext())
                     .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).singleElement().isEqualTo(expected);
               });
     }
