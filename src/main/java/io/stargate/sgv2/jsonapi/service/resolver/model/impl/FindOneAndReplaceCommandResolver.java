@@ -77,7 +77,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     LogicalExpression logicalExpression = resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
-    sortClause.validate(commandContext.indexingConfig());
+    sortClause.validate(commandContext.collectionSettings().indexingConfig());
 
     // vectorize sort clause
     commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);

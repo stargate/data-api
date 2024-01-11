@@ -40,8 +40,10 @@ public record FilterClause(LogicalExpression logicalExpression) {
     String path = comparisonExpression.getPath();
     // If _id is denied, the operator can only be $eq or $in
     if (path.equals(DocumentConstants.Fields.DOC_ID)) {
-      if ((!indexingConfig.denied().isEmpty() && indexingConfig.denied().contains(DocumentConstants.Fields.DOC_ID))
-          || (!indexingConfig.allowed().isEmpty() && !indexingConfig.allowed().contains(DocumentConstants.Fields.DOC_ID))
+      if ((!indexingConfig.denied().isEmpty()
+              && indexingConfig.denied().contains(DocumentConstants.Fields.DOC_ID))
+          || (!indexingConfig.allowed().isEmpty()
+              && !indexingConfig.allowed().contains(DocumentConstants.Fields.DOC_ID))
           || (!indexingConfig.denied().isEmpty()
               && indexingConfig.denied().iterator().next().equals("*"))) {
         FilterOperator filterOperator =

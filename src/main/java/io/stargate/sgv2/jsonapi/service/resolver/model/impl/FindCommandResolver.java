@@ -62,8 +62,8 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     // resolve sort clause
     SortClause sortClause = command.sortClause();
 
-    //validate sort path
-    sortClause.validate(commandContext.indexingConfig());
+    // validate sort path
+    sortClause.validate(commandContext.collectionSettings().indexingConfig());
 
     // vectorize sort clause
     commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);

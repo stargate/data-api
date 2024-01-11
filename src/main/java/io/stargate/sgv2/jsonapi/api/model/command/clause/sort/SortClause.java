@@ -40,6 +40,6 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   }
 
   public void validate(CollectionSettings.IndexingConfig indexingConfig) {
-    //TODO: valid path
+    // TODO: valid path
   }
 }
