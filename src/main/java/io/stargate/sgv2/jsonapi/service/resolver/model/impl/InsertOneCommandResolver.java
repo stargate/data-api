@@ -34,7 +34,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation resolveCommand(CommandContext ctx, InsertOneCommand command) {
     // Vectorize document
     ctx.tryVectorize(objectMapper.getNodeFactory(), List.of(command.document()));
-    WritableShreddedDocument shreddedDocument = shredder.shred(command.document());
+    WritableShreddedDocument shreddedDocument =
+        shredder.shred(command.document(), null, ctx.indexingProjector());
     return new InsertOperation(ctx, shreddedDocument);
   }
 }

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -53,6 +54,10 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
+    return shred(doc, txId, DocumentProjector.identityProjector());
+  }
+
+  public WritableShreddedDocument shred(JsonNode doc, UUID txId, DocumentProjector indexProjector) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -82,6 +87,11 @@ public class Shredder {
 
     // And then we can validate the document size
     validateDocumentSize(documentLimits, docJson);
+
+    // Before shredding, may need to drop "non-indexed" fields:
+    if (indexProjector != null) {
+      indexProjector.applyProjection(docWithId);
+    }
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);

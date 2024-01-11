@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.List;
 
 /**
@@ -14,21 +15,21 @@ import java.util.List;
  *
  * @param namespace The name of the namespace.
  * @param collection The name of the collection.
- * @param isVectorEnabled Whether the vector is enabled for the collection
- * @param similarityFunction The similarity function used for indexing the vector
+ * @param collectionSettings Settings for the collection, if Collection-specific command; if not,
+ *     "empty" Settings {see CollectionSettings#empty()}.
  */
 public record CommandContext(
     String namespace,
     String collection,
-    boolean isVectorEnabled,
-    CollectionSettings.SimilarityFunction similarityFunction,
+    CollectionSettings collectionSettings,
     EmbeddingService embeddingService) {
 
   public CommandContext(String namespace, String collection) {
-    this(namespace, collection, false, null, null);
+    this(namespace, collection, CollectionSettings.empty(), null);
   }
 
-  private static final CommandContext EMPTY = new CommandContext(null, null, false, null, null);
+  private static final CommandContext EMPTY =
+      new CommandContext(null, null, CollectionSettings.empty(), null);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
@@ -36,6 +37,18 @@ public record CommandContext(
    */
   public static CommandContext empty() {
     return EMPTY;
+  }
+
+  public CollectionSettings.SimilarityFunction similarityFunction() {
+    return collectionSettings.similarityFunction();
+  }
+
+  public boolean isVectorEnabled() {
+    return collectionSettings.vectorEnabled();
+  }
+
+  public DocumentProjector indexingProjector() {
+    return collectionSettings.indexingProjector();
   }
 
   public void tryVectorize(JsonNodeFactory nodeFactory, List<JsonNode> documents) {
