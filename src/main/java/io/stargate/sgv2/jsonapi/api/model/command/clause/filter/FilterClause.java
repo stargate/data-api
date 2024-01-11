@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -31,7 +32,16 @@ public record FilterClause(LogicalExpression logicalExpression) {
       validateLogicalExpression(subLogicalExpression, indexingConfig);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
-      validateComparisonExpression(subComparisonExpression, indexingConfig);
+      //      validateComparisonExpression(subComparisonExpression, indexingConfig);
+      boolean isPathIndexed =
+          DocumentProjector.identityProjector().isPathIncluded(subComparisonExpression.getPath());
+      if (!isPathIndexed) {
+        throw new JsonApiException(
+            ErrorCode.UNINDEXED_FILTER_PATH,
+            String.format(
+                "%s: The filter path ('%s') is not indexed",
+                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), subComparisonExpression.getPath()));
+      }
     }
   }
 
