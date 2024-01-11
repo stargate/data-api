@@ -26,7 +26,7 @@ public class CqlProxyRetryPolicy implements RetryPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(CqlProxyRetryPolicy.class);
   private final String logPrefix;
 
-  private static final int MAX_RETRIES = 3;
+  private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
 
   public CqlProxyRetryPolicy(DriverContext context, String profileName) {
     this.logPrefix = (context != null ? context.getSessionName() : null) + "|" + profileName;
