@@ -72,14 +72,16 @@ public class Shredder {
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
-    // Now that we have both the traversable document and serialization, verify
-    // it does not violate structural limits, before serializing
+    // Now that we have the traversable document, verify it does not violate
+    // structural limits, before serializing.
+    // (note: value validation has to wait until no-indexing projection is applied)
     new StructuralValidator(documentLimits).validate(docWithId);
 
     // Need to re-serialize document now that _id is normalized.
-    // Also gets rid of pretty-printing (if any) and unifies escaping.
+    // Also unifies escaping and gets rid of pretty-printing (if any) to save storage space.
     try {
       // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
+      // (to use configuration we specify wrt serialization)
       docJson = objectMapper.writeValueAsString(docWithId);
     } catch (IOException e) { // never happens but signature exposes it
       throw new RuntimeException(e);
@@ -436,7 +438,7 @@ public class Shredder {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
             String.format(
-                "%s: String value length (%d bytes) exceeds maximum allowed (%d bytes)",
+                "%s: Indexed String value length (%d bytes) exceeds maximum allowed (%d bytes)",
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
                 encodedLength.getAsInt(),
                 limits.maxStringLengthInBytes()));
