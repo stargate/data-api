@@ -226,6 +226,19 @@ public class Shredder {
     callback.shredVector(path, arr);
   }
 
+  private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
+    // First: is the resulting document size (as serialized) too big?
+    if (docJson.length() > limits.maxSize()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+          String.format(
+              "%s: document size (%d chars) exceeds maximum allowed (%d)",
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+              docJson.length(),
+              limits.maxSize()));
+    }
+  }
+
   private void validateDocumentStructure(DocumentLimitsConfig limits, ObjectNode doc) {
     // Second: traverse to check for other constraints
     AtomicInteger totalProperties = new AtomicInteger(0);
@@ -238,19 +251,6 @@ public class Shredder {
               ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
               totalProperties.get(),
               limits.maxDocumentProperties()));
-    }
-  }
-
-  private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
-    // First: is the resulting document size (as serialized) too big?
-    if (docJson.length() > limits.maxSize()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: document size (%d chars) exceeds maximum allowed (%d)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              docJson.length(),
-              limits.maxSize()));
     }
   }
 

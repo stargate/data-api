@@ -460,6 +460,44 @@ public class ShredderTest {
       float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
       assertThat(doc.queryVectorValues()).containsOnly(vector);
     }
+
+    @Test
+    public void shredWithHugeNonIndexedString() throws Exception {
+      final String hugeString = "abcd".repeat(240_000); // about 960K, close to max doc of 1M
+      final String inputJson =
+          """
+              { "_id": 1,
+                "name": "Mo",
+                "blob": "%s"
+              }
+              """
+              .formatted(hugeString);
+
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+
+      // We have 2 from sub-doc, plus 1 other main level property
+      assertThat(doc.arrayContains()).hasSize(1);
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SMo");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), BigDecimal.valueOf(1)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Mo"));
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryVectorValues()).isNull();
+    }
   }
 
   protected JsonNode fromJson(String json) {
