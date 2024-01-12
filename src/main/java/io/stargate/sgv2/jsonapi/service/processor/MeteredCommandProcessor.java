@@ -122,7 +122,7 @@ public class MeteredCommandProcessor {
   }
 
   /**
-   * Build command log.
+   * Builds the command level log in string format.
    *
    * @param commandContext Command context
    * @param command Command
@@ -143,6 +143,12 @@ public class MeteredCommandProcessor {
     return new ObjectMapper().valueToTree(commandLog).toString();
   }
 
+  /**
+   * Get outgoing documents count in a command result.
+   *
+   * @param result
+   * @return
+   */
   private String getOutgoingDocumentsCount(CommandResult result) {
     if (result == null) {
       return "NA";
@@ -154,6 +160,12 @@ public class MeteredCommandProcessor {
     return "NA";
   }
 
+  /**
+   * Get incoming documents count in a command.
+   *
+   * @param command
+   * @return
+   */
   private String getIncomingDocumentsCount(Command command) {
     if (command instanceof InsertManyCommand) {
       return String.valueOf(((InsertManyCommand) command).documents().size());
