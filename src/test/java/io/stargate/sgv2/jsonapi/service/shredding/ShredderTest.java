@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -336,6 +337,128 @@ public class ShredderTest {
           .isNotNull()
           .hasMessage("Bad value for '_id' property: empty String not allowed")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+    }
+  }
+
+  @Nested
+  class NoIndexCases {
+    @Test
+    public void shredWithIndexAllows() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : 123,
+                            "name" : "Bob",
+                            "values" : [ 1, 2 ],
+                            "metadata": {
+                               "x": 28,
+                               "y" :12
+                            },
+                            "nullable" : null,
+                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(
+              new HashSet<>(Arrays.asList("name", "metadata")), null);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("$vector"),
+              JsonPath.from("name"),
+              JsonPath.from("metadata"),
+              JsonPath.from("metadata.x"),
+              JsonPath.from("metadata.y"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      // Then array info: nothing, since "values" not included
+      assertThat(doc.arraySize()).isEmpty();
+
+      // We have 2 from sub-doc, plus 1 other main level property
+      assertThat(doc.arrayContains()).hasSize(3);
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder("metadata.x N28", "metadata.y N12", "name SBob");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
+      expNums.put(JsonPath.from("metadata.x"), BigDecimal.valueOf(28));
+      expNums.put(JsonPath.from("metadata.y"), BigDecimal.valueOf(12));
+      assertThat(doc.queryNumberValues()).isEqualTo(expNums);
+      assertThat(doc.queryTextValues())
+          .hasSize(2)
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("name"), "Bob", JsonPath.from("metadata"), "O2\nx\nN28\ny\nN12"));
+      assertThat(doc.queryNullValues()).isEmpty();
+      float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
+      assertThat(doc.queryVectorValues()).containsOnly(vector);
+    }
+
+    @Test
+    public void shredWithIndexDenys() throws Exception {
+      final String inputJson =
+          """
+              { "_id" : 123,
+                "name" : "Bob",
+                "values" : [ 1, 2 ],
+                "metadata": {
+                   "x": 28,
+                   "y" :12
+                },
+                "nullable" : null,
+                "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+              }
+              """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("_id"),
+              JsonPath.from("metadata"),
+              JsonPath.from("metadata.x"),
+              JsonPath.from("metadata.y"),
+              JsonPath.from("nullable"),
+              JsonPath.from("$vector"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      // Then array info: nothing, since "values" not included
+      assertThat(doc.arraySize()).isEmpty();
+
+      // We have 2 from sub-doc, plus 1 other main level property
+      assertThat(doc.arrayContains()).hasSize(3);
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder("metadata.x N28", "metadata.y N12", "nullable Z");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      Map<JsonPath, BigDecimal> expNums = new LinkedHashMap<>();
+      expNums.put(JsonPath.from("_id"), BigDecimal.valueOf(123));
+      expNums.put(JsonPath.from("metadata.x"), BigDecimal.valueOf(28));
+      expNums.put(JsonPath.from("metadata.y"), BigDecimal.valueOf(12));
+      assertThat(doc.queryNumberValues()).isEqualTo(expNums);
+      assertThat(doc.queryTextValues())
+          .hasSize(1)
+          .isEqualTo(Map.of(JsonPath.from("metadata"), "O2\nx\nN28\ny\nN12"));
+      assertThat(doc.queryNullValues()).hasSize(1).containsExactly(JsonPath.from("nullable"));
+      float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
+      assertThat(doc.queryVectorValues()).containsOnly(vector);
     }
   }
 

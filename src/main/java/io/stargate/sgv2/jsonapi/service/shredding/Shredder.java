@@ -88,13 +88,20 @@ public class Shredder {
     // And then we can validate the document size
     validateDocumentSize(documentLimits, docJson);
 
-    // Before shredding, may need to drop "non-indexed" fields:
+    final WritableShreddedDocument.Builder b =
+        WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
+
+    // We also need to handle special fields (currently just "$vector") which would
+    // be dropped by "no-index" filter, but that require special handling
+    JsonNode vector = docWithId.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    if (vector != null) {
+      traverseVector(JsonPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD), vector, b);
+    }
+
+    // Before rest of validation, indexing, may need to drop "non-indexed" fields:
     if (indexProjector != null) {
       indexProjector.applyProjection(docWithId);
     }
-
-    final WritableShreddedDocument.Builder b =
-        WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
     // And finally let's traverse the document to actually "shred" (build index fields)
     traverse(docWithId, b, JsonPath.rootBuilder());
@@ -170,24 +177,7 @@ public class Shredder {
 
   private void traverseValue(JsonNode value, ShredListener callback, JsonPath.Builder pathBuilder) {
     final JsonPath path = pathBuilder.build();
-    if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-      if (value.isNull()) {
-        return;
-      }
-      if (!value.isArray()) {
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE,
-            String.format(
-                "%s: %s",
-                ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE.getMessage(), value.getNodeType()));
-      }
-      ArrayNode arr = (ArrayNode) value;
-      if (arr.size() == 0) {
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
-      }
-      callback.shredVector(path, arr);
-    } else if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+    if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       // Do nothing, vectorize field will just sit in doc json
     } else {
       if (value.isObject()) {
@@ -215,6 +205,25 @@ public class Shredder {
                 ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
       }
     }
+  }
+
+  private void traverseVector(JsonPath path, JsonNode value, ShredListener callback) {
+    if (value.isNull()) {
+      return;
+    }
+    if (!value.isArray()) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE,
+          String.format(
+              "%s: %s",
+              ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE.getMessage(), value.getNodeType()));
+    }
+    ArrayNode arr = (ArrayNode) value;
+    if (arr.size() == 0) {
+      throw new JsonApiException(
+          ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
+    }
+    callback.shredVector(path, arr);
   }
 
   private void validateDocumentStructure(DocumentLimitsConfig limits, ObjectNode doc) {
