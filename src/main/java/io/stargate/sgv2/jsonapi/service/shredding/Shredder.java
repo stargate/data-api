@@ -74,7 +74,7 @@ public class Shredder {
 
     // Now that we have both the traversable document and serialization, verify
     // it does not violate structure and value length limits, before serializing
-    validateDocumentStructure(documentLimits, docWithId);
+    new StructuralValidator(documentLimits).validateStructure(docWithId);
 
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
@@ -239,182 +239,174 @@ public class Shredder {
     }
   }
 
-  private void validateDocumentStructure(DocumentLimitsConfig limits, ObjectNode doc) {
-    // Second: traverse to check for other constraints
-    AtomicInteger totalProperties = new AtomicInteger(0);
-    validateObjectValue(limits, null, doc, 0, 0, totalProperties);
-    if (totalProperties.get() > limits.maxDocumentProperties()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: total number of properties (%d) in document exceeds maximum allowed (%d)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              totalProperties.get(),
-              limits.maxDocumentProperties()));
+  static class StructuralValidator {
+    final DocumentLimitsConfig limits;
+    final AtomicInteger totalProperties;
+
+    public StructuralValidator(DocumentLimitsConfig limits) {
+      this.limits = limits;
+      totalProperties = new AtomicInteger(0);
     }
-  }
 
-  private void validateDocValue(
-      DocumentLimitsConfig limits,
-      String referringPropertyName,
-      JsonNode value,
-      int depth,
-      int parentPathLength,
-      AtomicInteger totalProperties) {
-    if (value.isObject()) {
-      validateObjectValue(
-          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
-    } else if (value.isArray()) {
-      validateArrayValue(
-          limits, referringPropertyName, value, depth, parentPathLength, totalProperties);
-    } else if (value.isTextual()) {
-      validateStringValue(limits, value);
-    }
-  }
-
-  private void validateArrayValue(
-      DocumentLimitsConfig limits,
-      String referringPropertyName,
-      JsonNode arrayValue,
-      int depth,
-      int parentPathLength,
-      AtomicInteger totalProperties) {
-    ++depth;
-    validateDocDepth(limits, depth);
-
-    if (arrayValue.size() > limits.maxArrayLength()) {
-      // One special case: vector embeddings allow larger size
-      if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
-        if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
-          throw new JsonApiException(
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-              String.format(
-                  "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
-                  ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                  referringPropertyName,
-                  arrayValue.size(),
-                  limits.maxVectorEmbeddingLength()));
-        }
-      } else {
+    private void validateStructure(ObjectNode doc) {
+      // Second: traverse to check for other constraints
+      validateObjectValue(null, doc, 0, 0);
+      if (totalProperties.get() > limits.maxDocumentProperties()) {
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
             String.format(
-                "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
+                "%s: total number of properties (%d) in document exceeds maximum allowed (%d)",
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                arrayValue.size(),
-                limits.maxArrayLength()));
+                totalProperties.get(),
+                limits.maxDocumentProperties()));
       }
     }
 
-    for (JsonNode element : arrayValue) {
-      validateDocValue(limits, null, element, depth, parentPathLength, totalProperties);
+    private void validateValue(
+        String referringPropertyName, JsonNode value, int depth, int parentPathLength) {
+      if (value.isObject()) {
+        validateObjectValue(referringPropertyName, value, depth, parentPathLength);
+      } else if (value.isArray()) {
+        validateArrayValue(referringPropertyName, value, depth, parentPathLength);
+      } else if (value.isTextual()) {
+        validateStringValue(value);
+      }
     }
-  }
 
-  private void validateObjectValue(
-      DocumentLimitsConfig limits,
-      String referringPropertyName,
-      JsonNode objectValue,
-      int depth,
-      int parentPathLength,
-      AtomicInteger totalProperties) {
-    ++depth;
-    validateDocDepth(limits, depth);
+    private void validateArrayValue(
+        String referringPropertyName, JsonNode arrayValue, int depth, int parentPathLength) {
+      ++depth;
+      validateDocDepth(limits, depth);
 
-    final int propCount = objectValue.size();
-    if (propCount > limits.maxObjectProperties()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: number of properties an Object has (%d) exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              objectValue.size(),
-              limits.maxObjectProperties()));
-    }
-    totalProperties.addAndGet(propCount);
+      if (arrayValue.size() > limits.maxArrayLength()) {
+        // One special case: vector embeddings allow larger size
+        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
+          if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
+            throw new JsonApiException(
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+                String.format(
+                    "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                    ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                    referringPropertyName,
+                    arrayValue.size(),
+                    limits.maxVectorEmbeddingLength()));
+          }
+        } else {
+          throw new JsonApiException(
+              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+              String.format(
+                  "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
+                  ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                  arrayValue.size(),
+                  limits.maxArrayLength()));
+        }
+      }
 
-    var it = objectValue.fields();
-    while (it.hasNext()) {
-      var entry = it.next();
-      final String key = entry.getKey();
-      validateObjectKey(limits, key, entry.getValue(), depth, parentPathLength);
-      // Path through property consists of segements separated by comma:
-      final int propPathLength = parentPathLength + 1 + key.length();
-      validateDocValue(limits, key, entry.getValue(), depth, propPathLength, totalProperties);
+      for (JsonNode element : arrayValue) {
+        validateValue(null, element, depth, parentPathLength);
+      }
     }
-  }
 
-  private void validateObjectKey(
-      DocumentLimitsConfig limits, String key, JsonNode value, int depth, int parentPathLength) {
-    if (key.length() > documentLimits.maxPropertyNameLength()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: Property name length (%d) exceeds maximum allowed (%s) (name '%s')",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              key.length(),
-              limits.maxPropertyNameLength(),
-              key));
+    private void validateObjectValue(
+        String referringPropertyName, JsonNode objectValue, int depth, int parentPathLength) {
+      ++depth;
+      validateDocDepth(limits, depth);
+
+      final int propCount = objectValue.size();
+      if (propCount > limits.maxObjectProperties()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: number of properties an Object has (%d) exceeds maximum allowed (%s)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                objectValue.size(),
+                limits.maxObjectProperties()));
+      }
+      totalProperties.addAndGet(propCount);
+
+      var it = objectValue.fields();
+      while (it.hasNext()) {
+        var entry = it.next();
+        final String key = entry.getKey();
+        validateObjectKey(key, entry.getValue(), depth, parentPathLength);
+        // Path through property consists of segements separated by comma:
+        final int propPathLength = parentPathLength + 1 + key.length();
+        validateValue(key, entry.getValue(), depth, propPathLength);
+      }
     }
-    if (key.length() == 0) {
-      // NOTE: validity failure, not size limit
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
-          String.format(
-              "%s: empty names not allowed", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()));
-    }
-    if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
-      // Special names are accepted in some cases: for now only one such case for
-      // Date values -- if more needed, will refactor. But for now inline:
-      if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
-        ; // Fine, looks like legit Date value
-      } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
-        ; // Fine, looks like legit vector field
-      } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
-        ; // Fine, looks like legit vectorize field
-      } else {
+
+    private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
+      if (key.length() > limits.maxPropertyNameLength()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: Property name length (%d) exceeds maximum allowed (%s) (name '%s')",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                key.length(),
+                limits.maxPropertyNameLength(),
+                key));
+      }
+      if (key.length() == 0) {
+        // NOTE: validity failure, not size limit
         throw new JsonApiException(
             ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
             String.format(
-                "%s: Property name ('%s') contains character(s) not allowed",
-                ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
+                "%s: empty names not allowed",
+                ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()));
+      }
+      if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
+        // Special names are accepted in some cases: for now only one such case for
+        // Date values -- if more needed, will refactor. But for now inline:
+        if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
+          ; // Fine, looks like legit Date value
+        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
+          ; // Fine, looks like legit vector field
+        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
+          ; // Fine, looks like legit vectorize field
+        } else {
+          throw new JsonApiException(
+              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION,
+              String.format(
+                  "%s: Property name ('%s') contains character(s) not allowed",
+                  ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage(), key));
+        }
+      }
+      int totalPathLength = parentPathLength + key.length();
+      if (totalPathLength > limits.maxPropertyPathLength()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: Property path length (%d) exceeds maximum allowed (%s) (path ends with '%s')",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                totalPathLength,
+                limits.maxPropertyPathLength(),
+                key));
       }
     }
-    int totalPathLength = parentPathLength + key.length();
-    if (totalPathLength > documentLimits.maxPropertyPathLength()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: Property path length (%d) exceeds maximum allowed (%s) (path ends with '%s')",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              totalPathLength,
-              limits.maxPropertyPathLength(),
-              key));
-    }
-  }
 
-  private void validateStringValue(DocumentLimitsConfig limits, JsonNode stringValue) {
-    final String value = stringValue.textValue();
-    OptionalInt encodedLength =
-        JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
-    if (encodedLength.isPresent()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: String value length (%d bytes) exceeds maximum allowed (%d bytes)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              encodedLength.getAsInt(),
-              limits.maxStringLengthInBytes()));
+    private void validateStringValue(JsonNode stringValue) {
+      final String value = stringValue.textValue();
+      OptionalInt encodedLength =
+          JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
+      if (encodedLength.isPresent()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: String value length (%d bytes) exceeds maximum allowed (%d bytes)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
+                encodedLength.getAsInt(),
+                limits.maxStringLengthInBytes()));
+      }
     }
-  }
 
-  private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
-    if (depth > limits.maxDepth()) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-          String.format(
-              "%s: document depth exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDepth()));
+    private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
+      if (depth > limits.maxDepth()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: document depth exceeds maximum allowed (%s)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDepth()));
+      }
     }
   }
 }
