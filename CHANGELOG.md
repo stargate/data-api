@@ -1,12 +1,42 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+## [v1.0.0-BETA-7](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-7) (2024-01-11)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-6...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-6...v1.0.0-BETA-7)
 
 **Closed issues:**
 
+- Configurable CQL query timeouts by query type [\#783](https://github.com/stargate/jsonapi/issues/783)
+- Increase limits for maximum properties per Object \(64 to 1,000\), per Document \(1,000 to 2,000\) [\#776](https://github.com/stargate/jsonapi/issues/776)
+- Reduce max Vector dimension limit from 10,000 to 4,096 not to fail due to SAI/ANN limit [\#772](https://github.com/stargate/jsonapi/issues/772)
+- \[Indexing options\] Add indexing options to findCollection response [\#769](https://github.com/stargate/jsonapi/issues/769)
+- insertMany default ordered flag to false [\#761](https://github.com/stargate/jsonapi/issues/761)
 - Bug: ALL filter not working inside OR [\#749](https://github.com/stargate/jsonapi/issues/749)
+- Increase `DocumentLimitsConfig.maxArrayLength` from 100 to 1000 [\#745](https://github.com/stargate/jsonapi/issues/745)
+- Tune maximum property name length \(from 48 to 100\), add separate setting for max-total-length \(250\) [\#744](https://github.com/stargate/jsonapi/issues/744)
+- Set Error codes in CommandResult.Error [\#720](https://github.com/stargate/jsonapi/issues/720)
+- fix maximum number of values for $in [\#711](https://github.com/stargate/jsonapi/issues/711)
+- JSON API should identify itself to bridge as jsonapi [\#387](https://github.com/stargate/jsonapi/issues/387)
+
+**Merged pull requests:**
+
+- Set retry policy [\#788](https://github.com/stargate/jsonapi/pull/788) ([maheshrajamani](https://github.com/maheshrajamani))
+- set the application name when creating CQL session [\#787](https://github.com/stargate/jsonapi/pull/787) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Add no-index support for Shredder \(part 1\) [\#786](https://github.com/stargate/jsonapi/pull/786) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changes to have ddl and count profiles [\#785](https://github.com/stargate/jsonapi/pull/785) ([maheshrajamani](https://github.com/maheshrajamani))
+- insertMany nosqlbench workload [\#784](https://github.com/stargate/jsonapi/pull/784) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Change the InsertManyCommand.Options.ordered to false as default [\#782](https://github.com/stargate/jsonapi/pull/782) ([maheshrajamani](https://github.com/maheshrajamani))
+- Shredder refactoring to isolate parts for easier no-caching implement… [\#780](https://github.com/stargate/jsonapi/pull/780) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[Indexing options\] Changes for find collections to return indexing option [\#779](https://github.com/stargate/jsonapi/pull/779) ([maheshrajamani](https://github.com/maheshrajamani))
+- updating spec to match guidance in \#407 [\#778](https://github.com/stargate/jsonapi/pull/778) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fixes \#776: Update max object, document properties limits [\#777](https://github.com/stargate/jsonapi/pull/777) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Lower limit for max-$vector dimension to highest backend supports \(4,096\) from earlier \(16,000\) [\#775](https://github.com/stargate/jsonapi/pull/775) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix: multi filters for one field [\#774](https://github.com/stargate/jsonapi/pull/774) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Use Stargate v2.1.0-BETA-8 [\#773](https://github.com/stargate/jsonapi/pull/773) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Changes for indexing option - create collection and cache [\#771](https://github.com/stargate/jsonapi/pull/771) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#745: increase max array length limit to 1,000 \(from 100\) [\#770](https://github.com/stargate/jsonapi/pull/770) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#744: increase maximum property name length \(48-\>100\), add new path limit \(250\) [\#762](https://github.com/stargate/jsonapi/pull/762) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#758](https://github.com/stargate/jsonapi/pull/758) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-BETA-6](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-6) (2024-01-02)
 

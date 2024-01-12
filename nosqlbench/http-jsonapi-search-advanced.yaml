@@ -672,7 +672,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_advanced>>/<<table:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
