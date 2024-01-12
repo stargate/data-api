@@ -95,7 +95,7 @@ public class Shredder {
 
     // We also need to handle special fields (currently just "$vector") which would
     // be dropped by "no-index" filter, but that require special handling
-    JsonNode vector = docWithId.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    JsonNode vector = docWithId.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     if (vector != null) {
       traverseVector(JsonPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD), vector, b);
     }
@@ -182,7 +182,11 @@ public class Shredder {
 
   private void traverseValue(JsonNode value, ShredListener callback, JsonPath.Builder pathBuilder) {
     final JsonPath path = pathBuilder.build();
-    if (path.toString().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+    final String pathAsString = path.toString();
+
+    if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+      // Do nothing as $vector is handled separately
+    } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       // Do nothing, vectorize field will just sit in doc json
     } else {
       if (value.isObject()) {
