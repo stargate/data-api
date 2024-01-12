@@ -73,8 +73,8 @@ public class Shredder {
     final String docJson;
 
     // Now that we have both the traversable document and serialization, verify
-    // it does not violate structure and value length limits, before serializing
-    new StructuralValidator(documentLimits).validateStructure(docWithId);
+    // it does not violate structural limits, before serializing
+    new StructuralValidator(documentLimits).validate(docWithId);
 
     // Need to re-serialize document now that _id is normalized.
     // Also gets rid of pretty-printing (if any) and unifies escaping.
@@ -98,10 +98,13 @@ public class Shredder {
       traverseVector(JsonPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD), vector, b);
     }
 
-    // Before rest of validation, indexing, may need to drop "non-indexed" fields:
+    // Before value validation, indexing, may need to drop "non-indexed" fields:
     if (indexProjector != null) {
       indexProjector.applyProjection(docWithId);
     }
+
+    // and now we can finally validate (String) value lengths
+    new ValueValidator(documentLimits).validate(docWithId);
 
     // And finally let's traverse the document to actually "shred" (build index fields)
     traverse(docWithId, b, JsonPath.rootBuilder());
@@ -248,7 +251,7 @@ public class Shredder {
       totalProperties = new AtomicInteger(0);
     }
 
-    private void validateStructure(ObjectNode doc) {
+    public void validate(ObjectNode doc) {
       // Second: traverse to check for other constraints
       validateObjectValue(null, doc, 0, 0);
       if (totalProperties.get() > limits.maxDocumentProperties()) {
@@ -268,8 +271,6 @@ public class Shredder {
         validateObjectValue(referringPropertyName, value, depth, parentPathLength);
       } else if (value.isArray()) {
         validateArrayValue(referringPropertyName, value, depth, parentPathLength);
-      } else if (value.isTextual()) {
-        validateStringValue(value);
       }
     }
 
@@ -384,8 +385,51 @@ public class Shredder {
       }
     }
 
-    private void validateStringValue(JsonNode stringValue) {
-      final String value = stringValue.textValue();
+    private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
+      if (depth > limits.maxDepth()) {
+        throw new JsonApiException(
+            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
+            String.format(
+                "%s: document depth exceeds maximum allowed (%s)",
+                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDepth()));
+      }
+    }
+  }
+
+  static class ValueValidator {
+    final DocumentLimitsConfig limits;
+
+    public ValueValidator(DocumentLimitsConfig limits) {
+      this.limits = limits;
+    }
+
+    public void validate(ObjectNode doc) {
+      validateObjectValue(doc);
+    }
+
+    private void validateValue(JsonNode value) {
+      if (value.isObject()) {
+        validateObjectValue(value);
+      } else if (value.isArray()) {
+        validateArrayValue(value);
+      } else if (value.isTextual()) {
+        validateStringValue(value.textValue());
+      }
+    }
+
+    private void validateArrayValue(JsonNode arrayValue) {
+      for (JsonNode element : arrayValue) {
+        validateValue(element);
+      }
+    }
+
+    private void validateObjectValue(JsonNode objectValue) {
+      for (JsonNode value : objectValue) {
+        validateValue(value);
+      }
+    }
+
+    private void validateStringValue(String value) {
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
@@ -396,16 +440,6 @@ public class Shredder {
                 ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
                 encodedLength.getAsInt(),
                 limits.maxStringLengthInBytes()));
-      }
-    }
-
-    private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
-      if (depth > limits.maxDepth()) {
-        throw new JsonApiException(
-            ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-            String.format(
-                "%s: document depth exceeds maximum allowed (%s)",
-                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(), limits.maxDepth()));
       }
     }
   }
