@@ -13,13 +13,11 @@ scenarios:
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
   # Examples
-  #   single host: stargate_host=host1
-  #   multiple hosts: stargate_host=host1,host2,host3
-  #   multiple weighted hosts: stargate_host=host1:3,host2:7
+  #   single host: jsonapi_host=host1
+  #   multiple hosts: jsonapi_host=host1,host2,host3
+  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
   weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
 
-  # spread into different spaces to use multiple connections
-  space: HashRange(1,<<connections:20>>); ToString();
 
   # http request id
   request_id: ToHashedUUID(); ToString();
@@ -42,64 +40,48 @@ bindings:
   lng: Hash() -> long; Uniform(-180d, 180d)
   friend_id: Add(-1); ToHashedUUID(); ToString() -> String
 
-  match1: Identity(); CoinFunc(<<match-ratio>>, FixedValue(0), FixedValue(1000))
-  match2: Identity(); CoinFunc(<<match-ratio>>, FixedValue("true"), FixedValue("false"))
-  match3: Identity(); CoinFunc(<<match-ratio>>, FixedValue("true"), FixedValue("false"))
+  match1: Identity(); CoinFunc(0.5, FixedValue(0), FixedValue(1000))
+  match2: Identity(); CoinFunc(0.5, FixedValue("true"), FixedValue("false"))
+  match3: Identity(); CoinFunc(0.5, FixedValue("true"), FixedValue("false"))
 
   vector_value: HashedFloatVectors(<<dimensions:1536>>); ToCqlVector()
 
 
 
-blocks:
-  schema-namespace:
-    ops:
-      create-namespace:
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
-        Content-Type: "application/json"
-        ok-body: ".*\"ok\":1.*"
-        body: >2
-          {
-            "createNamespace": {
-              "name": "<<namespace:soak_namespace>>"
-            }
-          }
 
-  schema-collection:
+blocks:
+  schema:
     ops:
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
           {
             "deleteCollection": {
-              "name": "<<collection:soak_collection>>"
+              "name": "<<collection:TEMPLATE(table,keyvalue)>>"
             }
           }
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"ok\":1.*"
         body: >2
           {
             "createCollection": {
-              "name": "<<collection:soak_collection>>",
+              "name": "<<collection:TEMPLATE(table,keyvalue)>>",
               "options": {
                           "vector": {
                               "size": 1536
-                }
+                          }
               }
             }
           }
@@ -107,12 +89,11 @@ blocks:
   write:
     ops:
       write-insert-one:
-        space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2
@@ -153,9 +134,10 @@ blocks:
   main:
     ops:
       find-one-by_id:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         X-Cassandra-Token: "{token}"
@@ -171,12 +153,13 @@ blocks:
           }
 
       find-by-eq:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -192,12 +175,13 @@ blocks:
           }
 
       find-by-ne:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -213,12 +197,13 @@ blocks:
           }          
 
       find-by-exists-true:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -234,12 +219,13 @@ blocks:
           }
 
       find-by-exists-false:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -255,12 +241,13 @@ blocks:
           }
 
       find-by-id-in:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -276,12 +263,13 @@ blocks:
           }
 
       find-by-nonId-in:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -297,12 +285,13 @@ blocks:
           }
 
       find-by-id-nin:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -318,12 +307,13 @@ blocks:
           }          
 
       find-by-nonId-nin:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -339,12 +329,13 @@ blocks:
           }          
 
       find-by-lt:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -360,12 +351,13 @@ blocks:
           }
 
       find-by-gt:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -381,9 +373,10 @@ blocks:
           }
 
     find-with-projection:
-      space: "{space}"
+      params:
+        ratio: 1
       method: POST
-      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
       Accept: "application/json"
       X-Cassandra-Request-Id: "{request_id}"
       Token: "{token}"
@@ -406,12 +399,13 @@ blocks:
       
 
     find-by-and:
-      space: "{space}"
+      params:
+        ratio: 1
       method: POST
-      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
       Accept: "application/json"
       X-Cassandra-Request-Id: "{request_id}"
-      X-Cassandra-Token: "{token}"
+      Token: "{token}"
       Content-Type: "application/json"
       ok-body: ".*\"data\".*"
       body: >2
@@ -428,12 +422,13 @@ blocks:
         }
 
     find-by-or:
-      space: "{space}"
+      params:
+        ratio: 1
       method: POST
-      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+      uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
       Accept: "application/json"
       X-Cassandra-Request-Id: "{request_id}"
-      X-Cassandra-Token: "{token}"
+      Token: "{token}"
       Content-Type: "application/json"
       ok-body: ".*\"data\".*"
       body: >2
@@ -453,12 +448,13 @@ blocks:
         
 
       find-with-sort:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -477,12 +473,13 @@ blocks:
           }
 
       update-one-by-id:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"modifiedCount\":[0,1].*"
         body: >2
@@ -500,12 +497,13 @@ blocks:
           }
 
       update-one-by-id-replace-upsert:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: >2
@@ -549,12 +547,13 @@ blocks:
           
 
       update-many-by-nonId:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"status\".*"
         body: >2
@@ -567,9 +566,10 @@ blocks:
        
 
       ann-find-one-with-projection:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -585,9 +585,10 @@ blocks:
         
 
       ann-find-limit-5-with-similarity:
-        space: "{space}"
+        params:
+          ratio: 1
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:soak_namespace>>/<<collection:soak_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
