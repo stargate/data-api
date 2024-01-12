@@ -27,6 +27,8 @@ public enum ErrorCode {
 
   INVALID_REQUST("Request not supported by the data store"),
 
+  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
+
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
@@ -63,6 +65,8 @@ public enum ErrorCode {
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
+
+  TOO_MANY_INDEXES("Too many indexes"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 

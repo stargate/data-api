@@ -1,5 +1,102 @@
 # Changelog
 
+## [v1.0.0-BETA-7](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-7) (2024-01-11)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-6...v1.0.0-BETA-7)
+
+**Closed issues:**
+
+- Configurable CQL query timeouts by query type [\#783](https://github.com/stargate/jsonapi/issues/783)
+- Increase limits for maximum properties per Object \(64 to 1,000\), per Document \(1,000 to 2,000\) [\#776](https://github.com/stargate/jsonapi/issues/776)
+- Reduce max Vector dimension limit from 10,000 to 4,096 not to fail due to SAI/ANN limit [\#772](https://github.com/stargate/jsonapi/issues/772)
+- \[Indexing options\] Add indexing options to findCollection response [\#769](https://github.com/stargate/jsonapi/issues/769)
+- insertMany default ordered flag to false [\#761](https://github.com/stargate/jsonapi/issues/761)
+- Bug: ALL filter not working inside OR [\#749](https://github.com/stargate/jsonapi/issues/749)
+- Increase `DocumentLimitsConfig.maxArrayLength` from 100 to 1000 [\#745](https://github.com/stargate/jsonapi/issues/745)
+- Tune maximum property name length \(from 48 to 100\), add separate setting for max-total-length \(250\) [\#744](https://github.com/stargate/jsonapi/issues/744)
+- Set Error codes in CommandResult.Error [\#720](https://github.com/stargate/jsonapi/issues/720)
+- fix maximum number of values for $in [\#711](https://github.com/stargate/jsonapi/issues/711)
+- JSON API should identify itself to bridge as jsonapi [\#387](https://github.com/stargate/jsonapi/issues/387)
+
+**Merged pull requests:**
+
+- Set retry policy [\#788](https://github.com/stargate/jsonapi/pull/788) ([maheshrajamani](https://github.com/maheshrajamani))
+- set the application name when creating CQL session [\#787](https://github.com/stargate/jsonapi/pull/787) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Add no-index support for Shredder \(part 1\) [\#786](https://github.com/stargate/jsonapi/pull/786) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changes to have ddl and count profiles [\#785](https://github.com/stargate/jsonapi/pull/785) ([maheshrajamani](https://github.com/maheshrajamani))
+- insertMany nosqlbench workload [\#784](https://github.com/stargate/jsonapi/pull/784) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Change the InsertManyCommand.Options.ordered to false as default [\#782](https://github.com/stargate/jsonapi/pull/782) ([maheshrajamani](https://github.com/maheshrajamani))
+- Shredder refactoring to isolate parts for easier no-caching implement… [\#780](https://github.com/stargate/jsonapi/pull/780) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[Indexing options\] Changes for find collections to return indexing option [\#779](https://github.com/stargate/jsonapi/pull/779) ([maheshrajamani](https://github.com/maheshrajamani))
+- updating spec to match guidance in \#407 [\#778](https://github.com/stargate/jsonapi/pull/778) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fixes \#776: Update max object, document properties limits [\#777](https://github.com/stargate/jsonapi/pull/777) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Lower limit for max-$vector dimension to highest backend supports \(4,096\) from earlier \(16,000\) [\#775](https://github.com/stargate/jsonapi/pull/775) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix: multi filters for one field [\#774](https://github.com/stargate/jsonapi/pull/774) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Use Stargate v2.1.0-BETA-8 [\#773](https://github.com/stargate/jsonapi/pull/773) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Changes for indexing option - create collection and cache [\#771](https://github.com/stargate/jsonapi/pull/771) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#745: increase max array length limit to 1,000 \(from 100\) [\#770](https://github.com/stargate/jsonapi/pull/770) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#744: increase maximum property name length \(48-\>100\), add new path limit \(250\) [\#762](https://github.com/stargate/jsonapi/pull/762) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#758](https://github.com/stargate/jsonapi/pull/758) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.0-BETA-6](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-6) (2024-01-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-5...v1.0.0-BETA-6)
+
+**Implemented enhancements:**
+
+- Improve max-String-value limit checking to be based on UTF-8 \(byte\) length, not char count [\#710](https://github.com/stargate/jsonapi/issues/710)
+
+**Closed issues:**
+
+- Add JSON Logging as the default option for non-dev [\#747](https://github.com/stargate/jsonapi/issues/747)
+- $in and $nin, support for array and subdoc [\#732](https://github.com/stargate/jsonapi/issues/732)
+- Problem with inserting documents with "too long numbers" [\#726](https://github.com/stargate/jsonapi/issues/726)
+- Add ITs for "max-number-length" violation checking for `insertMany`, `findOneAndUpdate`, `findOneAndReplace` [\#724](https://github.com/stargate/jsonapi/issues/724)
+- Extend nosqlbench tests for new filter operations [\#718](https://github.com/stargate/jsonapi/issues/718)
+- Set serial consistency to LOCAL\_SERIAL [\#716](https://github.com/stargate/jsonapi/issues/716)
+- Lower maximum String value length from 16,000 to 8.000 [\#713](https://github.com/stargate/jsonapi/issues/713)
+- $nin support [\#709](https://github.com/stargate/jsonapi/issues/709)
+- token is invalid, error out as keyspace not found instead of 401 unauthenticate [\#708](https://github.com/stargate/jsonapi/issues/708)
+- 401 instead of 500 for bad credentials [\#707](https://github.com/stargate/jsonapi/issues/707)
+- Use lower consistency in CQL vector search queries [\#691](https://github.com/stargate/jsonapi/issues/691)
+- Filter and sort clause field name validation [\#690](https://github.com/stargate/jsonapi/issues/690)
+- Add IT for maximum String value length [\#686](https://github.com/stargate/jsonapi/issues/686)
+- Update stargate-mongoose and create-astradb-mongoose-app with latest jsonapi changes [\#664](https://github.com/stargate/jsonapi/issues/664)
+- Investigate if Jackson 2.15 provided "fast floating-point" improves BigDecimal reads, enable [\#653](https://github.com/stargate/jsonapi/issues/653)
+- Investigate if Jackson 2.15 provided "fast floating-point" improves `BigDecimal` writes, enable [\#652](https://github.com/stargate/jsonapi/issues/652)
+- Metrics for the SessionCache [\#646](https://github.com/stargate/jsonapi/issues/646)
+- Closing session with possible in-flight queries [\#645](https://github.com/stargate/jsonapi/issues/645)
+- Improve max Collection limit verification to be based on available SAIs, not existing Tables [\#608](https://github.com/stargate/jsonapi/issues/608)
+- DataStoreConfig is not produced, use DataStoreProperties instead [\#508](https://github.com/stargate/jsonapi/issues/508)
+
+**Merged pull requests:**
+
+- AllFilter with OR, bug fix [\#757](https://github.com/stargate/jsonapi/pull/757) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#653: enable fast\(er\) parsing/writing of Doubles, BigDecimals [\#756](https://github.com/stargate/jsonapi/pull/756) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- CQL Query logging changes. [\#754](https://github.com/stargate/jsonapi/pull/754) ([kathirsvn](https://github.com/kathirsvn))
+- Retry policy changes [\#750](https://github.com/stargate/jsonapi/pull/750) ([kathirsvn](https://github.com/kathirsvn))
+- Set json format logging as the default [\#748](https://github.com/stargate/jsonapi/pull/748) ([kathirsvn](https://github.com/kathirsvn))
+- Fix C2-3155: include actual property name that is too long in exception message [\#746](https://github.com/stargate/jsonapi/pull/746) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Setting ignore bridge flag to true by default [\#738](https://github.com/stargate/jsonapi/pull/738) ([kathirsvn](https://github.com/kathirsvn))
+- In nin array subdoc [\#737](https://github.com/stargate/jsonapi/pull/737) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Limit number of Collections created by both max-collections and SAIs available [\#736](https://github.com/stargate/jsonapi/pull/736) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- extend nosqlbench tests with sai changes [\#735](https://github.com/stargate/jsonapi/pull/735) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Added error code in case of invalid query [\#731](https://github.com/stargate/jsonapi/pull/731) ([maheshrajamani](https://github.com/maheshrajamani))
+- CQLSessionCache - evictionListener changed to removalListener [\#730](https://github.com/stargate/jsonapi/pull/730) ([kathirsvn](https://github.com/kathirsvn))
+- Add Unit Test to reproduce, fix \#726 [\#727](https://github.com/stargate/jsonapi/pull/727) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add ITs to verify enforcement of "too long number" \(InsertMany, FindOneAndUpdate, -Replace\) [\#725](https://github.com/stargate/jsonapi/pull/725) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Stargate v2.1.0-BETA-7 [\#722](https://github.com/stargate/jsonapi/pull/722) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Changes with cassandra not operator [\#721](https://github.com/stargate/jsonapi/pull/721) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#710: use byte-length for max String value, not characters [\#719](https://github.com/stargate/jsonapi/pull/719) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#713: change max-String-value length from 16,000 to 8,000 [\#717](https://github.com/stargate/jsonapi/pull/717) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix to return 401 instead of 500 [\#715](https://github.com/stargate/jsonapi/pull/715) ([kathirsvn](https://github.com/kathirsvn))
+- Change Stargate Coordinator Docker tag to use to make IT runs on IDE\(A\) work [\#714](https://github.com/stargate/jsonapi/pull/714) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Change the consistency level for vector search [\#706](https://github.com/stargate/jsonapi/pull/706) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Range query support  [\#705](https://github.com/stargate/jsonapi/pull/705) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next jsonapi release [\#704](https://github.com/stargate/jsonapi/pull/704) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Filter and sort clause field name validation [\#697](https://github.com/stargate/jsonapi/pull/697) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#686: add ITs to verify Max-String-Value-Length constaints [\#687](https://github.com/stargate/jsonapi/pull/687) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.0-BETA-5](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-5) (2023-12-06)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-4...v1.0.0-BETA-5)
