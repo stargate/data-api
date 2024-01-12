@@ -757,7 +757,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: Indexed String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
