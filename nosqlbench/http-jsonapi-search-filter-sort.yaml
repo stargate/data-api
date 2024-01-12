@@ -156,7 +156,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -177,7 +177,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -194,7 +194,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -213,7 +213,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -230,7 +230,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -248,7 +248,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -267,7 +267,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -287,7 +287,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
@@ -306,7 +306,7 @@ blocks:
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_search_filter_sort>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
-        X-Cassandra-Token: "{token}"
+        Token: "{token}"
         Content-Type: "application/json"
         ok-body: ".*\"data\".*"
         body: |
