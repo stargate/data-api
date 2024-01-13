@@ -151,7 +151,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                                   "document": %s
                                 }
                               }
-                              """.formatted(DOC)
+                              """
                   .formatted(DOC))
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
