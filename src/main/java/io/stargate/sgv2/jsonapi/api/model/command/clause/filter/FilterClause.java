@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDese
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.HashMap;
 import java.util.List;
