@@ -8,6 +8,9 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -59,86 +62,72 @@ public record FilterClause(LogicalExpression logicalExpression) {
         return;
       }
     }
-    // if path is not indexed, throw error
-    if (!isPathIndexed) {
-      throw new JsonApiException(
-          ErrorCode.UNINDEXED_FILTER_PATH,
-          String.format(
-              "%s: The filter path ('%s') is not indexed",
-              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
-    }
-  }
 
-  public void validateComparisonExpression(
-      ComparisonExpression comparisonExpression, CollectionSettings.IndexingConfig indexingConfig) {
-    String path = comparisonExpression.getPath();
-    // If _id is denied, the operator can only be $eq or $in
-    if (path.equals(DocumentConstants.Fields.DOC_ID)) {
-      if ((!indexingConfig.denied().isEmpty()
-              && indexingConfig.denied().contains(DocumentConstants.Fields.DOC_ID))
-          || (!indexingConfig.allowed().isEmpty()
-              && !indexingConfig.allowed().contains(DocumentConstants.Fields.DOC_ID))
-          || (!indexingConfig.denied().isEmpty()
-              && indexingConfig.denied().iterator().next().equals("*"))) {
-        FilterOperator filterOperator =
-            comparisonExpression.getFilterOperations().get(0).operator();
-        if (!(filterOperator.equals(ValueComparisonOperator.EQ))
-            && !(filterOperator.equals(ValueComparisonOperator.IN))) {
-          throw new JsonApiException(
-              ErrorCode.ID_NOT_INDEXED,
-              String.format(
-                  "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
-                  ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
-        }
+    JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
+    // If path is an object (like address), validate the incremental path (like address.city)
+    if (operand.type() == JsonType.ARRAY || operand.type() == JsonType.SUB_DOC) {
+      if (operand.value() instanceof HashMap<?, ?> map) {
+        validateHashMap(indexingProjector, map, path);
       }
-      return;
-    }
-    // If all fields are denied, throw error
-    if (!indexingConfig.denied().isEmpty()
-        && indexingConfig.denied().iterator().next().equals("*")) {
-      throw new JsonApiException(
-          ErrorCode.UNINDEXED_FILTER_PATH,
-          String.format(
-              "%s: All fields are not indexed, you can only use ('%s') in filter",
-              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), DocumentConstants.Fields.DOC_ID));
-    }
-    // Split the path into parts
-    String[] pathParts = path.split("\\.");
-    StringBuilder incrementalPath = new StringBuilder();
-    // Check the path from high level to low level
-    for (String part : pathParts) {
-      // Construct the incremental path
-      if (incrementalPath.length() > 0) {
-        incrementalPath.append(".");
+      if (operand.value() instanceof List<?> list) {
+        validateList(indexingProjector, list, path);
       }
-      incrementalPath.append(part);
-
-      // If allowed list exists - check if the incremental path is in the allowed paths
-      if (!indexingConfig.allowed().isEmpty()
-          && indexingConfig.allowed().contains(incrementalPath.toString())) {
-        // Path is allowed, no need to check further
-        return;
-      }
-
-      // If denied list exists - check if the incremental path is in the denied paths
-      if (!indexingConfig.denied().isEmpty()
-          && indexingConfig.denied().contains(incrementalPath.toString())) {
-        // Path is denied, throw error
+    } else {
+      // If path is not an object and is not indexed, throw error
+      if (!isPathIndexed) {
         throw new JsonApiException(
             ErrorCode.UNINDEXED_FILTER_PATH,
             String.format(
                 "%s: The filter path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
+                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
       }
     }
+  }
 
-    // If allowed list exists - path is not in the allowed list
-    if (!indexingConfig.allowed().isEmpty()) {
-      throw new JsonApiException(
-          ErrorCode.UNINDEXED_FILTER_PATH,
-          String.format(
-              "%s: The filter path ('%s') is not indexed",
-              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), path));
+  private void validateHashMap(
+      DocumentProjector indexingProjector, HashMap<?, ?> map, String currentPath) {
+    for (Map.Entry<?, ?> entry : map.entrySet()) {
+      if (entry.getKey() instanceof String) {
+        String subPath = (String) entry.getKey();
+        String incrementalPath = currentPath + "." + subPath;
+        if (!indexingProjector.isPathIncluded(incrementalPath)) {
+          throw new JsonApiException(
+              ErrorCode.UNINDEXED_FILTER_PATH,
+              String.format(
+                  "%s: The filter path ('%s') is not indexed",
+                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
+        }
+        // continue build the incremental path if the value is a hashmap
+        if (entry.getValue() instanceof HashMap<?, ?> valueMap) {
+          validateHashMap(indexingProjector, valueMap, incrementalPath);
+        }
+        // continue build the incremental path if the value is a list
+        if (entry.getValue() instanceof List<?> list) {
+          validateList(indexingProjector, list, incrementalPath);
+        }
+      }
+    }
+  }
+
+  private void validateList(DocumentProjector indexingProjector, List<?> list, String currentPath) {
+    for (Object element : list) {
+      if (element instanceof HashMap<?, ?> map) {
+        validateHashMap(indexingProjector, map, currentPath);
+      }
+      if (element instanceof List<?> sublList) {
+        validateList(indexingProjector, sublList, currentPath);
+      }
+      if (element instanceof String) {
+        String subPath = (String) element;
+        String incrementalPath = currentPath + "." + subPath;
+        if (!indexingProjector.isPathIncluded(incrementalPath)) {
+          throw new JsonApiException(
+              ErrorCode.UNINDEXED_FILTER_PATH,
+              String.format(
+                  "%s: The filter path ('%s') is not indexed",
+                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
+        }
+      }
     }
   }
 }
