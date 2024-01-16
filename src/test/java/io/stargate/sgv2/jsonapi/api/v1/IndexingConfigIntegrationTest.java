@@ -426,13 +426,19 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
 
       String filterId2 =
           """
-                {
-                    "find": {
-                        "filter": {
-                        }
-                    }
-                }
-                    """;
+                  {
+                      "find": {
+                          "filter": {
+                              "_id": {
+                                    "$in": [
+                                        "1",
+                                        "2"
+                                    ]
+                                }
+                          }
+                      }
+                  }
+                      """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
