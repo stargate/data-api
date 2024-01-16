@@ -62,6 +62,15 @@ public record FilterClause(LogicalExpression logicalExpression) {
       }
     }
 
+    // If path is not indexed, throw error
+    if (!isPathIndexed) {
+      throw new JsonApiException(
+          ErrorCode.UNINDEXED_FILTER_PATH,
+          String.format(
+              "%s: The filter path ('%s') is not indexed",
+              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
+    }
+
     JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
     // If path is an object (like address), validate the incremental path (like address.city)
     if (operand.type() == JsonType.ARRAY || operand.type() == JsonType.SUB_DOC) {
@@ -70,15 +79,6 @@ public record FilterClause(LogicalExpression logicalExpression) {
       }
       if (operand.value() instanceof List<?> list) {
         validateList(indexingProjector, list, path);
-      }
-    } else {
-      // If path is not an object and is not indexed, throw error
-      if (!isPathIndexed) {
-        throw new JsonApiException(
-            ErrorCode.UNINDEXED_FILTER_PATH,
-            String.format(
-                "%s: The filter path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
       }
     }
   }

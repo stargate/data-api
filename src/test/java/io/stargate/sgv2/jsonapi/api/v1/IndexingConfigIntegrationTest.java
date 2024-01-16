@@ -514,7 +514,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
 
     @Test
     public void filterFieldNotInAllowOne() {
-      // explicitly allow "name", implicitly deny "_id" "address.city" "address.street"
+      // explicitly allow "name", implicitly deny "_id" "address.city" "address.street" "address"
       String filterData1 =
           """
                       {
@@ -540,7 +540,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       String filterData2 =
@@ -644,7 +644,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
 
     @Test
     public void filterFieldNotInAllowMany() {
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street" "address"
       // _id is allowed using in
       String filterData1 =
           """
@@ -715,14 +715,14 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
     public void incrementalPathInArray() {
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // String and array in array - no incremental path, the path is "address" - should be allowed
       // but no data return
       String filterData1 =
@@ -731,7 +731,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                     "find": {
                       "filter": {
                         "address": {
-                          "$in": [[{"street": "1 banana street"}], "abc", ["def"]]
+                          "$in": [[{"city": "monkey town"}], "abc", ["def"]]
                         }
                       }
                     }
@@ -742,22 +742,22 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       String filterData2 =
           """
                       {
                         "find": {
                           "filter": {
                             "address": {
-                              "$in": [[{"city": "monkey town"}]]
+                              "$in": [{"street": "1 banana street"}]
                             }
                           }
                         }
@@ -768,13 +768,13 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .contentType(ContentType.JSON)
           .body(filterData2)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(1));
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // Object (Hashmap) in array - incremental path is "address.city"
       String filterData3 =
           """
@@ -784,7 +784,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                         "address": {
                           "$in": [
                             {
-                              "street": "1 banana street"
+                              "city": "monkey town"
                             }
                           ]
                         }
@@ -797,19 +797,19 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .contentType(ContentType.JSON)
           .body(filterData3)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
     public void incrementalPathInMap() {
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // map in map
       String filterData1 =
           """
@@ -818,7 +818,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                       "filter": {
                         "address": {
                           "$eq": {
-                            "street": {
+                            "city": {
                               "zipcode": "12345"
                             }
                           }
@@ -832,12 +832,12 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
