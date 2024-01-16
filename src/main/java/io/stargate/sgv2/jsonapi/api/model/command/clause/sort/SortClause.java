@@ -50,12 +50,12 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     }
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
-      if (indexingProjector.isPathIncluded(sortExpression.path())) {
+      if (!indexingProjector.isPathIncluded(sortExpression.path())) {
         throw new JsonApiException(
-                ErrorCode.UNINDEXED_FILTER_PATH,
-                String.format(
-                        "%s: The filter path ('%s') is not indexed",
-                        ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), sortExpression.path()));
+            ErrorCode.UNINDEXED_SORT_PATH,
+            String.format(
+                "%s: The sort path ('%s') is not indexed",
+                ErrorCode.UNINDEXED_SORT_PATH.getMessage(), sortExpression.path()));
       }
     }
   }
