@@ -112,7 +112,10 @@ public class ExpressionBuilder {
           List<BuiltCondition> allFilterConditions = allFilter.getAll();
           List<Variable<BuiltCondition>> allFilterVariables =
               allFilterConditions.stream().map(Variable::of).toList();
-          conditionExpressions.add(ExpressionUtils.andOf(allFilterVariables));
+          conditionExpressions.add(
+              allFilter.isNegation()
+                  ? ExpressionUtils.orOf(allFilterVariables)
+                  : ExpressionUtils.andOf(allFilterVariables));
         } else if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
           if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)) {
             hasInFilterThisLevel = true;
