@@ -36,6 +36,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                   "document": {
                     "_id": "1",
                     "name": "aaron",
+                    "$vector": [0.25, 0.25, 0.25, 0.25, 0.25],
                     "address": {
                       "street": "1 banana street",
                       "city": "monkey town"
@@ -832,6 +833,60 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .body("data", is(nullValue()))
           .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void sortFieldInAllowMany() {
+      // explicitly deny "name", "address", implicitly allow "_id", "$vector"
+      String sortData =
+          """
+                  {
+                    "find": {
+                      "sort": {
+                         "$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]
+                      }
+                    }
+                  }
+                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(sortData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1));
+    }
+
+    @Test
+    public void sortFieldNotInAllowMany() {
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street" "$vector"
+      String sortData =
+          """
+                      {
+                        "find": {
+                          "sort": {
+                             "$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]
+                          }
+                        }
+                      }
+                              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(sortData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The sort path ('$vector') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
