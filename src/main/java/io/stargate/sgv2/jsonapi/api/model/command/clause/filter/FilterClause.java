@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -74,8 +73,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
     JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
     // If path is an object (like address), validate the incremental path (like address.city)
     if (operand.type() == JsonType.ARRAY || operand.type() == JsonType.SUB_DOC) {
-      if (operand.value() instanceof HashMap<?, ?> map) {
-        validateHashMap(indexingProjector, map, path);
+      if (operand.value() instanceof Map<?, ?> map) {
+        validateMap(indexingProjector, map, path);
       }
       if (operand.value() instanceof List<?> list) {
         validateList(indexingProjector, list, path);
@@ -83,8 +82,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
     }
   }
 
-  private void validateHashMap(
-      DocumentProjector indexingProjector, HashMap<?, ?> map, String currentPath) {
+  private void validateMap(DocumentProjector indexingProjector, Map<?, ?> map, String currentPath) {
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       if (entry.getKey() instanceof String) {
         String subPath = (String) entry.getKey();
@@ -96,9 +94,9 @@ public record FilterClause(LogicalExpression logicalExpression) {
                   "%s: The filter path ('%s') is not indexed",
                   ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
         }
-        // continue build the incremental path if the value is a hashmap
-        if (entry.getValue() instanceof HashMap<?, ?> valueMap) {
-          validateHashMap(indexingProjector, valueMap, incrementalPath);
+        // continue build the incremental path if the value is a map
+        if (entry.getValue() instanceof Map<?, ?> valueMap) {
+          validateMap(indexingProjector, valueMap, incrementalPath);
         }
         // continue build the incremental path if the value is a list
         if (entry.getValue() instanceof List<?> list) {
@@ -110,8 +108,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
 
   private void validateList(DocumentProjector indexingProjector, List<?> list, String currentPath) {
     for (Object element : list) {
-      if (element instanceof HashMap<?, ?> map) {
-        validateHashMap(indexingProjector, map, currentPath);
+      if (element instanceof Map<?, ?> map) {
+        validateMap(indexingProjector, map, currentPath);
       }
       if (element instanceof List<?> sublList) {
         validateList(indexingProjector, sublList, currentPath);
