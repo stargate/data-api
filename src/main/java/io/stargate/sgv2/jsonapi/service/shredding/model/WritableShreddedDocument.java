@@ -100,7 +100,7 @@ public record WritableShreddedDocument(
     private final DocValueHasher hasher;
 
     private final DocumentId id;
-    private final UUID txID;
+    private UUID txID;
 
     private final String docJson;
     private final JsonNode docJsonNode;
@@ -133,6 +133,7 @@ public record WritableShreddedDocument(
      * @return WritableShreddedDocument built from collected information
      */
     public WritableShreddedDocument build() {
+      if (txID == null) txID = UUID.randomUUID();
       return new WritableShreddedDocument(
           id,
           txID,

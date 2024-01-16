@@ -64,6 +64,9 @@ public class InsertOperationTest extends OperationTestBase {
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
+  private final ColumnDefinitions COLUMNS_APPLIED_FAILURE =
+      buildColumnDefs(TestColumn.ofBoolean("[applied]"), TestColumn.ofUuid("tx_id"));
+
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
 
@@ -71,13 +74,13 @@ public class InsertOperationTest extends OperationTestBase {
       "INSERT INTO \"%s\".\"%s\""
           + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
           + " VALUES"
-          + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
   static final String INSERT_VECTOR_CQL =
       "INSERT INTO \"%s\".\"%s\""
           + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
-          + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
   @Nested
   class InsertNonVector {
@@ -265,6 +268,58 @@ public class InsertOperationTest extends OperationTestBase {
           .containsEntry(
               CommandStatus.INSERTED_IDS,
               List.of(new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2")));
+      assertThat(result.errors()).isNull();
+    }
+
+    @Test
+    public void insertOneRetryLWTCheck() throws Exception {
+      String document =
+          """
+                                  {
+                                    "_id": "doc1",
+                                    "text": "user1",
+                                    "number" : 10,
+                                    "boolean": true,
+                                    "nullval" : null,
+                                    "array" : ["a", "b"],
+                                    "sub_doc" : {"col": "val"},
+                                    "date_val" : {"$date": 1672531200000 }
+                                  }
+                                  """;
+
+      JsonNode jsonNode = objectMapper.readTree(document);
+      WritableShreddedDocument shredDocument = shredder.shred(jsonNode);
+
+      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      List<Row> rows =
+          Arrays.asList(resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, shredDocument.txID()));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+
+      when(queryExecutor.executeWrite(eq(insertStmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      Supplier<CommandResult> execute =
+          new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.status())
+          .hasSize(1)
+          .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
       assertThat(result.errors()).isNull();
     }
 
@@ -819,6 +874,7 @@ public class InsertOperationTest extends OperationTestBase {
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
+        shredDocument.txID(),
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
@@ -835,6 +891,7 @@ public class InsertOperationTest extends OperationTestBase {
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
+        shredDocument.txID(),
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
