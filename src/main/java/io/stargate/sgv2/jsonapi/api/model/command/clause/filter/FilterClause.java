@@ -117,14 +117,13 @@ public record FilterClause(LogicalExpression logicalExpression) {
         validateList(indexingProjector, sublList, currentPath);
       }
       if (element instanceof String) {
-        String subPath = (String) element;
-        String incrementalPath = currentPath + "." + subPath;
-        if (!indexingProjector.isPathIncluded(incrementalPath)) {
+        // no need to build incremental path, validate current path
+        if (!indexingProjector.isPathIncluded(currentPath)) {
           throw new JsonApiException(
               ErrorCode.UNINDEXED_FILTER_PATH,
               String.format(
                   "%s: The filter path ('%s') is not indexed",
-                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
+                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), currentPath));
         }
       }
     }
