@@ -154,7 +154,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
         "INSERT INTO \"%s\".\"%s\""
             + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
 
     @Test
     public void insert() throws Exception {
@@ -178,6 +178,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           SimpleStatement.newInstance(
               INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME),
               CQLBindValues.getDocumentIdValue(shredDocument.id()),
+              shredDocument.nextTxID(),
               shredDocument.docJson(),
               CQLBindValues.getSetValue(shredDocument.existKeys()),
               CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),

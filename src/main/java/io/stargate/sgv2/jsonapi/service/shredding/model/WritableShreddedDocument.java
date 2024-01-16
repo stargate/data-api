@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -42,7 +43,8 @@ public record WritableShreddedDocument(
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues,
-    float[] queryVectorValues) {
+    float[] queryVectorValues,
+    UUID nextTxID) {
 
   @Override
   public boolean equals(Object o) {
@@ -146,7 +148,8 @@ public record WritableShreddedDocument(
           _nonNull(queryTextValues),
           _nonNull(queryTimestampValues),
           _nonNull(queryNullValues),
-          queryVectorValues);
+          queryVectorValues,
+          Uuids.timeBased());
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
