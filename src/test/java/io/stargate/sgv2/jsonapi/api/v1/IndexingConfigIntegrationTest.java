@@ -684,24 +684,146 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
       // allow "address.city", only this as a string, not "address" as an object
       String filterData2 =
           """
-                          {
-                            "find": {
-                              "filter": {
-                                "address": {
-                                  "$eq": {
-                                    "street": "1 banana street",
-                                    "city": "monkey town"
-                                  }
-                                }
-                              }
-                            }
-                          }
-                            """;
+              {
+                "find": {
+                  "filter": {
+                    "address": {
+                      "$eq": {
+                        "street": "1 banana street",
+                        "city": "monkey town"
+                      }
+                    }
+                  }
+                }
+              }
+                    """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(filterData2)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void incrementalPathInArray() {
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // String and array in array - no incremental path, the path is "address" - should be allowed
+      // but no data return
+      String filterData1 =
+          """
+                  {
+                    "find": {
+                      "filter": {
+                        "address": {
+                          "$in": [[{"street": "1 banana street"}], "abc", ["def"]]
+                        }
+                      }
+                    }
+                  }
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData1)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      String filterData2 =
+          """
+                      {
+                        "find": {
+                          "filter": {
+                            "address": {
+                              "$in": [[{"city": "monkey town"}]]
+                            }
+                          }
+                        }
+                      }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData2)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1));
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // Object (Hashmap) in array - incremental path is "address.city"
+      String filterData3 =
+          """
+                  {
+                    "find": {
+                      "filter": {
+                        "address": {
+                          "$in": [
+                            {
+                              "street": "1 banana street"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData3)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void incrementalPathInMap() {
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
+      // map in map
+      String filterData1 =
+          """
+                  {
+                    "find": {
+                      "filter": {
+                        "address": {
+                          "$eq": {
+                            "street": {
+                              "zipcode": "12345"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData1)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
           .then()
