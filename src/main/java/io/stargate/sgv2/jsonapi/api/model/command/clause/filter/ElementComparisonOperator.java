@@ -14,4 +14,9 @@ public enum ElementComparisonOperator implements FilterOperator {
   public String getOperator() {
     return operator;
   }
+
+  @Override
+  public FilterOperator flip() {
+    return this;
+  }
 }

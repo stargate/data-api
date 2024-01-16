@@ -815,31 +815,317 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void simpleNot() throws Exception {
+      String json =
+          """
+          {
+            "$not": {"name" : "testName"}
+          }
+          """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    @Test
+    public void comparisonOperatorsWithNot() throws Exception {
+      String json =
+          """
+              {
+                "$not": {
+                  "$and" : [
+                    {"f1" : {"$eq" : "testName"}},
+                    {"f2" : {"$ne" : "testName"}},
+                    {"f3" : {"$in" : ["testName1","testName2"]}},
+                    {"f4" : {"$nin" : ["testName1","testName2"]}},
+                    {"f5" : {"$lt" : 5}},
+                    {"f6" : {"$lte" : 5}},
+                    {"f7" : {"$gt" : 5}},
+                    {"f8" : {"$gte" : 5}},
+                    {"f9" : {"$exists" : true}},
+                    {"f10" : {"$exists" : false}},
+                    {"f11" : {"$size" : 1}}
+                 ]
+                }
+              }
+              """;
+      final ComparisonExpression eq =
+          new ComparisonExpression(
+              "f1",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression ne =
+          new ComparisonExpression(
+              "f2",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression in =
+          new ComparisonExpression(
+              "f3",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NIN,
+                      new JsonLiteral(List.of("testName1", "testName2"), JsonType.ARRAY))),
+              null);
+
+      final ComparisonExpression nin =
+          new ComparisonExpression(
+              "f4",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.IN,
+                      new JsonLiteral(List.of("testName1", "testName2"), JsonType.ARRAY))),
+              null);
+      final ComparisonExpression lt =
+          new ComparisonExpression(
+              "f5",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.GTE,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+
+      final ComparisonExpression lte =
+          new ComparisonExpression(
+              "f6",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.GT,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+
+      final ComparisonExpression gt =
+          new ComparisonExpression(
+              "f7",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.LTE,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+      final ComparisonExpression gte =
+          new ComparisonExpression(
+              "f8",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.LT,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+
+      final ComparisonExpression existsTrue =
+          new ComparisonExpression(
+              "f9",
+              List.of(
+                  new ValueComparisonOperation(
+                      ElementComparisonOperator.EXISTS, new JsonLiteral(false, JsonType.BOOLEAN))),
+              null);
+      final ComparisonExpression existsFalse =
+          new ComparisonExpression(
+              "f10",
+              List.of(
+                  new ValueComparisonOperation(
+                      ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
+              null);
+      final ComparisonExpression size =
+          new ComparisonExpression(
+              "f11",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(-1), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+          .isEqualTo(LogicalExpression.LogicalOperator.OR);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(11);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(eq.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(ne.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(2)
+                  .getFilterOperations())
+          .isEqualTo(in.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(3)
+                  .getFilterOperations())
+          .isEqualTo(nin.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(4)
+                  .getFilterOperations())
+          .isEqualTo(lt.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(5)
+                  .getFilterOperations())
+          .isEqualTo(lte.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(6)
+                  .getFilterOperations())
+          .isEqualTo(gt.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(7)
+                  .getFilterOperations())
+          .isEqualTo(gte.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(8)
+                  .getFilterOperations())
+          .isEqualTo(existsTrue.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(9)
+                  .getFilterOperations())
+          .isEqualTo(existsFalse.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(10)
+                  .getFilterOperations())
+          .isEqualTo(size.getFilterOperations());
+    }
+
+    @Test
+    public void twoLevelNot() throws Exception {
+      String json =
+          """
+              {
+                "$not":{ "$not" : {"name" : "testName"} }
+              }
+              """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    @Test
+    public void multipleNot() throws Exception {
+      String json =
+          """
+            {
+              "$not": { "$not" : { "$not" : {"name" : "testName"} } }
+            }
+            """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.size()).isEqualTo(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    @Test
     public void nestedOrAnd() throws Exception {
 
       String json =
           """
-              {
-                              "$and": [
-                                          {
-                                              "name": "testName"
-                                          },
-                                          {
-                                              "age": "testAge"
-                                          },
-                                          {
-                                              "$or": [
-                                                  {
-                                                      "address": "testAddress"
-                                                  },
-                                                  {
-                                                      "height": "testHeight"
-                                                  }
-                                              ]
-                                          }
-                                      ]
-                              }
-              """;
+        {
+          "$and": [
+            {
+                "name": "testName"
+            },
+            {
+                "age": "testAge"
+            },
+            {
+                "$or": [
+                    {
+                        "address": "testAddress"
+                    },
+                    {
+                        "height": "testHeight"
+                    }
+                ]
+            }
+          ]
+        }
+        """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -901,6 +1187,129 @@ public class FilterClauseDeserializerTest {
                   .get(1)
                   .getFilterOperations())
           .isEqualTo(expectedResult2.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult3.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult4.getFilterOperations());
+    }
+
+    @Test
+    public void multipleLevel() throws Exception {
+      String json =
+          """
+        {
+          "$and": [
+            {
+                "name": "testName"
+            },
+            {
+                "age": "testAge"
+            },
+            {
+              "$not":
+              {
+                "$or": [
+                    {
+                        "address": "testAddress"
+                    },
+                    {
+                        "tags": { "$size" : 1}
+                    }
+                ]
+             }
+            }
+          ]
+        }
+        """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "name",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult2 =
+          new ComparisonExpression(
+              "age",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult3 =
+          new ComparisonExpression(
+              "address",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.NE, new JsonLiteral("testAddress", JsonType.STRING))),
+              null);
+      final ComparisonExpression expectedResult4 =
+          new ComparisonExpression(
+              "tags",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(-1), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).getLogicalRelation())
+          .isEqualTo(LogicalExpression.LogicalOperator.AND);
+      assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
+          .hasSize(2);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(0)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions
+                  .get(1)
+                  .getFilterOperations())
+          .isEqualTo(expectedResult2.getFilterOperations());
+
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .getLogicalRelation())
+          .isEqualTo(LogicalExpression.LogicalOperator.AND);
+      assertThat(
+              filterClause
+                  .logicalExpression()
+                  .logicalExpressions
+                  .get(0)
+                  .logicalExpressions
+                  .get(0)
+                  .comparisonExpressions)
+          .hasSize(2);
       assertThat(
               filterClause
                   .logicalExpression()
