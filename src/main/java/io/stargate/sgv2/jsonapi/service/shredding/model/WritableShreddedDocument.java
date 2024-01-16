@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -148,7 +149,7 @@ public record WritableShreddedDocument(
           _nonNull(queryTimestampValues),
           _nonNull(queryNullValues),
           queryVectorValues,
-          UUID.randomUUID());
+          Uuids.random());
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
