@@ -149,7 +149,7 @@ public record WritableShreddedDocument(
           _nonNull(queryTimestampValues),
           _nonNull(queryNullValues),
           queryVectorValues,
-          Uuids.random());
+          Uuids.timeBased());
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
