@@ -64,7 +64,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
     // validate sort path
     if (sortClause != null) {
-      sortClause.validate(commandContext.collectionSettings().indexingConfig());
+      sortClause.validate(commandContext);
     }
 
     // vectorize sort clause
