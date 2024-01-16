@@ -35,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -155,8 +156,9 @@ public class InsertOperationTest extends OperationTestBase {
 
       SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
       // Note: FALSE is needed to "fail" insertion, producing failure message
-      List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
-      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
+      List<Row> rows =
+          Arrays.asList(resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, UUID.randomUUID()));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED_FAILURE, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
@@ -292,8 +294,9 @@ public class InsertOperationTest extends OperationTestBase {
 
       SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
       List<Row> rows =
-          Arrays.asList(resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, shredDocument.txID()));
-      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
+          Arrays.asList(
+              resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, shredDocument.nextTxID()));
+      AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED_FAILURE, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 

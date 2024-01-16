@@ -142,7 +142,7 @@ public record InsertOperation(
                 return Uni.createFrom().item(doc.id());
               } else {
                 final UUID txId = result.one().getUuid("tx_id");
-                if (doc.txID().equals(txId)) {
+                if (doc.nextTxID().equals(txId)) {
                   return Uni.createFrom().item(doc.id());
                 }
                 Exception failure = new JsonApiException(ErrorCode.DOCUMENT_ALREADY_EXISTS);
@@ -179,7 +179,7 @@ public record InsertOperation(
       return SimpleStatement.newInstance(
           query,
           CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.txID(),
+          doc.nextTxID(),
           doc.docJson(),
           CQLBindValues.getSetValue(doc.existKeys()),
           CQLBindValues.getIntegerMapValues(doc.arraySize()),
@@ -194,7 +194,7 @@ public record InsertOperation(
       return SimpleStatement.newInstance(
           query,
           CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.txID(),
+          doc.nextTxID(),
           doc.docJson(),
           CQLBindValues.getSetValue(doc.existKeys()),
           CQLBindValues.getIntegerMapValues(doc.arraySize()),

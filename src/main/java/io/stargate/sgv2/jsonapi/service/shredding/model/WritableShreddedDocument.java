@@ -42,7 +42,8 @@ public record WritableShreddedDocument(
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues,
-    float[] queryVectorValues) {
+    float[] queryVectorValues,
+    UUID nextTxID) {
 
   @Override
   public boolean equals(Object o) {
@@ -100,7 +101,7 @@ public record WritableShreddedDocument(
     private final DocValueHasher hasher;
 
     private final DocumentId id;
-    private UUID txID;
+    private final UUID txID;
 
     private final String docJson;
     private final JsonNode docJsonNode;
@@ -133,7 +134,6 @@ public record WritableShreddedDocument(
      * @return WritableShreddedDocument built from collected information
      */
     public WritableShreddedDocument build() {
-      if (txID == null) txID = UUID.randomUUID();
       return new WritableShreddedDocument(
           id,
           txID,
@@ -147,7 +147,8 @@ public record WritableShreddedDocument(
           _nonNull(queryTextValues),
           _nonNull(queryTimestampValues),
           _nonNull(queryNullValues),
-          queryVectorValues);
+          queryVectorValues,
+          UUID.randomUUID());
     }
 
     private <T> Map<JsonPath, T> _nonNull(Map<JsonPath, T> map) {
