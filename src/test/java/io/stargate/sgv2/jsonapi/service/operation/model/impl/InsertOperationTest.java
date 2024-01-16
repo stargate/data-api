@@ -877,7 +877,7 @@ public class InsertOperationTest extends OperationTestBase {
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        shredDocument.txID(),
+        shredDocument.nextTxID(),
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
@@ -894,7 +894,7 @@ public class InsertOperationTest extends OperationTestBase {
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        shredDocument.txID(),
+        shredDocument.nextTxID(),
         shredDocument.docJson(),
         CQLBindValues.getSetValue(shredDocument.existKeys()),
         CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
