@@ -100,16 +100,24 @@ public class Shredder {
       traverseVector(JsonPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD), vector, b);
     }
 
-    // Before value validation, indexing, may need to drop "non-indexed" fields:
+    // Before value validation, indexing, may need to drop "non-indexed" fields. But if so,
+    // need to ensure we do not modify original document, so let's create a copy (may need
+    // to be returned as "after" Document)
+    ObjectNode indexableDocument;
+
     if (indexProjector != null) {
-      indexProjector.applyProjection(docWithId);
+      indexableDocument = docWithId.deepCopy();
+      indexProjector.applyProjection(indexableDocument);
+    } else {
+      // optimized case: if nothing to drop ("no-index"), can just use original
+      indexableDocument = docWithId;
     }
 
     // and now we can finally validate (String) value lengths
-    new ValueValidator(documentLimits).validate(docWithId);
+    new ValueValidator(documentLimits).validate(indexableDocument);
 
     // And finally let's traverse the document to actually "shred" (build index fields)
-    traverse(docWithId, b, JsonPath.rootBuilder());
+    traverse(indexableDocument, b, JsonPath.rootBuilder());
     return b.build();
   }
 
