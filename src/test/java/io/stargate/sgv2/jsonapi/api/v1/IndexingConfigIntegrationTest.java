@@ -299,8 +299,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                       "filter": {
                         "address": {
                           "$eq": {
-                            "street": "1 banana street",
-                            "city": "monkey town"
+                            "street": "1 banana street"
                           }
                         }
                       }
@@ -318,6 +317,34 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(1));
+      String filterData3 =
+          """
+                      {
+                        "find": {
+                          "filter": {
+                            "address": {
+                              "$eq": {
+                                "street": "1 banana street",
+                                "city": "monkey town"
+                              }
+                            }
+                          }
+                        }
+                      }
+                        """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData3)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('address.city') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -480,7 +507,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
 
     @Test
     public void filterFieldNotInAllowOne() {
-      // explicitly allow "name", implicitly deny "_id" "address"
+      // explicitly allow "name", implicitly deny "_id" "address.city" "address.street"
       String filterData1 =
           """
                       {
@@ -506,7 +533,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       String filterData2 =
@@ -681,7 +708,7 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The filter path ('address') is not indexed"))
+          .body("errors[0].message", endsWith("The filter path ('address.street') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
