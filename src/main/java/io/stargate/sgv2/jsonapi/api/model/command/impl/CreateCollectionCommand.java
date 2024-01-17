@@ -154,6 +154,10 @@ public record CreateCollectionCommand(
       }
 
       public String findInvalidPath(List<String> paths) {
+        // Special case: single "*" is accepted
+        if (paths.size() == 1 && "*".equals(paths.get(0))) {
+          return null;
+        }
         for (String path : paths) {
           if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
             // One exception: $vector is allowed
