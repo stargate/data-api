@@ -24,4 +24,27 @@ public enum ValueComparisonOperator implements FilterOperator {
   public String getOperator() {
     return operator;
   }
+
+  @Override
+  public FilterOperator flip() {
+    switch (this) {
+      case EQ:
+        return NE;
+      case NE:
+        return EQ;
+      case IN:
+        return NIN;
+      case NIN:
+        return IN;
+      case GT:
+        return LTE;
+      case GTE:
+        return LT;
+      case LT:
+        return GTE;
+      case LTE:
+        return GT;
+    }
+    return this;
+  }
 }
