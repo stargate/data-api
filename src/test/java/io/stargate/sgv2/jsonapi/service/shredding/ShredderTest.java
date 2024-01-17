@@ -365,6 +365,7 @@ public class ShredderTest {
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
+              // NOTE: "$vector" is implicitly added to non-empty "allow" List
               JsonPath.from("$vector"),
               JsonPath.from("name"),
               JsonPath.from("metadata"),

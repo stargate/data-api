@@ -93,13 +93,6 @@ public class Shredder {
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
-    // We also need to handle special fields (currently just "$vector") which would
-    // be dropped by "no-index" filter, but that require special handling
-    JsonNode vector = docWithId.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-    if (vector != null) {
-      traverseVector(JsonPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD), vector, b);
-    }
-
     // Before value validation, indexing, may need to drop "non-indexed" fields. But if so,
     // need to ensure we do not modify original document, so let's create a copy (may need
     // to be returned as "after" Document)
@@ -193,7 +186,7 @@ public class Shredder {
     final String pathAsString = path.toString();
 
     if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-      // Do nothing as $vector is handled separately
+      traverseVector(path, value, callback);
     } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       // Do nothing, vectorize field will just sit in doc json
     } else {
