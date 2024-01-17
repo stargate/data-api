@@ -15,18 +15,17 @@ public class JsonShreddingMetricsReporter {
 
   private Timer.Sample sample;
 
-  @Inject
   public JsonShreddingMetricsReporter(
       MeterRegistry meterRegistry, JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
-  public void startTimer() {
+  public void startMetrics() {
     sample = Timer.start(meterRegistry);
   }
 
-  public void stopTimer(WritableShreddedDocument doc, String commandName) {
+  public void completeMetrics(WritableShreddedDocument doc, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag serializationTag = Tag.of(jsonApiMetricsConfig.jsonShreddingTypeTag(), "Serialization");
     Tag jsonStringLenTag =
