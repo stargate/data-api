@@ -377,6 +377,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 throw new JsonApiException(
                     ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
+            } else {
+              // handle an Invalid filter use case:
+              // { "address": { "street": { "$xx": xxx } } }
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  String.format("Invalid use of %s operator", node.fields().next().getKey()));
             }
           } else {
             ObjectNode objectNode = (ObjectNode) node;
