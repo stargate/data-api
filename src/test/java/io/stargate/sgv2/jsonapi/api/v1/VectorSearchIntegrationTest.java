@@ -872,7 +872,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUST"))
+          .body("errors[0].errorCode", is("INVALID_REQUEST"))
           .body(
               "errors[0].message",
               endsWith("Zero vectors cannot be indexed or queried with cosine similarity"));
