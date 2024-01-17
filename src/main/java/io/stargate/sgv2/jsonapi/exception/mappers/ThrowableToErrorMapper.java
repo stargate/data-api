@@ -77,8 +77,7 @@ public final class ThrowableToErrorMapper {
         } else if (throwable instanceof DriverTimeoutException
             || throwable instanceof WriteTimeoutException
             || throwable instanceof ReadTimeoutException) {
-          return new CommandResult.Error(
-              message, fieldsForMetricsTag, fields, Response.Status.OK);
+          return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof AllNodesFailedException) {
             Map<Node, List<Throwable>> nodewiseErrors =
