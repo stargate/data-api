@@ -14,7 +14,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+public class IndexingConfigIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final String denyOneIndexingCollection = "deny_one_indexing_collection";
 
@@ -29,11 +29,12 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
   @Nested
   @Order(1)
   class CreateCollectionAndData {
-    String insertData =
-        """
-              {
-                "insertOne": {
-                  "document": {
+
+    @Test
+    public void createCollectionAndData() {
+      String insertData =
+          """
+                  {
                     "_id": "1",
                     "name": "aaron",
                     "$vector": [0.25, 0.25, 0.25, 0.25, 0.25],
@@ -42,201 +43,19 @@ public class IndexingConfigIntegrationTest extends AbstractNamespaceIntegrationT
                       "city": "monkey town"
                     }
                   }
-                }
-              }
-                 """;
+                      """;
 
-    @Test
-    public void createCollectionAndData() {
-      String createDenyOneIndexingCollection =
-          """
-              {
-                "createCollection": {
-                  "name": "%s",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "deny" : ["address.city"]
-                    }
-                  }
-                }
-              }
-                  """
-              .formatted(denyOneIndexingCollection);
-      // create collection
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(createDenyOneIndexingCollection)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-      // insert data
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(insertData)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
-          .then()
-          .statusCode(200);
+      createCollection(denyOneIndexingCollection, "\"deny\" : [\"address.city\"]");
+      createCollection(denyManyIndexingCollection, "\"deny\" : [\"name\", \"address\"]");
+      createCollection(denyAllIndexingCollection, "\"deny\" : [\"*\"]");
+      createCollection(allowOneIndexingCollection, "\"allow\" : [\"name\"]");
+      createCollection(allowManyIndexingCollection, "\"allow\" : [\"name\", \"address.city\"]");
 
-      String createDenyManyIndexingCollection =
-          """
-              {
-                "createCollection": {
-                  "name": "%s",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "deny" : ["name", "address"]
-                    }
-                  }
-                }
-              }
-                  """
-              .formatted(denyManyIndexingCollection);
-      // create collection
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(createDenyManyIndexingCollection)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-      // insert data
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(insertData)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, denyManyIndexingCollection)
-          .then()
-          .statusCode(200);
-
-      String createDenyAllIndexingCollection =
-          """
-              {
-                "createCollection": {
-                  "name": "%s",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "deny" : ["*"]
-                    }
-                  }
-                }
-              }
-                  """
-              .formatted(denyAllIndexingCollection);
-      // create collection
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(createDenyAllIndexingCollection)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-      // insert data
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(insertData)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
-          .then()
-          .statusCode(200);
-
-      String createAllowOneIndexingCollection =
-          """
-              {
-                "createCollection": {
-                  "name": "%s",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "allow" : ["name"]
-                    }
-                  }
-                }
-              }
-                  """
-              .formatted(allowOneIndexingCollection);
-      // create collection
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(createAllowOneIndexingCollection)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-      // insert data
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(insertData)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowOneIndexingCollection)
-          .then()
-          .statusCode(200);
-
-      String createAllowManyIndexingCollection =
-          """
-              {
-                "createCollection": {
-                  "name": "%s",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "allow" : ["name", "address.city"]
-                    }
-                  }
-                }
-              }
-                  """
-              .formatted(allowManyIndexingCollection);
-      // create collection
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(createAllowManyIndexingCollection)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-      // insert data
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(insertData)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, allowManyIndexingCollection)
-          .then()
-          .statusCode(200);
+      insertDoc(denyOneIndexingCollection, insertData);
+      insertDoc(denyManyIndexingCollection, insertData);
+      insertDoc(denyAllIndexingCollection, insertData);
+      insertDoc(allowOneIndexingCollection, insertData);
+      insertDoc(allowManyIndexingCollection, insertData);
     }
   }
 
