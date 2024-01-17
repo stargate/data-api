@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.constraints.*;
@@ -123,6 +124,14 @@ public record CreateCollectionCommand(
                 ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                     + " - `allow` cannot contain duplicates");
           }
+          String invalid = findInvalidPath(allow());
+          if (invalid != null) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_INDEXING_DEFINITION,
+                String.format(
+                    "%s - `allow` contains invalid path: '%s'",
+                    ErrorCode.INVALID_INDEXING_DEFINITION.getMessage(), invalid));
+          }
         }
 
         if (deny() != null) {
@@ -133,7 +142,24 @@ public record CreateCollectionCommand(
                 ErrorCode.INVALID_INDEXING_DEFINITION.getMessage()
                     + " - `deny` cannot contain duplicates");
           }
+          String invalid = findInvalidPath(deny());
+          if (invalid != null) {
+            throw new JsonApiException(
+                ErrorCode.INVALID_INDEXING_DEFINITION,
+                String.format(
+                    "%s - `deny` contains invalid path: '%s'",
+                    ErrorCode.INVALID_INDEXING_DEFINITION.getMessage(), invalid));
+          }
         }
+      }
+
+      public String findInvalidPath(List<String> paths) {
+        for (String path : paths) {
+          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
+            return path;
+          }
+        }
+        return null;
       }
     }
 

@@ -439,8 +439,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              startsWith("The provided collection name 'collection_with_bad_allows'"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+              startsWith("Invalid indexing definition - `allow` contains invalid path: '$eq'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
@@ -471,8 +471,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              startsWith("The provided collection name 'collection_with_bad_deny'"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
+              startsWith("Invalid indexing definition - `deny` contains invalid path: '$in'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
