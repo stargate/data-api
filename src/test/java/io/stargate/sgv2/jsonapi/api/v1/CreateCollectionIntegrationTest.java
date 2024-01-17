@@ -387,10 +387,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "createCollection": {
                           "name": "simple_collection_error1",
                           "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
                             "indexing" : {
                               "allow" : ["field1", "field1"]
                             }
@@ -423,10 +419,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                   "createCollection": {
                     "name": "simple_collection_error2",
                     "options" : {
-                      "vector" : {
-                        "size" : 5,
-                        "function" : "cosine"
-                      },
                       "indexing" : {
                         "allow" : ["field1", "field2"],
                         "deny" : ["field1", "field2"]
