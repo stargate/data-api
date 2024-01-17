@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -94,7 +95,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "function" : "cosine"
                       },
                       "indexing" : {
-                        "allow" : ["field1", "field2", "address.city", "_id"]
+                        "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
                       }
                     }
                   }
@@ -329,6 +330,20 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
+      // delete the collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(deleteCollectionJson.formatted("simple_collection"))
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void createCollectionWithIndexing() {
       // create vector collection with indexing allow option
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -395,6 +410,73 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+    }
+
+    @Test
+    public void failWithInvalidNameInIndexingAllows() {
+      // create a vector collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          // Brackets not allowed in field names
+          .body(
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_allows",
+                        "options" : {
+                          "indexing" : {
+                            "allow" : ["valid-field", "address[1].street"]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid indexing definition - `allow` contains invalid path: 'address[1].street'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithInvalidNameInIndexingDeny() {
+      // create a vector collection
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              // Dollars not allowed in regular field names (can only start operators)
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_deny",
+                        "options" : {
+                          "indexing" : {
+                            "deny" : ["field", "$in"]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith("Invalid indexing definition - `deny` contains invalid path: '$in'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 
