@@ -57,7 +57,7 @@ public final class ThrowableToErrorMapper {
                 message, fieldsForMetricsTag, fields, Response.Status.BAD_GATEWAY);
           } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
             return new CommandResult.Error(
-                message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
+                message, fieldsForMetricsTag, fields, Response.Status.OK);
           }
         }
         if (throwable instanceof UnauthorizedException
@@ -78,7 +78,7 @@ public final class ThrowableToErrorMapper {
             || throwable instanceof WriteTimeoutException
             || throwable instanceof ReadTimeoutException) {
           return new CommandResult.Error(
-              message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
+              message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof AllNodesFailedException) {
             Map<Node, List<Throwable>> nodewiseErrors =

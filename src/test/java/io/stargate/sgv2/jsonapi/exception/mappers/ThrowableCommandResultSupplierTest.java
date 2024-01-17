@@ -167,7 +167,7 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("DEADLINE_EXCEEDED");
-                assertThat(error.status()).isEqualTo(Response.Status.GATEWAY_TIMEOUT);
+                assertThat(error.status()).isEqualTo(Response.Status.OK);
                 assertThat(error.fields())
                     .hasSize(1)
                     .containsEntry("exceptionClass", "StatusRuntimeException");
