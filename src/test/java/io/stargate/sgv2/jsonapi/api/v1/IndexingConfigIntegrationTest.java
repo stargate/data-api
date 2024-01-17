@@ -216,7 +216,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, denyOneIndexingCollection)
+          .post(CollectionResource.BASE_PATH, namespaceName, denyManyIndexingCollection)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
