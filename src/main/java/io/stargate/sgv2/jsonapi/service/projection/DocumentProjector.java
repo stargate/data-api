@@ -103,7 +103,7 @@ public class DocumentProjector {
   }
 
   public boolean isIdentityProjection() {
-    return rootLayer == null || !inclusion;
+    return rootLayer == null && !inclusion;
   }
 
   public static DocumentProjector identityProjectorWithSimilarity() {
