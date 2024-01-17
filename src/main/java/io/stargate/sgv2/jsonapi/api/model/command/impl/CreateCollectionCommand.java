@@ -156,7 +156,10 @@ public record CreateCollectionCommand(
       public String findInvalidPath(List<String> paths) {
         for (String path : paths) {
           if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-            return path;
+            // One exception: $vector is allowed
+            if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+              return path;
+            }
           }
         }
         return null;

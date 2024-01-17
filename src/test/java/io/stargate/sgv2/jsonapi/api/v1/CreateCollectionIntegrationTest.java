@@ -95,7 +95,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "function" : "cosine"
                       },
                       "indexing" : {
-                        "allow" : ["field1", "field2", "address.city", "_id"]
+                        "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
                       }
                     }
                   }
@@ -440,7 +440,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition - `allow` contains invalid path: 'address[1].street'"))
+              startsWith(
+                  "Invalid indexing definition - `allow` contains invalid path: 'address[1].street'"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
