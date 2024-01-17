@@ -72,7 +72,7 @@ public final class ThrowableToErrorMapper {
           if (message.contains("vector<float,")) { // TODO is there a better way?
             message = "Mismatched vector dimension";
           }
-          fields = Map.of("errorCode", ErrorCode.INVALID_REQUST.name());
+          fields = Map.of("errorCode", ErrorCode.INVALID_REQUEST.name());
           return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverTimeoutException
             || throwable instanceof WriteTimeoutException
