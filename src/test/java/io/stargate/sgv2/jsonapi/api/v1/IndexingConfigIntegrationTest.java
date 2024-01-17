@@ -93,7 +93,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(2)
-  class IndexingConfigTest {
+  class IndexingConfig {
 
     @Test
     public void filterFieldInDenyOne() {
