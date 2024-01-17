@@ -1101,7 +1101,7 @@ public class FindOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters1 =
-          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
       FindOperation operation =
           FindOperation.unsortedSingle(
@@ -1171,7 +1171,78 @@ public class FindOperationTest extends OperationTestBase {
                   "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
       explicitOr.comparisonExpressions.get(0).setDBFilters(filter1);
       List<DBFilterBase> filters2 =
-          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
+      explicitOr.comparisonExpressions.get(1).setDBFilters(filters2);
+
+      FindOperation operation =
+          FindOperation.unsortedSingle(
+              COMMAND_CONTEXT,
+              explicitOr,
+              DocumentProjector.identityProjector(),
+              ReadType.DOCUMENT,
+              objectMapper);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(1)
+          .containsOnly(objectMapper.readTree(doc1));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+    }
+
+    @Test
+    public void findOrWithAllFilterWithNegation() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains NOT CONTAINS ? OR array_contains NOT CONTAINS ?)) LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
+      String doc1 =
+          """
+                          {
+                            "_id": "doc1",
+                            "username": "user1",
+                            "registration_active" : true,
+                            "tags": ["tag1", "tag2"]
+                          }
+                          """;
+
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
+      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression explicitOr = LogicalExpression.or();
+      explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      explicitOr.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+
+      List<DBFilterBase> filter1 =
+          List.of(
+              new DBFilterBase.TextFilter(
+                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+      explicitOr.comparisonExpressions.get(0).setDBFilters(filter1);
+      List<DBFilterBase> filters2 =
+          List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), true));
       explicitOr.comparisonExpressions.get(1).setDBFilters(filters2);
 
       FindOperation operation =
@@ -1232,7 +1303,10 @@ public class FindOperationTest extends OperationTestBase {
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters = List.of(new DBFilterBase.SizeFilter("tags", 2));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.SizeFilter(
+                  "tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 2));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation operation =
@@ -2472,7 +2546,7 @@ public class FindOperationTest extends OperationTestBase {
         LogicalExpression implicitAnd1 = LogicalExpression.and();
         implicitAnd1.comparisonExpressions.add(new ComparisonExpression(null, null, null));
         List<DBFilterBase> filters1 =
-            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
         implicitAnd1.comparisonExpressions.get(0).setDBFilters(filters1);
         FindOperation operation1 =
             FindOperation.unsortedSingle(
@@ -2488,7 +2562,7 @@ public class FindOperationTest extends OperationTestBase {
         LogicalExpression implicitAnd2 = LogicalExpression.and();
         implicitAnd2.comparisonExpressions.add(new ComparisonExpression(null, null, null));
         List<DBFilterBase> filters2 =
-            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2")));
+            List.of(new DBFilterBase.AllFilter("tags", List.of("tag1", "tag2"), false));
         implicitAnd2.comparisonExpressions.get(0).setDBFilters(filters2);
 
         FindOperation operation2 =

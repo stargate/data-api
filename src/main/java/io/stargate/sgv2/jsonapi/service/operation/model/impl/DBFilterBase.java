@@ -595,10 +595,16 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   /** Filter for document where all values exists for an array */
   public static class AllFilter extends DBFilterBase {
     private final List<Object> arrayValue;
+    private final boolean negation;
 
-    public AllFilter(String path, List<Object> arrayValue) {
+    public AllFilter(String path, List<Object> arrayValue, boolean negation) {
       super(path);
       this.arrayValue = arrayValue;
+      this.negation = negation;
+    }
+
+    public boolean isNegation() {
+      return negation;
     }
 
     @Override
@@ -617,7 +623,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         result.add(
             BuiltCondition.of(
                 DATA_CONTAINS,
-                Predicate.CONTAINS,
+                negation ? Predicate.NOT_CONTAINS : Predicate.CONTAINS,
                 new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
       }
       return result;
@@ -631,8 +637,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
   /** Filter for document where array has specified number of elements */
   public static class SizeFilter extends MapFilterBase<Integer> {
-    public SizeFilter(String path, Integer size) {
-      super("array_size", path, Operator.MAP_EQUALS, size);
+    public SizeFilter(String path, Operator operator, Integer size) {
+      super("array_size", path, operator, size);
     }
 
     @Override
