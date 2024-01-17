@@ -4,10 +4,10 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-7</version>
+    <version>2.1.0-BETA-8</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.0-BETA-7-SNAPSHOT</version>
+  <version>1.0.0-BETA-8-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->

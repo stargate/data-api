@@ -111,15 +111,17 @@ public class ShredderDocLimitsTest {
   class ValidationDocCountViolations {
     @Test
     public void allowDocWithManyObjectProps() {
-      // Max allowed is 64, so add 50
-      final ObjectNode doc = docWithNProps(50);
+      // Max allowed is 1,000
+      final ObjectNode doc = docWithNProps(docLimits.maxObjectProperties());
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyObjectProps() {
-      // Max allowed 64, so fail with 100
-      final ObjectNode doc = docWithNProps(100);
+      // Max allowed 100, so fail with just one above
+      final int maxObProps = docLimits.maxObjectProperties();
+      final int tooManyProps = maxObProps + 1;
+      final ObjectNode doc = docWithNProps(tooManyProps);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -128,8 +130,10 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an Object has (100) exceeds maximum allowed ("
-                  + docLimits.maxObjectProperties()
+              " number of properties an Object has ("
+                  + tooManyProps
+                  + ") exceeds maximum allowed ("
+                  + maxObProps
                   + ")");
     }
 
@@ -145,8 +149,8 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void catchTooManyDocProps() {
-      // Max allowed 1000, create one with ~1200
-      final ObjectNode doc = docWithNestedProps(40, 30);
+      // Max allowed 2000, create one with bit more
+      final ObjectNode doc = docWithNestedProps(50, 41);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -155,7 +159,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " total number of properties (1241) in document exceeds maximum allowed ("
+              " total number of properties (2101) in document exceeds maximum allowed ("
                   + docLimits.maxDocumentProperties()
                   + ")");
     }
@@ -175,15 +179,15 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void allowDocWithManyArrayElements() {
-      // Max allowed 100, add 90
-      final ObjectNode doc = docWithNArrayElems("arr", 90);
+      // Max allowed 1000, test:
+      final ObjectNode doc = docWithNArrayElems("arr", docLimits.maxArrayLength());
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooManyArrayElements() {
-      // Let's add 120 elements (max allowed: 100)
-      final ObjectNode doc = docWithNArrayElems("arr", 120);
+      final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
+      final ObjectNode doc = docWithNArrayElems("arr", arraySizeAboveMax);
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
           .isNotNull()
@@ -191,7 +195,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has (120) exceeds maximum allowed ("
+              " number of elements an Array has ("
+                  + arraySizeAboveMax
+                  + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
                   + ")");
     }

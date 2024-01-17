@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.servererrors.CoordinatorException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import com.datastax.oss.driver.api.core.session.Request;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +21,12 @@ import org.slf4j.LoggerFactory;
  * the intermediate layer is unavailable for some reason. In all other cases, this will rethrow the
  * exception to avoid retrying the requests at the driver level.
  */
+@RegisterForReflection
 public class CqlProxyRetryPolicy implements RetryPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(CqlProxyRetryPolicy.class);
   private final String logPrefix;
+
+  private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
 
   public CqlProxyRetryPolicy(DriverContext context, String profileName) {
     this.logPrefix = (context != null ? context.getSessionName() : null) + "|" + profileName;
@@ -60,6 +64,15 @@ public class CqlProxyRetryPolicy implements RetryPolicy {
       int blockFor,
       int received,
       int retryCount) {
+    if (retryCount < MAX_RETRIES && writeType == WriteType.CAS) {
+      if (LOG.isInfoEnabled()) {
+        LOG.info(
+            "Retrying write timeout for request type : {}  with retryCount: {}",
+            writeType,
+            retryCount + 1);
+      }
+      return RetryDecision.RETRY_SAME;
+    }
     return RetryDecision.RETHROW;
   }
 

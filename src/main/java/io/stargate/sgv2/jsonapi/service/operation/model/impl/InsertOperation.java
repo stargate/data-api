@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -28,7 +29,7 @@ public record InsertOperation(
     implements ModifyOperation {
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), true);
+    this(commandContext, List.of(document), false);
   }
 
   /** {@inheritDoc} */
@@ -140,6 +141,10 @@ public record InsertOperation(
               if (result.wasApplied()) {
                 return Uni.createFrom().item(doc.id());
               } else {
+                final UUID txId = result.one().getUuid("tx_id");
+                if (doc.nextTxID().equals(txId)) {
+                  return Uni.createFrom().item(doc.id());
+                }
                 Exception failure = new JsonApiException(ErrorCode.DOCUMENT_ALREADY_EXISTS);
                 return Uni.createFrom().failure(failure);
               }
@@ -153,7 +158,7 @@ public record InsertOperation(
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
               + " VALUES"
-              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return String.format(
           insertWithVector, commandContext.namespace(), commandContext.collection());
     } else {
@@ -161,7 +166,7 @@ public record InsertOperation(
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
               + " VALUES"
-              + " (?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
       return String.format(insert, commandContext.namespace(), commandContext.collection());
     }
   }
@@ -174,6 +179,7 @@ public record InsertOperation(
       return SimpleStatement.newInstance(
           query,
           CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.nextTxID(),
           doc.docJson(),
           CQLBindValues.getSetValue(doc.existKeys()),
           CQLBindValues.getIntegerMapValues(doc.arraySize()),
@@ -188,6 +194,7 @@ public record InsertOperation(
       return SimpleStatement.newInstance(
           query,
           CQLBindValues.getDocumentIdValue(doc.id()),
+          doc.nextTxID(),
           doc.docJson(),
           CQLBindValues.getSetValue(doc.existKeys()),
           CQLBindValues.getIntegerMapValues(doc.arraySize()),
