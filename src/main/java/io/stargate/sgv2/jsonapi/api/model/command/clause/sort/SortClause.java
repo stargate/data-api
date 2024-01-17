@@ -45,7 +45,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   public void validate(CommandContext commandContext) {
     DocumentProjector indexingProjector = commandContext.indexingProjector();
     // If nothing specified, everything indexed
-    if (indexingProjector.equals(DocumentProjector.identityProjector())) {
+    if (indexingProjector.isIdentityProjection()) {
       return;
     }
     // validate each path in sortExpressions

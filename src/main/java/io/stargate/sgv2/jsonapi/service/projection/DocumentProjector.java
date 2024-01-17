@@ -102,6 +102,10 @@ public class DocumentProjector {
     return IDENTITY_PROJECTOR;
   }
 
+  public boolean isIdentityProjection() {
+    return rootLayer == null || !inclusion;
+  }
+
   public static DocumentProjector identityProjectorWithSimilarity() {
     return IDENTITY_PROJECTOR_WITH_SIMILARITY;
   }
