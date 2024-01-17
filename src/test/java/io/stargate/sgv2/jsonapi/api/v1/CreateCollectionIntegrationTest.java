@@ -418,6 +418,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
+          // Brackets not allowed in field names
           .body(
               """
                     {
@@ -425,7 +426,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                         "name": "collection_with_bad_allows",
                         "options" : {
                           "indexing" : {
-                            "allow" : ["field", "$eq"]
+                            "allow" : ["valid-field", "address[1].street"]
                           }
                         }
                       }
@@ -439,7 +440,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition - `allow` contains invalid path: '$eq'"))
+              startsWith("Invalid indexing definition - `allow` contains invalid path: 'address[1].street'"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -451,6 +452,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(
+              // Dollars not allowed in regular field names (can only start operators)
               """
                     {
                       "createCollection": {
