@@ -294,6 +294,87 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
       deleteCollection("simple_collection_deny_indexing");
     }
 
+    // Test to ensure single "*" accepted for "allow" or "deny" but not both
+    @Test
+    public void createCollectionWithIndexingStar() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "createCollection": {
+                                  "name": "simple_collection_indexing_allow_star",
+                                  "options" : {
+                                    "indexing" : {
+                                      "allow" : ["*"]
+                                    }
+                                  }
+                                }
+                              }
+                              """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+      deleteCollection("simple_collection_indexing_allow_star");
+
+      // create vector collection with indexing deny option
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "createCollection": {
+                                  "name": "simple_collection_indexing_deny_star",
+                                  "options" : {
+                                    "indexing" : {
+                                      "deny" : ["*"]
+                                    }
+                                  }
+                                }
+                              }
+                              """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+      deleteCollection("simple_collection_indexing_deny_star");
+
+      // And then check that we can't use both
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "createCollection": {
+                                  "name": "simple_collection_indexing_deny_allow_star",
+                                  "options" : {
+                                    "indexing" : {
+                                      "allow" : ["*"],
+                                      "deny" : ["*"]
+                                    }
+                                  }
+                                }
+                              }
+                              """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              is("Invalid indexing definition - `allow` and `deny` cannot be used together"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
     @Test
     public void failCreateCollectionWithIndexHavingDuplicates() {
       // create vector collection with error indexing option
