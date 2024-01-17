@@ -27,6 +27,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
   private static final String allowManyIndexingCollection = "allow_many_indexing_collection";
 
   @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
   class CreateCollectionAndData {
 
@@ -90,6 +91,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
   }
 
   @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(2)
   class IndexingConfigTest {
 
