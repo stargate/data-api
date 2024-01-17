@@ -31,6 +31,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
   class CreateCollectionAndData {
 
     @Test
+    @Order(1)
     public void createCollectionAndData() {
       String insertData =
           """
@@ -60,7 +61,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
       String denyOneList = """
               "deny" : ["address.city"]
               """;
-      String denyManyList = """
+      String denyManyList =
+          """
               "deny" : ["name", "address", "contact.email"]
               """;
       String denyAllList = """
@@ -654,7 +656,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // explicitly deny "name", "address" "contact.email"
       String filterData4 =
-              """
+          """
                   {
                     "find": {
                       "filter": {
@@ -673,18 +675,18 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                           """;
       given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-              .contentType(ContentType.JSON)
-              .body(filterData4)
-              .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, denyManyIndexingCollection)
-              .then()
-              .statusCode(200)
-              .body("status", is(nullValue()))
-              .body("data", is(nullValue()))
-              .body("errors[0].message", endsWith("The filter path ('contact.email') is not indexed"))
-              .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
-              .body("errors[0].exceptionClass", is("JsonApiException"));
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData4)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("The filter path ('contact.email') is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
