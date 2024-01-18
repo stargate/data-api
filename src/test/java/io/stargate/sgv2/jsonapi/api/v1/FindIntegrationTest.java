@@ -1297,6 +1297,27 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    void invalidDollarOperatorPathExpression() {
+      String json =
+          """
+                  { "find": { "filter" : {"address" : {"city" : {"$eq" : "Beijing"}}}}}
+                  """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("Invalid use of $eq operator"))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void exceedMaxFieldInFilter() {
       // Max allowed 64, so fail with 65
       String json = createJsonStringWithNFilterFields(65);
