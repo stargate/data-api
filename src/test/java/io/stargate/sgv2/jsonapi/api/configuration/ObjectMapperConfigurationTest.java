@@ -3,9 +3,10 @@ package io.stargate.sgv2.jsonapi.api.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -29,6 +30,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +43,47 @@ class ObjectMapperConfigurationTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentLimitsConfig documentLimitsConfig;
+
+  @Nested
+  class unmatchedOperationCommandHandlerTest {
+    @Test
+    public void collectionCommandWithNamespaceResource() throws Exception {
+      String json =
+          """
+                  {
+                    "findOne": {
+                    }
+                  }
+                  """;
+      final ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.addHandler(
+          new DeserializationProblemHandler() {
+            @Override
+            public JavaType handleMissingTypeId(
+                DeserializationContext ctxt,
+                JavaType baseType,
+                TypeIdResolver idResolver,
+                String failureMsg)
+                throws IOException {
+              Log.error("handleMissingTypeId");
+              return super.handleMissingTypeId(ctxt, baseType, idResolver, failureMsg);
+            }
+
+            @Override
+            public JavaType handleUnknownTypeId(
+                DeserializationContext ctxt,
+                JavaType baseType,
+                String subTypeId,
+                TypeIdResolver idResolver,
+                String failureMsg)
+                throws IOException {
+              Log.error("handleUnknownTypeId");
+              return super.handleUnknownTypeId(ctxt, baseType, subTypeId, idResolver, failureMsg);
+            }
+          });
+      Command result = objectMapper.readValue(json, CreateCollectionCommand.class);
+    }
+  }
 
   @Nested
   class FindOne {
