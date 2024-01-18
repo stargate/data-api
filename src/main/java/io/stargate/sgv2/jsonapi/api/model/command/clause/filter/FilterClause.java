@@ -45,20 +45,19 @@ public record FilterClause(LogicalExpression logicalExpression) {
     boolean isPathIndexed = indexingProjector.isPathIncluded(path);
 
     // If path is "_id" and it's denied, the operator can only be $eq or $in
-    if (path.equals(DocumentConstants.Fields.DOC_ID) && !isPathIndexed) {
+    if (!isPathIndexed && path.equals(DocumentConstants.Fields.DOC_ID)) {
       FilterOperator filterOperator = comparisonExpression.getFilterOperations().get(0).operator();
-      // if operator is not $eq or $in, throw error
-      if (!filterOperator.equals(ValueComparisonOperator.EQ)
-          && !filterOperator.equals(ValueComparisonOperator.IN)) {
-        throw new JsonApiException(
-            ErrorCode.ID_NOT_INDEXED,
-            String.format(
-                "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
-                ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
-      } else {
-        // else, _id can be used, return
+      // if operator is $eq or $in, _id can be used, return
+      if (filterOperator == ValueComparisonOperator.EQ
+          || filterOperator == ValueComparisonOperator.IN) {
         return;
       }
+      // otherwise throw JsonApiException
+      throw new JsonApiException(
+          ErrorCode.ID_NOT_INDEXED,
+          String.format(
+              "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
+              ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
     }
 
     // If path is not indexed, throw error
@@ -84,24 +83,21 @@ public record FilterClause(LogicalExpression logicalExpression) {
 
   private void validateMap(DocumentProjector indexingProjector, Map<?, ?> map, String currentPath) {
     for (Map.Entry<?, ?> entry : map.entrySet()) {
-      if (entry.getKey() instanceof String) {
-        String subPath = (String) entry.getKey();
-        String incrementalPath = currentPath + "." + subPath;
-        if (!indexingProjector.isPathIncluded(incrementalPath)) {
-          throw new JsonApiException(
-              ErrorCode.UNINDEXED_FILTER_PATH,
-              String.format(
-                  "%s: The filter path ('%s') is not indexed",
-                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
-        }
-        // continue build the incremental path if the value is a map
-        if (entry.getValue() instanceof Map<?, ?> valueMap) {
-          validateMap(indexingProjector, valueMap, incrementalPath);
-        }
-        // continue build the incremental path if the value is a list
-        if (entry.getValue() instanceof List<?> list) {
-          validateList(indexingProjector, list, incrementalPath);
-        }
+      String incrementalPath = currentPath + "." + entry.getKey();
+      if (!indexingProjector.isPathIncluded(incrementalPath)) {
+        throw new JsonApiException(
+            ErrorCode.UNINDEXED_FILTER_PATH,
+            String.format(
+                "%s: The filter path ('%s') is not indexed",
+                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
+      }
+      // continue build the incremental path if the value is a map
+      if (entry.getValue() instanceof Map<?, ?> valueMap) {
+        validateMap(indexingProjector, valueMap, incrementalPath);
+      }
+      // continue build the incremental path if the value is a list
+      if (entry.getValue() instanceof List<?> list) {
+        validateList(indexingProjector, list, incrementalPath);
       }
     }
   }
@@ -110,11 +106,9 @@ public record FilterClause(LogicalExpression logicalExpression) {
     for (Object element : list) {
       if (element instanceof Map<?, ?> map) {
         validateMap(indexingProjector, map, currentPath);
-      }
-      if (element instanceof List<?> sublList) {
+      } else if (element instanceof List<?> sublList) {
         validateList(indexingProjector, sublList, currentPath);
-      }
-      if (element instanceof String) {
+      } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
           throw new JsonApiException(
