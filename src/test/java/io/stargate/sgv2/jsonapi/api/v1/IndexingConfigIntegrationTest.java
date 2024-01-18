@@ -818,13 +818,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void sortFieldNotInAllowMany() {
-      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street" "$vector"
+      // explicitly allow "name" "address.city", implicitly deny "_id" "address.street";
+      // (and implicitly allow "$vector" as well)
       String sortData =
           """
                       {
                         "find": {
                           "sort": {
-                             "$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]
+                             "address.street": 1
                           }
                         }
                       }
@@ -839,7 +840,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The sort path ('$vector') is not indexed"))
+          .body("errors[0].message", endsWith("The sort path ('address.street') is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
