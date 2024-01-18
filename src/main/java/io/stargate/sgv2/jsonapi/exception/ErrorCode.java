@@ -25,9 +25,15 @@ public enum ErrorCode {
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
-  INVALID_REQUST("Request not supported by the data store"),
+  INVALID_REQUEST("Request not supported by the data store"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
+
+  UNINDEXED_FILTER_PATH("Unindexed filter path"),
+
+  UNINDEXED_SORT_PATH("Unindexed sort path"),
+
+  ID_NOT_INDEXED("_id is not indexed"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
