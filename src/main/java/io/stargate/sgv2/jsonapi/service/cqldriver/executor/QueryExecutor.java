@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -136,7 +137,10 @@ public class QueryExecutor {
                         .setExecutionProfileName("ddl")
                         .setIdempotent(true)
                         .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().schemaChanges())));
+                            operationsConfig.queriesConfig().consistency().schemaChanges())))
+        .onFailure(DriverTimeoutException.class)
+        .retry()
+        .atMost(2);
   }
 
   /**
