@@ -25,11 +25,11 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
-  public final void createCollection() {
-    createCollection(this.collectionName);
+  public final void createSimpleCollection() {
+    createSimpleCollection(this.collectionName);
   }
 
-  protected void createCollection(String collectionToCreate) {
+  protected void createSimpleCollection(String collectionToCreate) {
     given()
         .port(getTestPort())
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -43,6 +43,24 @@ public abstract class AbstractCollectionIntegrationTestBase
               }
               """
                 .formatted(collectionToCreate))
+        .when()
+        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .then()
+        .statusCode(200);
+  }
+
+  protected void createComplexCollection(String collectionSetting) {
+    given()
+        .port(getTestPort())
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                      {
+                        "createCollection": %s
+                      }
+                      """
+                .formatted(collectionSetting))
         .when()
         .post(NamespaceResource.BASE_PATH, namespaceName)
         .then()
@@ -96,6 +114,29 @@ public abstract class AbstractCollectionIntegrationTestBase
         .body(doc)
         .when()
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        // Sanity check: let's look for non-empty inserted id
+        .body("status.insertedIds[0]", not(emptyString()))
+        .statusCode(200);
+  }
+
+  protected void insertDoc(String collection, String docJson) {
+    String doc =
+        """
+            {
+              "insertOne": {
+                "document": %s
+              }
+            }
+            """
+            .formatted(docJson);
+
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .contentType(ContentType.JSON)
+        .body(doc)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collection)
         .then()
         // Sanity check: let's look for non-empty inserted id
         .body("status.insertedIds[0]", not(emptyString()))
