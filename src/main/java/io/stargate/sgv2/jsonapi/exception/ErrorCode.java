@@ -25,7 +25,7 @@ public enum ErrorCode {
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
-  INVALID_REQUST("Request not supported by the data store"),
+  INVALID_REQUEST("Request not supported by the data store"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
