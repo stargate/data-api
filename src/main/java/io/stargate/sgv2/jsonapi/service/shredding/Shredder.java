@@ -58,14 +58,14 @@ public class Shredder {
    * @return WritableShreddedDocument
    */
   public WritableShreddedDocument shredWithMetrics(JsonNode doc, String commandName) {
-    return shredWithMetrics(doc, null, commandName);
+    return shredWithMetrics(doc, null, DocumentProjector.identityProjector(), commandName);
   }
 
-  public WritableShreddedDocument shredWithMetrics(JsonNode doc, UUID txId, String commandName) {
+  public WritableShreddedDocument shredWithMetrics(JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Start the metrics
     jsonShreddingMetricsFactory.jsonShreddingMetricsReporter().startMetrics();
     // Perform the shredding operation
-    WritableShreddedDocument result = shred(doc, txId);
+    WritableShreddedDocument result = shred(doc, txId, indexProjector);
     // Finish timing and report metrics
     jsonShreddingMetricsFactory.jsonShreddingMetricsReporter().completeMetrics(result, commandName);
 
