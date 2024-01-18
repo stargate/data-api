@@ -25,11 +25,11 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
-  public final void createCollection() {
-    createCollection(this.collectionName);
+  public final void createSimpleCollection() {
+    createSimpleCollection(this.collectionName);
   }
 
-  protected void createCollection(String collectionToCreate) {
+  protected void createSimpleCollection(String collectionToCreate) {
     given()
         .port(getTestPort())
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -49,7 +49,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .statusCode(200);
   }
 
-  protected void createCollection(String collectionToCreate, String indexingConfig) {
+  protected void createComplexCollection(String collectionSetting) {
     given()
         .port(getTestPort())
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -57,21 +57,10 @@ public abstract class AbstractCollectionIntegrationTestBase
         .body(
             """
                       {
-                        "createCollection": {
-                          "name": "%s",
-                          "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
-                            "indexing" : {
-                              %s
-                            }
-                          }
-                        }
+                        "createCollection": %s
                       }
                       """
-                .formatted(collectionToCreate, indexingConfig))
+                .formatted(collectionSetting))
         .when()
         .post(NamespaceResource.BASE_PATH, namespaceName)
         .then()

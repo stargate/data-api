@@ -59,28 +59,92 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               ]
             }
                       """;
-      String denyOneList = """
-              "deny" : ["address.city"]
-              """;
-      String denyManyList =
+      String denyOneIndexingCollectionSetting =
           """
-              "deny" : ["name", "address", "contact.email"]
-              """;
-      String denyAllList = """
-              "deny" : ["*"]
-              """;
-      String allowOneList = """
-              "allow" : ["name"]
-              """;
-      String allowManyList = """
-              "allow" : ["name", "address.city"]
-              """;
+              {
+                "name": "%s",
+                "options" : {
+                  "vector" : {
+                    "size" : 5,
+                    "function" : "cosine"
+                  },
+                  "indexing" : {
+                    "deny" : ["address.city"]
+                  }
+                }
+              }
+              """
+              .formatted(denyOneIndexingCollection);
+      String denyManyIndexingCollectionSetting =
+          """
+              {
+                "name": "%s",
+                "options" : {
+                  "vector" : {
+                    "size" : 5,
+                    "function" : "cosine"
+                  },
+                  "indexing" : {
+                    "deny" : ["name", "address", "contact.email"]
+                  }
+                }
+              }
+              """
+              .formatted(denyManyIndexingCollection);
+      String denyAllIndexingCollectionSetting =
+          """
+              {
+                "name": "%s",
+                "options" : {
+                  "vector" : {
+                    "size" : 5,
+                    "function" : "cosine"
+                  },
+                  "indexing" : {
+                    "deny" : ["*"]
+                  }
+                }
+              }
+              """
+              .formatted(denyAllIndexingCollection);
+      String allowOneIndexingCollectionSetting =
+          """
+              {
+                "name": "%s",
+                "options" : {
+                  "vector" : {
+                    "size" : 5,
+                    "function" : "cosine"
+                  },
+                  "indexing" : {
+                    "allow" : ["name"]
+                  }
+                }
+              }
+              """
+              .formatted(allowOneIndexingCollection);
+      String allowManyIndexingCollectionSetting =
+          """
+              {
+                "name": "%s",
+                "options" : {
+                  "vector" : {
+                    "size" : 5,
+                    "function" : "cosine"
+                  },
+                  "indexing" : {
+                    "allow" : ["name", "address.city"]
+                  }
+                }
+              }
+              """
+              .formatted(allowManyIndexingCollection);
 
-      createCollection(denyOneIndexingCollection, denyOneList);
-      createCollection(denyManyIndexingCollection, denyManyList);
-      createCollection(denyAllIndexingCollection, denyAllList);
-      createCollection(allowOneIndexingCollection, allowOneList);
-      createCollection(allowManyIndexingCollection, allowManyList);
+      createComplexCollection(denyOneIndexingCollectionSetting);
+      createComplexCollection(denyManyIndexingCollectionSetting);
+      createComplexCollection(denyAllIndexingCollectionSetting);
+      createComplexCollection(allowOneIndexingCollectionSetting);
+      createComplexCollection(allowManyIndexingCollectionSetting);
 
       insertDoc(denyOneIndexingCollection, insertData);
       insertDoc(denyManyIndexingCollection, insertData);
