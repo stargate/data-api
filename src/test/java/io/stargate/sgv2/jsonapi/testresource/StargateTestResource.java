@@ -79,6 +79,11 @@ public abstract class StargateTestResource
       propsBuilder.put(
           "stargate.database.limits.indexes-available-per-database",
           String.valueOf(getIndexesPerDBOverride()));
+      propsBuilder.put(
+          "stargate.jsonapi.operations.max-count-limit", String.valueOf(getMaxCountLimit()));
+      propsBuilder.put(
+          "stargate.jsonapi.operations.default-count-page-size",
+          String.valueOf(getCountPageSize()));
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
@@ -260,6 +265,10 @@ public abstract class StargateTestResource
   public abstract int getMaxCollectionsPerDBOverride();
 
   public abstract int getIndexesPerDBOverride();
+
+  public abstract int getMaxCountLimit();
+
+  public abstract int getCountPageSize();
 
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";
