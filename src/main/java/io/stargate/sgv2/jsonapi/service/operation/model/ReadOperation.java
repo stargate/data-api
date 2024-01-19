@@ -395,7 +395,7 @@ public interface ReadOperation extends Operation {
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw new RuntimeException(error);
+      throw new JsonApiException(ErrorCode.COUNT_READ_FAILED);
     } else {
       counter.addAndGet(rs.remaining());
       if (rs.hasMorePages()) {

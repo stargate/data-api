@@ -21,6 +21,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+/**
+ * To run this test DseTestResource is updated to have maxCountLimit to `5` and getCountPageSize to
+ * 2 so pagination and moreData flag can be tested
+ */
 public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

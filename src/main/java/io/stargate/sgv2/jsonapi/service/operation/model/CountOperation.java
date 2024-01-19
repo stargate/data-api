@@ -40,10 +40,7 @@ public record CountOperation(
               } else {
                 boolean moreData = docs.count() > limit();
                 return new CountOperationPage(
-                    docs.count() == 0
-                        ? 0
-                        : docs.count() > limit() ? docs.count() - 1 : docs.count(),
-                    moreData);
+                    docs.count() > limit() ? docs.count() - 1 : docs.count(), moreData);
               }
             });
   }

@@ -102,15 +102,15 @@ public interface OperationsConfig {
 
   /**
    * @return Maximum size of keys read from database to return count, Setting it to -1 will use
-   *     Cassandra's count function. Default is 1000 <code>1000</code> command.
+   *     Cassandra's count function. Default is <code>1000</code>.
    */
-  @Max(10000)
   @WithDefault("1000")
   int maxCountLimit();
 
   /**
-   * @return Defines the default page size for count operation, having separate config because count
-   *     will more keys per page, defaults to <code>100</code>.
+   * @return Defines the default page size for count operation, having separate from
+   *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
+   *     </code>.
    */
   @Max(500)
   @Positive
