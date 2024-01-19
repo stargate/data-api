@@ -27,7 +27,9 @@ public class JsonShreddingMetricsReporter {
   public void completeMetrics(WritableShreddedDocument doc, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag jsonStringLenTag =
-        Tag.of(jsonApiMetricsConfig.jsonSerializedSize(), String.valueOf(doc.docJson().length()));
+        Tag.of(
+            jsonApiMetricsConfig.jsonShreddingSerializedSize(),
+            String.valueOf(doc.docJson().length()));
     Tags tags = Tags.of(commandTag, jsonStringLenTag);
     sample.stop(
         meterRegistry.timer(jsonApiMetricsConfig.jsonSerializationPerformanceMetricsName(), tags));

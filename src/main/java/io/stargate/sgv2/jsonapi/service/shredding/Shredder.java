@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonShreddingMetricsFactory;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonShreddingMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonShreddingMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -39,16 +39,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
-  private final JsonShreddingMetricsFactory jsonShreddingMetricsFactory;
+  private final JsonShreddingMetricsReporterFactory jsonShreddingMetricsReporterFactory;
 
   @Inject
   public Shredder(
       ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
-      JsonShreddingMetricsFactory jsonShreddingMetricsFactory) {
+      JsonShreddingMetricsReporterFactory jsonShreddingMetricsReporterFactory) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
-    this.jsonShreddingMetricsFactory = jsonShreddingMetricsFactory;
+    this.jsonShreddingMetricsReporterFactory = jsonShreddingMetricsReporterFactory;
   }
 
   /**
@@ -66,7 +66,7 @@ public class Shredder {
       JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Start the metrics
     JsonShreddingMetricsReporter jsonShreddingMetricsReporter =
-        jsonShreddingMetricsFactory.jsonShreddingMetricsReporter();
+        jsonShreddingMetricsReporterFactory.jsonShreddingMetricsReporter();
     jsonShreddingMetricsReporter.startMetrics();
     // Perform the shredding operation
     WritableShreddedDocument result = shred(doc, txId, indexProjector);

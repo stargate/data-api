@@ -4,18 +4,15 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-/**
- * Configures the {@link JsonShreddingMetricsReporter} instance that going to be injectable and used
- * in the app.
- */
+/** Injectable factory for creating {@link JsonShreddingMetricsReporter} instances. */
 @ApplicationScoped
-public class JsonShreddingMetricsFactory {
+public class JsonShreddingMetricsReporterFactory {
 
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   @Inject
-  public JsonShreddingMetricsFactory(
+  public JsonShreddingMetricsReporterFactory(
       MeterRegistry meterRegistry, JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;

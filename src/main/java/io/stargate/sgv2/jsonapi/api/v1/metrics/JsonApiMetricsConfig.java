@@ -27,8 +27,8 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
-  @WithDefault("json.serialized.size")
-  String jsonSerializedSize();
+  @WithDefault("json.shredding.serialization.size")
+  String jsonShreddingSerializedSize();
 
   @NotBlank
   @WithDefault("json.shredding.serialization.performance")
