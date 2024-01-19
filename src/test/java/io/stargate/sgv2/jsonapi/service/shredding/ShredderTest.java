@@ -605,6 +605,21 @@ public class ShredderTest {
   class JsonSerializationMetrics {
     @Test
     public void validateMetrics() throws Exception {
+      // the number of metrics before this unit test
+      String metricsBefore =
+          given().when().get("/metrics").then().statusCode(200).extract().asString();
+      int numberOfReportBefore =
+          metricsBefore
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_shredding_serialization_performance")
+                          && !line.startsWith(
+                              "json_shredding_serialization_performance_seconds_bucket")
+                          && !line.contains("quantile"))
+              .toList()
+              .size();
+
       final String inputJson =
           """
                           { "_id" : "abc",
@@ -633,10 +648,10 @@ public class ShredderTest {
       assertThat(jsonSerializationMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isEqualTo(3);
+                assertThat(lines.size()).isEqualTo(numberOfReportBefore + 3);
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("command=\"InsertOneCommand\"");
+                      assertThat(line).contains("command");
                       assertThat(line).contains("json_serialized_size");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
