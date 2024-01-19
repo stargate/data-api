@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -336,6 +338,49 @@ public class ShredderTest {
           .isNotNull()
           .hasMessage("Bad value for '_id' property: empty String not allowed")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+    }
+  }
+
+  @Nested
+  class JsonSerializationMetrics {
+    @Test
+    public void validateMetrics() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : "abc",
+                            "name" : "Bob",
+                            "values" : [ 1, 2 ],
+                            "extra_stuff" : true,
+                            "nullable" : null,
+                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      shredder.shredWithMetrics(inputDoc, InsertOneCommand.class.getSimpleName());
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonSerializationMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_shredding_serialization_performance")
+                          && !line.startsWith(
+                              "json_shredding_serialization_performance_seconds_bucket")
+                          && !line.contains("quantile"))
+              .toList();
+      assertThat(jsonSerializationMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"InsertOneCommand\"");
+                      assertThat(line).contains("json_serialized_size");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
     }
   }
 
