@@ -175,7 +175,7 @@ public record ReadAndUpdateOperation(
 
               final WritableShreddedDocument writableShreddedDocument =
                   shredder()
-                      .shredWithMetrics(
+                      .shredSingleJsonWithMetrics(
                           documentUpdaterResponse.document(),
                           readDocument.txnId(),
                           commandContext().indexingProjector(),

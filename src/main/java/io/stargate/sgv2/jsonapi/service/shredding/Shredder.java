@@ -17,10 +17,7 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -59,10 +56,11 @@ public class Shredder {
    * @return WritableShreddedDocument
    */
   public WritableShreddedDocument shredWithMetrics(JsonNode doc, String commandName) {
-    return shredWithMetrics(doc, null, DocumentProjector.identityProjector(), commandName);
+    return shredSingleJsonWithMetrics(
+        doc, null, DocumentProjector.identityProjector(), commandName);
   }
 
-  public WritableShreddedDocument shredWithMetrics(
+  public WritableShreddedDocument shredSingleJsonWithMetrics(
       JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Start the metrics
     JsonShreddingMetricsReporter jsonShreddingMetricsReporter =
@@ -71,7 +69,28 @@ public class Shredder {
     // Perform the shredding operation
     WritableShreddedDocument result = shred(doc, txId, indexProjector);
     // Complete and report metrics
-    jsonShreddingMetricsReporter.completeMetrics(result, commandName);
+    jsonShreddingMetricsReporter.completeMetrics(result.docJson().length(), 1, commandName);
+    return result;
+  }
+
+  public List<WritableShreddedDocument> shredMultipleJsonWithMetrics(
+      List<JsonNode> docs, DocumentProjector indexProjector, String commandName) {
+    // Start the metrics
+    JsonShreddingMetricsReporter jsonShreddingMetricsReporter =
+        jsonShreddingMetricsReporterFactory.jsonShreddingMetricsReporter();
+    jsonShreddingMetricsReporter.startMetrics();
+    // Perform the shredding operation
+    List<WritableShreddedDocument> result = new ArrayList<>(docs.size());
+    int totalJsonStringLen = 0;
+    int numberOfDocs = 0;
+    for (JsonNode doc : docs) {
+      WritableShreddedDocument writableShreddedDocument = shred(doc, null, indexProjector);
+      totalJsonStringLen += writableShreddedDocument.docJson().length();
+      numberOfDocs += 1;
+      result.add(writableShreddedDocument);
+    }
+    // Complete and report metrics
+    jsonShreddingMetricsReporter.completeMetrics(totalJsonStringLen, numberOfDocs, commandName);
     return result;
   }
 

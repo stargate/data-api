@@ -38,12 +38,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
     final DocumentProjector projection = ctx.indexingProjector();
     final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream()
-            .map(
-                doc ->
-                    shredder.shredWithMetrics(
-                        doc, null, projection, command.getClass().getSimpleName()))
-            .toList();
+        shredder.shredMultipleJsonWithMetrics(
+            command.documents(), projection, command.getClass().getSimpleName());
 
     // resolve ordered
     InsertManyCommand.Options options = command.options();

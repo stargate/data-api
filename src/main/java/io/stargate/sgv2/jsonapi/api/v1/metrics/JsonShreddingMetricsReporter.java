@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 
 /** Reports the time and size of json shredding. */
 public class JsonShreddingMetricsReporter {
@@ -24,13 +23,16 @@ public class JsonShreddingMetricsReporter {
     sample = Timer.start(meterRegistry);
   }
 
-  public void completeMetrics(WritableShreddedDocument doc, String commandName) {
+  public void completeMetrics(int totalJsonStringLen, int numberOfDocs, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag jsonStringLenTag =
         Tag.of(
-            jsonApiMetricsConfig.jsonShreddingSerializedSize(),
-            String.valueOf(doc.docJson().length()));
-    Tags tags = Tags.of(commandTag, jsonStringLenTag);
+            jsonApiMetricsConfig.jsonShreddingSerializedSize(), String.valueOf(totalJsonStringLen));
+    Tag numberOfDocTag =
+        Tag.of(
+            jsonApiMetricsConfig.jsonShreddingSerializedTotalDocuments(),
+            String.valueOf(numberOfDocs));
+    Tags tags = Tags.of(commandTag, numberOfDocTag, jsonStringLenTag);
     sample.stop(
         meterRegistry.timer(jsonApiMetricsConfig.jsonSerializationPerformanceMetricsName(), tags));
   }

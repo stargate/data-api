@@ -27,6 +27,10 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
+  @WithDefault("json.shredding.serialization.total.documents")
+  String jsonShreddingSerializedTotalDocuments();
+
+  @NotBlank
   @WithDefault("json.shredding.serialization.size")
   String jsonShreddingSerializedSize();
 
