@@ -840,7 +840,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", endsWith("The sort path ('address.street') is not indexed"))
+          .body("errors[0].message", endsWith("sort path 'address.street' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
