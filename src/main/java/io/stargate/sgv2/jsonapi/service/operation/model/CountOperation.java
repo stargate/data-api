@@ -20,15 +20,29 @@ import java.util.function.Supplier;
  * Operation that returns count of documents based on the filter condition. Written with the
  * assumption that all variables to be indexed.
  */
-public record CountOperation(CommandContext commandContext, LogicalExpression logicalExpression)
+public record CountOperation(
+    CommandContext commandContext, LogicalExpression logicalExpression, int pageSize, int limit)
     implements ReadOperation {
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     SimpleStatement simpleStatement = buildSelectQuery();
-    return countDocuments(queryExecutor, simpleStatement)
+    Uni<CountResponse> countResponse = null;
+    if (limit == -1) countResponse = countDocuments(queryExecutor, simpleStatement);
+    else countResponse = countDocumentsByKey(queryExecutor, simpleStatement);
+
+    return countResponse
         .onItem()
-        .transform(docs -> new CountOperationPage(docs.count()));
+        .transform(
+            docs -> {
+              if (limit == -1) {
+                return new CountOperationPage(docs.count(), false);
+              } else {
+                boolean moreData = docs.count() > limit();
+                return new CountOperationPage(
+                    docs.count() > limit() ? docs.count() - 1 : docs.count(), moreData);
+              }
+            });
   }
 
   private SimpleStatement buildSelectQuery() {
@@ -38,16 +52,29 @@ public record CountOperation(CommandContext commandContext, LogicalExpression lo
     if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null) {
       collect = ExpressionBuilder.getExpressionValuesInOrder(expressions.get(0));
     }
-    final QueryOuterClass.Query query =
-        new QueryBuilder()
-            .select()
-            .count()
-            .as("count")
-            .from(commandContext.namespace(), commandContext.collection())
-            .where(expressions.get(0)) // TODO count will assume no id filter query split?
-            .build();
+    QueryOuterClass.Query query = null;
+    if (limit == -1) {
+      query =
+          new QueryBuilder()
+              .select()
+              .count()
+              .as("count")
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expressions.get(0))
+              .build();
+    } else {
+      query =
+          new QueryBuilder()
+              .select()
+              .column("key")
+              .from(commandContext.namespace(), commandContext.collection())
+              .where(expressions.get(0))
+              .limit(limit + 1)
+              .build();
+    }
 
     final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
+    simpleStatement.setPageSize(pageSize());
     return simpleStatement.setPositionalValues(collect);
   }
 }
