@@ -70,7 +70,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith("No 'unknownCommand' command found as NamespaceCommand"))
-          .body("errors[0].errorCode", equalTo(ErrorCode.NO_COMMAND_MATCHED));
+          .body("errors[0].errorCode", is(ErrorCode.NO_COMMAND_MATCHED.getMessage()));
     }
 
     @Test
