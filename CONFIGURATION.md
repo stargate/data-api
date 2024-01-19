@@ -52,6 +52,9 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 | `stargate.jsonapi.operations.lwt.retries`                               | `int` | `3`      | The amount of client side retries in case of a LWT failure.                                                                                                                                         |
 | `stargate.jsonapi.operations.database-config.session-cache-ttl-seconds` | `int` | `300`    | The amount of seconds that the cql session will be kept in memory after last access.                                                                                                                |
 | `stargate.jsonapi.operations.database-config.session-cache-max-size`    | `int` | `50`     | The maximum number of cql sessions that will be kept in memory.                                                                                                                                     |
+| `stargate.jsonapi.operations.default-count-page-size`                   | `int` | `100`    | The default Cassandra page size used for reading keys for count command.                                                                                                                            |
+| `stargate.jsonapi.operations.max-count-limit`                           | `int` | `1000`   | The default maximum number of rows to read for count operation.                                                                                                                                     |
+
 
 ## Jsonapi metering configuration
 *Configuration for jsonapi metering, defined by [JsonApiMetricsConfig.java](io/stargate/sgv2/jsonapi/api/v1/metrics/JsonApiMetricsConfig.java).*

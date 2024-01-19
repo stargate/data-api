@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,13 +67,12 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
+  public CompletionStage<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+    return cqlSessionCache.getSession().executeAsync(simpleStatement);
   }
 
   /**

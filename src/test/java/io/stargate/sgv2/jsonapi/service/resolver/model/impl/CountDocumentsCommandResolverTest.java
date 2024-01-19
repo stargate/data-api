@@ -9,6 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -23,6 +24,8 @@ class CountDocumentsCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject CountDocumentsCommandResolver resolver;
+
+  @Inject OperationsConfig operationsConfig;
 
   @Nested
   class ResolveCommand {
@@ -48,6 +51,8 @@ class CountDocumentsCommandResolverTest {
               op -> {
                 assertThat(op.commandContext()).isEqualTo(context);
                 assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
+                assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
               });
     }
 
@@ -78,6 +83,8 @@ class CountDocumentsCommandResolverTest {
                 assertThat(
                         op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(expected);
+                assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
+                assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
               });
     }
   }
