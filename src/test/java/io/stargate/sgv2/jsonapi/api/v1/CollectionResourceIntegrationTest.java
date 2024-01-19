@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.blankString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -76,7 +73,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .body(
               "errors[0].message",
               startsWith("No 'unknownCommand' command found as CollectionCommand"))
-          .body("errors[0].errorCode", is(ErrorCode.NO_COMMAND_MATCHED));
+          .body("errors[0].errorCode", equalTo(ErrorCode.NO_COMMAND_MATCHED));
     }
 
     @Test
