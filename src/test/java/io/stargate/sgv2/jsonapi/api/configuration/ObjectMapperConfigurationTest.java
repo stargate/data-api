@@ -6,11 +6,13 @@ import static org.assertj.core.api.Assertions.catchException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -29,8 +31,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
-import java.io.IOException;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -47,7 +49,7 @@ class ObjectMapperConfigurationTest {
   @Nested
   class unmatchedOperationCommandHandlerTest {
     @Test
-    public void collectionCommandWithNamespaceResource() throws Exception {
+    public void customHandlerTest() throws Exception {
       String json =
           """
                   {
@@ -59,29 +61,83 @@ class ObjectMapperConfigurationTest {
       objectMapper.addHandler(
           new DeserializationProblemHandler() {
             @Override
-            public JavaType handleMissingTypeId(
-                DeserializationContext ctxt,
-                JavaType baseType,
-                TypeIdResolver idResolver,
-                String failureMsg)
-                throws IOException {
-              Log.error("handleMissingTypeId");
-              return super.handleMissingTypeId(ctxt, baseType, idResolver, failureMsg);
-            }
-
-            @Override
             public JavaType handleUnknownTypeId(
                 DeserializationContext ctxt,
                 JavaType baseType,
                 String subTypeId,
                 TypeIdResolver idResolver,
                 String failureMsg)
-                throws IOException {
-              Log.error("handleUnknownTypeId");
-              return super.handleUnknownTypeId(ctxt, baseType, subTypeId, idResolver, failureMsg);
+                throws JsonApiException {
+              throw new JsonApiException(
+                  ErrorCode.NO_COMMAND_MATCHED,
+                  String.format("No '%s' command found as %s", subTypeId, "NamespaceCommand"));
             }
           });
-      Command result = objectMapper.readValue(json, CreateCollectionCommand.class);
+
+      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith("No 'findOne' command found as NamespaceCommand");
+    }
+
+    @Test
+    public void notExistedCommandMatchNamespaceCommand() throws Exception {
+      String json =
+          """
+          {
+            "notExistedCommand": {
+            }
+          }
+          """;
+      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith("No 'notExistedCommand' command found as NamespaceCommand");
+    }
+
+    @Test
+    public void collectionCommandNotMatchNamespaceCommand() throws Exception {
+      String json =
+          """
+                  {
+                    "find": {
+                    }
+                  }
+                  """;
+      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith("No 'find' command found as NamespaceCommand");
+    }
+
+    @Test
+    public void collectionCommandNotMatchGeneralCommand() throws Exception {
+      String json =
+          """
+                  {
+                    "insertOne": {
+                    }
+                  }
+                  """;
+      Exception e = catchException(() -> objectMapper.readValue(json, GeneralCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith("No 'insertOne' command found as GeneralCommand");
+    }
+
+    @Test
+    public void generalCommandNotMatchCollectionCommand() throws Exception {
+      String json =
+          """
+                  {
+                    "createNamespace": {
+                    }
+                  }
+                  """;
+      Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith("No 'createNamespace' command found as CollectionCommand");
     }
   }
 

@@ -11,6 +11,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -69,8 +70,10 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body(
+              "errors[0].message",
+              startsWith("No 'unknownCommand' command found as NamespaceCommand"))
+          .body("errors[0].errorCode", is(ErrorCode.NO_COMMAND_MATCHED));
     }
 
     @Test

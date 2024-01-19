@@ -12,6 +12,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -76,8 +77,10 @@ class GeneralResourceIntegrationTest {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body(
+              "errors[0].message",
+              startsWith("No 'unknownCommand' command found as GeneralCommand"))
+          .body("errors[0].errorCode", is(ErrorCode.NO_COMMAND_MATCHED));
     }
 
     @Test

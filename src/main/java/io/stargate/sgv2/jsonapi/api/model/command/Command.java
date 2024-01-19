@@ -2,25 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 
 /**
@@ -41,24 +22,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = CountDocumentsCommand.class),
-  @JsonSubTypes.Type(value = CreateEmbeddingServiceCommand.class),
-  @JsonSubTypes.Type(value = CreateNamespaceCommand.class),
-  @JsonSubTypes.Type(value = CreateCollectionCommand.class),
-  @JsonSubTypes.Type(value = DeleteCollectionCommand.class),
-  @JsonSubTypes.Type(value = DeleteOneCommand.class),
-  @JsonSubTypes.Type(value = DeleteManyCommand.class),
-  @JsonSubTypes.Type(value = DropNamespaceCommand.class),
-  @JsonSubTypes.Type(value = FindCollectionsCommand.class),
-  @JsonSubTypes.Type(value = FindCommand.class),
-  @JsonSubTypes.Type(value = FindNamespacesCommand.class),
-  @JsonSubTypes.Type(value = FindOneCommand.class),
-  @JsonSubTypes.Type(value = FindOneAndDeleteCommand.class),
-  @JsonSubTypes.Type(value = FindOneAndReplaceCommand.class),
-  @JsonSubTypes.Type(value = FindOneAndUpdateCommand.class),
-  @JsonSubTypes.Type(value = InsertOneCommand.class),
-  @JsonSubTypes.Type(value = InsertManyCommand.class),
-  @JsonSubTypes.Type(value = UpdateManyCommand.class),
-  @JsonSubTypes.Type(value = UpdateOneCommand.class),
+  @JsonSubTypes.Type(value = NamespaceCommand.class),
+  @JsonSubTypes.Type(value = GeneralCommand.class),
+  @JsonSubTypes.Type(value = CollectionCommand.class),
 })
 public interface Command {}
