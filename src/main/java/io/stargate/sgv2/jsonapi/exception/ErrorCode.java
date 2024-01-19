@@ -141,6 +141,6 @@ public enum ErrorCode {
   }
 
   public JsonApiException toApiException(String format, Object... args) {
-    return new JsonApiException(this, message + ":" + String.format(format, args));
+    return new JsonApiException(this, message + ": " + String.format(format, args));
   }
 }
