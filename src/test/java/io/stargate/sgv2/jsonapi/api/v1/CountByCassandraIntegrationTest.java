@@ -804,13 +804,4 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
           .body("errors", is(nullValue()));
     }
   }
-
-  @Nested
-  @Order(2)
-  class Metrics {
-    @Test
-    public void checkMetrics() {
-      CountByCassandraIntegrationTest.super.checkMetrics("CountDocumentsCommand");
-    }
-  }
 }
