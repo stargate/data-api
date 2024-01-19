@@ -285,7 +285,9 @@ public class MeteredCommandProcessor {
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
         if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
-            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)) {
+            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)
+            || id.getName()
+                .startsWith(jsonApiMetricsConfig.jsonSerializationPerformanceMetricsName())) {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
