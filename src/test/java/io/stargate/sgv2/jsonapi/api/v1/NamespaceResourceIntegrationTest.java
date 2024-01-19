@@ -8,7 +8,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,7 +69,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith("No 'unknownCommand' command found as NamespaceCommand"))
-          .body("errors[0].errorCode", is(ErrorCode.NO_COMMAND_MATCHED.getMessage()));
+          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"));
     }
 
     @Test
