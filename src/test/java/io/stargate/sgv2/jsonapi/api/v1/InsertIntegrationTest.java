@@ -757,7 +757,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: Indexed String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -962,7 +962,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     // Both mixed-case Collection name and a field with mixed-case name
     @Test
     public void insertOneWithMixedCaseField() {
-      createCollection(COLLECTION_MIXED);
+      createSimpleCollection(COLLECTION_MIXED);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())

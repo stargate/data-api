@@ -82,6 +82,10 @@ public class DocumentProjector {
         return identityProjector();
       }
       // Case 1: inclusion-based projection
+      // Minor complication: "$vector" needs to be included automatically
+      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+      }
       return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
@@ -100,6 +104,10 @@ public class DocumentProjector {
 
   public static DocumentProjector identityProjector() {
     return IDENTITY_PROJECTOR;
+  }
+
+  public boolean isIdentityProjection() {
+    return rootLayer == null && !inclusion;
   }
 
   public static DocumentProjector identityProjectorWithSimilarity() {

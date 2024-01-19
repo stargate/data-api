@@ -39,6 +39,10 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
     LogicalExpression logicalExpression = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
+    // validate sort path
+    if (sortClause != null) {
+      sortClause.validate(commandContext);
+    }
 
     // vectorize sort clause
     commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);

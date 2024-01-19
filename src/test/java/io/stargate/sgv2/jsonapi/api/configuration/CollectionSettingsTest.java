@@ -8,7 +8,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -19,7 +20,7 @@ public class CollectionSettingsTest {
   @Test
   public void ensureSingleProjectorCreation() {
     CollectionSettings.IndexingConfig indexingConfig =
-        new CollectionSettings.IndexingConfig(Collections.singleton("abc"), null);
+        new CollectionSettings.IndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
     CollectionSettings settings =
         new CollectionSettings("collectionName", false, -1, null, null, null, indexingConfig);
     DocumentProjector indexingProj = settings.indexingProjector();

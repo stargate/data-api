@@ -8,8 +8,6 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -42,24 +40,6 @@ public final class ThrowableToErrorMapper {
             debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         final Map<String, Object> fieldsForMetricsTag =
             Map.of("exceptionClass", throwable.getClass().getSimpleName());
-        if (throwable instanceof StatusRuntimeException sre) {
-          if (sre.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
-            return new CommandResult.Error(
-                "UNAUTHENTICATED: Invalid token",
-                fieldsForMetricsTag,
-                fields,
-                Response.Status.UNAUTHORIZED);
-          } else if (sre.getStatus().getCode() == Status.Code.INTERNAL) {
-            return new CommandResult.Error(
-                message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
-          } else if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-            return new CommandResult.Error(
-                message, fieldsForMetricsTag, fields, Response.Status.BAD_GATEWAY);
-          } else if (sre.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
-            return new CommandResult.Error(
-                message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
-          }
-        }
         if (throwable instanceof UnauthorizedException
             || throwable
                 instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
@@ -72,13 +52,12 @@ public final class ThrowableToErrorMapper {
           if (message.contains("vector<float,")) { // TODO is there a better way?
             message = "Mismatched vector dimension";
           }
-          fields = Map.of("errorCode", ErrorCode.INVALID_REQUST.name());
+          fields = Map.of("errorCode", ErrorCode.INVALID_REQUEST.name());
           return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverTimeoutException
             || throwable instanceof WriteTimeoutException
             || throwable instanceof ReadTimeoutException) {
-          return new CommandResult.Error(
-              message, fieldsForMetricsTag, fields, Response.Status.GATEWAY_TIMEOUT);
+          return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof AllNodesFailedException) {
             Map<Node, List<Throwable>> nodewiseErrors =
