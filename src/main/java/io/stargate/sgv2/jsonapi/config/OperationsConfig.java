@@ -105,7 +105,6 @@ public interface OperationsConfig {
    *     Cassandra's count function. Default is 1000 <code>1000</code> command.
    */
   @Max(10000)
-  @Positive
   @WithDefault("1000")
   int maxCountLimit();
 
