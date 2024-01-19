@@ -49,10 +49,10 @@ public class DseTestResource extends StargateTestResource {
     return 100;
   }
 
-  // Test count with count limit as -1 to use cassandra
+  // Test count with count limit as 5 so more data can be tested
   @Override
   public int getMaxCountLimit() {
-    return 1000;
+    return 5;
   }
 
   // Setting this to 2 so data read with Pagination

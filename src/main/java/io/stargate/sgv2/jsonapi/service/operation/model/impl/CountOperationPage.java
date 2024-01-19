@@ -8,6 +8,10 @@ import java.util.function.Supplier;
 public record CountOperationPage(long count, boolean moreData) implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
+    if (moreData) {
+      return new CommandResult(
+          Map.of(CommandStatus.COUNTED_DOCUMENT, count(), CommandStatus.MORE_DATA, true));
+    }
     return new CommandResult(Map.of(CommandStatus.COUNTED_DOCUMENT, count()));
   }
 }
