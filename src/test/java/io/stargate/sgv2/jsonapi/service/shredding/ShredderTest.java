@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -604,34 +603,16 @@ public class ShredderTest {
   @Nested
   class JsonSerializationMetrics {
     @Test
-    public void validateMetrics() throws Exception {
-      // the number of metrics before this unit test
-      String metricsBefore =
-          given().when().get("/metrics").then().statusCode(200).extract().asString();
-      int numberOfReportBefore =
-          metricsBefore
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("json_shredding_serialization_performance")
-                          && !line.startsWith(
-                              "json_shredding_serialization_performance_seconds_bucket")
-                          && !line.contains("quantile"))
-              .toList()
-              .size();
-
+    public void validateSingleJsonMetrics() throws Exception {
       final String inputJson =
           """
-                          { "_id" : "abc",
-                            "name" : "Bob",
-                            "values" : [ 1, 2 ],
-                            "extra_stuff" : true,
-                            "nullable" : null,
-                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
-                          }
-                          """;
+              {
+                "name" : "Bob"
+              }
+              """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      shredder.shredWithMetrics(inputDoc, InsertOneCommand.class.getSimpleName());
+      shredder.shredSingleJsonWithMetrics(
+          inputDoc, null, DocumentProjector.identityProjector(), "testSingleJsonCommend");
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -643,16 +624,60 @@ public class ShredderTest {
                       line.startsWith("json_shredding_serialization_performance")
                           && !line.startsWith(
                               "json_shredding_serialization_performance_seconds_bucket")
-                          && !line.contains("quantile"))
+                          && !line.contains("quantile")
+                          && line.contains("testSingleJsonCommend"))
               .toList();
       assertThat(jsonSerializationMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isEqualTo(numberOfReportBefore + 3);
+                assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("command");
-                      assertThat(line).contains("json_serialized_size");
+                      assertThat(line).contains("command=\"testSingleJsonCommend\"");
+                      assertThat(line).contains("json_shredding_serialization_size=\"59\"");
+                      assertThat(line)
+                          .contains("json_shredding_serialization_total_documents=\"1\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
+    }
+
+    @Test
+    public void validateMultipleJsonMetrics() throws Exception {
+      final String inputJson =
+          """
+                  {
+                    "name" : "Bob"
+                  }
+                  """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      List<JsonNode> listDocs = Arrays.asList(inputDoc, inputDoc);
+      shredder.shredMultipleJsonWithMetrics(
+          listDocs, DocumentProjector.identityProjector(), "testMultipleJsonCommend");
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonSerializationMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_shredding_serialization_performance")
+                          && !line.startsWith(
+                              "json_shredding_serialization_performance_seconds_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("testMultipleJsonCommend"))
+              .toList();
+      assertThat(jsonSerializationMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"testMultipleJsonCommend\"");
+                      assertThat(line).contains("json_shredding_serialization_size=\"118\"");
+                      assertThat(line)
+                          .contains("json_shredding_serialization_total_documents=\"2\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
