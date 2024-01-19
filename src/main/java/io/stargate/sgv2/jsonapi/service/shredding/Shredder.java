@@ -65,7 +65,8 @@ public class Shredder {
   public WritableShreddedDocument shredWithMetrics(
       JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Start the metrics
-    JsonShreddingMetricsReporter jsonShreddingMetricsReporter = jsonShreddingMetricsFactory.jsonShreddingMetricsReporter();
+    JsonShreddingMetricsReporter jsonShreddingMetricsReporter =
+        jsonShreddingMetricsFactory.jsonShreddingMetricsReporter();
     jsonShreddingMetricsReporter.startMetrics();
     // Perform the shredding operation
     WritableShreddedDocument result = shred(doc, txId, indexProjector);
