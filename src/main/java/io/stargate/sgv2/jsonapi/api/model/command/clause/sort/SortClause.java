@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -51,11 +50,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.path())) {
-        throw new JsonApiException(
-            ErrorCode.UNINDEXED_SORT_PATH,
-            String.format(
-                "%s: The sort path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_SORT_PATH.getMessage(), sortExpression.path()));
+        throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
+            "sort path '%s' is not indexed", sortExpression.path());
       }
     }
   }
