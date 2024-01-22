@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @ApplicationScoped
 public class MeteredCommandProcessor {
@@ -98,6 +99,7 @@ public class MeteredCommandProcessor {
   public <T extends Command> Uni<CommandResult> processCommand(
       CommandContext commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
+    MDC.put("tenantId", stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
         .processCommand(commandContext, command)
