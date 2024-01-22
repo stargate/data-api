@@ -140,4 +140,8 @@ public enum ErrorCode {
   public String getMessage() {
     return message;
   }
+
+  public JsonApiException toApiException(String format, Object... args) {
+    return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
 }

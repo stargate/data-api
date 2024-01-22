@@ -56,17 +56,14 @@ public record FilterClause(LogicalExpression logicalExpression) {
       throw new JsonApiException(
           ErrorCode.ID_NOT_INDEXED,
           String.format(
-              "%s: The filter path ('%s') is not indexed, you can only use $eq or $in as the operator",
+              "%s: filter path '%s' is not indexed, you can only use $eq or $in as the operator",
               ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
     }
 
     // If path is not indexed, throw error
     if (!isPathIndexed) {
-      throw new JsonApiException(
-          ErrorCode.UNINDEXED_FILTER_PATH,
-          String.format(
-              "%s: The filter path ('%s') is not indexed",
-              ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), comparisonExpression.getPath()));
+      throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+          "filter path '%s' is not indexed", comparisonExpression.getPath());
     }
 
     JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
@@ -85,11 +82,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
-        throw new JsonApiException(
-            ErrorCode.UNINDEXED_FILTER_PATH,
-            String.format(
-                "%s: The filter path ('%s') is not indexed",
-                ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), incrementalPath));
+        throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+            "filter path '%s' is not indexed", incrementalPath);
       }
       // continue build the incremental path if the value is a map
       if (entry.getValue() instanceof Map<?, ?> valueMap) {
@@ -111,11 +105,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
-          throw new JsonApiException(
-              ErrorCode.UNINDEXED_FILTER_PATH,
-              String.format(
-                  "%s: The filter path ('%s') is not indexed",
-                  ErrorCode.UNINDEXED_FILTER_PATH.getMessage(), currentPath));
+          throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+              "filter path '%s' is not indexed", currentPath);
         }
       }
     }

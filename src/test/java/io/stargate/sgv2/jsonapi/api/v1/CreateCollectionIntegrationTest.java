@@ -370,7 +370,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition - `allow` and `deny` cannot be used together"))
+              is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -402,7 +402,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition - `allow` cannot contain duplicates"))
+              is("Invalid indexing definition: `allow` cannot contain duplicates"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -435,7 +435,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition - `allow` and `deny` cannot be used together"))
+              is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -471,7 +471,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "Invalid indexing definition - `allow` contains invalid path: 'address[1].street'"))
+                  "Invalid indexing definition: `allow` contains invalid path: 'address[1].street'"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -504,7 +504,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition - `deny` contains invalid path: '$in'"))
+              startsWith("Invalid indexing definition: `deny` contains invalid path: '$in'"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
