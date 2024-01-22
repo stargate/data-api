@@ -9,6 +9,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
@@ -1335,7 +1336,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "errors[0].message",
               endsWith(
                   " filter has 65 fields, exceeds maximum allowed "
-                      + DocumentLimitsConfig.DEFAULT_MAX_FILTER_SIZE))
+                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE))
           .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
