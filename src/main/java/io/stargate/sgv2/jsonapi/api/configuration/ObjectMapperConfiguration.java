@@ -5,13 +5,9 @@ import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
@@ -64,31 +60,7 @@ public class ObjectMapperConfiguration {
              */
             .disable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
             .build();
-
-    mapper.addHandler(
-        new DeserializationProblemHandler() {
-          @Override
-          public JavaType handleUnknownTypeId(
-              DeserializationContext ctxt,
-              JavaType baseType,
-              String subTypeId,
-              TypeIdResolver idResolver,
-              String failureMsg)
-              throws JsonApiException {
-            //            interface io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand ->
-            // NamespaceCommand
-            //            interface io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand ->
-            // CollectionCommand
-            //            interface io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand ->
-            // GeneralCommand
-            final String rawCommandClassString = baseType.getRawClass().toString();
-            final String baseCommand =
-                rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
-            throw new JsonApiException(
-                ErrorCode.NO_COMMAND_MATCHED,
-                String.format("No '%s' command found as %s", subTypeId, baseCommand));
-          }
-        });
+    mapper.addHandler(new CommandObjectMapperHandler());
     return mapper;
   }
 }
