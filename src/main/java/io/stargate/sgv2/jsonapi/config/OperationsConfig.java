@@ -100,6 +100,23 @@ public interface OperationsConfig {
   @WithDefault("1000")
   int maxVectorSearchLimit();
 
+  /**
+   * @return Maximum size of keys read from database to return count, Setting it to -1 will use
+   *     Cassandra's count function. Default is <code>1000</code>.
+   */
+  @WithDefault("1000")
+  int maxCountLimit();
+
+  /**
+   * @return Defines the default page size for count operation, having separate from
+   *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
+   *     </code>.
+   */
+  @Max(500)
+  @Positive
+  @WithDefault("100")
+  int defaultCountPageSize();
+
   @NotNull
   @Valid
   LwtConfig lwt();

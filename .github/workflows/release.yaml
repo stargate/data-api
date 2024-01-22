@@ -146,8 +146,8 @@ jobs:
       - name: Build and push (Amazon ECR)
         if: ${{ !inputs.skipPublish }}
         env:
-          QUARKUS_APPLICATION_NAME: 'Astra DB JSON API'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB JSON API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra-serverless/docs/develop/dev-with-json.html) for additional information.'
+          QUARKUS_APPLICATION_NAME: 'Astra DB Serverless Data API'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB Serverless Data API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra/astra-db-vector/api-reference/data-api.html) for additional information.'
           QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
           QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
           QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
