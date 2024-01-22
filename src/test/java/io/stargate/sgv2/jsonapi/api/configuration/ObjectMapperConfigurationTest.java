@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
-import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
@@ -49,95 +47,63 @@ class ObjectMapperConfigurationTest {
   @Nested
   class unmatchedOperationCommandHandlerTest {
     @Test
-    public void customHandlerTest() throws Exception {
-      String json =
-          """
-                  {
-                    "findOne": {
-                    }
-                  }
-                  """;
-      final ObjectMapper objectMapper = new ObjectMapper();
-      objectMapper.addHandler(
-          new DeserializationProblemHandler() {
-            @Override
-            public JavaType handleUnknownTypeId(
-                DeserializationContext ctxt,
-                JavaType baseType,
-                String subTypeId,
-                TypeIdResolver idResolver,
-                String failureMsg)
-                throws JsonApiException {
-              throw new JsonApiException(
-                  ErrorCode.NO_COMMAND_MATCHED,
-                  String.format("No '%s' command found as %s", subTypeId, "NamespaceCommand"));
-            }
-          });
-
-      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
-      assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No 'findOne' command found as NamespaceCommand");
-    }
-
-    @Test
     public void notExistedCommandMatchNamespaceCommand() throws Exception {
       String json =
           """
-          {
-            "notExistedCommand": {
-            }
-          }
-          """;
+                    {
+                      "notExistedCommand": {
+                      }
+                    }
+                    """;
       Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No 'notExistedCommand' command found as NamespaceCommand");
+          .hasMessageStartingWith("No \"notExistedCommand\" command found as \"NamespaceCommand\"");
     }
 
     @Test
     public void collectionCommandNotMatchNamespaceCommand() throws Exception {
       String json =
           """
-                  {
-                    "find": {
-                    }
-                  }
-                  """;
+                            {
+                              "find": {
+                              }
+                            }
+                            """;
       Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No 'find' command found as NamespaceCommand");
+          .hasMessageStartingWith("No \"find\" command found as \"NamespaceCommand\"");
     }
 
     @Test
     public void collectionCommandNotMatchGeneralCommand() throws Exception {
       String json =
           """
-                  {
-                    "insertOne": {
-                    }
-                  }
-                  """;
+                            {
+                              "insertOne": {
+                              }
+                            }
+                            """;
       Exception e = catchException(() -> objectMapper.readValue(json, GeneralCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No 'insertOne' command found as GeneralCommand");
+          .hasMessageStartingWith("No \"insertOne\" command found as \"GeneralCommand\"");
     }
 
     @Test
     public void generalCommandNotMatchCollectionCommand() throws Exception {
       String json =
           """
-                  {
-                    "createNamespace": {
-                    }
-                  }
-                  """;
+                            {
+                              "createNamespace": {
+                              }
+                            }
+                            """;
       Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No 'createNamespace' command found as CollectionCommand");
+          .hasMessageStartingWith("No \"createNamespace\" command found as \"CollectionCommand\"");
     }
   }
 
@@ -148,16 +114,16 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-              {
-                "findOne": {
-                  "sort": {
-                    "user.name" : 1,
-                    "user.age" : -1
-                  },
-                  "filter": {"username": "aaron"}
-                }
-              }
-              """;
+                        {
+                          "findOne": {
+                            "sort": {
+                              "user.name" : 1,
+                              "user.age" : -1
+                            },
+                            "filter": {"username": "aaron"}
+                          }
+                        }
+                        """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -197,11 +163,11 @@ class ObjectMapperConfigurationTest {
     public void sortClauseOptional() throws Exception {
       String json =
           """
-          {
-            "findOne": {
-            }
-          }
-          """;
+                    {
+                      "findOne": {
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -215,11 +181,11 @@ class ObjectMapperConfigurationTest {
     public void filterClauseOptional() throws Exception {
       String json =
           """
-          {
-            "findOne": {
-            }
-          }
-          """;
+                    {
+                      "findOne": {
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -234,14 +200,14 @@ class ObjectMapperConfigurationTest {
     public void findOneWithIncludeSimilarity() throws Exception {
       String json =
           """
-        {
-          "findOne": {
-              "options": {
-                  "includeSimilarity": true
-              }
-          }
-        }
-        """;
+                  {
+                    "findOne": {
+                        "options": {
+                            "includeSimilarity": true
+                        }
+                    }
+                  }
+                  """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -261,16 +227,16 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "insertOne": {
-              "document": {
-                "some": {
-                  "data": true
-                }
-              }
-            }
-          }
-          """;
+                    {
+                      "insertOne": {
+                        "document": {
+                          "some": {
+                            "data": true
+                          }
+                        }
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -289,19 +255,19 @@ class ObjectMapperConfigurationTest {
     public void failForNonEmptyOptions() throws Exception {
       String json =
           """
-                  {
-                    "insertOne": {
-                      "document": {
-                        "some": {
-                          "data": true
-                        }
-                      },
-                      "options": {
-                        "noSuchOption": "value"
-                      }
-                    }
-                  }
-                """;
+                            {
+                              "insertOne": {
+                                "document": {
+                                  "some": {
+                                    "data": true
+                                  }
+                                },
+                                "options": {
+                                  "noSuchOption": "value"
+                                }
+                              }
+                            }
+                          """;
 
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
@@ -315,15 +281,15 @@ class ObjectMapperConfigurationTest {
       String tooLongNumStr = "1234567890".repeat(6);
       String json =
           """
-                {
-                  "insertOne": {
-                    "document": {
-                       "_id" : 123,
-                       "bigNumber" : %s
-                    }
-                  }
-                }
-                """
+                          {
+                            "insertOne": {
+                              "document": {
+                                 "_id" : 123,
+                                 "bigNumber" : %s
+                              }
+                            }
+                          }
+                          """
               .formatted(tooLongNumStr);
 
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
@@ -345,12 +311,12 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-                  {
-                    "deleteOne": {
-                      "filter" : {"username" : "Aaron"}
-                    }
-                  }
-                """;
+                            {
+                              "deleteOne": {
+                                "filter" : {"username" : "Aaron"}
+                              }
+                            }
+                          """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -384,13 +350,13 @@ class ObjectMapperConfigurationTest {
     public void failForNonEmptyOptions() throws Exception {
       String json =
           """
-                  {
-                    "deleteOne": {
-                      "filter" : {"_id" : "doc1"},
-                      "options": {"setting":"abc"}
-                    }
-                  }
-                  """;
+                            {
+                              "deleteOne": {
+                                "filter" : {"_id" : "doc1"},
+                                "options": {"setting":"abc"}
+                              }
+                            }
+                            """;
 
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
@@ -406,15 +372,15 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-            {
-              "createEmbeddingService": {
-                "name": "openai",
-                "apiProvider" : "openai",
-                "apiKey" : "API-TOKEN",
-                "baseUrl" : "https://api.openai.com/v1/"
-              }
-            }
-            """;
+                      {
+                        "createEmbeddingService": {
+                          "name": "openai",
+                          "apiProvider" : "openai",
+                          "apiKey" : "API-TOKEN",
+                          "baseUrl" : "https://api.openai.com/v1/"
+                        }
+                      }
+                      """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -436,12 +402,12 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name": "some_name"
-            }
-          }
-          """;
+                    {
+                      "createCollection": {
+                        "name": "some_name"
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -458,18 +424,18 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorSearch() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name": "some_name",
-              "options": {
-                "vector": {
-                  "dimension": 5,
-                  "metric": "cosine"
-                }
-              }
-            }
-          }
-          """;
+                    {
+                      "createCollection": {
+                        "name": "some_name",
+                        "options": {
+                          "vector": {
+                            "dimension": 5,
+                            "metric": "cosine"
+                          }
+                        }
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -491,18 +457,18 @@ class ObjectMapperConfigurationTest {
       Command result =
           objectMapper.readValue(
               """
-                  {
-                    "createCollection": {
-                      "name": "some_name",
-                      "options": {
-                        "vector": {
-                          "size": 5,
-                          "function": "cosine"
-                        }
-                      }
-                    }
-                  }
-                  """,
+                                {
+                                  "createCollection": {
+                                    "name": "some_name",
+                                    "options": {
+                                      "vector": {
+                                        "size": 5,
+                                        "function": "cosine"
+                                      }
+                                    }
+                                  }
+                                }
+                                """,
               Command.class);
 
       assertThat(result)
@@ -521,24 +487,24 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-              {
-                "createCollection": {
-                  "name": "some_name",
-                  "options": {
-                    "vector": {
-                      "dimension": 5,
-                      "metric": "cosine"
-                    },
-                    "vectorize" : {
-                      "service" : "my_service",
-                      "options" : {
-                        "modelName": "text-embedding-ada-002"
-                      }
-                    }
-                  }
-                }
-              }
-              """;
+                        {
+                          "createCollection": {
+                            "name": "some_name",
+                            "options": {
+                              "vector": {
+                                "dimension": 5,
+                                "metric": "cosine"
+                              },
+                              "vectorize" : {
+                                "service" : "my_service",
+                                "options" : {
+                                  "modelName": "text-embedding-ada-002"
+                                }
+                              }
+                            }
+                          }
+                        }
+                        """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -565,17 +531,17 @@ class ObjectMapperConfigurationTest {
     public void happyPathIndexingAllow() throws Exception {
       String json =
           """
-              {
-                "createCollection": {
-                  "name": "some_name",
-                  "options": {
-                    "indexing": {
-                      "allow": ["field1", "field2"]
-                    }
-                  }
-                }
-              }
-              """;
+                        {
+                          "createCollection": {
+                            "name": "some_name",
+                            "options": {
+                              "indexing": {
+                                "allow": ["field1", "field2"]
+                              }
+                            }
+                          }
+                        }
+                        """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -598,17 +564,17 @@ class ObjectMapperConfigurationTest {
     public void happyPathIndexingDeny() throws Exception {
       String json =
           """
-                  {
-                    "createCollection": {
-                      "name": "some_name",
-                      "options": {
-                        "indexing": {
-                          "deny": ["field1", "field2"]
-                        }
-                      }
-                    }
-                  }
-                  """;
+                            {
+                              "createCollection": {
+                                "name": "some_name",
+                                "options": {
+                                  "indexing": {
+                                    "deny": ["field1", "field2"]
+                                  }
+                                }
+                              }
+                            }
+                            """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -631,17 +597,17 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorSearchDefaultFunction() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name": "some_name",
-              "options": {
-                "vector": {
-                  "dimension": 5
-                }
-              }
-            }
-          }
-          """;
+                    {
+                      "createCollection": {
+                        "name": "some_name",
+                        "options": {
+                          "vector": {
+                            "dimension": 5
+                          }
+                        }
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -665,14 +631,14 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-                "filter" : {"username" : "update_user5"},
-                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                "options" : {}
-              }
-          }
-          """;
+                    {
+                      "findOneAndUpdate": {
+                          "filter" : {"username" : "update_user5"},
+                          "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                          "options" : {}
+                        }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -694,14 +660,14 @@ class ObjectMapperConfigurationTest {
     public void findOneAndUpdateWithOptions() throws Exception {
       String json =
           """
-          {
-            "findOneAndUpdate": {
-                "filter" : {"username" : "update_user5"},
-                "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
-                "options" : {"returnDocument" : "after", "upsert" : true}
-              }
-          }
-          """;
+                    {
+                      "findOneAndUpdate": {
+                          "filter" : {"username" : "update_user5"},
+                          "update" : {"$set" : {"new_col": {"sub_doc_col" : "new_val2"}}},
+                          "options" : {"returnDocument" : "after", "upsert" : true}
+                        }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -729,26 +695,26 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "insertMany": {
-                "documents": [
                     {
-                      "_id" : "1",
-                      "some": {
-                        "data": true
-                      }
-                    },
-                    {
-                      "_id" : "2",
-                      "some": {
-                        "data": false
-                      }
+                      "insertMany": {
+                          "documents": [
+                              {
+                                "_id" : "1",
+                                "some": {
+                                  "data": true
+                                }
+                              },
+                              {
+                                "_id" : "2",
+                                "some": {
+                                  "data": false
+                                }
+                              }
+                          ],
+                          "options" :{}
+                        }
                     }
-                ],
-                "options" :{}
-              }
-          }
-          """;
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
 
@@ -772,12 +738,12 @@ class ObjectMapperConfigurationTest {
     public void happyPath() throws Exception {
       String json =
           """
-          {
-            "countDocuments": {
-              "filter" : {"username" : "user1"}
-            }
-          }
-          """;
+                    {
+                      "countDocuments": {
+                        "filter" : {"username" : "user1"}
+                      }
+                    }
+                    """;
 
       Command result = objectMapper.readValue(json, Command.class);
       assertThat(result)

@@ -71,7 +71,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .statusCode(200)
           .body(
               "errors[0].message",
-              startsWith("No 'unknownCommand' command found as CollectionCommand"))
+              startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""))
           .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"));
     }
 

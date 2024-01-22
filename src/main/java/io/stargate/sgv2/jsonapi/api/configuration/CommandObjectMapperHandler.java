@@ -27,6 +27,6 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
     throw new JsonApiException(
         ErrorCode.NO_COMMAND_MATCHED,
-        String.format("No '%s' command found as %s", subTypeId, baseCommand));
+        String.format("No \"%s\" command found as \"%s\"", subTypeId, baseCommand));
   }
 }
