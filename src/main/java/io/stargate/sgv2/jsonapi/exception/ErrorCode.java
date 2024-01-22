@@ -5,7 +5,7 @@ public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
-
+  NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
