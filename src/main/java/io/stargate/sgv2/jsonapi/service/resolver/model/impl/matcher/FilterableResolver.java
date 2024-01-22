@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -45,8 +44,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  @Inject
-  OperationsConfig operationsConfig;
+  @Inject OperationsConfig operationsConfig;
 
   @Inject
   public FilterableResolver() {
@@ -156,7 +154,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
               "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
               filter.getTotalComparisonExpressionCount(),
-                  operationsConfig.maxFilterObjectProperties()));
+              operationsConfig.maxFilterObjectProperties()));
     }
     return filter;
   }
