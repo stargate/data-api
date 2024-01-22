@@ -612,7 +612,7 @@ public class ShredderTest {
               """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       shredder.shredSingleJsonWithMetrics(
-          inputDoc, null, DocumentProjector.identityProjector(), "testSingleJsonCommend");
+          inputDoc, null, DocumentProjector.identityProjector(), "testSingleJsonCommand");
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -653,7 +653,7 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       List<JsonNode> listDocs = Arrays.asList(inputDoc, inputDoc);
       shredder.shredMultipleJsonWithMetrics(
-          listDocs, DocumentProjector.identityProjector(), "testMultipleJsonCommend");
+          listDocs, DocumentProjector.identityProjector(), "testMultipleJsonCommand");
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();

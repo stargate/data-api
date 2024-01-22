@@ -23,7 +23,7 @@ public class JsonShreddingMetricsReporter {
     sample = Timer.start(meterRegistry);
   }
 
-  public void completeMetrics(int totalJsonStringLen, int numberOfDocs, String commandName) {
+  public void completeMetrics(long totalJsonStringLen, int numberOfDocs, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag jsonStringLenTag =
         Tag.of(

@@ -53,13 +53,10 @@ public class Shredder {
    *
    * @param doc {@link JsonNode} to shred.
    * @param commandName command name
+   * @param txId id of the doc
+   * @param indexProjector index projector
    * @return WritableShreddedDocument
    */
-  public WritableShreddedDocument shredWithMetrics(JsonNode doc, String commandName) {
-    return shredSingleJsonWithMetrics(
-        doc, null, DocumentProjector.identityProjector(), commandName);
-  }
-
   public WritableShreddedDocument shredSingleJsonWithMetrics(
       JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Start the metrics
@@ -81,16 +78,14 @@ public class Shredder {
     jsonShreddingMetricsReporter.startMetrics();
     // Perform the shredding operation
     List<WritableShreddedDocument> result = new ArrayList<>(docs.size());
-    int totalJsonStringLen = 0;
-    int numberOfDocs = 0;
+    long totalJsonStringLen = 0;
     for (JsonNode doc : docs) {
       WritableShreddedDocument writableShreddedDocument = shred(doc, null, indexProjector);
       totalJsonStringLen += writableShreddedDocument.docJson().length();
-      numberOfDocs += 1;
       result.add(writableShreddedDocument);
     }
     // Complete and report metrics
-    jsonShreddingMetricsReporter.completeMetrics(totalJsonStringLen, numberOfDocs, commandName);
+    jsonShreddingMetricsReporter.completeMetrics(totalJsonStringLen, result.size(), commandName);
     return result;
   }
 
