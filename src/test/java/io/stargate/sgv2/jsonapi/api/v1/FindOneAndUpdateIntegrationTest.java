@@ -984,8 +984,8 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """);
 
-      // Max number length: 50; use 100
-      String tooLongNumStr = "1234567890".repeat(10);
+      // Max number length: 100; use 110
+      String tooLongNumStr = "1234567890".repeat(11);
       String json =
           """
                       {
