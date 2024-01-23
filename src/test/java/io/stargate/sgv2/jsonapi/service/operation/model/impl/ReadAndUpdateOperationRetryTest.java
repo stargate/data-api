@@ -229,6 +229,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
+            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -372,6 +373,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
+            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -523,6 +525,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             true,
             shredder,
+            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -709,6 +712,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
+            null,
             DocumentProjector.identityProjector(),
             2,
             3);
@@ -919,6 +923,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
+            null,
             DocumentProjector.identityProjector(),
             2,
             3);

@@ -61,6 +61,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         false,
         upsert,
         shredder,
+        command.getClass().getSimpleName(),
         DocumentProjector.identityProjector(),
         operationsConfig.maxDocumentUpdateCount(),
         operationsConfig.lwt().retries());

@@ -44,6 +44,7 @@ public record ReadAndUpdateOperation(
     boolean returnUpdatedDocument,
     boolean upsert,
     Shredder shredder,
+    String commandName,
     /**
      * Projection used on document to return (whether before or after updates), if projection
      * needed: if not, an identity projection.
@@ -178,7 +179,8 @@ public record ReadAndUpdateOperation(
                       .shred(
                           documentUpdaterResponse.document(),
                           readDocument.txnId(),
-                          commandContext().indexingProjector());
+                          commandContext().indexingProjector(),
+                          commandName);
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();

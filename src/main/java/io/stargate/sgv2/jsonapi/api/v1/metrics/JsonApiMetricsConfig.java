@@ -27,6 +27,14 @@ public interface JsonApiMetricsConfig {
   String sortType();
 
   @NotBlank
+  @WithDefault("json.bytes.written")
+  String jsonBytesWritten();
+
+  @NotBlank
+  @WithDefault("json.bytes.read")
+  String jsonBytesRead();
+
+  @NotBlank
   @WithDefault("command.processor.process")
   String metricsName();
 

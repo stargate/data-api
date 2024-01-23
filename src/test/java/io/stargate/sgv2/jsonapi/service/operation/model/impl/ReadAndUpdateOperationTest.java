@@ -252,6 +252,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -337,6 +338,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -500,6 +502,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -609,6 +612,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -710,6 +714,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -878,6 +883,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -1040,6 +1046,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -1137,6 +1144,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -1213,6 +1221,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
@@ -1362,6 +1371,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               20,
               3);
@@ -1460,6 +1470,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               20,
               3);
@@ -1538,6 +1549,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               20,
               3);

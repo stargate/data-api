@@ -340,6 +340,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
+              null,
               DocumentProjector.identityProjector(),
               1,
               3);
