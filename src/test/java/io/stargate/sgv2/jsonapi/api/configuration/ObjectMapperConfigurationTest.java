@@ -278,7 +278,7 @@ class ObjectMapperConfigurationTest {
 
     @Test
     public void failForTooLongNumbers() {
-      String tooLongNumStr = "1234567890".repeat(6);
+      String tooLongNumStr = "1234567890".repeat(11);
       String json =
           """
                           {
