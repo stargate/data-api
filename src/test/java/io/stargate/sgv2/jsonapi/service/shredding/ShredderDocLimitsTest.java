@@ -72,11 +72,11 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void allowDeepButNotTooDeepDoc() {
-      // We allow 7 levels of nesting so...
+      // We allow root + 15 levels of nesting so...
       final ObjectNode deepDoc = objectMapper.createObjectNode();
       deepDoc.put("_id", 123);
       ObjectNode ob = deepDoc;
-      for (int i = 0; i < 7; ++i) {
+      for (int i = 0; i < 15; ++i) {
         ob = ob.putObject("sub");
       }
 
@@ -85,7 +85,8 @@ public class ShredderDocLimitsTest {
 
     @Test
     public void catchTooDeepDoc() {
-      // Let's construct document with 20 levels of nesting (above our configs)
+      // Let's construct document with 20 levels of nesting: above our default
+      // max of 16 (currently)
       final ObjectNode deepDoc = objectMapper.createObjectNode();
       deepDoc.put("_id", 123);
 
