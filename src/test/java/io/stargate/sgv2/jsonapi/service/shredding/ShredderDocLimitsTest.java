@@ -355,8 +355,8 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ArrayNode arr = doc.putArray("arr");
-      // Max 50, so 60 should fail
-      String numStr = "1234567890".repeat(6);
+      // Max 100, so use slightly above
+      String numStr = "1234567890".repeat(10) + ".0";
       doc.put("number", new BigDecimal(numStr));
       arr.add(numStr);
 
@@ -366,7 +366,7 @@ public class ShredderDocLimitsTest {
       assertThat(e)
           .isNotNull()
           .isInstanceOf(StreamConstraintsException.class)
-          .hasMessageStartingWith("Number value length (60) exceeds the maximum allowed (50");
+          .hasMessageStartingWith("Number value length (101) exceeds the maximum allowed (100");
     }
 
     // Different test in that it should NOT fail but work as expected (in
