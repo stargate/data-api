@@ -15,6 +15,9 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum document size. */
   int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
 
+  /** Defines the default maximum document (nesting) depth */
+  int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
+
   /** Defines the default maximum length (in elements) of a single Array value */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
@@ -62,7 +65,7 @@ public interface DocumentLimitsConfig {
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
   @Positive
-  @WithDefault("8")
+  @WithDefault("" + DEFAULT_MAX_DOCUMENT_DEPTH)
   int maxDepth();
 
   /**
