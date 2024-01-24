@@ -88,6 +88,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body(
+              "errors[0].message",
               matchesPattern(
                   "Too many indexes: cannot create a new collection; need \\d+ indexes to create the collection; \\d+ indexes already created in database, maximum \\d+"))
           .body("errors[0].errorCode", is("TOO_MANY_INDEXES"))
