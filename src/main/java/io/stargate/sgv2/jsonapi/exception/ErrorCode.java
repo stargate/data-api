@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+  INVALID_CREATE_COLLECTION_OPTIONS("The provided options is invalid"),
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
