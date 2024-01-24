@@ -225,8 +225,9 @@ public record CreateCollectionOperation(
       throw new JsonApiException(
           ErrorCode.TOO_MANY_INDEXES,
           String.format(
-              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
+              "%s: cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
               ErrorCode.TOO_MANY_INDEXES.getMessage(),
+              dbLimitsConfig.indexesNeededPerCollection(),
               saisUsed,
               dbLimitsConfig.indexesAvailablePerDatabase()));
     }
