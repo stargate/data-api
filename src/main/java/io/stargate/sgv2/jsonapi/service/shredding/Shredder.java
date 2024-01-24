@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -40,20 +38,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
-  private final JsonApiMetricsConfig jsonApiMetricsConfig;
-
-  private final JsonBytesMetricsReporter jsonBytesMetricsReporter;
+  private final JsonMetricsReporterFactory jsonMetricsReporterFactory;
 
   @Inject
   public Shredder(
       ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
-      MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig) {
+      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
-    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    jsonBytesMetricsReporter = new JsonBytesMetricsReporter(meterRegistry, jsonApiMetricsConfig);
+    this.jsonMetricsReporterFactory = jsonMetricsReporterFactory;
   }
 
   /**
@@ -105,8 +99,9 @@ public class Shredder {
     validateDocumentSize(documentLimits, docJson);
 
     // Create size metrics
-    jsonBytesMetricsReporter.createSizeMetrics(
-        jsonApiMetricsConfig.jsonBytesWritten(), commandName, docJson.length());
+    jsonMetricsReporterFactory
+        .jsonBytesMetricsReporter()
+        .createSizeMetrics(true, commandName, docJson.length());
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
