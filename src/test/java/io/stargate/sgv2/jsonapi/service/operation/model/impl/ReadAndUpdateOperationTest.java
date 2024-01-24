@@ -70,6 +70,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               null,
               null,
               null),
+          null,
+          null,
           null);
 
   @Inject Shredder shredder;

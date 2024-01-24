@@ -64,6 +64,8 @@ public class FindOperationTest extends OperationTestBase {
               null,
               null,
               null),
+          null,
+          null,
           null);
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =

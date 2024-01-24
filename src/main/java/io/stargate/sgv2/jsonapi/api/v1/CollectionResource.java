@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -64,6 +65,8 @@ public class CollectionResource {
   @Inject private EmbeddingServiceCache serviceCache;
 
   @Inject private StargateRequestInfo stargateRequestInfo;
+
+  @Inject private JsonMetricsReporterFactory jsonMetricsReporterFactory;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -179,7 +182,13 @@ public class CollectionResource {
                 }
 
                 CommandContext commandContext =
-                    new CommandContext(namespace, collection, collectionProperty, embeddingService);
+                    new CommandContext(
+                        namespace,
+                        collection,
+                        collectionProperty,
+                        embeddingService,
+                        command.getClass().getSimpleName(),
+                        jsonMetricsReporterFactory);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

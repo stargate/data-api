@@ -60,6 +60,8 @@ public class InsertOperationTest extends OperationTestBase {
               null,
               null,
               null),
+          null,
+          null,
           null);
 
   private final ColumnDefinitions COLUMNS_APPLIED =
