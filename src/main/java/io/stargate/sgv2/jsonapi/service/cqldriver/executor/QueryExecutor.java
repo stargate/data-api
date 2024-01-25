@@ -160,7 +160,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     boundStatement
-                        .setExecutionProfileName("ddl")
+                        .setExecutionProfileName(profile)
                         .setIdempotent(true)
                         .setSerialConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().schemaChanges())))
@@ -175,7 +175,7 @@ public class QueryExecutor {
                           .getSession()
                           .executeAsync(
                               duplicate
-                                  .setExecutionProfileName("ddl")
+                                  .setExecutionProfileName(profile)
                                   .setIdempotent(true)
                                   .setSerialConsistencyLevel(
                                       operationsConfig
