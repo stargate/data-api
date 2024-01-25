@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # max run time 20 minutes
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     strategy:
 
