@@ -121,13 +121,39 @@ public class QueryExecutor {
   }
 
   /**
-   * Execute schema change query with bound statement.
+   * Execute schema change query with bound statement for create ddl statements.
    *
    * @param boundStatement - Bound statement with query and parameters. The table name used in the
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
+  public Uni<AsyncResultSet> executeCreateSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "create");
+  }
+
+  /**
+   * Execute schema change query with bound statement for drop ddl statements.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeDropSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "drop");
+  }
+
+  /**
+   * Execute schema change query with bound statement for drop ddl statements.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeTruncateSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "truncate");
+  }
+
+  private Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache

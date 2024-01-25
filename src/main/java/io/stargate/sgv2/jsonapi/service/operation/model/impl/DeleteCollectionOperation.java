@@ -24,7 +24,7 @@ public record DeleteCollectionOperation(CommandContext context, String name) imp
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor
-        .executeSchemaChange(query)
+        .executeDropSchemaChange(query)
 
         // if we have a result always respond positively
         .map(any -> new SchemaChangeResult(any.wasApplied()));
