@@ -139,6 +139,25 @@ public class QueryExecutor {
                         .setSerialConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().schemaChanges())))
         .onFailure(DriverTimeoutException.class)
+        .recoverWithUni(
+            throwable -> {
+              logger.error("Timeout executing schema change query");
+              SimpleStatement duplicate = SimpleStatement.newInstance(boundStatement.getQuery());
+              return Uni.createFrom()
+                  .completionStage(
+                      cqlSessionCache
+                          .getSession()
+                          .executeAsync(
+                              duplicate
+                                  .setExecutionProfileName("ddl")
+                                  .setIdempotent(true)
+                                  .setSerialConsistencyLevel(
+                                      operationsConfig
+                                          .queriesConfig()
+                                          .consistency()
+                                          .schemaChanges())));
+            })
+        .onFailure(DriverTimeoutException.class)
         .retry()
         .atMost(2);
   }
