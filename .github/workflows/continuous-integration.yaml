@@ -63,7 +63,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
 
-    # max run time 20 minutes
+    # max run time 40 minutes
     timeout-minutes: 40
 
     strategy:

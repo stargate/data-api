@@ -167,7 +167,7 @@ public class QueryExecutor {
         .onFailure(DriverTimeoutException.class)
         .recoverWithUni(
             throwable -> {
-              logger.error("Timeout executing schema change query");
+              logger.error("Timeout executing schema change query : {}", boundStatement.getQuery());
               SimpleStatement duplicate = SimpleStatement.newInstance(boundStatement.getQuery());
               return Uni.createFrom()
                   .completionStage(
