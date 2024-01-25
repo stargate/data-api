@@ -22,7 +22,8 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       throws IOException {
     if (deserializer.handledType().toString().endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" found as createCollectionCommand option", propertyName);
+          "No option \"%s\" found as createCollectionCommand option (known options: \"indexing\", \"vector\")",
+          propertyName);
     }
     // false means if not matched by above handle logic, object mapper will
     // FAIL_ON_UNKNOWN_PROPERTIES.
