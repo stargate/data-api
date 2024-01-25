@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -78,6 +79,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
     @Test
     public void happyPath() {
+      final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
       String json =
           """
           {
@@ -86,7 +88,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
             }
           }
           """
-              .formatted("col" + RandomStringUtils.randomNumeric(16));
+              .formatted(collectionName);
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -97,6 +99,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+      deleteCollection(collectionName);
     }
 
     @Test
@@ -135,8 +138,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is(
-                  "The provided collection name 'simple_collection' already exists with a non-vector setting."))
+              containsString("provided collection ('simple_collection') already exists with"))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -177,8 +179,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is(
-                  "The provided collection name 'simple_collection' already exists with a vector setting."))
+              containsString("provided collection ('simple_collection') already exists with"))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -210,8 +211,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is(
-                  "The provided collection name 'simple_collection' already exists with a different vector setting."))
+              containsString("provided collection ('simple_collection') already exists with"))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // create another vector collection with the same name but different function setting
@@ -227,8 +227,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is(
-                  "The provided collection name 'simple_collection' already exists with a different vector setting."))
+              containsString("provided collection ('simple_collection') already exists with"))
           .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -236,61 +235,92 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void happyCreateCollectionWithIndexing() {
+    public void happyCreateCollectionWithIndexingAllow() {
+      final String createCollectionRequest =
+          """
+              {
+                "createCollection": {
+                  "name": "simple_collection_allow_indexing",
+                  "options" : {
+                    "vector" : {
+                      "size" : 5,
+                      "function" : "cosine"
+                    },
+                    "indexing" : {
+                      "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
+                    }
+                  }
+                }
+              }
+              """;
+
       // create vector collection with indexing allow option
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "createCollection": {
-                          "name": "simple_collection_allow_indexing",
-                          "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
-                            "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
-                            }
-                          }
-                        }
-                      }
-                      """)
+          .body(createCollectionRequest)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-      deleteCollection("simple_collection_allow_indexing");
 
-      // create vector collection with indexing deny option
+      // Also: should be idempotent so try creating again
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "createCollection": {
-                          "name": "simple_collection_deny_indexing",
-                          "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
-                            "indexing" : {
-                              "deny" : ["field1", "field2", "address.city", "_id"]
-                            }
-                          }
-                        }
-                      }
-                      """)
+          .body(createCollectionRequest)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+
+      deleteCollection("simple_collection_allow_indexing");
+    }
+
+    @Test
+    public void happyCreateCollectionWithIndexingDeny() {
+      // create vector collection with indexing deny option
+      final String createCollectionRequest =
+          """
+              {
+                "createCollection": {
+                  "name": "simple_collection_deny_indexing",
+                  "options" : {
+                    "vector" : {
+                      "size" : 5,
+                      "function" : "cosine"
+                    },
+                    "indexing" : {
+                      "deny" : ["field1", "field2", "address.city", "_id"]
+                    }
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent so try creating again
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
       deleteCollection("simple_collection_deny_indexing");
     }
 

@@ -68,7 +68,7 @@ public enum ErrorCode {
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
-  INVALID_COLLECTION_NAME("Invalid collection name "),
+  INVALID_COLLECTION_NAME("Invalid collection name"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
