@@ -67,7 +67,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
         returnUpdatedDocument,
         upsert,
         shredder,
-        command.getClass().getSimpleName(),
         documentProjector,
         1,
         operationsConfig.lwt().retries());

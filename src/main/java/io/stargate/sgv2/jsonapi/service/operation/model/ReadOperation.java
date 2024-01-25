@@ -66,6 +66,8 @@ public interface ReadOperation extends Operation {
    * @param projection
    * @param limit - How many documents to return
    * @param vectorSearch - whether the query uses vector search
+   * @param commandName - The command that calls ReadOperation
+   * @param jsonMetricsReporterFactory - create json bytes read metrics
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -174,6 +176,8 @@ public interface ReadOperation extends Operation {
    * @param errorLimit - Count of record on which system to error out, this will be (maximum read
    *     count for sort + 1)
    * @param vectorSearch - whether the query uses vector search
+   * @param commandName - The command that calls ReadOperation
+   * @param jsonMetricsReporterFactory - create json bytes read metrics
    * @return
    */
   default Uni<FindResponse> findOrderDocument(

@@ -64,7 +64,6 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         false,
         upsert,
         shredder,
-        command.getClass().getSimpleName(),
         DocumentProjector.identityProjector(),
         1,
         operationsConfig.lwt().retries());

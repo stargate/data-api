@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -54,6 +55,9 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
+
+  @Inject
+  JsonMetricsReporterFactory jsonMetricsReporterFactory;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -229,7 +233,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -373,7 +376,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -525,7 +527,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             true,
             shredder,
-            null,
             DocumentProjector.identityProjector(),
             1,
             3);
@@ -712,7 +713,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            null,
             DocumentProjector.identityProjector(),
             2,
             3);
@@ -923,7 +923,6 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            null,
             DocumentProjector.identityProjector(),
             2,
             3);
