@@ -113,45 +113,17 @@ public record CreateCollectionOperation(
             CollectionSettings.SimilarityFunction.fromString(vectorFunction),
             comment,
             objectMapper);
-    // if table exists and user want to create a vector collection with the same name
-    if (vectorSearch) {
-      // if existing collection is a vector collection
-      if (collectionSettings.vectorEnabled()) {
-        if (collectionSettings.equals(collectionSettings_cur)) {
-          // if settings are equal, no error
-          return executeCollectionCreation(queryExecutor);
-        } else {
-          // if settings are not equal, error out
-          return Uni.createFrom()
-              .failure(
-                  new JsonApiException(
-                      ErrorCode.INVALID_COLLECTION_NAME,
-                      "The provided collection name '%s' already exists with a different vector setting."
-                          .formatted(name)));
-        }
-      } else {
-        // if existing collection is a non-vector collection, error out
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a non-vector setting."
-                        .formatted(name)));
-      }
-    } else { // if table exists and user want to create a non-vector collection
-      // if existing table is vector enabled, error out
-      if (collectionSettings.vectorEnabled()) {
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a vector setting."
-                        .formatted(name)));
-      } else {
-        // if existing table is a non-vector collection, continue
-        return executeCollectionCreation(queryExecutor);
-      }
+    // if table exists we have to choices:
+    // (1) trying to create with same options -> ok, proceed
+    // (2) trying to create with different options -> error out
+    if (collectionSettings.equals(collectionSettings_cur)) {
+      return executeCollectionCreation(queryExecutor);
     }
+    return Uni.createFrom()
+        .failure(
+            ErrorCode.INVALID_COLLECTION_NAME.toApiException(
+                "provided collection ('%s') already exists with different 'vector' and/or 'indexing' options",
+                name));
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
@@ -224,13 +196,11 @@ public record CreateCollectionOperation(
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
         > dbLimitsConfig.indexesAvailablePerDatabase()) {
-      throw new JsonApiException(
-          ErrorCode.TOO_MANY_INDEXES,
-          String.format(
-              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
-              ErrorCode.TOO_MANY_INDEXES.getMessage(),
-              saisUsed,
-              dbLimitsConfig.indexesAvailablePerDatabase()));
+      throw ErrorCode.TOO_MANY_INDEXES.toApiException(
+          "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
+          dbLimitsConfig.indexesNeededPerCollection(),
+          saisUsed,
+          dbLimitsConfig.indexesAvailablePerDatabase());
     }
 
     return null;

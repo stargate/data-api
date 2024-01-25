@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -79,6 +80,17 @@ public record CollectionSettings(
         jsonNode.get("deny").forEach(node -> denied.add(node.asText()));
       }
       return new IndexingConfig(allowed, denied);
+    }
+
+    // Need to override to prevent comparison of the supplier
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o instanceof IndexingConfig other) {
+        return Objects.equals(this.allowed, other.allowed)
+            && Objects.equals(this.denied, other.denied);
+      }
+      return false;
     }
   }
 
