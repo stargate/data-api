@@ -224,13 +224,11 @@ public record CreateCollectionOperation(
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
         > dbLimitsConfig.indexesAvailablePerDatabase()) {
-      throw new JsonApiException(
-          ErrorCode.TOO_MANY_INDEXES,
-          String.format(
-              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
-              ErrorCode.TOO_MANY_INDEXES.getMessage(),
-              saisUsed,
-              dbLimitsConfig.indexesAvailablePerDatabase()));
+      throw ErrorCode.TOO_MANY_INDEXES.toApiException(
+          "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
+          dbLimitsConfig.indexesNeededPerCollection(),
+          saisUsed,
+          dbLimitsConfig.indexesAvailablePerDatabase());
     }
 
     return null;
