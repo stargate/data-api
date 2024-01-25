@@ -236,56 +236,75 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void happyCreateCollectionWithIndexing() {
+    public void happyCreateCollectionWithIndexingAllow() {
+      final String createCollectionRequest =
+          """
+              {
+                "createCollection": {
+                  "name": "simple_collection_allow_indexing",
+                  "options" : {
+                    "vector" : {
+                      "size" : 5,
+                      "function" : "cosine"
+                    },
+                    "indexing" : {
+                      "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
+                    }
+                  }
+                }
+              }
+              """;
+
       // create vector collection with indexing allow option
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "createCollection": {
-                          "name": "simple_collection_allow_indexing",
-                          "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
-                            "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
-                            }
-                          }
-                        }
-                      }
-                      """)
+          .body(createCollectionRequest)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-      deleteCollection("simple_collection_allow_indexing");
 
-      // create vector collection with indexing deny option
+      // Also: should be idempotent so try creating again
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "createCollection": {
-                          "name": "simple_collection_deny_indexing",
-                          "options" : {
-                            "vector" : {
-                              "size" : 5,
-                              "function" : "cosine"
-                            },
-                            "indexing" : {
-                              "deny" : ["field1", "field2", "address.city", "_id"]
-                            }
-                          }
-                        }
-                      }
-                      """)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("simple_collection_allow_indexing");
+    }
+
+    @Test
+    public void happyCreateCollectionWithIndexingDeny() {
+      // create vector collection with indexing deny option
+      final String createCollectionRequest =
+          """
+              {
+                "createCollection": {
+                  "name": "simple_collection_deny_indexing",
+                  "options" : {
+                    "vector" : {
+                      "size" : 5,
+                      "function" : "cosine"
+                    },
+                    "indexing" : {
+                      "deny" : ["field1", "field2", "address.city", "_id"]
+                    }
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
