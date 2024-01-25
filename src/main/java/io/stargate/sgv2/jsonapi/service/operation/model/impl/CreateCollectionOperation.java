@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -127,7 +128,7 @@ public record CreateCollectionOperation(
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
     final Uni<AsyncResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -136,20 +137,21 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(commandContext.namespace(), name);
-                    List<Uni<AsyncResultSet>> indexes = new ArrayList<>(10);
-                    indexStatements.stream()
-                        .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                    return Uni.combine()
-                        .all()
-                        .unis(indexes)
-                        .combinedWith(
+                    return Multi.createFrom()
+                        .items(indexStatements.stream())
+                        .onItem()
+                        .transformToUni(queryExecutor::executeCreateSchemaChange)
+                        .concatenate()
+                        .collect()
+                        .asList()
+                        .onItem()
+                        .transform(
                             results -> {
-                              final Optional<?> first =
+                              final Optional<AsyncResultSet> first =
                                   results.stream()
-                                      .filter(
-                                          indexRes -> !(((AsyncResultSet) indexRes).wasApplied()))
+                                      .filter(indexRes -> !(indexRes.wasApplied()))
                                       .findFirst();
-                              return first.isPresent() ? false : true;
+                              return !first.isPresent();
                             });
                   } else {
                     return Uni.createFrom().item(false);
