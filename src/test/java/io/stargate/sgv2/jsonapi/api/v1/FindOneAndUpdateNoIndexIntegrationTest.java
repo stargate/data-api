@@ -3,12 +3,17 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -22,6 +27,8 @@ import org.junit.jupiter.api.TestClassOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   private static final String collectionName = "no_index_collection";
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Nested
   @Order(1)
@@ -39,7 +46,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                          "function": "cosine"
                        },
                        "indexing" : {
-                         "allow" : ["_id", "name", "value"]
+                         "allow" : ["_id", "name", "value", "indexed"]
                        }
                      }
                    }
@@ -186,6 +193,108 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(3)
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  class ArraySizeLimit {
+    @Test
+    @Order(1)
+    public void allowNonIndexedBigArray() {
+      insertEmptyDoc("array_size_too_big_doc");
+      final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                      "findOneAndUpdate": {
+                        "filter" : {"_id" : "array_size_too_big_doc"},
+                        "update" : {
+                          "$set" : {
+                            "notIndexed.bigArray": %s
+                          }
+                        }
+                      }
+                    }
+                    """
+                  .formatted(arrayJson))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+    }
+
+    @Test
+    @Order(2)
+    public void failOnIndexedTooBigArray() {
+      insertEmptyDoc("array_size_ok_doc");
+      final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                              "findOneAndUpdate": {
+                                "filter" : {"_id" : "array_size_ok_doc"},
+                                "update" : {
+                                  "$set" : {
+                                    "indexed.bigArray": %s
+                                  }
+                                }
+                              }
+                            }
+                            """
+                  .formatted(arrayJson))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              containsString("number of elements an indexable Array ('bigArray')"))
+          .body("errors[0].message", containsString("exceeds maximum allowed"));
+    }
+
+    private void insertEmptyDoc(String docId) {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "insertOne": {
+                            "document": {
+                              "_id": "%s"
+                            }
+                          }
+                        }
+                        """
+                  .formatted(docId))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", hasSize(1))
+          .body("status.insertedIds[0]", is(docId));
+    }
+
+    private final String bigArray(int elementCount) {
+      final ArrayNode array = MAPPER.createArrayNode();
+      for (int i = 0; i < elementCount; i++) {
+        array.add(i);
+      }
+      return array.toString();
     }
   }
 }
