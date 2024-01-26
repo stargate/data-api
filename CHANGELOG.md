@@ -1,12 +1,27 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+## [v1.0.0-RC-2](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-2) (2024-01-25)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-1...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-1...v1.0.0-RC-2)
 
 **Closed issues:**
 
+- \[regression\] - Adding `indexing` options in the `createCollection` remove idempotence [\#835](https://github.com/stargate/jsonapi/issues/835)
+- Create collection error message is confusing [\#830](https://github.com/stargate/jsonapi/issues/830)
+- Add validation of `"options"` property of `createCollection` command to avoid silent failures [\#828](https://github.com/stargate/jsonapi/issues/828)
+- Document limits: increase allowed max nesting from 8 to 16 levels [\#818](https://github.com/stargate/jsonapi/issues/818)
 - Improve error message when collection name omitted [\#800](https://github.com/stargate/jsonapi/issues/800)
+- Optimize case of "no projection" \(include all\) so that `doc\_json` embedded directly [\#667](https://github.com/stargate/jsonapi/issues/667)
+
+**Merged pull requests:**
+
+- Fixes \#835: ensure "createCollection\(\)" still idempotent with "no-index" options [\#836](https://github.com/stargate/jsonapi/pull/836) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update dse-next to latest as of 2024-01-24: 4.0.11-0248d170a615 [\#834](https://github.com/stargate/jsonapi/pull/834) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Create collection index creation ordering [\#833](https://github.com/stargate/jsonapi/pull/833) ([maheshrajamani](https://github.com/maheshrajamani))
+- error out with invalid option when createCollection [\#832](https://github.com/stargate/jsonapi/pull/832) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- improve error msg, too many indexes and can not create a collection [\#831](https://github.com/stargate/jsonapi/pull/831) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#818: increase max doc depth allowed from 8 to 16 [\#825](https://github.com/stargate/jsonapi/pull/825) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#824](https://github.com/stargate/jsonapi/pull/824) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-RC-1](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-1) (2024-01-22)
 
