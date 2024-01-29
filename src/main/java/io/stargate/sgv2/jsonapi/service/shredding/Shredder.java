@@ -61,7 +61,7 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    return shred(doc, txId, DocumentProjector.identityProjector(), "testShred");
+    return shred(doc, txId, DocumentProjector.identityProjector(), "testCommand");
   }
 
   public WritableShreddedDocument shred(

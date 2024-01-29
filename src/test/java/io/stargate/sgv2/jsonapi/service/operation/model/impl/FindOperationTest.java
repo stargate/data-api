@@ -32,6 +32,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -50,23 +51,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOperationTest extends OperationTestBase {
-  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
 
-  private final CommandContext VECTOR_COMMAND_CONTEXT =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          new CollectionSettings(
-              COLLECTION_NAME,
-              true,
-              -1,
-              CollectionSettings.SimilarityFunction.COSINE,
-              null,
-              null,
-              null),
-          null,
-          null,
-          null);
+  private CommandContext VECTOR_COMMAND_CONTEXT;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -74,8 +61,27 @@ public class FindOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
-  // !!! Only left temporarily for Disabled tests
-  private QueryExecutor queryExecutor0 = mock(QueryExecutor.class);
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+    VECTOR_COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME,
+            COLLECTION_NAME,
+            new CollectionSettings(
+                COLLECTION_NAME,
+                true,
+                -1,
+                CollectionSettings.SimilarityFunction.COSINE,
+                null,
+                null,
+                null),
+            null,
+            "testCommand",
+            jsonMetricsReporterFactory);
+  }
 
   @Nested
   class Execute {

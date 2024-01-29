@@ -15,9 +15,11 @@ import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +28,8 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
+
+  @Inject JsonMetricsReporterFactory jsonMetricsReporterFactory;
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);

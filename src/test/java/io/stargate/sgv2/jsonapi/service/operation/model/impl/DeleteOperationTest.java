@@ -18,7 +18,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -33,6 +32,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -52,12 +52,15 @@ import org.junit.jupiter.api.Test;
 public class DeleteOperationTest extends OperationTestBase {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-
-  @Inject QueryExecutor queryExecutor;
+  private CommandContext COMMAND_CONTEXT;
   @Inject ObjectMapper objectMapper;
-  @Inject QueriesConfig queriesConfig;
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+  }
 
   @Nested
   class Execute {

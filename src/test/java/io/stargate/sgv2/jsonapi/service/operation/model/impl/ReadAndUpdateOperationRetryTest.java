@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -34,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -50,20 +50,23 @@ import org.junit.jupiter.api.Test;
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
-
-  @Inject
-  JsonMetricsReporterFactory jsonMetricsReporterFactory;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
           OperationTestBase.TestColumn.keyColumn(),
           OperationTestBase.TestColumn.ofUuid("tx_id"),
           OperationTestBase.TestColumn.ofVarchar("doc_json"));
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+  }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
     List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();

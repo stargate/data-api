@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,24 +46,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertOperationTest extends OperationTestBase {
-  private final CommandContext COMMAND_CONTEXT_NON_VECTOR =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT_NON_VECTOR;
 
-  private final CommandContext COMMAND_CONTEXT_VECTOR =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          new CollectionSettings(
-              COLLECTION_NAME,
-              true,
-              -1,
-              CollectionSettings.SimilarityFunction.COSINE,
-              null,
-              null,
-              null),
-          null,
-          null,
-          null);
+  private CommandContext COMMAND_CONTEXT_VECTOR;
 
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
@@ -84,6 +70,28 @@ public class InsertOperationTest extends OperationTestBase {
           + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
           + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT_NON_VECTOR =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+    COMMAND_CONTEXT_VECTOR =
+        new CommandContext(
+            KEYSPACE_NAME,
+            COLLECTION_NAME,
+            new CollectionSettings(
+                COLLECTION_NAME,
+                true,
+                -1,
+                CollectionSettings.SimilarityFunction.COSINE,
+                null,
+                null,
+                null),
+            null,
+            "testCommand",
+            jsonMetricsReporterFactory);
+  }
 
   @Nested
   class InsertNonVector {

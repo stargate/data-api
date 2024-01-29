@@ -31,6 +31,20 @@ public record CommandContext(
     this(namespace, collection, CollectionSettings.empty(), null, null, null);
   }
 
+  public CommandContext(
+      String namespace,
+      String collection,
+      String commandName,
+      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
+    this(
+        namespace,
+        collection,
+        CollectionSettings.empty(),
+        null,
+        commandName,
+        jsonMetricsReporterFactory);
+  }
+
   private static final CommandContext EMPTY =
       new CommandContext(null, null, CollectionSettings.empty(), null, null, null);
 
