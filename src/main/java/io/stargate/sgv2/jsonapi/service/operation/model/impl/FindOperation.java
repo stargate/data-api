@@ -294,10 +294,7 @@ public record FindOperation(
     return getDocuments(queryExecutor, pageState(), null)
 
         // map the response to result
-        .map(
-            docs -> {
-              return new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse);
-            });
+        .map(docs -> new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse));
   }
 
   /**
