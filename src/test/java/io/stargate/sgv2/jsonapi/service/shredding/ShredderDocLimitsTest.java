@@ -37,9 +37,14 @@ public class ShredderDocLimitsTest {
   class ValidationDocSizeViolations {
     @Test
     public void allowBigButNotTooBigDoc() {
-      // Given we fail at 4 meg, let's try 600k (8 x 5 x 7.5k)
+      // Given we fail at 4 meg
+      // let's try 600k (8 x 5 x 7.5k)
       final ObjectNode bigDoc = createBigDoc(8, 5);
       assertThat(shredder.shred(bigDoc)).isNotNull();
+
+      // let's also try 1m (12 x 12 x 7.5k)
+      final ObjectNode bigDoc1m = createBigDoc(12, 12);
+      assertThat(shredder.shred(bigDoc1m)).isNotNull();
     }
 
     @Test

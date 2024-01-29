@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -238,9 +237,6 @@ public class Shredder {
   }
 
   private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
-    Log.error("! " + docJson.length());
-    Log.error("!! " + limits.maxSize());
-
     // First: is the resulting document size (as serialized) too big?
     if (docJson.length() > limits.maxSize()) {
       throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
