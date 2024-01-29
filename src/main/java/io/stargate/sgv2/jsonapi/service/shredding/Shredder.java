@@ -415,19 +415,13 @@ public class Shredder {
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
             throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-                "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
-                ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                referringPropertyName,
-                arrayValue.size(),
-                limits.maxVectorEmbeddingLength());
+                "number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
           }
         } else {
           throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-              "%s: number of elements an indexable Array ('%s') has (%d) exceeds maximum allowed (%s)",
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-              referringPropertyName,
-              arrayValue.size(),
-              limits.maxArrayLength());
+              "number of elements an indexable Array ('%s') has (%d) exceeds maximum allowed (%s)",
+              referringPropertyName, arrayValue.size(), limits.maxArrayLength());
         }
       }
 
