@@ -606,7 +606,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Property name length (102) exceeds maximum allowed (100)"));
+                  "Document size limitation violated: property name length (102) exceeds maximum allowed (100)"));
     }
 
     // Test for nested paths, to ensure longer paths work too.
@@ -653,7 +653,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Property path length (272) exceeds maximum allowed (250)"));
+                  "Document size limitation violated: property path length (272) exceeds maximum allowed (250)"));
     }
 
     @Test
@@ -757,7 +757,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Indexed String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
