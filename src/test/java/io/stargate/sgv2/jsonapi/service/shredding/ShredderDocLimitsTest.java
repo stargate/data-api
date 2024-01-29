@@ -14,9 +14,11 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -190,6 +192,16 @@ public class ShredderDocLimitsTest {
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
+    // Test to verify that max-array-size limit only imposed on indexable fields
+    @Test
+    public void allowDocWithHugeArrayNoIndex() {
+      // Max allowed 1000 normally, but if array not-indexed, not limited
+      final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+    }
+
     @Test
     public void catchTooManyArrayElements() {
       final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
@@ -201,7 +213,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has ("
+              " number of elements an indexable Array ('arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()

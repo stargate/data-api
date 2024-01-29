@@ -18,7 +18,7 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum document (nesting) depth */
   int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
 
-  /** Defines the default maximum length (in elements) of a single Array value */
+  /** Defines the default maximum length (in elements) of a single indexable Array value */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
   /**
@@ -114,7 +114,9 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
   int maxStringLengthInBytes();
 
-  /** @return Maximum length of an Array in document, defaults to {@code 1,000} elements. */
+  /**
+   * @return Maximum length of an indexable Array in document, defaults to {@code 1,000} elements.
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();

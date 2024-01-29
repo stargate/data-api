@@ -75,7 +75,7 @@ public class Shredder {
     // Now that we have the traversable document, verify it does not violate
     // structural limits, before serializing.
     // (note: value validation has to wait until no-indexing projection is applied)
-    new StructuralValidator(documentLimits).validate(docWithId);
+    new FullDocValidator(documentLimits).validate(docWithId);
 
     // Need to re-serialize document now that _id is normalized.
     // Also unifies escaping and gets rid of pretty-printing (if any) to save storage space.
@@ -107,7 +107,7 @@ public class Shredder {
     }
 
     // and now we can finally validate (String) value lengths
-    new ValueValidator(documentLimits).validate(indexableDocument);
+    new IndexableValueValidator(documentLimits).validate(indexableDocument);
 
     // And finally let's traverse the document to actually "shred" (build index fields)
     traverse(indexableDocument, b, JsonPath.rootBuilder());
@@ -245,11 +245,15 @@ public class Shredder {
     }
   }
 
-  static class StructuralValidator {
+  /**
+   * Validator applied to the full document, before removing non-indexable fields. Used to ensure
+   * that it does not violate overall structural limits such as maximum nesting depth.
+   */
+  static class FullDocValidator {
     final DocumentLimitsConfig limits;
     final AtomicInteger totalProperties;
 
-    public StructuralValidator(DocumentLimitsConfig limits) {
+    public FullDocValidator(DocumentLimitsConfig limits) {
       this.limits = limits;
       totalProperties = new AtomicInteger(0);
     }
@@ -282,30 +286,7 @@ public class Shredder {
       ++depth;
       validateDocDepth(limits, depth);
 
-      if (arrayValue.size() > limits.maxArrayLength()) {
-        // One special case: vector embeddings allow larger size
-        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
-          if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
-            throw new JsonApiException(
-                ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-                String.format(
-                    "%s: number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
-                    ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                    referringPropertyName,
-                    arrayValue.size(),
-                    limits.maxVectorEmbeddingLength()));
-          }
-        } else {
-          throw new JsonApiException(
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-              String.format(
-                  "%s: number of elements an Array has (%d) exceeds maximum allowed (%s)",
-                  ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage(),
-                  arrayValue.size(),
-                  limits.maxArrayLength()));
-        }
-      }
-
+      // Array value size limit only applied for indexable, none checked here
       for (JsonNode element : arrayValue) {
         validateValue(null, element, depth, parentPathLength);
       }
@@ -399,36 +380,55 @@ public class Shredder {
     }
   }
 
-  static class ValueValidator {
+  /**
+   * Secondary validator applied to the storable document after non-indexable fields (and branches)
+   * have been pruned.
+   */
+  static class IndexableValueValidator {
     final DocumentLimitsConfig limits;
 
-    public ValueValidator(DocumentLimitsConfig limits) {
+    public IndexableValueValidator(DocumentLimitsConfig limits) {
       this.limits = limits;
     }
 
     public void validate(ObjectNode doc) {
-      validateObjectValue(doc);
+      validateObjectValue(null, doc);
     }
 
-    private void validateValue(JsonNode value) {
+    private void validateValue(String referringPropertyName, JsonNode value) {
       if (value.isObject()) {
-        validateObjectValue(value);
+        validateObjectValue(referringPropertyName, value);
       } else if (value.isArray()) {
-        validateArrayValue(value);
+        validateArrayValue(referringPropertyName, value);
       } else if (value.isTextual()) {
         validateStringValue(value.textValue());
       }
     }
 
-    private void validateArrayValue(JsonNode arrayValue) {
+    private void validateArrayValue(String referringPropertyName, JsonNode arrayValue) {
+      if (arrayValue.size() > limits.maxArrayLength()) {
+        // One special case: vector embeddings allow larger size
+        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
+          if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
+            throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+                "number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%s)",
+                referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
+          }
+        } else {
+          throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+              "number of elements an indexable Array ('%s') has (%d) exceeds maximum allowed (%s)",
+              referringPropertyName, arrayValue.size(), limits.maxArrayLength());
+        }
+      }
+
       for (JsonNode element : arrayValue) {
-        validateValue(element);
+        validateValue(referringPropertyName, element);
       }
     }
 
-    private void validateObjectValue(JsonNode objectValue) {
-      for (JsonNode value : objectValue) {
-        validateValue(value);
+    private void validateObjectValue(String referringPropertyName, JsonNode objectValue) {
+      for (Map.Entry<String, JsonNode> entry : objectValue.properties()) {
+        validateValue(entry.getKey(), entry.getValue());
       }
     }
 
