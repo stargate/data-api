@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
@@ -297,7 +296,6 @@ public record FindOperation(
         // map the response to result
         .map(
             docs -> {
-              Log.error("here!!!" + docs);
               return new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse);
             });
   }
