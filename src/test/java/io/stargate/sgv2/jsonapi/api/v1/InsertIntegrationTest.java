@@ -559,7 +559,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an Array has ("
+                  "Document size limitation violated: number of elements an indexable Array ('arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
