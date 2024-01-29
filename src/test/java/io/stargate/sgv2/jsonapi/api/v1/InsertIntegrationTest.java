@@ -678,8 +678,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void tryInsertTooLongNumber() {
-      // Max number length: 50; use 60
-      String tooLongNumStr = "1234567890".repeat(6);
+      // Max number length: 100; use 110
+      String tooLongNumStr = "1234567890".repeat(11);
       String json =
           """
                     {
@@ -707,7 +707,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Number value length (60) exceeds the maximum allowed (50"));
+                  "Document size limitation violated: Number value length (110) exceeds the maximum allowed (100"));
     }
 
     @Test
@@ -1438,8 +1438,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertManyFailing {
     @Test
     public void tryInsertTooLongNumber() {
-      // Max number length: 50; use 100
-      String tooLongNumStr = "1234567890".repeat(10);
+      // Max number length: 100; use 110
+      String tooLongNumStr = "1234567890".repeat(11);
 
       String json =
           """

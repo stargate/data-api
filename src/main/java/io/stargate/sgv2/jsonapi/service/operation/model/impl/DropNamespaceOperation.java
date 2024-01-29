@@ -24,7 +24,7 @@ public record DropNamespaceOperation(String name) implements Operation {
         SimpleStatement.newInstance(DROP_KEYSPACE_CQL.formatted(name));
     // execute
     return queryExecutor
-        .executeSchemaChange(deleteStatement)
+        .executeDropSchemaChange(deleteStatement)
 
         // if we have a result always respond positively
         .map(any -> new SchemaChangeResult(any.wasApplied()));

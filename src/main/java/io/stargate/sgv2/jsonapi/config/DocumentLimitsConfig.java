@@ -15,6 +15,9 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum document size. */
   int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
 
+  /** Defines the default maximum document (nesting) depth */
+  int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
+
   /** Defines the default maximum length (in elements) of a single Array value */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
@@ -30,7 +33,7 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_DOC_PROPERTIES = 2000;
 
   /** Defines the default maximum length of a single Number value (in characters) */
-  int DEFAULT_MAX_NUMBER_LENGTH = 50;
+  int DEFAULT_MAX_NUMBER_LENGTH = 100;
 
   /** Defines the default maximum length of individual property names in JSON documents */
   int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 100;
@@ -62,7 +65,7 @@ public interface DocumentLimitsConfig {
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
   @Positive
-  @WithDefault("8")
+  @WithDefault("" + DEFAULT_MAX_DOCUMENT_DEPTH)
   int maxDepth();
 
   /**

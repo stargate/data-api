@@ -5,6 +5,7 @@ public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+  INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
@@ -67,7 +68,7 @@ public enum ErrorCode {
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
-  INVALID_COLLECTION_NAME("Invalid collection name "),
+  INVALID_COLLECTION_NAME("Invalid collection name"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
