@@ -263,7 +263,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " Property name length ("
+              "property name length ("
                   + propName.length()
                   + ") exceeds maximum allowed ("
                   + docLimits.maxPropertyNameLength()
@@ -289,7 +289,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " Property path length (259) exceeds maximum allowed ("
+              "property path length (259) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with 'longPropertyName')");
       ;
@@ -440,7 +440,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "Document key name constraints violated: Property name ('"
+              "Document key name constraints violated: property name ('"
                   + invalidName
                   + "') contains character(s) not allowed");
     }
