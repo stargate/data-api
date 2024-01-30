@@ -36,7 +36,8 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
-    String comment)
+    String comment,
+    int ddlDelaySeconds)
     implements Operation {
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
@@ -49,7 +50,8 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
-      String comment) {
+      String comment,
+      int ddlDelaySeconds) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -59,7 +61,8 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
-        comment);
+        comment,
+        ddlDelaySeconds);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -68,7 +71,8 @@ public record CreateCollectionOperation(
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
       String name,
-      String comment) {
+      String comment,
+      int ddlDelaySeconds) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -78,7 +82,8 @@ public record CreateCollectionOperation(
         false,
         0,
         null,
-        comment);
+        comment,
+        ddlDelaySeconds);
   }
 
   @Override
@@ -134,7 +139,7 @@ public record CreateCollectionOperation(
         execute
             .onItem()
             .delayIt()
-            .by(Duration.ofSeconds(2))
+            .by(Duration.ofSeconds(ddlDelaySeconds))
             .onItem()
             .transformToUni(
                 res -> {

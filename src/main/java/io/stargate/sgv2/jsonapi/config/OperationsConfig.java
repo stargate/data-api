@@ -187,6 +187,14 @@ public interface OperationsConfig {
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("50")
     int sessionCacheMaxSize();
+
+    /** DDL query retry wait in seconds. */
+    @WithDefault("1")
+    int ddlRetryDelaySeconds();
+
+    /** Create table cool off period before create index . */
+    @WithDefault("2")
+    int ddlDelaySeconds();
   }
 
   /** Query consistency related configs. */

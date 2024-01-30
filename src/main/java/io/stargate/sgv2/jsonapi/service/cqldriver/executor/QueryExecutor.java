@@ -145,7 +145,7 @@ public class QueryExecutor {
   }
 
   /**
-   * Execute schema change query with bound statement for drop ddl statements.
+   * Execute schema change query with bound statement for truncate ddl statements.
    *
    * @param boundStatement - Bound statement with query and parameters. The table name used in the
    *     query must have keyspace prefixed.
@@ -179,7 +179,7 @@ public class QueryExecutor {
                   .item(throwable)
                   .onItem()
                   .delayIt()
-                  .by(Duration.ofSeconds(1))
+                  .by(Duration.ofSeconds(operationsConfig.databaseConfig().ddlRetryDelaySeconds()))
                   .onItem()
                   .transformToUni(
                       v ->
