@@ -115,8 +115,17 @@ public class ShredderDocLimitsTest {
     @Test
     public void allowDocWithManyObjectProps() {
       // Max allowed is 1,000
-      final ObjectNode doc = docWithNProps(docLimits.maxObjectProperties());
+      final ObjectNode doc = docWithNProps("subdoc", docLimits.maxObjectProperties());
       assertThat(shredder.shred(doc)).isNotNull();
+    }
+
+    @Test
+    public void allowDocWithHugeObjectNoIndex() {
+      // Max allowed 1000 normally, but if Object not-indexed, not limited
+      final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
     }
 
     @Test
@@ -124,7 +133,7 @@ public class ShredderDocLimitsTest {
       // Max allowed 100, so fail with just one above
       final int maxObProps = docLimits.maxObjectProperties();
       final int tooManyProps = maxObProps + 1;
-      final ObjectNode doc = docWithNProps(tooManyProps);
+      final ObjectNode doc = docWithNProps("subdoc", tooManyProps);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -140,10 +149,10 @@ public class ShredderDocLimitsTest {
                   + ")");
     }
 
-    private ObjectNode docWithNProps(int count) {
+    private ObjectNode docWithNProps(String propName, int count) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      ObjectNode obNode = doc.putObject("subdoc");
+      ObjectNode obNode = doc.putObject(propName);
       for (int i = 0; i < count; ++i) {
         obNode.put("prop" + i, i);
       }

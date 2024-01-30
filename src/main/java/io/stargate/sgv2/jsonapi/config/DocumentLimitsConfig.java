@@ -18,11 +18,14 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum document (nesting) depth */
   int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
 
-  /** Defines the default maximum length (in elements) of a single indexable Array value */
+  /** Defines the default maximum length (in elements) of a single indexable Array
+   * in JSON document can contain.
+   */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
   /**
-   * Defines the default maximum number of properties any single Object in JSON document can contain
+   * Defines the default maximum number of properties any single indexable Object
+   * in JSON document can contain.
    */
   int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
 
