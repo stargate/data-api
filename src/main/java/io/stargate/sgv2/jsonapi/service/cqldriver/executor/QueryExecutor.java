@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -15,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -164,26 +166,40 @@ public class QueryExecutor {
                         .setIdempotent(true)
                         .setSerialConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().schemaChanges())))
-        .onFailure(DriverTimeoutException.class)
+        .onFailure(
+            error ->
+                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
         .recoverWithUni(
             throwable -> {
-              logger.error("Timeout executing schema change query : {}", boundStatement.getQuery());
+              logger.error(
+                  "Timeout/Invalid query executing schema change query : {}",
+                  boundStatement.getQuery());
               SimpleStatement duplicate = SimpleStatement.newInstance(boundStatement.getQuery());
               return Uni.createFrom()
-                  .completionStage(
-                      cqlSessionCache
-                          .getSession()
-                          .executeAsync(
-                              duplicate
-                                  .setExecutionProfileName(profile)
-                                  .setIdempotent(true)
-                                  .setSerialConsistencyLevel(
-                                      operationsConfig
-                                          .queriesConfig()
-                                          .consistency()
-                                          .schemaChanges())));
+                  .item(throwable)
+                  .onItem()
+                  .delayIt()
+                  .by(Duration.ofSeconds(1))
+                  .onItem()
+                  .transformToUni(
+                      v ->
+                          Uni.createFrom()
+                              .completionStage(
+                                  cqlSessionCache
+                                      .getSession()
+                                      .executeAsync(
+                                          duplicate
+                                              .setExecutionProfileName(profile)
+                                              .setIdempotent(true)
+                                              .setSerialConsistencyLevel(
+                                                  operationsConfig
+                                                      .queriesConfig()
+                                                      .consistency()
+                                                      .schemaChanges()))));
             })
-        .onFailure(DriverTimeoutException.class)
+        .onFailure(
+            error ->
+                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
         .retry()
         .atMost(2);
   }

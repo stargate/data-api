@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -131,6 +132,9 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
+            .onItem()
+            .delayIt()
+            .by(Duration.ofSeconds(2))
             .onItem()
             .transformToUni(
                 res -> {
