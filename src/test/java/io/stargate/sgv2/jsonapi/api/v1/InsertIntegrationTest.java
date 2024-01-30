@@ -825,6 +825,46 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
+    public void tryInsertDocWithTooBigObject() {
+      final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
+      tooManyPropsDoc.put("_id", 456);
+
+      // Max indexed: 1000, add some more
+      ObjectNode subdoc = tooManyPropsDoc.putObject("subdoc");
+      for (int i = 0; i < 1001; ++i) {
+        subdoc.put("prop" + i, i);
+      }
+
+      String json =
+          """
+              {
+                "insertOne": {
+                  "document": %s
+                }
+              }
+              """
+              .formatted(tooManyPropsDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: number of properties ("))
+          .body(
+              "errors[0].message",
+              endsWith("indexable Object ('subdoc') has (1001) exceeds maximum allowed (1000)"));
+    }
+
+    @Test
     public void tryInsertDocWithTooManyProps() {
       final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
       tooManyPropsDoc.put("_id", 123);
