@@ -19,4 +19,8 @@ public class JsonMetricsReporterFactory {
   public JsonBytesMetricsReporter jsonBytesMetricsReporter() {
     return new JsonBytesMetricsReporter(meterRegistry, jsonApiMetricsConfig);
   }
+
+  public DocJsonCounterMetricsReporter docJsonCounterMetricsReporter() {
+    return new DocJsonCounterMetricsReporter(meterRegistry, jsonApiMetricsConfig);
+  }
 }
