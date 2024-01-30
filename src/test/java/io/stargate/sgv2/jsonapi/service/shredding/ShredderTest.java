@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -596,6 +597,43 @@ public class ShredderTest {
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Mo"));
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryVectorValues()).isNull();
+    }
+  }
+
+  @Nested
+  class JsonMetricsReporter {
+    @Test
+    public void validateJsonBytesWriteMetrics() throws Exception {
+      final String inputJson =
+          """
+                      {
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      shredder.shred(
+          inputDoc, null, DocumentProjector.identityProjector(), "jsonBytesWriteCommand");
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonSerializationMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written")
+                          && line.contains("jsonBytesWriteCommand"))
+              .toList();
+      assertThat(jsonSerializationMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(1);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonBytesWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
     }
   }
 
