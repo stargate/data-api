@@ -33,9 +33,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
-    // Vectorize documents
-    ctx.tryVectorize(objectMapper.getNodeFactory(), command.documents());
-
     final DocumentProjector projection = ctx.indexingProjector();
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream().map(doc -> shredder.shred(doc, null, projection)).toList();

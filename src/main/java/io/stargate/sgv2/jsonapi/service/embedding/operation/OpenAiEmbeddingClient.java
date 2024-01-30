@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -31,7 +32,7 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
     @POST
     @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    EmbeddingResponse embed(
+    Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
   }
 
@@ -44,10 +45,15 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
-    EmbeddingResponse response = embeddingService.embed("Bearer " + apiKey, request);
-    return Arrays.stream(response.data()).map(data -> data.embedding()).toList();
+    Uni<EmbeddingResponse> response = embeddingService.embed("Bearer " + apiKey, request);
+    return response
+        .onItem()
+        .transform(
+            resp -> {
+              return Arrays.stream(response.data()).map(data -> data.embedding()).toList();
+            });
   }
 }

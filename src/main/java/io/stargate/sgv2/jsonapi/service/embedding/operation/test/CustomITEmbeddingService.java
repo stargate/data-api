@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +32,7 @@ public class CustomITEmbeddingService implements EmbeddingService {
   ;
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts) {
     List<float[]> response = new ArrayList<>(texts.size());
     for (String text : texts) {
       if (TEST_DATA.containsKey(text)) {
@@ -40,6 +41,6 @@ public class CustomITEmbeddingService implements EmbeddingService {
         response.add(new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f});
       }
     }
-    return response;
+    return Uni.createFrom().item(response);
   }
 }

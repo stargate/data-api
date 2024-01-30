@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
@@ -22,7 +23,7 @@ public record UpdateOneCommand(
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Nullable Options options)
-    implements ReadCommand, Filterable, Sortable {
+    implements ReadCommand, Filterable, Sortable, Updatable {
 
   @Schema(name = "UpdateOneCommand.Options", description = "Options for updating a document.")
   public record Options(
