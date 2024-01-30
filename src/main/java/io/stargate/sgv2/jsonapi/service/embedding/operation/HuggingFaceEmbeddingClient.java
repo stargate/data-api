@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -32,7 +33,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
     @POST
     @Path("/{modelId}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    List<float[]> embed(
+    Uni<List<float[]>> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
         EmbeddingRequest request);
@@ -43,7 +44,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
     return embeddingService.embed("Bearer " + apiKey, modelName, request);
   }

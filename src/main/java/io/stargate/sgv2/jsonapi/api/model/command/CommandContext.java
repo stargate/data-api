@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
@@ -51,15 +52,15 @@ public record CommandContext(
     return collectionSettings.indexingProjector();
   }
 
-  public void tryVectorize(JsonNodeFactory nodeFactory, List<JsonNode> documents) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorize(documents);
+  public Uni<Boolean> tryVectorize(JsonNodeFactory nodeFactory, List<JsonNode> documents) {
+    return new DataVectorizer(embeddingService(), nodeFactory).vectorize(documents);
   }
 
-  public void tryVectorize(JsonNodeFactory nodeFactory, SortClause sortClause) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorize(sortClause);
+  public Uni<Boolean> tryVectorize(JsonNodeFactory nodeFactory, SortClause sortClause) {
+    return new DataVectorizer(embeddingService(), nodeFactory).vectorize(sortClause);
   }
 
-  public void tryVectorize(JsonNodeFactory nodeFactory, UpdateClause updataClause) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorizeUpdateClause(updataClause);
+  public Uni<Boolean> tryVectorize(JsonNodeFactory nodeFactory, UpdateClause updataClause) {
+    return new DataVectorizer(embeddingService(), nodeFactory).vectorizeUpdateClause(updataClause);
   }
 }

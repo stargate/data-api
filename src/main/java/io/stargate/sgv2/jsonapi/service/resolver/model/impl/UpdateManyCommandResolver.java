@@ -43,9 +43,6 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   public Operation resolveCommand(CommandContext commandContext, UpdateManyCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
 
-    // Vectorize update clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
-
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert

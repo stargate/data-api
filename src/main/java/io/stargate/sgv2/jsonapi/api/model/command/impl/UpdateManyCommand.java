@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import jakarta.validation.Valid;
@@ -19,7 +20,7 @@ public record UpdateManyCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Nullable Options options)
-    implements ReadCommand, Filterable {
+    implements ReadCommand, Filterable, Updatable {
 
   @Schema(name = "UpdateManyCommand.Options", description = "Options for updating many documents.")
   public record Options(
