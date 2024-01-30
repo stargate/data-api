@@ -204,7 +204,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     @Order(1)
     public void allowNonIndexedBigArray() {
-      insertEmptyDoc("array_size_too_big_doc");
+      insertEmptyDoc("array_size_big_noindex_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -213,7 +213,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               """
                     {
                       "findOneAndUpdate": {
-                        "filter" : {"_id" : "array_size_too_big_doc"},
+                        "filter" : {"_id" : "array_size_big_noindex_doc"},
                         "update" : {
                           "$set" : {
                             "notIndexed.bigArray": %s
@@ -235,7 +235,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     @Order(2)
     public void failOnIndexedTooBigArray() {
-      insertEmptyDoc("array_size_ok_doc");
+      insertEmptyDoc("array_size_too_big_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -244,7 +244,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               """
                             {
                               "findOneAndUpdate": {
-                                "filter" : {"_id" : "array_size_ok_doc"},
+                                "filter" : {"_id" : "array_size_too_big_doc"},
                                 "update" : {
                                   "$set" : {
                                     "indexed.bigArray": %s
@@ -274,7 +274,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
       @Test
       @Order(1)
       public void allowNonIndexedBigObject() {
-        insertEmptyDoc("object_size_too_big_doc");
+        insertEmptyDoc("object_size_big_noindex_doc");
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
         given()
@@ -284,7 +284,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                 """
                                 {
                                   "findOneAndUpdate": {
-                                    "filter" : {"_id" : "object_size_too_big_doc"},
+                                    "filter" : {"_id" : "object_size_big_noindex_doc"},
                                     "update" : {
                                       "$set" : {
                                         "notIndexed.bigObject": %s
@@ -306,7 +306,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
       @Test
       @Order(2)
       public void failOnIndexedTooBigObject() {
-        insertEmptyDoc("object_size_ok_doc");
+        insertEmptyDoc("object_size_too_big_doc");
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
         given()
@@ -316,7 +316,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                 """
                                 {
                                   "findOneAndUpdate": {
-                                    "filter" : {"_id" : "object_size_ok_doc"},
+                                    "filter" : {"_id" : "object_size_too_big_doc"},
                                     "update" : {
                                       "$set" : {
                                         "indexed.bigObject": %s
