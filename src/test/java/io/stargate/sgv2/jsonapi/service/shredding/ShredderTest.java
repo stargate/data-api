@@ -616,7 +616,7 @@ public class ShredderTest {
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> jsonSerializationMetrics =
+      List<String> jsonBytesWriteMetrics =
           metrics
               .lines()
               .filter(
@@ -624,7 +624,7 @@ public class ShredderTest {
                       line.startsWith("json_bytes_written")
                           && line.contains("jsonBytesWriteCommand"))
               .toList();
-      assertThat(jsonSerializationMetrics)
+      assertThat(jsonBytesWriteMetrics)
           .satisfies(
               lines -> {
                 assertThat(lines.size()).isEqualTo(1);
