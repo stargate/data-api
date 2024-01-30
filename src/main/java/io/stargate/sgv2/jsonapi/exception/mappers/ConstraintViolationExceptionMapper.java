@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.exception;
+package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import jakarta.validation.ConstraintViolation;

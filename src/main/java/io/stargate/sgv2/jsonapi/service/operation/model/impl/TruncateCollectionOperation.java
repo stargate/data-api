@@ -22,7 +22,7 @@ public record TruncateCollectionOperation(CommandContext context) implements Ope
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor
-        .executeSchemaChange(query)
+        .executeTruncateSchemaChange(query)
 
         // if we have a result always respond positively
         .map(any -> new DeleteOperationPage(null, false, false));

@@ -128,7 +128,7 @@ public record CreateCollectionOperation(
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
     final Uni<AsyncResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -140,7 +140,7 @@ public record CreateCollectionOperation(
                     return Multi.createFrom()
                         .items(indexStatements.stream())
                         .onItem()
-                        .transformToUni(queryExecutor::executeSchemaChange)
+                        .transformToUni(queryExecutor::executeCreateSchemaChange)
                         .concatenate()
                         .collect()
                         .asList()

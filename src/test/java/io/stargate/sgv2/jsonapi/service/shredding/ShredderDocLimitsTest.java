@@ -14,9 +14,11 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -185,6 +187,16 @@ public class ShredderDocLimitsTest {
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
+    // Test to verify that max-array-size limit only imposed on indexable fields
+    @Test
+    public void allowDocWithHugeArrayNoIndex() {
+      // Max allowed 1000 normally, but if array not-indexed, not limited
+      final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+    }
+
     @Test
     public void catchTooManyArrayElements() {
       final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
@@ -196,7 +208,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has ("
+              " number of elements an indexable Array ('arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
@@ -251,7 +263,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " Property name length ("
+              "property name length ("
                   + propName.length()
                   + ") exceeds maximum allowed ("
                   + docLimits.maxPropertyNameLength()
@@ -277,7 +289,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " Property path length (259) exceeds maximum allowed ("
+              "property path length (259) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with 'longPropertyName')");
       ;
@@ -356,8 +368,8 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       ArrayNode arr = doc.putArray("arr");
-      // Max 50, so 60 should fail
-      String numStr = "1234567890".repeat(6);
+      // Max 100, so use slightly above
+      String numStr = "1234567890".repeat(10) + ".0";
       doc.put("number", new BigDecimal(numStr));
       arr.add(numStr);
 
@@ -367,7 +379,7 @@ public class ShredderDocLimitsTest {
       assertThat(e)
           .isNotNull()
           .isInstanceOf(StreamConstraintsException.class)
-          .hasMessageStartingWith("Number value length (60) exceeds the maximum allowed (50");
+          .hasMessageStartingWith("Number value length (101) exceeds the maximum allowed (100");
     }
 
     // Different test in that it should NOT fail but work as expected (in
@@ -428,7 +440,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "Document key name constraints violated: Property name ('"
+              "Document key name constraints violated: property name ('"
                   + invalidName
                   + "') contains character(s) not allowed");
     }
