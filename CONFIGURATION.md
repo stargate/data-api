@@ -23,9 +23,10 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 ## Document limits configuration
 *Configuration for document limits, defined by [DocumentLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DocumentLimitsConfig.java).*
 
+<<<<<<< HEAD
 | Property                                                        | Type  | Default     | Description                                                                             |
 |-----------------------------------------------------------------|-------|-------------|-----------------------------------------------------------------------------------------|
-| `stargate.jsonapi.document.limits.max-size`                     | `int` | `1_000_000` | The maximum size of (in characters) a single document.                                  |
+| `stargate.jsonapi.document.limits.max-size`                     | `int` | `4_000_000` | The maximum size of (in characters) a single document.                                  |
 | `stargate.jsonapi.document.limits.max-depth`                    | `int` | `16`        | The maximum document depth (nesting).                                                   |
 | `stargate.jsonapi.document.limits.max-property-name-length`     | `int` | `100`       | The maximum length of property names in a document for an individual segment.           |
 | `stargate.jsonapi.document.limits.max-property-path-length`     | `int` | `250`       | The maximum length of property paths in a document (segments and separating periods)    |

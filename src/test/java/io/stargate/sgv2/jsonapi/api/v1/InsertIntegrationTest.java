@@ -821,7 +821,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message", startsWith("Document size limitation violated: document size ("))
-          .body("errors[0].message", endsWith(") exceeds maximum allowed (1000000)"));
+          .body("errors[0].message", endsWith(") exceeds maximum allowed (4000000)"));
     }
 
     @Test
