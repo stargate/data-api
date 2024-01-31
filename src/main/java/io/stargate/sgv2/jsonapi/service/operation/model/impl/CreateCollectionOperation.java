@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
@@ -35,8 +38,11 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
-    String comment)
+    String comment,
+    int ddlDelayMillis)
     implements Operation {
+  private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
+
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
@@ -48,7 +54,8 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
-      String comment) {
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -58,7 +65,8 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
-        comment);
+        comment,
+        ddlDelayMillis);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -67,7 +75,8 @@ public record CreateCollectionOperation(
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
       String name,
-      String comment) {
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -77,11 +86,13 @@ public record CreateCollectionOperation(
         false,
         0,
         null,
-        comment);
+        comment,
+        ddlDelayMillis);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    logger.info("Executing CreateCollectionOperation for {}", name);
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession().getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -131,6 +142,9 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
+            .onItem()
+            .delayIt()
+            .by(Duration.ofMillis(ddlDelayMillis))
             .onItem()
             .transformToUni(
                 res -> {
