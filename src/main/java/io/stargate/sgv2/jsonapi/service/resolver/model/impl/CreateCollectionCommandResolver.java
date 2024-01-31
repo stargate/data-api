@@ -117,7 +117,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             vectorSize,
             function,
             comment,
-            operationsConfig.databaseConfig().ddlDelaySeconds());
+            operationsConfig.databaseConfig().ddlDelayMillis());
       } else {
         return CreateCollectionOperation.withoutVectorSearch(
             ctx,
@@ -126,7 +126,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             cqlSessionCache,
             command.name(),
             comment,
-            operationsConfig.databaseConfig().ddlDelaySeconds());
+            operationsConfig.databaseConfig().ddlDelayMillis());
       }
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
@@ -136,7 +136,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           cqlSessionCache,
           command.name(),
           null,
-          operationsConfig.databaseConfig().ddlDelaySeconds());
+          operationsConfig.databaseConfig().ddlDelayMillis());
     }
   }
 }

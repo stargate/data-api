@@ -179,7 +179,7 @@ public class QueryExecutor {
                   .item(throwable)
                   .onItem()
                   .delayIt()
-                  .by(Duration.ofSeconds(operationsConfig.databaseConfig().ddlRetryDelaySeconds()))
+                  .by(Duration.ofMillis(operationsConfig.databaseConfig().ddlRetryDelayMillis()))
                   .onItem()
                   .transformToUni(
                       v ->

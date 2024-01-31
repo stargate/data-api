@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
@@ -37,8 +39,10 @@ public record CreateCollectionOperation(
     int vectorSize,
     String vectorFunction,
     String comment,
-    int ddlDelaySeconds)
+    int ddlDelayMillis)
     implements Operation {
+  private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
+
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
@@ -51,7 +55,7 @@ public record CreateCollectionOperation(
       int vectorSize,
       String vectorFunction,
       String comment,
-      int ddlDelaySeconds) {
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -62,7 +66,7 @@ public record CreateCollectionOperation(
         vectorSize,
         vectorFunction,
         comment,
-        ddlDelaySeconds);
+        ddlDelayMillis);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -72,7 +76,7 @@ public record CreateCollectionOperation(
       CQLSessionCache cqlSessionCache,
       String name,
       String comment,
-      int ddlDelaySeconds) {
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -83,11 +87,12 @@ public record CreateCollectionOperation(
         0,
         null,
         comment,
-        ddlDelaySeconds);
+        ddlDelayMillis);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    logger.info("Executing CreateCollectionOperation for {}", name);
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession().getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -139,7 +144,7 @@ public record CreateCollectionOperation(
         execute
             .onItem()
             .delayIt()
-            .by(Duration.ofSeconds(ddlDelaySeconds))
+            .by(Duration.ofMillis(ddlDelayMillis))
             .onItem()
             .transformToUni(
                 res -> {

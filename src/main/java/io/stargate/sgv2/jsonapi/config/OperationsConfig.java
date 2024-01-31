@@ -188,13 +188,13 @@ public interface OperationsConfig {
     @WithDefault("50")
     int sessionCacheMaxSize();
 
-    /** DDL query retry wait in seconds. */
-    @WithDefault("1")
-    int ddlRetryDelaySeconds();
+    /** DDL query retry wait in illis. */
+    @WithDefault("1000")
+    int ddlRetryDelayMillis();
 
     /** Create table cool off period before create index . */
-    @WithDefault("2")
-    int ddlDelaySeconds();
+    @WithDefault("2000")
+    int ddlDelayMillis();
   }
 
   /** Query consistency related configs. */
