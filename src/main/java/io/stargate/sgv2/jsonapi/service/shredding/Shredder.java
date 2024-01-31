@@ -282,11 +282,6 @@ public class Shredder {
       validateDocDepth(limits, depth);
 
       final int propCount = objectValue.size();
-      if (propCount > limits.maxObjectProperties()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "number of properties an Object has (%d) exceeds maximum allowed (%s)",
-            objectValue.size(), limits.maxObjectProperties());
-      }
       totalProperties.addAndGet(propCount);
 
       var it = objectValue.fields();
@@ -387,6 +382,13 @@ public class Shredder {
     }
 
     private void validateObjectValue(String referringPropertyName, JsonNode objectValue) {
+      final int propCount = objectValue.size();
+      if (propCount > limits.maxObjectProperties()) {
+        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+            "number of properties an indexable Object ('%s') has (%d) exceeds maximum allowed (%s)",
+            referringPropertyName, objectValue.size(), limits.maxObjectProperties());
+      }
+
       for (Map.Entry<String, JsonNode> entry : objectValue.properties()) {
         validateValue(entry.getKey(), entry.getValue());
       }

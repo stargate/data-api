@@ -18,11 +18,15 @@ public interface DocumentLimitsConfig {
   /** Defines the default maximum document (nesting) depth */
   int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
 
-  /** Defines the default maximum length (in elements) of a single indexable Array value */
+  /**
+   * Defines the default maximum length (in elements) of a single indexable Array in JSON document
+   * can contain.
+   */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
   /**
-   * Defines the default maximum number of properties any single Object in JSON document can contain
+   * Defines the default maximum number of properties any single indexable Object in JSON document
+   * can contain.
    */
   int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
 
@@ -88,17 +92,17 @@ public interface DocumentLimitsConfig {
   int maxPropertyPathLength();
 
   /**
-   * @return Defines the maximum number of properties any single Object in JSON document can
-   *     contain, defaults to {@code 1,000} (note: this is not the total number of properties in the
-   *     whole document, only on individual main or sub-document)
+   * @return Defines the maximum number of properties any single indexable Object in JSON document
+   *     can contain, defaults to {@code 1,000} (note: this is not the total number of properties in
+   *     the whole document but in the main or indexable sub-document)
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_OBJECT_PROPERTIES)
   int maxObjectProperties();
 
   /**
-   * @return Defines the maximum number of properties the whole JSON document can contain, defaults
-   *     to {@code 2,000}, including Object- and Array-valued properties.
+   * @return Defines the maximum number of indexable properties in JSON document can contain,
+   *     defaults to {@code 2,000}, including all indexable Object- and Array-valued properties.
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
