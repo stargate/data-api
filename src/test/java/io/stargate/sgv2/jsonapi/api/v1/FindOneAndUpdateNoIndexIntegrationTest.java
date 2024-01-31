@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -203,7 +204,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     @Order(1)
     public void allowNonIndexedBigArray() {
-      insertEmptyDoc("array_size_too_big_doc");
+      insertEmptyDoc("array_size_big_noindex_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -212,7 +213,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               """
                     {
                       "findOneAndUpdate": {
-                        "filter" : {"_id" : "array_size_too_big_doc"},
+                        "filter" : {"_id" : "array_size_big_noindex_doc"},
                         "update" : {
                           "$set" : {
                             "notIndexed.bigArray": %s
@@ -234,7 +235,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     @Order(2)
     public void failOnIndexedTooBigArray() {
-      insertEmptyDoc("array_size_ok_doc");
+      insertEmptyDoc("array_size_too_big_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -243,7 +244,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               """
                             {
                               "findOneAndUpdate": {
-                                "filter" : {"_id" : "array_size_ok_doc"},
+                                "filter" : {"_id" : "array_size_too_big_doc"},
                                 "update" : {
                                   "$set" : {
                                     "indexed.bigArray": %s
@@ -264,6 +265,79 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               "errors[0].message",
               containsString("number of elements an indexable Array ('bigArray')"))
           .body("errors[0].message", containsString("exceeds maximum allowed"));
+    }
+
+    @Nested
+    @Order(4)
+    @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+    class ObjectSizeLimit {
+      @Test
+      @Order(1)
+      public void allowNonIndexedBigObject() {
+        insertEmptyDoc("object_size_big_noindex_doc");
+        final String objectJson =
+            bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
+        given()
+            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .contentType(ContentType.JSON)
+            .body(
+                """
+                                {
+                                  "findOneAndUpdate": {
+                                    "filter" : {"_id" : "object_size_big_noindex_doc"},
+                                    "update" : {
+                                      "$set" : {
+                                        "notIndexed.bigObject": %s
+                                      }
+                                    }
+                                  }
+                                }
+                                """
+                    .formatted(objectJson))
+            .when()
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+            .then()
+            .statusCode(200)
+            .body("errors", is(nullValue()))
+            .body("status.matchedCount", is(1))
+            .body("status.modifiedCount", is(1));
+      }
+
+      @Test
+      @Order(2)
+      public void failOnIndexedTooBigObject() {
+        insertEmptyDoc("object_size_too_big_doc");
+        final String objectJson =
+            bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
+        given()
+            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .contentType(ContentType.JSON)
+            .body(
+                """
+                                {
+                                  "findOneAndUpdate": {
+                                    "filter" : {"_id" : "object_size_too_big_doc"},
+                                    "update" : {
+                                      "$set" : {
+                                        "indexed.bigObject": %s
+                                      }
+                                    }
+                                  }
+                                }
+                                """
+                    .formatted(objectJson))
+            .when()
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+            .then()
+            .statusCode(200)
+            .body("data", is(nullValue()))
+            .body("status", is(nullValue()))
+            .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+            .body(
+                "errors[0].message",
+                containsString("number of properties an indexable Object ('bigObject')"))
+            .body("errors[0].message", containsString("exceeds maximum allowed"));
+      }
     }
 
     private void insertEmptyDoc(String docId) {
@@ -295,6 +369,14 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
         array.add(i);
       }
       return array.toString();
+    }
+
+    private final String bigObject(int propertyCount) {
+      final ObjectNode ob = MAPPER.createObjectNode();
+      for (int i = 0; i < propertyCount; i++) {
+        ob.put("prop" + i, i);
+      }
+      return ob.toString();
     }
   }
 }

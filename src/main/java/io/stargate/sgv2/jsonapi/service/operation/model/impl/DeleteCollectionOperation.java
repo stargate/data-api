@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the delete collection.
@@ -15,11 +17,13 @@ import java.util.function.Supplier;
  * @param name Collection name.
  */
 public record DeleteCollectionOperation(CommandContext context, String name) implements Operation {
+  private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionOperation.class);
 
   private static final String DROP_TABLE_CQL = "DROP TABLE IF EXISTS \"%s\".\"%s\";";
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    logger.info("Executing DeleteCollectionOperation for {}", name);
     String cql = DROP_TABLE_CQL.formatted(context.namespace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
