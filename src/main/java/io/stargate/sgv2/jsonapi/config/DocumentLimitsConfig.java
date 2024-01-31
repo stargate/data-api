@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Positive;
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
   /** Defines the default maximum document size. */
-  int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
+  int DEFAULT_MAX_DOCUMENT_SIZE = 4_000_000;
 
   /** Defines the default maximum document (nesting) depth */
   int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
@@ -57,7 +57,7 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH = 4096;
 
   /**
-   * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
+   * @return Defines the maximum document size, defaults to {@code 4 meg} (4 million characters).
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOCUMENT_SIZE)
