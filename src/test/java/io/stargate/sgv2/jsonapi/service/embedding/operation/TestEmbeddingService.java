@@ -20,7 +20,7 @@ public class TestEmbeddingService implements EmbeddingService {
               null,
               null),
           new TestEmbeddingService(),
-          null,
+          "testCommand",
           null);
 
   @Override

@@ -46,7 +46,7 @@ public record CommandContext(
   }
 
   private static final CommandContext EMPTY =
-      new CommandContext(null, null, CollectionSettings.empty(), null, null, null);
+      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
