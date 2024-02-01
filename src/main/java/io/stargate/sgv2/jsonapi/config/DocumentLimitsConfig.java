@@ -72,8 +72,7 @@ public interface DocumentLimitsConfig {
   /**
    * @return Defines the maximum length of paths to properties in JSON documents, defaults to {@code
    *     250 characters}. Note that this is the total length of the path (sequence of one or more
-   *     individual property names separated by comma): individual property name lengths are limited
-   *     by {@link #maxPropertyNameLength()}.
+   *     individual property names separated by comma).
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_PROPERTY_PATH_LENGTH)
