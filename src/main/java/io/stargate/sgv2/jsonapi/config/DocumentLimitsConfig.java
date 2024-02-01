@@ -19,20 +19,19 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
 
   /**
-   * Defines the default maximum length (in elements) of a single indexable Array in JSON document
-   * can contain.
+   * Defines the default maximum length (in elements) of a single indexable Array in JSON document.
    */
   int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
 
   /**
-   * Defines the default maximum number of properties any single indexable Object in JSON document
-   * can contain.
+   * Defines the default maximum number of properties for any single indexable Object in JSON
+   * document.
    */
   int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
 
   /**
-   * Defines the default maximum number of properties the whole JSON document can contain (including
-   * Object- and Array-valued properties).
+   * Defines the default maximum number of indexable properties (properties in indexable Objects)
+   * for the whole JSON document (including Object- and Array-valued properties).
    */
   int DEFAULT_MAX_DOC_PROPERTIES = 2000;
 
@@ -105,16 +104,12 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
   int maxStringLengthInBytes();
 
-  /**
-   * @return Maximum length of an indexable Array in document, defaults to {@code 1,000} elements.
-   */
+  /** @return Maximum length of an indexable Array in document (in elements). */
   @Positive
   @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();
 
-  /**
-   * @return Maximum length of Vector ($vector) array allowed, defaults to {@code 4096} elements.
-   */
+  /** @return Maximum length of Vector ($vector) array allowed. */
   @Positive
   @WithDefault("" + DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH)
   int maxVectorEmbeddingLength();
