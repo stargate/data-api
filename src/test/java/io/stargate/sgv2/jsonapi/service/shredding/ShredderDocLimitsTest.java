@@ -130,7 +130,7 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
     }
 
     @Test
@@ -208,7 +208,7 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
     }
 
     @Test
