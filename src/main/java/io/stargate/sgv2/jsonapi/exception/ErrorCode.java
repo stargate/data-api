@@ -130,7 +130,11 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
 
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail");
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+
+  UNAUTHORIZED_REQUEST("UNAUTHENTICATED: Invalid token"),
+  INVALID_QUERY("INVALID QUERY"),
+  OPERATION_TIMEOUT("OPERATION_TIMEOUT");
 
   private final String message;
 
@@ -144,5 +148,9 @@ public enum ErrorCode {
 
   public JsonApiException toApiException(String format, Object... args) {
     return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
+
+  public JsonApiException toApiException() {
+    return new JsonApiException(this, message);
   }
 }

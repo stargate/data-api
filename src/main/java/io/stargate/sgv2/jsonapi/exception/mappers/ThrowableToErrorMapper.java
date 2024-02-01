@@ -30,7 +30,7 @@ public final class ThrowableToErrorMapper {
       (throwable, message) -> {
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
-          return jae.getCommandResultError(message);
+          return jae.getCommandResultError(message, Response.Status.OK);
         }
         // Override response error code
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -43,21 +43,22 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof UnauthorizedException
             || throwable
                 instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
-          return new CommandResult.Error(
-              "UNAUTHENTICATED: Invalid token",
-              fieldsForMetricsTag,
-              fields,
-              Response.Status.UNAUTHORIZED);
+          return ErrorCode.UNAUTHORIZED_REQUEST
+              .toApiException()
+              .getCommandResultError(message, Response.Status.UNAUTHORIZED);
         } else if (throwable instanceof QueryValidationException) {
-          if (message.contains("vector<float,")) { // TODO is there a better way?
+          if (message.contains("vector<float,")) {
             message = "Mismatched vector dimension";
           }
-          fields = Map.of("errorCode", ErrorCode.INVALID_REQUEST.name());
-          return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+          return ErrorCode.INVALID_QUERY
+              .toApiException()
+              .getCommandResultError(message, Response.Status.OK);
         } else if (throwable instanceof DriverTimeoutException
             || throwable instanceof WriteTimeoutException
             || throwable instanceof ReadTimeoutException) {
-          return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+          return ErrorCode.OPERATION_TIMEOUT
+              .toApiException()
+              .getCommandResultError(message, Response.Status.OK);
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof AllNodesFailedException) {
             Map<Node, List<Throwable>> nodewiseErrors =
@@ -83,11 +84,9 @@ public final class ThrowableToErrorMapper {
                                 .getMessage()
                                 .contains(
                                     "Provided username token and/or password are incorrect")))) {
-                  return new CommandResult.Error(
-                      "UNAUTHENTICATED: Invalid token",
-                      fieldsForMetricsTag,
-                      fields,
-                      Response.Status.UNAUTHORIZED);
+                  return ErrorCode.UNAUTHORIZED_REQUEST
+                      .toApiException()
+                      .getCommandResultError(message, Response.Status.UNAUTHORIZED);
                 }
               }
             }
