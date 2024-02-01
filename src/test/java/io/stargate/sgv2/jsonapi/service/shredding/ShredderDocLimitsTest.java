@@ -176,7 +176,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " total number of properties (2101) in document exceeds maximum allowed ("
+              " total number of indexed properties (2101) in document exceeds maximum allowed ("
                   + docLimits.maxDocumentProperties()
                   + ")");
     }
