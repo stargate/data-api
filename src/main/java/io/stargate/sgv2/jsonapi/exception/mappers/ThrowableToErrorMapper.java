@@ -48,7 +48,7 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof UnauthorizedException
             || throwable
                 instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
-          return ErrorCode.UNAUTHORIZED_REQUEST
+          return ErrorCode.UNAUTHENTICATED_REQUEST
               .toApiException()
               .getCommandResultError(message, Response.Status.UNAUTHORIZED);
           // Driver QueryValidationException -> ErrorCode.INVALID_QUERY
@@ -93,7 +93,7 @@ public final class ThrowableToErrorMapper {
                               .getMessage()
                               .contains(
                                   "Provided username token and/or password are incorrect")))) {
-                return ErrorCode.UNAUTHORIZED_REQUEST
+                return ErrorCode.UNAUTHENTICATED_REQUEST
                     .toApiException()
                     .getCommandResultError(message, Response.Status.UNAUTHORIZED);
                 // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE

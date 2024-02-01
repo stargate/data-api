@@ -132,7 +132,7 @@ public enum ErrorCode {
 
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
-  UNAUTHORIZED_REQUEST("UNAUTHENTICATED: Invalid token"),
+  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   INVALID_QUERY("Invalid query"),
   DRIVER_TIMEOUT("Driver timeout on"),
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed due to an unrelated event"),
