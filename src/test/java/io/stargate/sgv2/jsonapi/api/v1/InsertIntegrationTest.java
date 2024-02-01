@@ -566,49 +566,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       + ")"));
     }
 
-    @Test
-    public void insertLongestValidName() {
-      final String LONGEST_NAME = "a".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
-      ObjectNode doc = MAPPER.createObjectNode();
-      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongName");
-      // Max property name: 100 characters
-      doc.put(LONGEST_NAME, "stuff");
-      _verifyInsert("docWithLongName", doc);
-    }
-
-    @Test
-    public void tryInsertTooLongName() {
-      // Max property name: 100 characters, let's try 102
-      ObjectNode doc = MAPPER.createObjectNode();
-      doc.put(
-          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_x",
-          72);
-      final String json =
-          """
-                  {
-                    "insertOne": {
-                      "document": %s
-                    }
-                  }
-                  """
-              .formatted(doc);
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Document size limitation violated: property name length (102) exceeds maximum allowed (100)"));
-    }
-
     // Test for nested paths, to ensure longer paths work too.
     @Test
     public void insertLongestValidPath() {

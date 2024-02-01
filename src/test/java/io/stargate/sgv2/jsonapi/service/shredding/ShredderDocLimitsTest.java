@@ -262,32 +262,6 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
-    public void catchTooLongNames() {
-      final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("_id", 123);
-      ObjectNode ob = doc.putObject("subdoc");
-      final String propName =
-          "property_with_way_too_long_name_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789";
-      ob.put(propName, true);
-
-      Exception e = catchException(() -> shredder.shred(doc));
-      assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
-              "property name length ("
-                  + propName.length()
-                  + ") exceeds maximum allowed ("
-                  + docLimits.maxPropertyNameLength()
-                  + ") (name '"
-                  + propName
-                  + "')");
-      ;
-    }
-
-    @Test
     public void catchTooLongPaths() {
       final ObjectNode doc = objectMapper.createObjectNode();
       // Create 3-levels, 80 chars each, so close to 250; and then one bit longer value

@@ -296,11 +296,6 @@ public class Shredder {
     }
 
     private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
-      if (key.length() > limits.maxPropertyNameLength()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "property name length (%d) exceeds maximum allowed (%s) (name '%s')",
-            key.length(), limits.maxPropertyNameLength(), key);
-      }
       if (key.length() == 0) {
         // NOTE: validity failure, not size limit
         throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
