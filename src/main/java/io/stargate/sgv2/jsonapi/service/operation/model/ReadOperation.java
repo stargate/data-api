@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonDocCounterMetricsReporter;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -102,6 +103,9 @@ public interface ReadOperation extends Operation {
               int remaining = rSet.remaining();
               List<ReadDocument> documents = new ArrayList<>(remaining);
               Iterator<Row> rowIterator = rSet.currentPage().iterator();
+              JsonDocCounterMetricsReporter jsonCounter =
+                  jsonMetricsReporterFactory.docJsonCounterMetricsReporter();
+              jsonCounter.createDocCounterMetrics(false, commandName);
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 ReadDocument document = null;
@@ -111,6 +115,7 @@ public interface ReadOperation extends Operation {
                     jsonMetricsReporterFactory
                         .jsonBytesMetricsReporter()
                         .createSizeMetrics(false, commandName, row.getString(2).length());
+                    jsonCounter.increaseDocCounterMetrics(1);
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
                       projection.applyProjection(root, score);

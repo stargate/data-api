@@ -5,23 +5,30 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 
-public class JsonBytesMetricsReporter {
+public class JsonDocCounterMetricsReporter {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  public JsonBytesMetricsReporter(
+  private Counter counter;
+
+  public JsonDocCounterMetricsReporter(
       MeterRegistry meterRegistry, JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
-  public void createSizeMetrics(boolean writeFlag, String commandName, long docJsonSize) {
+  public void createDocCounterMetrics(boolean writeFlag, String commandName) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tags tags = Tags.of(commandTag);
 
     String metricsName =
-        writeFlag ? jsonApiMetricsConfig.jsonBytesWritten() : jsonApiMetricsConfig.jsonBytesRead();
-    Counter counter = Counter.builder(metricsName).tags(tags).register(meterRegistry);
-    counter.increment(docJsonSize);
+        writeFlag
+            ? jsonApiMetricsConfig.jsonDocWrittenCounter()
+            : jsonApiMetricsConfig.jsonDocReadCounter();
+    counter = Counter.builder(metricsName).tags(tags).register(meterRegistry);
+  }
+
+  public void increaseDocCounterMetrics(int count) {
+    counter.increment(count);
   }
 }

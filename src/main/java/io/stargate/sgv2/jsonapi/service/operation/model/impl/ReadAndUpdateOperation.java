@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonDocCounterMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -180,6 +181,11 @@ public record ReadAndUpdateOperation(
                           readDocument.txnId(),
                           commandContext().indexingProjector(),
                           commandContext().commandName());
+
+              JsonDocCounterMetricsReporter jsonCounter =
+                  commandContext.jsonMetricsReporterFactory().docJsonCounterMetricsReporter();
+              jsonCounter.createDocCounterMetrics(true, commandContext().commandName());
+              jsonCounter.increaseDocCounterMetrics(1);
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();

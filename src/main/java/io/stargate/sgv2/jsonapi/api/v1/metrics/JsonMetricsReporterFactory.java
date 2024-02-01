@@ -20,7 +20,7 @@ public class JsonMetricsReporterFactory {
     return new JsonBytesMetricsReporter(meterRegistry, jsonApiMetricsConfig);
   }
 
-  public DocJsonCounterMetricsReporter docJsonCounterMetricsReporter() {
-    return new DocJsonCounterMetricsReporter(meterRegistry, jsonApiMetricsConfig);
+  public JsonDocCounterMetricsReporter docJsonCounterMetricsReporter() {
+    return new JsonDocCounterMetricsReporter(meterRegistry, jsonApiMetricsConfig);
   }
 }

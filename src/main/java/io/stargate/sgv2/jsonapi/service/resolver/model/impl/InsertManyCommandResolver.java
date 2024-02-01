@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.DocJsonCounterMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonDocCounterMetricsReporter;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
@@ -45,14 +45,14 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     ctx.tryVectorize(objectMapper.getNodeFactory(), command.documents());
 
     final DocumentProjector projection = ctx.indexingProjector();
-    DocJsonCounterMetricsReporter docJsonCounterMetricsReporter =
+    JsonDocCounterMetricsReporter jsonDocCounterMetricsReporter =
         jsonMetricsReporterFactory.docJsonCounterMetricsReporter();
-    docJsonCounterMetricsReporter.createDocCounterMetrics(ctx.commandName());
+    jsonDocCounterMetricsReporter.createDocCounterMetrics(true, ctx.commandName());
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream()
             .map(
                 doc -> {
-                  docJsonCounterMetricsReporter.increaseDocCounterMetrics(1);
+                  jsonDocCounterMetricsReporter.increaseDocCounterMetrics(1);
                   return shredder.shred(doc, null, projection, command.getClass().getSimpleName());
                 })
             .toList();
