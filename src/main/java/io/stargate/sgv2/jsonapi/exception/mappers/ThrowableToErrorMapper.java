@@ -71,7 +71,6 @@ public final class ThrowableToErrorMapper {
         } else if (throwable instanceof AllNodesFailedException) {
           Map<Node, List<Throwable>> nodewiseErrors =
               ((AllNodesFailedException) throwable).getAllErrors();
-          // will not give clients AllNodesFailedException error
           if (!nodewiseErrors.isEmpty()) {
             List<Throwable> errors = nodewiseErrors.values().iterator().next();
             if (errors != null && !errors.isEmpty()) {
@@ -115,7 +114,6 @@ public final class ThrowableToErrorMapper {
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         }
 
-        // Errors not from driver and JsonApiException
         return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
 
