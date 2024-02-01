@@ -1,10 +1,9 @@
-package io.stargate.sgv2.jsonapi.api.exception;
+package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;

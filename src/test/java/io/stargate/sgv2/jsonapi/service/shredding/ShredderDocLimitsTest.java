@@ -14,9 +14,11 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,16 +39,21 @@ public class ShredderDocLimitsTest {
   class ValidationDocSizeViolations {
     @Test
     public void allowBigButNotTooBigDoc() {
-      // Given we fail at 1 meg, let's try 800k (8 x 10 x 10k)
-      final ObjectNode bigDoc = createBigDoc(8, 10);
+      // Given we fail at 4 meg
+      // let's try 600k (8 x 5 x 7.5k)
+      final ObjectNode bigDoc = createBigDoc(8, 5);
       assertThat(shredder.shred(bigDoc)).isNotNull();
+
+      // let's also try 1m (12 x 12 x 7.5k)
+      final ObjectNode bigDoc1m = createBigDoc(12, 12);
+      assertThat(shredder.shred(bigDoc1m)).isNotNull();
     }
 
     @Test
     public void catchTooBigDoc() {
-      // Let's construct document above 1 meg limit (but otherwise legal), with
-      // 144 x 7.5k String values, divided in 12 sub documents of 12 properties
-      final ObjectNode bigDoc = createBigDoc(12, 12);
+      // Let's construct document above 4 meg limit (but otherwise legal), with
+      // (12x45) x 7.5k String values, divided in 12 sub documents of 45 properties
+      final ObjectNode bigDoc = createBigDoc(12, 45);
 
       Exception e = catchException(() -> shredder.shred(bigDoc));
       assertThat(e)
@@ -113,8 +120,17 @@ public class ShredderDocLimitsTest {
     @Test
     public void allowDocWithManyObjectProps() {
       // Max allowed is 1,000
-      final ObjectNode doc = docWithNProps(docLimits.maxObjectProperties());
+      final ObjectNode doc = docWithNProps("subdoc", docLimits.maxObjectProperties());
       assertThat(shredder.shred(doc)).isNotNull();
+    }
+
+    @Test
+    public void allowDocWithHugeObjectNoIndex() {
+      // Max allowed 1000 normally, but if Object not-indexed, not limited
+      final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
     }
 
     @Test
@@ -122,7 +138,7 @@ public class ShredderDocLimitsTest {
       // Max allowed 100, so fail with just one above
       final int maxObProps = docLimits.maxObjectProperties();
       final int tooManyProps = maxObProps + 1;
-      final ObjectNode doc = docWithNProps(tooManyProps);
+      final ObjectNode doc = docWithNProps("subdoc", tooManyProps);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -131,17 +147,17 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an Object has ("
+              " number of properties an indexable Object ('subdoc') has ("
                   + tooManyProps
                   + ") exceeds maximum allowed ("
                   + maxObProps
                   + ")");
     }
 
-    private ObjectNode docWithNProps(int count) {
+    private ObjectNode docWithNProps(String propName, int count) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
-      ObjectNode obNode = doc.putObject("subdoc");
+      ObjectNode obNode = doc.putObject(propName);
       for (int i = 0; i < count; ++i) {
         obNode.put("prop" + i, i);
       }
@@ -185,6 +201,16 @@ public class ShredderDocLimitsTest {
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
+    // Test to verify that max-array-size limit only imposed on indexable fields
+    @Test
+    public void allowDocWithHugeArrayNoIndex() {
+      // Max allowed 1000 normally, but if array not-indexed, not limited
+      final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
+      DocumentProjector indexProjector =
+          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+    }
+
     @Test
     public void catchTooManyArrayElements() {
       final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
@@ -196,7 +222,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an Array has ("
+              " number of elements an indexable Array ('arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
@@ -236,32 +262,6 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
-    public void catchTooLongNames() {
-      final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("_id", 123);
-      ObjectNode ob = doc.putObject("subdoc");
-      final String propName =
-          "property_with_way_too_long_name_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789";
-      ob.put(propName, true);
-
-      Exception e = catchException(() -> shredder.shred(doc));
-      assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
-              " Property name length ("
-                  + propName.length()
-                  + ") exceeds maximum allowed ("
-                  + docLimits.maxPropertyNameLength()
-                  + ") (name '"
-                  + propName
-                  + "')");
-      ;
-    }
-
-    @Test
     public void catchTooLongPaths() {
       final ObjectNode doc = objectMapper.createObjectNode();
       // Create 3-levels, 80 chars each, so close to 250; and then one bit longer value
@@ -277,7 +277,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " Property path length (259) exceeds maximum allowed ("
+              "property path length (259) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with 'longPropertyName')");
       ;
@@ -428,7 +428,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "Document key name constraints violated: Property name ('"
+              "Document key name constraints violated: property name ('"
                   + invalidName
                   + "') contains character(s) not allowed");
     }

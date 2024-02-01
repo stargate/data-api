@@ -313,7 +313,7 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad document type to shred: Document to shred must be a JSON Object, instead got ARRAY")
+              "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCUMENT_TYPE);
     }
 

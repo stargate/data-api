@@ -559,54 +559,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an Array has ("
+                  "Document size limitation violated: number of elements an indexable Array ('arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
                       + ")"));
-    }
-
-    @Test
-    public void insertLongestValidName() {
-      final String LONGEST_NAME = "a".repeat(DocumentLimitsConfig.DEFAULT_MAX_PROPERTY_NAME_LENGTH);
-      ObjectNode doc = MAPPER.createObjectNode();
-      doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongName");
-      // Max property name: 100 characters
-      doc.put(LONGEST_NAME, "stuff");
-      _verifyInsert("docWithLongName", doc);
-    }
-
-    @Test
-    public void tryInsertTooLongName() {
-      // Max property name: 100 characters, let's try 102
-      ObjectNode doc = MAPPER.createObjectNode();
-      doc.put(
-          "prop_12345_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_x",
-          72);
-      final String json =
-          """
-                  {
-                    "insertOne": {
-                      "document": %s
-                    }
-                  }
-                  """
-              .formatted(doc);
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Document size limitation violated: Property name length (102) exceeds maximum allowed (100)"));
     }
 
     // Test for nested paths, to ensure longer paths work too.
@@ -653,7 +610,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Property path length (272) exceeds maximum allowed (250)"));
+                  "Document size limitation violated: property path length (272) exceeds maximum allowed (250)"));
     }
 
     @Test
@@ -757,7 +714,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: Indexed String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -821,7 +778,47 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message", startsWith("Document size limitation violated: document size ("))
-          .body("errors[0].message", endsWith(") exceeds maximum allowed (1000000)"));
+          .body("errors[0].message", endsWith(") exceeds maximum allowed (4000000)"));
+    }
+
+    @Test
+    public void tryInsertDocWithTooBigObject() {
+      final ObjectNode tooManyPropsDoc = MAPPER.createObjectNode();
+      tooManyPropsDoc.put("_id", 456);
+
+      // Max indexed: 1000, add some more
+      ObjectNode subdoc = tooManyPropsDoc.putObject("subdoc");
+      for (int i = 0; i < 1001; ++i) {
+        subdoc.put("prop" + i, i);
+      }
+
+      String json =
+          """
+              {
+                "insertOne": {
+                  "document": %s
+                }
+              }
+              """
+              .formatted(tooManyPropsDoc);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith("Document size limitation violated: number of properties"))
+          .body(
+              "errors[0].message",
+              endsWith("indexable Object ('subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test
