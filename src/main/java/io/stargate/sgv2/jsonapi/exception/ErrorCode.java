@@ -133,8 +133,10 @@ public enum ErrorCode {
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHORIZED_REQUEST("UNAUTHENTICATED: Invalid token"),
-  INVALID_QUERY("INVALID QUERY"),
-  OPERATION_TIMEOUT("OPERATION_TIMEOUT");
+  INVALID_QUERY("Invalid query"),
+  DRIVER_TIMEOUT("Driver timeout on"),
+  DRIVER_CLOSED_CONNECTION("Driver request connection is closed due to an unrelated event"),
+  NO_NODE_AVAILABLE("No node was available to execute the query");
 
   private final String message;
 

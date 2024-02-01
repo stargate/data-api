@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
+import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
@@ -32,7 +34,8 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof JsonApiException jae) {
           return jae.getCommandResultError(message, Response.Status.OK);
         }
-        // Override response error code
+
+        // construct fieldsForMetricsTag, only expose exceptionClass in debugMode
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
         final boolean debugEnabled = debugModeConfig.enabled();
@@ -40,12 +43,15 @@ public final class ThrowableToErrorMapper {
             debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
         final Map<String, Object> fieldsForMetricsTag =
             Map.of("exceptionClass", throwable.getClass().getSimpleName());
+
+        // Authentication Failure -> ErrorCode.UNAUTHORIZED_REQUEST
         if (throwable instanceof UnauthorizedException
             || throwable
                 instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
           return ErrorCode.UNAUTHORIZED_REQUEST
               .toApiException()
               .getCommandResultError(message, Response.Status.UNAUTHORIZED);
+          // Driver QueryValidationException -> ErrorCode.INVALID_QUERY
         } else if (throwable instanceof QueryValidationException) {
           if (message.contains("vector<float,")) {
             message = "Mismatched vector dimension";
@@ -53,47 +59,63 @@ public final class ThrowableToErrorMapper {
           return ErrorCode.INVALID_QUERY
               .toApiException()
               .getCommandResultError(message, Response.Status.OK);
+          // Driver Timeout Exception -> ErrorCode.OPERATION_TIMEOUT
         } else if (throwable instanceof DriverTimeoutException
             || throwable instanceof WriteTimeoutException
             || throwable instanceof ReadTimeoutException) {
-          return ErrorCode.OPERATION_TIMEOUT
+          return ErrorCode.DRIVER_TIMEOUT
               .toApiException()
               .getCommandResultError(message, Response.Status.OK);
-        } else if (throwable instanceof DriverException) {
-          if (throwable instanceof AllNodesFailedException) {
-            Map<Node, List<Throwable>> nodewiseErrors =
-                ((AllNodesFailedException) throwable).getAllErrors();
-            if (!nodewiseErrors.isEmpty()) {
-              List<Throwable> errors = nodewiseErrors.values().iterator().next();
-              if (errors != null && !errors.isEmpty()) {
-                Throwable error =
-                    errors.stream()
-                        .findAny()
-                        .filter(
-                            t ->
-                                t instanceof AuthenticationException
-                                    || t instanceof IllegalArgumentException)
-                        .orElse(null);
-                // connecting to oss cassandra throws AuthenticationException for invalid
-                // credentials connecting to AstraDB throws IllegalArgumentException for invalid
-                // token/credentials
-                if (error instanceof AuthenticationException
-                    || (error instanceof IllegalArgumentException
-                        && (error.getMessage().contains("AUTHENTICATION ERROR")
-                            || error
-                                .getMessage()
-                                .contains(
-                                    "Provided username token and/or password are incorrect")))) {
-                  return ErrorCode.UNAUTHORIZED_REQUEST
-                      .toApiException()
-                      .getCommandResultError(message, Response.Status.UNAUTHORIZED);
-                }
+          // Driver AllNodesFailedException a composite exception
+          // peeling the errors from it
+        } else if (throwable instanceof AllNodesFailedException) {
+          Map<Node, List<Throwable>> nodewiseErrors =
+              ((AllNodesFailedException) throwable).getAllErrors();
+          // will not give clients AllNodesFailedException error
+          if (!nodewiseErrors.isEmpty()) {
+            List<Throwable> errors = nodewiseErrors.values().iterator().next();
+            if (errors != null && !errors.isEmpty()) {
+              Throwable error =
+                  errors.stream()
+                      .findAny()
+                      .filter(
+                          t ->
+                              t instanceof AuthenticationException
+                                  || t instanceof IllegalArgumentException
+                                  || t instanceof NoNodeAvailableException)
+                      .orElse(null);
+              // connect to oss cassandra throws AuthenticationException for invalid credentials
+              // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
+              if (error instanceof AuthenticationException
+                  || (error instanceof IllegalArgumentException
+                      && (error.getMessage().contains("AUTHENTICATION ERROR")
+                          || error
+                              .getMessage()
+                              .contains(
+                                  "Provided username token and/or password are incorrect")))) {
+                return ErrorCode.UNAUTHORIZED_REQUEST
+                    .toApiException()
+                    .getCommandResultError(message, Response.Status.UNAUTHORIZED);
+                // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
+              } else if (error instanceof NoNodeAvailableException) {
+                return ErrorCode.NO_NODE_AVAILABLE
+                    .toApiException()
+                    .getCommandResultError(message, Response.Status.OK);
               }
             }
           }
+          // Driver ClosedConnectionException -> ErrorCode.DRIVER_CLOSED_CONNECTION
+        } else if (throwable instanceof ClosedConnectionException) {
+          return ErrorCode.DRIVER_CLOSED_CONNECTION
+              .toApiException()
+              .getCommandResultError(message, Response.Status.OK);
+          // Unidentified Driver Exceptions, will not mapper into JsonApiException
+        } else if (throwable instanceof DriverException) {
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         }
+
+        // Errors not from driver and JsonApiException
         return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
 
