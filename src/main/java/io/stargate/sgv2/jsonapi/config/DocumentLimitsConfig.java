@@ -42,7 +42,7 @@ public interface DocumentLimitsConfig {
    * Defines the default maximum total length of path to individual properties in JSON documents:
    * composed of individual Object property names separated by dots (".").
    */
-  int DEFAULT_MAX_PROPERTY_PATH_LENGTH = 250;
+  int DEFAULT_MAX_PROPERTY_PATH_LENGTH = 1000;
 
   /**
    * Defines the default maximum length of a single String value: 8,000 bytes with 1.0.0-BETA-6 and
