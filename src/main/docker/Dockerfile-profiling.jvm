@@ -1,0 +1,39 @@
+####
+# Dockerfile for building API image with profiling tools included
+# based on less minimal UBI8 OpenJDK 17 image
+#
+###
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.17
+
+ENV LANGUAGE='en_US:en'
+
+ARG TARGETARCH
+
+ENV ARCH=arm64
+
+RUN if [ "TARGETARCH" = "amd64" ]; then \
+      export ARCH=x64; \
+    fi
+
+RUN mkdir -p /opt/profiler
+ARG PROFILE_TOOLS=profiler-$TARGETARCH
+
+USER root
+RUN microdnf update && microdnf install gzip
+
+USER jboss
+RUN mkdir -p /opt/profiler && curl -fsL https://github.com/async-profiler/async-profiler/releases/download/v2.9/async-profiler-2.9-linux-${ARCH}.tar.gz | tar zxvf - -C /opt/profiler --strip-components 1
+RUN mkdir -p /opt/sjk-plus && curl -o /opt/sjk-plus/sjk-plus-0.20.jar https://repo.datastax.com/artifactory/dse/org/gridkit/jvmtool/sjk-plus/0.20/sjk-plus-0.20.jar;
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 target/quarkus-app/*.jar /deployments/
+COPY --chown=185 target/quarkus-app/app/ /deployments/app/
+COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8181
+USER 185
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+
+
