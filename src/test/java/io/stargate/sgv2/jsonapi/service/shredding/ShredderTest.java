@@ -622,12 +622,14 @@ public class ShredderTest {
               .filter(
                   line ->
                       line.startsWith("json_bytes_written")
+                          && !line.startsWith("json_bytes_written_bucket")
+                          && !line.contains("quantile")
                           && line.contains("jsonBytesWriteCommand"))
               .toList();
       assertThat(jsonBytesWriteMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isEqualTo(1);
+                assertThat(lines.size()).isEqualTo(3);
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"jsonBytesWriteCommand\"");
