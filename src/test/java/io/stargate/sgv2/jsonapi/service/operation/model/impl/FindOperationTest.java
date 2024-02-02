@@ -65,8 +65,7 @@ public class FindOperationTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonBytesMetricsReporter);
     VECTOR_COMMAND_CONTEXT =
         new CommandContext(
             KEYSPACE_NAME,
@@ -81,7 +80,7 @@ public class FindOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-            jsonMetricsReporterFactory);
+            jsonBytesMetricsReporter);
   }
 
   @Nested
@@ -2613,7 +2612,7 @@ public class FindOperationTest extends OperationTestBase {
                       """;
       CommandContext commandContext =
           new CommandContext(
-              KEYSPACE_NAME, COLLECTION_NAME, "jsonBytesReadCommand", jsonMetricsReporterFactory);
+              KEYSPACE_NAME, COLLECTION_NAME, "jsonBytesReadCommand", jsonBytesMetricsReporter);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(

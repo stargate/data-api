@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -38,16 +38,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
-  private final JsonMetricsReporterFactory jsonMetricsReporterFactory;
+  private final JsonBytesMetricsReporter jsonBytesMetricsReporter;
 
   @Inject
   public Shredder(
       ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
-      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
+      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
-    this.jsonMetricsReporterFactory = jsonMetricsReporterFactory;
+    this.jsonBytesMetricsReporter = jsonBytesMetricsReporter;
   }
 
   /**
@@ -95,10 +95,8 @@ public class Shredder {
     // And then we can validate the document size
     validateDocumentSize(documentLimits, docJson);
 
-    // Create size metrics
-    jsonMetricsReporterFactory
-        .jsonBytesMetricsReporter()
-        .createSizeMetrics(true, commandName, docJson.length());
+    // Create json bytes written metrics
+    jsonBytesMetricsReporter.createJsonWriteBytesMetrics(commandName, docJson.length());
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);

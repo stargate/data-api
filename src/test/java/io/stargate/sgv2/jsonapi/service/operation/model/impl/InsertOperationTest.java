@@ -74,8 +74,7 @@ public class InsertOperationTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT_NON_VECTOR =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonMetricsReporterFactory);
+        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonBytesMetricsReporter);
     COMMAND_CONTEXT_VECTOR =
         new CommandContext(
             KEYSPACE_NAME,
@@ -90,7 +89,7 @@ public class InsertOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-            jsonMetricsReporterFactory);
+            jsonBytesMetricsReporter);
   }
 
   @Nested

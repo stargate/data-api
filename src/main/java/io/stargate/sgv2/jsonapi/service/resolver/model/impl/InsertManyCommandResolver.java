@@ -3,8 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonDocCounterMetricsReporter;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -22,16 +21,16 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   private final Shredder shredder;
   private final ObjectMapper objectMapper;
 
-  private final JsonMetricsReporterFactory jsonMetricsReporterFactory;
+  private final JsonBytesMetricsReporter jsonBytesMetricsReporter;
 
   @Inject
   public InsertManyCommandResolver(
       Shredder shredder,
       ObjectMapper objectMapper,
-      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
+      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
     this.shredder = shredder;
     this.objectMapper = objectMapper;
-    this.jsonMetricsReporterFactory = jsonMetricsReporterFactory;
+    this.jsonBytesMetricsReporter = jsonBytesMetricsReporter;
   }
 
   @Override
@@ -45,16 +44,10 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     ctx.tryVectorize(objectMapper.getNodeFactory(), command.documents());
 
     final DocumentProjector projection = ctx.indexingProjector();
-    JsonDocCounterMetricsReporter jsonDocCounterMetricsReporter =
-        jsonMetricsReporterFactory.docJsonCounterMetricsReporter();
-    jsonDocCounterMetricsReporter.createDocCounterMetrics(true, ctx.commandName());
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream()
             .map(
-                doc -> {
-                  jsonDocCounterMetricsReporter.increaseDocCounterMetrics(1);
-                  return shredder.shred(doc, null, projection, command.getClass().getSimpleName());
-                })
+                doc -> shredder.shred(doc, null, projection, command.getClass().getSimpleName()))
             .toList();
 
     // resolve ordered

@@ -13,8 +13,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonDocCounterMetricsReporter;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonMetricsReporterFactory;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -68,7 +67,7 @@ public interface ReadOperation extends Operation {
    * @param limit - How many documents to return
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
-   * @param jsonMetricsReporterFactory - create json bytes read metrics
+   * @param jsonBytesMetricsReporter - create json bytes read metrics
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -82,7 +81,7 @@ public interface ReadOperation extends Operation {
       int limit,
       boolean vectorSearch,
       String commandName,
-      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
+      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
 
     return Multi.createFrom()
         .items(queries.stream())
@@ -103,19 +102,16 @@ public interface ReadOperation extends Operation {
               int remaining = rSet.remaining();
               List<ReadDocument> documents = new ArrayList<>(remaining);
               Iterator<Row> rowIterator = rSet.currentPage().iterator();
-              JsonDocCounterMetricsReporter jsonCounter =
-                  jsonMetricsReporterFactory.docJsonCounterMetricsReporter();
-              jsonCounter.createDocCounterMetrics(false, commandName);
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 ReadDocument document = null;
                 try {
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
-                    jsonMetricsReporterFactory
-                        .jsonBytesMetricsReporter()
-                        .createSizeMetrics(false, commandName, row.getString(2).length());
-                    jsonCounter.increaseDocCounterMetrics(1);
+                    // create metrics
+                    jsonBytesMetricsReporter.createJsonReadBytesMetrics(
+                        commandName, row.getString(2).length());
+
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
                       projection.applyProjection(root, score);
@@ -182,7 +178,7 @@ public interface ReadOperation extends Operation {
    *     count for sort + 1)
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
-   * @param jsonMetricsReporterFactory - create json bytes read metrics
+   * @param jsonBytesMetricsReporter - create json bytes read metrics
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
@@ -198,7 +194,7 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection,
       boolean vectorSearch,
       String commandName,
-      JsonMetricsReporterFactory jsonMetricsReporterFactory) {
+      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()
@@ -293,9 +289,8 @@ public interface ReadOperation extends Operation {
                             objectMapper, row.getString(2)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
-                jsonMetricsReporterFactory
-                    .jsonBytesMetricsReporter()
-                    .createSizeMetrics(false, commandName, row.getString(2).length());
+                jsonBytesMetricsReporter.createJsonReadBytesMetrics(
+                    commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })

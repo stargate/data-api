@@ -1,27 +1,35 @@
 package io.stargate.sgv2.jsonapi.api.v1.metrics;
 
-import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+@ApplicationScoped
 public class JsonBytesMetricsReporter {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
+  @Inject
   public JsonBytesMetricsReporter(
       MeterRegistry meterRegistry, JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
-  public void createSizeMetrics(boolean writeFlag, String commandName, long docJsonSize) {
-    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tags tags = Tags.of(commandTag);
+  public void createJsonWriteBytesMetrics(String commandName, long docJsonSize) {
+    DistributionSummary ds =
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesWritten())
+            .tags(jsonApiMetricsConfig.command(), commandName)
+            .register(meterRegistry);
+    ds.record(docJsonSize);
+  }
 
-    String metricsName =
-        writeFlag ? jsonApiMetricsConfig.jsonBytesWritten() : jsonApiMetricsConfig.jsonBytesRead();
-    Counter counter = Counter.builder(metricsName).tags(tags).register(meterRegistry);
-    counter.increment(docJsonSize);
+  public void createJsonReadBytesMetrics(String commandName, long docJsonSize) {
+    DistributionSummary ds =
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesRead())
+            .tags(jsonApiMetricsConfig.command(), commandName)
+            .register(meterRegistry);
+    ds.record(docJsonSize);
   }
 }
