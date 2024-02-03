@@ -252,23 +252,24 @@ public class ShredderDocLimitsTest {
     @Test
     public void allowNotTooLongPath() {
       final ObjectNode doc = objectMapper.createObjectNode();
-      // Create 3-levels, 80 chars each, so 242 chars (3 names, 2 dots); below 250 max
-      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
-      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
-      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
-      // and then one short one, for 244 char total path
-      ob3.put("x", 123);
+      // Create 3-levels, 300 chars each, so 902 chars (3 names, 2 dots); below 1000 max
+      ObjectNode ob1 = doc.putObject("abcde".repeat(60));
+      ObjectNode ob2 = ob1.putObject("defgh".repeat(60));
+      ObjectNode ob3 = ob2.putObject("hijkl".repeat(60));
+      // and then one short one, for 992 char total path
+      ob3.put("xyz".repeat(30), 123);
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
     @Test
     public void catchTooLongPaths() {
       final ObjectNode doc = objectMapper.createObjectNode();
-      // Create 3-levels, 80 chars each, so close to 250; and then one bit longer value
-      ObjectNode ob1 = doc.putObject("abcd".repeat(20));
-      ObjectNode ob2 = ob1.putObject("defg".repeat(20));
-      ObjectNode ob3 = ob2.putObject("hijk".repeat(20));
-      ob3.put("longPropertyName", 123);
+      // Create 3-levels, 300 chars each, for 900 + 2 and then one last segment of 100 char
+      ObjectNode ob1 = doc.putObject("abcde".repeat(60));
+      ObjectNode ob2 = ob1.putObject("defgh".repeat(60));
+      ObjectNode ob3 = ob2.putObject("hijkl".repeat(60));
+      final String lastSegment = "a1234".repeat(20);
+      ob3.put(lastSegment, 123);
 
       Exception e = catchException(() -> shredder.shred(doc));
       assertThat(e)
@@ -277,9 +278,11 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "property path length (259) exceeds maximum allowed ("
+              "property path length (1003) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
-                  + ") (path ends with 'longPropertyName')");
+                  + ") (path ends with '"
+                  + lastSegment
+                  + "')");
       ;
     }
 
