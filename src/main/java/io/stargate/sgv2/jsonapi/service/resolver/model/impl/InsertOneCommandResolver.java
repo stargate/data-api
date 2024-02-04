@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -19,16 +18,11 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
 
   private final Shredder shredder;
   private final ObjectMapper objectMapper;
-  private final JsonBytesMetricsReporter jsonBytesMetricsReporter;
 
   @Inject
-  public InsertOneCommandResolver(
-      Shredder shredder,
-      ObjectMapper objectMapper,
-      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
+  public InsertOneCommandResolver(Shredder shredder, ObjectMapper objectMapper) {
     this.shredder = shredder;
     this.objectMapper = objectMapper;
-    this.jsonBytesMetricsReporter = jsonBytesMetricsReporter;
   }
 
   @Override
