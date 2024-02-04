@@ -2,11 +2,26 @@
 
 ## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-3...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0...HEAD)
+
+## [v1.0.0](https://github.com/stargate/jsonapi/tree/v1.0.0) (2024-02-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-3...v1.0.0)
 
 **Closed issues:**
 
-- Document limits: only apply Max Object/Document Properties limits on indexed fields [\#821](https://github.com/stargate/jsonapi/issues/821)
+- INVALID\_REQUST error code typo [\#796](https://github.com/stargate/jsonapi/issues/796)
+- Document limits: remove individual max property name limit \(leave just max path limit\) [\#819](https://github.com/stargate/jsonapi/issues/819)
+- Document Limits: increase max property path length to 1000 \(from 250\) [\#820](https://github.com/stargate/jsonapi/issues/820)
+- Document limits: only apply Max Object Properties limits on indexed fields [\#821](https://github.com/stargate/jsonapi/issues/821)
+- Document limits: only apply Max Document Properties limits on indexed fields [\#850](https://github.com/stargate/jsonapi/issues/850)
+
+**Merged pull requests:**
+
+- Fixes \#820: increase max path length limit to 1000 \(from 250\) [\#853](https://github.com/stargate/jsonapi/pull/853) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#850: apply max-doc-properties on indexed properties only, not all [\#852](https://github.com/stargate/jsonapi/pull/852) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#819: remove max limit for Object property name \(leaving full path max\) [\#849](https://github.com/stargate/jsonapi/pull/849) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Backup of Data API Postman collection [\#846](https://github.com/stargate/jsonapi/pull/846) ([johnsmartco](https://github.com/johnsmartco))
 
 ## [v1.0.0-RC-3](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-3) (2024-01-31)
 

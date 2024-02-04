@@ -569,24 +569,25 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     // Test for nested paths, to ensure longer paths work too.
     @Test
     public void insertLongestValidPath() {
-      // Need to hard-code knowledge of defaults here: max path is 250 (max single prop name 100)
-      // Since commas are also counted, let's do 4 x 60 (plus 3 commas) == 243 chars
+      // Need to hard-code knowledge of defaults here: max path is 1000
+      // Since periods are also counted, let's do 4 x 200 (plus 3 dots) == 803 chars
       ObjectNode doc = MAPPER.createObjectNode();
-      ObjectNode prop1 = doc.putObject("a123".repeat(15));
-      ObjectNode prop2 = prop1.putObject("b123".repeat(15));
-      ObjectNode prop3 = prop2.putObject("c123".repeat(15));
-      prop3.put("d123".repeat(15), 42);
+      ObjectNode prop1 = doc.putObject("a1234".repeat(40));
+      ObjectNode prop2 = prop1.putObject("b1234".repeat(40));
+      ObjectNode prop3 = prop2.putObject("c1234".repeat(40));
+      prop3.put("d1234".repeat(40), 42);
       doc.put(DocumentConstants.Fields.DOC_ID, "docWithLongPath");
       _verifyInsert("docWithLongPath", doc);
     }
 
     @Test
     public void tryInsertTooLongPath() {
-      // Max path: 250 characters. Exceed with 272
+      // Max path: 100 characters. Exceed with 4 x 250 + 3
       ObjectNode doc = MAPPER.createObjectNode();
-      ObjectNode prop1 = doc.putObject("a".repeat(90));
-      ObjectNode prop2 = prop1.putObject("b".repeat(90));
-      prop2.put("c".repeat(90), true);
+      ObjectNode prop1 = doc.putObject("a".repeat(250));
+      ObjectNode prop2 = prop1.putObject("b".repeat(250));
+      ObjectNode prop3 = prop2.putObject("c".repeat(250));
+      prop3.put("d".repeat(250), true);
       final String json =
           """
                       {
@@ -610,7 +611,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: property path length (272) exceeds maximum allowed (250)"));
+                  "Document size limitation violated: property path length (1003) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -675,8 +676,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       ObjectNode doc = MAPPER.createObjectNode();
       final String docId = "docWithLongString";
       doc.put(DocumentConstants.Fields.DOC_ID, docId);
-      // 1M / 8k means at most 125 max length Strings; add 63 (with _id max of 64
-      // properties per Object)
+      // 1M / 8k means at most 125 max length Strings; add 63 (with _id 64)
       for (int i = 0; i < 63; ++i) {
         doc.put("text" + i, createBigString(strLen));
       }
@@ -857,7 +857,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: total number of properties ("))
+              startsWith("Document size limitation violated: total number of indexed properties ("))
           .body("errors[0].message", endsWith(" in document exceeds maximum allowed (2000)"));
     }
 

@@ -28,9 +28,9 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 |-----------------------------------------------------------------|-------|-------------|-----------------------------------------------------------------------------------------|
 | `stargate.jsonapi.document.limits.max-size`                     | `int` | `4_000_000` | The maximum size of (in characters) a single document.                                  |
 | `stargate.jsonapi.document.limits.max-depth`                    | `int` | `16`        | The maximum document depth (nesting).                                                   |
-| `stargate.jsonapi.document.limits.max-property-path-length`     | `int` | `250`       | The maximum length of property paths in a document (segments and separating periods)    |
+| `stargate.jsonapi.document.limits.max-property-path-length`     | `int` | `1000`       | The maximum length of property paths in a document (segments and separating periods)    |
 | `stargate.jsonapi.document.limits.max-object-properties`        | `int` | `1000`      | The maximum number of properties any single indexable object in a document can contain. |
-| `stargate.jsonapi.document.limits.max-document-properties`      | `int` | `2000`      | The maximum total number of properties all objects in a document can contain.           |
+| `stargate.jsonapi.document.limits.max-document-properties`      | `int` | `2000`      | The maximum number of total indexed properties a document can contain.                        |
 | `stargate.jsonapi.document.limits.max-number-length`            | `int` | `100`       | The maximum length (in characters) of a single number value in a document.              |
 | `stargate.jsonapi.document.limits.max-string-length-in-bytes`   | `int` | `8000`      | The maximum length (in bytes) of a single indexable string value in a document.         |
 | `stargate.jsonapi.document.limits.max-array-length`             | `int` | `1000`      | The maximum length (in elements) of a single indexable array in a document.             |

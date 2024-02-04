@@ -246,25 +246,20 @@ public class Shredder {
 
   /**
    * Validator applied to the full document, before removing non-indexable fields. Used to ensure
-   * that it does not violate overall structural limits such as maximum nesting depth.
+   * that the full document does not violate overall structural limits such as total length or
+   * maximum nesting depth, or invalid property names. Most checks are done at a later point with
+   * {@link IndexableValueValidator}.
    */
   static class FullDocValidator {
     final DocumentLimitsConfig limits;
-    final AtomicInteger totalProperties;
 
     public FullDocValidator(DocumentLimitsConfig limits) {
       this.limits = limits;
-      totalProperties = new AtomicInteger(0);
     }
 
     public void validate(ObjectNode doc) {
       // Second: traverse to check for other constraints
       validateObjectValue(null, doc, 0, 0);
-      if (totalProperties.get() > limits.maxDocumentProperties()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "total number of properties (%d) in document exceeds maximum allowed (%d)",
-            totalProperties.get(), limits.maxDocumentProperties());
-      }
     }
 
     private void validateValue(
@@ -293,14 +288,13 @@ public class Shredder {
       validateDocDepth(limits, depth);
 
       final int propCount = objectValue.size();
-      totalProperties.addAndGet(propCount);
 
       var it = objectValue.fields();
       while (it.hasNext()) {
         var entry = it.next();
         final String key = entry.getKey();
         validateObjectKey(key, entry.getValue(), depth, parentPathLength);
-        // Path through property consists of segements separated by comma:
+        // Path through property consists of segments separated by comma:
         final int propPathLength = parentPathLength + 1 + key.length();
         validateValue(key, entry.getValue(), depth, propPathLength);
       }
@@ -348,12 +342,20 @@ public class Shredder {
   static class IndexableValueValidator {
     final DocumentLimitsConfig limits;
 
+    final AtomicInteger totalProperties;
+
     public IndexableValueValidator(DocumentLimitsConfig limits) {
       this.limits = limits;
+      totalProperties = new AtomicInteger(0);
     }
 
     public void validate(ObjectNode doc) {
       validateObjectValue(null, doc);
+      if (totalProperties.get() > limits.maxDocumentProperties()) {
+        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+            "total number of indexed properties (%d) in document exceeds maximum allowed (%d)",
+            totalProperties.get(), limits.maxDocumentProperties());
+      }
     }
 
     private void validateValue(String referringPropertyName, JsonNode value) {
@@ -394,6 +396,7 @@ public class Shredder {
             "number of properties an indexable Object ('%s') has (%d) exceeds maximum allowed (%s)",
             referringPropertyName, objectValue.size(), limits.maxObjectProperties());
       }
+      totalProperties.addAndGet(propCount);
 
       for (Map.Entry<String, JsonNode> entry : objectValue.properties()) {
         validateValue(entry.getKey(), entry.getValue());
