@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -123,6 +124,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
             null,
             "testCommand",
             jsonBytesMetricsReporter);
+  }
+
+  private CommandContext createCommandContextWithCommandName(String commandName) {
+    return new CommandContext(
+        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonBytesMetricsReporter);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
@@ -322,9 +328,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
+      CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
@@ -339,7 +347,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT,
+              commandContext,
               findOperation,
               documentUpdater,
               true,
@@ -369,6 +377,48 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
       assertThat(result.errors()).isNull();
       assertThat(result.data().getResponseDocuments()).hasSize(1);
+
+      // verify metrics
+      String writeMetrics =
+          given().when().get("/metrics").then().statusCode(200).extract().asString();
+
+      // there should be no json_bytes_written metrics (no write)
+      List<String> jsonBytesWriteMetrics =
+          writeMetrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written") && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonBytesWriteMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(0);
+              });
+
+      // there should be three json_bytes_read metrics (one read)
+      String readMetrics =
+          given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesReadMetrics =
+          readMetrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadNoWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
     }
 
     @Test
@@ -482,9 +532,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
+      CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
+
       FindOperation findOperation =
           FindOperation.sorted(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,
@@ -502,7 +554,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT,
+              commandContext,
               findOperation,
               documentUpdater,
               true,
@@ -532,6 +584,56 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
       assertThat(result.errors()).isNull();
+
+      // verify metrics
+      String writeMetrics =
+          given().when().get("/metrics").then().statusCode(200).extract().asString();
+
+      // there should be three json_bytes_written metrics (one write)
+      List<String> jsonBytesWriteMetrics =
+          writeMetrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written")
+                          && !line.startsWith("json_bytes_written_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonBytesWriteMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadAndWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
+
+      // there should be three json_bytes_read metrics (one read)
+      String readMetrics =
+          given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesReadMetrics =
+          readMetrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadAndWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
     }
 
     @Test
@@ -645,7 +747,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
     @Test
     public void happyPathReplaceUpsert() throws Exception {
-      UUID tx_id = UUID.randomUUID();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       // read
