@@ -96,7 +96,7 @@ public class Shredder {
     validateDocumentSize(documentLimits, docJson);
 
     // Create json bytes written metrics
-    jsonBytesMetricsReporter.createJsonWriteBytesMetrics(commandName, docJson.length());
+    jsonBytesMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);

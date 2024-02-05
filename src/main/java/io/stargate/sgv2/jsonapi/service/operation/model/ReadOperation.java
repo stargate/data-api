@@ -67,7 +67,7 @@ public interface ReadOperation extends Operation {
    * @param limit - How many documents to return
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
-   * @param jsonBytesMetricsReporter - create json bytes read metrics
+   * @param jsonBytesMetricsReporter - reporter to use for reporting JSON read/write metrics
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -109,7 +109,7 @@ public interface ReadOperation extends Operation {
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
                     // create metrics
-                    jsonBytesMetricsReporter.createJsonReadBytesMetrics(
+                    jsonBytesMetricsReporter.reportJsonReadBytesMetrics(
                         commandName, row.getString(2).length());
 
                     if (projection.doIncludeSimilarityScore()) {
@@ -178,7 +178,7 @@ public interface ReadOperation extends Operation {
    *     count for sort + 1)
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
-   * @param jsonBytesMetricsReporter - create json bytes read metrics
+   * @param jsonBytesMetricsReporter - reporter to use for reporting JSON read/write metrics
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
@@ -289,7 +289,7 @@ public interface ReadOperation extends Operation {
                             objectMapper, row.getString(2)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
-                jsonBytesMetricsReporter.createJsonReadBytesMetrics(
+                jsonBytesMetricsReporter.reportJsonReadBytesMetrics(
                     commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);

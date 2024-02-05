@@ -17,7 +17,7 @@ public class JsonBytesMetricsReporter {
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
-  public void createJsonWriteBytesMetrics(String commandName, long docJsonSize) {
+  public void reportJsonWriteBytesMetrics(String commandName, long docJsonSize) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesWritten())
             .tags(jsonApiMetricsConfig.command(), commandName)
@@ -25,7 +25,7 @@ public class JsonBytesMetricsReporter {
     ds.record(docJsonSize);
   }
 
-  public void createJsonReadBytesMetrics(String commandName, long docJsonSize) {
+  public void reportJsonReadBytesMetrics(String commandName, long docJsonSize) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesRead())
             .tags(jsonApiMetricsConfig.command(), commandName)
