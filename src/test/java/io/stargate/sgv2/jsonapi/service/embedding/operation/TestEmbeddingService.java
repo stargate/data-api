@@ -11,8 +11,14 @@ public class TestEmbeddingService implements EmbeddingService {
       new CommandContext(
           "namespace",
           "collection",
-          true,
-          CollectionSettings.SimilarityFunction.COSINE,
+          new CollectionSettings(
+              "collection",
+              true,
+              3,
+              CollectionSettings.SimilarityFunction.COSINE,
+              null,
+              null,
+              null),
           new TestEmbeddingService());
 
   @Override

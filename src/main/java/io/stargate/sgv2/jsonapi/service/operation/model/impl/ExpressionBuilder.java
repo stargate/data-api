@@ -108,7 +108,15 @@ public class ExpressionBuilder {
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
-        if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
+        if (dbFilter instanceof DBFilterBase.AllFilter allFilter) {
+          List<BuiltCondition> allFilterConditions = allFilter.getAll();
+          List<Variable<BuiltCondition>> allFilterVariables =
+              allFilterConditions.stream().map(Variable::of).toList();
+          conditionExpressions.add(
+              allFilter.isNegation()
+                  ? ExpressionUtils.orOf(allFilterVariables)
+                  : ExpressionUtils.andOf(allFilterVariables));
+        } else if (dbFilter instanceof DBFilterBase.InFilter inFilter) {
           if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.IN)) {
             hasInFilterThisLevel = true;
           } else if (inFilter.operator.equals(DBFilterBase.InFilter.Operator.NIN)) {
@@ -174,7 +182,6 @@ public class ExpressionBuilder {
                   .get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
-      //      return null;
     }
 
     // current logicalExpression is empty (implies sub-logicalExpression and

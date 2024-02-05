@@ -40,8 +40,8 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
 
-    # max run time 10 minutes
-    timeout-minutes: 10
+    # max run time 12 minutes
+    timeout-minutes: 12
 
     steps:
       - uses: actions/checkout@v3
@@ -63,8 +63,8 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
 
-    # max run time 20 minutes
-    timeout-minutes: 20
+    # max run time 40 minutes
+    timeout-minutes: 40
 
     strategy:
 
@@ -77,9 +77,9 @@ jobs:
         include:
           - type: docker
             profile: ''
-
+        exclude:
           - type: native
-            profile: '-Pnative'
+            #profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v3

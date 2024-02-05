@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -16,10 +17,17 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
@@ -30,8 +38,13 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
-    String vectorize)
+    String comment,
+    int ddlDelayMillis)
     implements Operation {
+  private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
+
+  // shared matcher instance used to tell Collections from Tables
+  private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
@@ -41,7 +54,8 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
-      String vectorize) {
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -51,7 +65,8 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
-        vectorize);
+        comment,
+        ddlDelayMillis);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -59,20 +74,30 @@ public record CreateCollectionOperation(
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
-      String name) {
+      String name,
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
-        commandContext, dbLimitsConfig, objectMapper, cqlSessionCache, name, false, 0, null, null);
+        commandContext,
+        dbLimitsConfig,
+        objectMapper,
+        cqlSessionCache,
+        name,
+        false,
+        0,
+        null,
+        comment,
+        ddlDelayMillis);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession()
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.namespace()));
-    if (keyspaceMetadata == null) {
+    logger.info("Executing CreateCollectionOperation for {}", name);
+    Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
+        cqlSessionCache.getSession().getMetadata().getKeyspaces();
+    KeyspaceMetadata currKeyspace =
+        allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.namespace()));
+    if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
               new JsonApiException(
@@ -80,8 +105,7 @@ public record CreateCollectionOperation(
                   "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
                       .formatted(commandContext.namespace())));
     }
-    List<TableMetadata> allTables = new ArrayList<>(keyspaceMetadata.getTables().values());
-    TableMetadata table = findTableAndValidateLimits(allTables, name);
+    TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
     // table doesn't exist, continue
     if (table == null) {
@@ -98,74 +122,50 @@ public record CreateCollectionOperation(
             vectorSearch,
             vectorSize,
             CollectionSettings.SimilarityFunction.fromString(vectorFunction),
-            vectorize,
+            comment,
             objectMapper);
-    // if table exists and user want to create a vector collection with the same name
-    if (vectorSearch) {
-      // if existing collection is a vector collection
-      if (collectionSettings.vectorEnabled()) {
-        if (collectionSettings.equals(collectionSettings_cur)) {
-          // if settings are equal, no error
-          return executeCollectionCreation(queryExecutor);
-        } else {
-          // if settings are not equal, error out
-          return Uni.createFrom()
-              .failure(
-                  new JsonApiException(
-                      ErrorCode.INVALID_COLLECTION_NAME,
-                      "The provided collection name '%s' already exists with a different vector setting."
-                          .formatted(name)));
-        }
-      } else {
-        // if existing collection is a non-vector collection, error out
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a non-vector setting."
-                        .formatted(name)));
-      }
-    } else { // if table exists and user want to create a non-vector collection
-      // if existing table is vector enabled, error out
-      if (collectionSettings.vectorEnabled()) {
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a vector setting."
-                        .formatted(name)));
-      } else {
-        // if existing table is a non-vector collection, continue
-        return executeCollectionCreation(queryExecutor);
-      }
+    // if table exists we have to choices:
+    // (1) trying to create with same options -> ok, proceed
+    // (2) trying to create with different options -> error out
+    if (collectionSettings.equals(collectionSettings_cur)) {
+      return executeCollectionCreation(queryExecutor);
     }
+    return Uni.createFrom()
+        .failure(
+            ErrorCode.INVALID_COLLECTION_NAME.toApiException(
+                "provided collection ('%s') already exists with different 'vector' and/or 'indexing' options",
+                name));
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
     final Uni<AsyncResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
+            .onItem()
+            .delayIt()
+            .by(Duration.ofMillis(ddlDelayMillis))
             .onItem()
             .transformToUni(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(commandContext.namespace(), name);
-                    List<Uni<AsyncResultSet>> indexes = new ArrayList<>(10);
-                    indexStatements.stream()
-                        .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                    return Uni.combine()
-                        .all()
-                        .unis(indexes)
-                        .combinedWith(
+                    return Multi.createFrom()
+                        .items(indexStatements.stream())
+                        .onItem()
+                        .transformToUni(queryExecutor::executeCreateSchemaChange)
+                        .concatenate()
+                        .collect()
+                        .asList()
+                        .onItem()
+                        .transform(
                             results -> {
-                              final Optional<?> first =
+                              final Optional<AsyncResultSet> first =
                                   results.stream()
-                                      .filter(
-                                          indexRes -> !(((AsyncResultSet) indexRes).wasApplied()))
+                                      .filter(indexRes -> !(indexRes.wasApplied()))
                                       .findFirst();
-                              return first.isPresent() ? false : true;
+                              return !first.isPresent();
                             });
                   } else {
                     return Uni.createFrom().item(false);
@@ -180,20 +180,43 @@ public record CreateCollectionOperation(
    *
    * @return Existing table with given name, if any; {@code null} if not
    */
-  TableMetadata findTableAndValidateLimits(List<TableMetadata> tables, String name) {
-    for (TableMetadata table : tables) {
-      if (table.getName().equals(CqlIdentifier.fromInternal(name))) {
+  TableMetadata findTableAndValidateLimits(
+      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
+      KeyspaceMetadata currKeyspace,
+      String tableName) {
+    // First: do we already have a Table with the same name? If so, return it
+    for (TableMetadata table : currKeyspace.getTables().values()) {
+      if (table.getName().asInternal().equals(tableName)) {
         return table;
       }
     }
+    // Otherwise we need to check if we can create a new Collection based on limits;
+    // limits are calculated across the whole Database, so all Keyspaces need to be checked.
+    final List<TableMetadata> allTables =
+        allKeyspaces.values().stream()
+            .map(keyspace -> keyspace.getTables().values())
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+    final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
-    if (tables.size() >= MAX_COLLECTIONS) {
+    if (collectionCount >= MAX_COLLECTIONS) {
       throw new JsonApiException(
           ErrorCode.TOO_MANY_COLLECTIONS,
           String.format(
               "%s: number of collections in database cannot exceed %d, already have %d",
-              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, tables.size()));
+              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount));
     }
+    // And then see how many Indexes have been created, how many available
+    int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
+    if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
+        > dbLimitsConfig.indexesAvailablePerDatabase()) {
+      throw ErrorCode.TOO_MANY_INDEXES.toApiException(
+          "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
+          dbLimitsConfig.indexesNeededPerCollection(),
+          saisUsed,
+          dbLimitsConfig.indexesAvailablePerDatabase());
+    }
+
     return null;
   }
 
@@ -216,8 +239,8 @@ public record CreateCollectionOperation(
               + vectorSize
               + ">, "
               + "    PRIMARY KEY (key))";
-      if (vectorize != null) {
-        createTableWithVector = createTableWithVector + " WITH comment = '" + vectorize + "'";
+      if (comment != null) {
+        createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
       }
       return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
     } else {
@@ -235,7 +258,9 @@ public record CreateCollectionOperation(
               + "    query_timestamp_values map<text, timestamp>, "
               + "    query_null_values   set<text>, "
               + "    PRIMARY KEY (key))";
-
+      if (comment != null) {
+        createTable = createTable + " WITH comment = '" + comment + "'";
+      }
       return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
     }
   }

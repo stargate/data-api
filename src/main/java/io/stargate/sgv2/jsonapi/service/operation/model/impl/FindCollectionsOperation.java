@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -97,8 +98,10 @@ public record FindCollectionsOperation(
                 .map(
                     collectionProperty -> {
                       CreateCollectionCommand.Options options = null;
+                      CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
+                      CreateCollectionCommand.Options.VectorizeConfig vectorizeConfig = null;
+                      CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
                       if (collectionProperty.vectorEnabled()) {
-                        CreateCollectionCommand.Options.VectorizeConfig vectorizeConfig = null;
                         if (collectionProperty.modelName() != null
                             && collectionProperty.vectorizeServiceName() != null) {
                           CreateCollectionCommand.Options.VectorizeConfig.VectorizeOptions
@@ -109,14 +112,27 @@ public record FindCollectionsOperation(
                               new CreateCollectionCommand.Options.VectorizeConfig(
                                   collectionProperty.vectorizeServiceName(), vectorizeOptions);
                         }
-                        CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
+
+                        vectorSearchConfig =
                             new CreateCollectionCommand.Options.VectorSearchConfig(
                                 collectionProperty.vectorSize(),
                                 collectionProperty.similarityFunction().name().toLowerCase());
+                      }
+
+                      if (collectionProperty.indexingConfig() != null) {
+                        indexingConfig =
+                            new CreateCollectionCommand.Options.IndexingConfig(
+                                Lists.newArrayList(collectionProperty.indexingConfig().allowed()),
+                                Lists.newArrayList(collectionProperty.indexingConfig().denied()));
+                      }
+                      if (vectorSearchConfig != null
+                          || vectorizeConfig != null
+                          || indexingConfig != null) {
                         options =
                             new CreateCollectionCommand.Options(
-                                vectorSearchConfig, vectorizeConfig);
+                                vectorSearchConfig, vectorizeConfig, indexingConfig);
                       }
+
                       // CreateCollectionCommand object is created for convenience to generate json
                       // response. The code is not creating a collection here.
                       return new CreateCollectionCommand(

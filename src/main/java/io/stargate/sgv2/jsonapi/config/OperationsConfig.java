@@ -34,6 +34,8 @@ import javax.annotation.Nullable;
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
 public interface OperationsConfig {
+  /** Defines the default max size of filter fields. */
+  int DEFAULT_MAX_FILTER_SIZE = 64;
 
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
@@ -85,6 +87,14 @@ public interface OperationsConfig {
   @WithDefault("20")
   int maxDocumentInsertCount();
 
+  /**
+   * @return Defines the max size of filter fields, defaults to {@code 64}. (note: this does not
+   *     count the fields in '$operation' such as $in, $all)
+   */
+  @Positive
+  @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
+  int maxFilterObjectProperties();
+
   /** @return Maximum size of values array that can be sent in $in/$nin operator */
   @Max(100)
   @Positive
@@ -99,6 +109,23 @@ public interface OperationsConfig {
   @Positive
   @WithDefault("1000")
   int maxVectorSearchLimit();
+
+  /**
+   * @return Maximum size of keys read from database to return count, Setting it to -1 will use
+   *     Cassandra's count function. Default is <code>1000</code>.
+   */
+  @WithDefault("1000")
+  int maxCountLimit();
+
+  /**
+   * @return Defines the default page size for count operation, having separate from
+   *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
+   *     </code>.
+   */
+  @Max(500)
+  @Positive
+  @WithDefault("100")
+  int defaultCountPageSize();
 
   @NotNull
   @Valid
@@ -160,6 +187,14 @@ public interface OperationsConfig {
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("50")
     int sessionCacheMaxSize();
+
+    /** DDL query retry wait in illis. */
+    @WithDefault("1000")
+    int ddlRetryDelayMillis();
+
+    /** Create table cool off period before create index . */
+    @WithDefault("2000")
+    int ddlDelayMillis();
   }
 
   /** Query consistency related configs. */

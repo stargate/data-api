@@ -7,8 +7,10 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Helper class that implements functionality needed to support projections on documents fetched via
@@ -48,7 +50,7 @@ public class DocumentProjector {
       JsonNode projectionDefinition, boolean includeSimilarity) {
     if (projectionDefinition == null) {
       if (includeSimilarity) {
-        return IDENTITY_PROJECTOR_WITH_SIMILARITY;
+        return identityProjectorWithSimilarity();
       } else {
         return identityProjector();
       }
@@ -63,12 +65,53 @@ public class DocumentProjector {
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
+  public static DocumentProjector createForIndexing(Set<String> allowed, Set<String> denied) {
+    // Sets are expected to be validated to have one of 3 main cases:
+    // 1. Non-empty "allowed" (but empty/null "denied") -> build inclusion projection
+    // 2. Non-empty "denied" (but empty/null "allowed") -> build exclusion projection
+    // 3. Empty/null "allowed" and "denied" -> return identity projection
+    // as well as 2 special cases:
+    // 4. Empty "allowed" and single "*" entry for "denied" -> return exclude-all projection
+    // 5. Empty "deny" and single "*" entry for "allowed" -> return include-all ("identity")
+    // projection
+    // We need not (and should not) do further validation here.
+    // Note that (5) is effectively same as (3) and included for sake of uniformity
+    if (allowed != null && !allowed.isEmpty()) {
+      // (special) Case 5:
+      if (allowed.size() == 1 && allowed.contains("*")) {
+        return identityProjector();
+      }
+      // Case 1: inclusion-based projection
+      // Minor complication: "$vector" needs to be included automatically
+      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+      }
+      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
+    }
+    if (denied != null && !denied.isEmpty()) {
+      // (special) Case 4:
+      if (denied.size() == 1 && denied.contains("*")) {
+        // Basically inclusion projector with nothing to include
+        return new DocumentProjector(
+            ProjectionLayer.buildLayersOverlapOk(Collections.emptySet()), true, false);
+      }
+      // Case 2: exclusion-based projection
+      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
+    }
+    // Case 3: include-all (identity) projection
+    return identityProjector();
+  }
+
   public static DocumentProjector identityProjector() {
     return IDENTITY_PROJECTOR;
   }
 
-  public static DocumentProjector getIdentityProjectorWithSimilarity() {
-    return IDENTITY_PROJECTOR;
+  public boolean isIdentityProjection() {
+    return rootLayer == null && !inclusion;
+  }
+
+  public static DocumentProjector identityProjectorWithSimilarity() {
+    return IDENTITY_PROJECTOR_WITH_SIMILARITY;
   }
 
   public boolean isInclusion() {
@@ -99,6 +142,32 @@ public class DocumentProjector {
     if (includeSimilarityScore && similarityScore != null) {
       ((ObjectNode) document)
           .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+    }
+  }
+
+  /**
+   * Method to call to check if given path (dotted path, that is, dot-separated segments) would be
+   * included by this Projection. That is, either
+   *
+   * <ul>
+   *   <li>This is inclusion projection, and path is covered by an inclusion path
+   *   <li>This is exclusion projection, and path is NOT covered by any exclusion path
+   * </ul>
+   *
+   * @param path Dotted path (possibly nested) to check
+   * @return {@code true} if path is included; {@code false} if not.
+   */
+  public boolean isPathIncluded(String path) {
+    // First: if we have no layers, we are identity projector and include everything
+    if (rootLayer == null) {
+      return true;
+    }
+    // Otherwise need to split path, evaluate; but note reversal wrt include/exclude
+    // projections
+    if (inclusion) {
+      return rootLayer.isPathIncluded(path);
+    } else {
+      return !rootLayer.isPathIncluded(path);
     }
   }
 
@@ -151,13 +220,13 @@ public class DocumentProjector {
       if (inclusions > 0) { // inclusion-based projection
         // doc-id included unless explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayers(paths, slices, !Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayers(paths, slices, Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
             includeSimilarityScore);
       }

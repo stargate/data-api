@@ -73,7 +73,9 @@ public class NamespaceCache {
                       && (sre.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND
                           || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))) {
                     return Uni.createFrom()
-                        .item(new CollectionSettings(collectionName, false, 0, null, null, null));
+                        .item(
+                            new CollectionSettings(
+                                collectionName, false, 0, null, null, null, null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {

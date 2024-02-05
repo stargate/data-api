@@ -85,6 +85,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
+                    },
+                    "indexing": {
+                      "deny" : ["comment"]
                     }
                   }
                 }
@@ -117,6 +120,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
+                    },"indexing": {
+                      "deny" : ["comment"]
                     }
                   }
                 }
@@ -303,6 +308,77 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "errors[0].message",
               is("Unknown namespace should_not_be_there, you must create it first."));
+    }
+
+    @Test
+    @Order(7)
+    public void happyPathIndexingWithExplain() {
+      String json =
+          """
+                  {
+                    "createCollection": {
+                      "name": "%s",
+                      "options": {
+                        "indexing": {
+                          "deny" : ["comment"]
+                        }
+                      }
+                    }
+                  }
+                  """
+              .formatted("collection4");
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      String expected1 = """
+      {"name":"TableName"}
+      """;
+      String expected2 = """
+              {"name":"collection1"}
+              """;
+      String expected3 =
+          """
+      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      """;
+      String expected4 =
+          """
+              {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+              """;
+      json =
+          """
+                  {
+                    "findCollections": {
+                      "options": {
+                        "explain" : true
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(4))
+          .body(
+              "status.collections",
+              containsInAnyOrder(
+                  jsonEquals(expected1),
+                  jsonEquals(expected2),
+                  jsonEquals(expected3),
+                  jsonEquals(expected4)));
     }
   }
 

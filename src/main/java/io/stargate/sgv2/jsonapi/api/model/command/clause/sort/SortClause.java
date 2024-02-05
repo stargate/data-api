@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -36,5 +39,20 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .get(0)
             .path()
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+  }
+
+  public void validate(CommandContext commandContext) {
+    DocumentProjector indexingProjector = commandContext.indexingProjector();
+    // If nothing specified, everything indexed
+    if (indexingProjector.isIdentityProjection()) {
+      return;
+    }
+    // validate each path in sortExpressions
+    for (SortExpression sortExpression : sortExpressions) {
+      if (!indexingProjector.isPathIncluded(sortExpression.path())) {
+        throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
+            "sort path '%s' is not indexed", sortExpression.path());
+      }
+    }
   }
 }

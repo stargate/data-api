@@ -21,6 +21,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+/**
+ * To run this test DseTestResource is updated to have maxCountLimit to `5` and getCountPageSize to
+ * 2 so pagination and moreData flag can be tested
+ */
 public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -104,6 +108,16 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           }
           """;
       insert(json);
+
+      json =
+          """
+              {
+                "insertOne": {
+                  "document": {}
+                }
+              }
+              """;
+      insert(json);
     }
 
     private void insert(String json) {
@@ -137,6 +151,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.count", is(5))
+          .body("status.moreData", is(true))
           .body("errors", is(nullValue()));
     }
 
@@ -160,6 +175,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.count", is(5))
+          .body("status.moreData", is(true))
           .body("errors", is(nullValue()));
     }
 
@@ -335,7 +351,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.count", is(4))
+          .body("status.count", is(5))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
     }
@@ -759,7 +775,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.count", is(4))
+          .body("status.count", is(5))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
     }

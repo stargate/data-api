@@ -64,7 +64,7 @@ public class InsertManyCommandResolverTest {
                 WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).containsExactly(first, second);
               });
     }
@@ -102,7 +102,7 @@ public class InsertManyCommandResolverTest {
                 WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).containsExactly(first, second);
               });
     }
@@ -144,7 +144,7 @@ public class InsertManyCommandResolverTest {
                 assertThat(second.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(op.commandContext())
                     .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).containsExactly(first, second);
               });
     }
@@ -182,7 +182,7 @@ public class InsertManyCommandResolverTest {
                 WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
+                assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).containsExactly(first, second);
               });
     }
@@ -204,7 +204,7 @@ public class InsertManyCommandResolverTest {
                 }
               ],
               "options": {
-                "ordered": false
+                "ordered": true
               }
             }
           }
@@ -221,7 +221,7 @@ public class InsertManyCommandResolverTest {
                 WritableShreddedDocument second = shredder.shred(command.documents().get(1));
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
+                assertThat(op.ordered()).isTrue();
                 assertThat(op.documents()).containsExactly(first, second);
               });
     }

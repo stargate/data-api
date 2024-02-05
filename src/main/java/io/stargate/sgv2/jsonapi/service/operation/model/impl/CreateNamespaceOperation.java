@@ -27,7 +27,7 @@ public record CreateNamespaceOperation(String name, String replicationMap) imple
         SimpleStatement.newInstance(String.format(CREATE_KEYSPACE_CQL, name, replicationMap));
     // execute
     return queryExecutor
-        .executeSchemaChange(createKeyspace)
+        .executeCreateSchemaChange(createKeyspace)
 
         // if we have a result always respond positively
         .map(any -> new SchemaChangeResult(any.wasApplied()));

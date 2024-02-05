@@ -12,32 +12,37 @@ import jakarta.validation.constraints.Positive;
 @StaticInitSafe
 @ConfigMapping(prefix = "stargate.jsonapi.document.limits")
 public interface DocumentLimitsConfig {
-
-  /** Defines the default max size of filter fields. */
-  int DEFAULT_MAX_FILTER_SIZE = 64;
-
   /** Defines the default maximum document size. */
-  int DEFAULT_MAX_DOCUMENT_SIZE = 1_000_000;
+  int DEFAULT_MAX_DOCUMENT_SIZE = 4_000_000;
 
-  /** Defines the default maximum length (in elements) of a single Array value */
-  int DEFAULT_MAX_ARRAY_LENGTH = 100;
-
-  /**
-   * Defines the default maximum number of properties any single Object in JSON document can contain
-   */
-  int DEFAULT_MAX_OBJECT_PROPERTIES = 64;
+  /** Defines the default maximum document (nesting) depth */
+  int DEFAULT_MAX_DOCUMENT_DEPTH = 16;
 
   /**
-   * Defines the default maximum number of properties the whole JSON document can contain (including
-   * Object- and Array-valued properties).
+   * Defines the default maximum length (in elements) of a single indexable Array in JSON document.
    */
-  int DEFAULT_MAX_DOC_PROPERTIES = 1000;
+  int DEFAULT_MAX_ARRAY_LENGTH = 1_000;
+
+  /**
+   * Defines the default maximum number of properties for any single indexable Object in JSON
+   * document.
+   */
+  int DEFAULT_MAX_OBJECT_PROPERTIES = 1000;
+
+  /**
+   * Defines the default maximum number of indexable properties (properties in indexable Objects)
+   * for the whole JSON document (including Object- and Array-valued properties).
+   */
+  int DEFAULT_MAX_DOC_PROPERTIES = 2000;
 
   /** Defines the default maximum length of a single Number value (in characters) */
-  int DEFAULT_MAX_NUMBER_LENGTH = 50;
+  int DEFAULT_MAX_NUMBER_LENGTH = 100;
 
-  /** Defines the maximum length of property names in JSON documents */
-  int DEFAULT_MAX_PROPERTY_NAME_LENGTH = 48;
+  /**
+   * Defines the default maximum total length of path to individual properties in JSON documents:
+   * composed of individual Object property names separated by dots (".").
+   */
+  int DEFAULT_MAX_PROPERTY_PATH_LENGTH = 1000;
 
   /**
    * Defines the default maximum length of a single String value: 8,000 bytes with 1.0.0-BETA-6 and
@@ -46,7 +51,13 @@ public interface DocumentLimitsConfig {
   int DEFAULT_MAX_STRING_LENGTH_IN_BYTES = 8_000;
 
   /**
-   * @return Defines the maximum document size, defaults to {@code 1 meg} (1 million characters).
+   * Defines the maximum dimension allowed for {@code $vector} field allowed: defaults to 4096 (as
+   * of 1.0.0-BETA-7).
+   */
+  int DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH = 4096;
+
+  /**
+   * @return Defines the maximum document size, defaults to {@code 4 meg} (4 million characters).
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOCUMENT_SIZE)
@@ -54,42 +65,34 @@ public interface DocumentLimitsConfig {
 
   /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
   @Positive
-  @WithDefault("8")
+  @WithDefault("" + DEFAULT_MAX_DOCUMENT_DEPTH)
   int maxDepth();
 
   /**
-   * @return Defines the maximum length of property names in JSON documents, defaults to {@code 48
-   *     characters} (note: length is for individual name segments; full dotted names can be longer)
+   * @return Defines the maximum length of paths to properties in JSON documents, defaults to {@code
+   *     250 characters}. Note that this is the total length of the path (sequence of one or more
+   *     individual property names separated by comma).
    */
   @Positive
-  @WithDefault("" + DEFAULT_MAX_PROPERTY_NAME_LENGTH)
-  int maxPropertyNameLength();
+  @WithDefault("" + DEFAULT_MAX_PROPERTY_PATH_LENGTH)
+  int maxPropertyPathLength();
 
   /**
-   * @return Defines the maximum number of properties any single Object in JSON document can
-   *     contain, defaults to {@code 64} (note: this is not the total number of properties in the
-   *     whole document, only on individual main or sub-document)
+   * @return Defines the maximum number of properties any single indexable Object in JSON document
+   *     can contain, defaults to {@code 1,000} (note: this is not the total number of properties in
+   *     the whole document but in the main or indexable sub-document)
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_OBJECT_PROPERTIES)
   int maxObjectProperties();
 
   /**
-   * @return Defines the maximum number of properties the whole JSON document can contain, defaults
-   *     to {@code 1000}, including Object- and Array-valued properties.
+   * @return Defines the maximum number of indexable properties in JSON document can contain,
+   *     defaults to {@code 2,000}, including all indexable Object- and Array-valued properties.
    */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
   int maxDocumentProperties();
-
-  /**
-   * @return Defines the max size of filter fields, defaults to {@code 64}, which is tha same as the
-   *     maximum number of properties of a single Json object. (note: this does not count the fields
-   *     in '$operation' such as $in, $all)
-   */
-  @Positive
-  @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
-  int maxFilterObjectProperties();
 
   /** @return Defines the maximum length of a single Number value (in characters). */
   @Positive
@@ -101,18 +104,13 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
   int maxStringLengthInBytes();
 
-  /** @return Maximum length of an array. */
+  /** @return Maximum length of an indexable Array in document (in elements). */
   @Positive
   @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();
 
-  /**
-   * @return Maximum length of Vector ($vector) array JSON API allows -- NOTE: backend data store
-   *     may limit length to a lower value; but we want to prevent handling of huge arrays before
-   *     trying to pass them to DB. Or, conversely, if data store does not limit length, to impose
-   *     something reasonable from JSON API perspective (for service-protection reasons).
-   */
+  /** @return Maximum length of Vector ($vector) array allowed. */
   @Positive
-  @WithDefault("16000")
+  @WithDefault("" + DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH)
   int maxVectorEmbeddingLength();
 }

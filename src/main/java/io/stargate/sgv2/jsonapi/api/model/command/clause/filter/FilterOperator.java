@@ -9,6 +9,13 @@ import java.util.Map;
 public interface FilterOperator {
   String getOperator();
 
+  /**
+   * Flip comparison operator when `$not` is pushed down
+   *
+   * @return
+   */
+  FilterOperator flip();
+
   class FilterOperatorUtils {
     private static Map<String, FilterOperator> operatorMap = new HashMap<>();
 
@@ -22,6 +29,8 @@ public interface FilterOperator {
       for (FilterOperator filterOperator : ArrayComparisonOperator.values()) {
         addComparisonOperator(filterOperator);
       }
+      // This should not be supported from outside
+      operatorMap.remove(ArrayComparisonOperator.NOTANY.getOperator());
     }
 
     private static void addComparisonOperator(FilterOperator filterOperator) {

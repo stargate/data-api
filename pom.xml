@@ -4,15 +4,15 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-7</version>
+    <version>2.1.0-BETA-8</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.0-BETA-6-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Nov-2023, tatu: but may use 2.16 now that it's available -->
-    <jackson.version>2.16.0</jackson.version>
+    <jackson.version>2.16.1</jackson.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
@@ -23,8 +23,8 @@
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
     <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
-    <!-- from Stargate persistence, latest as of 2023-12-05: -->
-    <stargate.int-test.cassandra.image-tag>4.0.11-b259738f492f</stargate.int-test.cassandra.image-tag>
+    <!-- from Stargate persistence, latest as of 2024-01-24: -->
+    <stargate.int-test.cassandra.image-tag>4.0.11-0248d170a615</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
@@ -101,6 +101,10 @@
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-logging-json</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

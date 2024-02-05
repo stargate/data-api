@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.blankString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -76,8 +73,10 @@ class GeneralResourceIntegrationTest {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("errors[0].message", startsWith("Could not resolve type id 'unknownCommand'"))
-          .body("errors[0].exceptionClass", is("InvalidTypeIdException"));
+          .body(
+              "errors[0].message",
+              startsWith("No \"unknownCommand\" command found as \"GeneralCommand\""))
+          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"));
     }
 
     @Test

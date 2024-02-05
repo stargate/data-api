@@ -29,7 +29,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -344,6 +346,34 @@ public interface ReadOperation extends Operation {
     return null;
   }
   /**
+   * Default implementation to run count query and parse the result set, this approach counts by key
+   * field
+   *
+   * @param queryExecutor
+   * @param simpleStatement
+   * @return
+   */
+  default Uni<CountResponse> countDocumentsByKey(
+      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+    AtomicLong counter = new AtomicLong();
+    final CompletionStage<AsyncResultSet> async =
+        queryExecutor
+            .executeCount(simpleStatement)
+            .whenComplete(
+                (rs, error) -> {
+                  getCount(rs, error, counter);
+                });
+
+    return Uni.createFrom()
+        .completionStage(async)
+        .onItem()
+        .transform(
+            rs -> {
+              return new CountResponse(counter.get());
+            });
+  }
+
+  /**
    * Default implementation to run count query and parse the result set
    *
    * @param queryExecutor
@@ -352,8 +382,8 @@ public interface ReadOperation extends Operation {
    */
   default Uni<CountResponse> countDocuments(
       QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
-    return queryExecutor
-        .executeRead(simpleStatement, Optional.empty(), 1)
+    return Uni.createFrom()
+        .completionStage(queryExecutor.executeCount(simpleStatement))
         .onItem()
         .transform(
             rSet -> {
@@ -361,6 +391,17 @@ public interface ReadOperation extends Operation {
               long count = row.getLong(0); // Count value will be the first column value
               return new CountResponse(count);
             });
+  }
+
+  private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
+    if (error != null) {
+      throw new JsonApiException(ErrorCode.COUNT_READ_FAILED);
+    } else {
+      counter.addAndGet(rs.remaining());
+      if (rs.hasMorePages()) {
+        rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
+      }
+    }
   }
 
   record FindResponse(List<ReadDocument> docs, String pageState) {}

@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -14,8 +16,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +63,21 @@ public class QueryExecutor {
   }
 
   /**
+   * Execute count query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public CompletionStage<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
+    simpleStatement =
+        simpleStatement
+            .setExecutionProfileName("count")
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+    return cqlSessionCache.getSession().executeAsync(simpleStatement);
+  }
+
+  /**
    * Execute vector search query with bound statement.
    *
    * @param simpleStatement - Simple statement with query and parameters. The table name used in the
@@ -96,6 +115,7 @@ public class QueryExecutor {
                 .getSession()
                 .executeAsync(
                     statement
+                        .setIdempotent(true)
                         .setConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
@@ -103,20 +123,85 @@ public class QueryExecutor {
   }
 
   /**
-   * Execute schema change query with bound statement.
+   * Execute schema change query with bound statement for create ddl statements.
    *
    * @param boundStatement - Bound statement with query and parameters. The table name used in the
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement) {
+  public Uni<AsyncResultSet> executeCreateSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "create");
+  }
+
+  /**
+   * Execute schema change query with bound statement for drop ddl statements.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeDropSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "drop");
+  }
+
+  /**
+   * Execute schema change query with bound statement for truncate ddl statements.
+   *
+   * @param boundStatement - Bound statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public Uni<AsyncResultSet> executeTruncateSchemaChange(SimpleStatement boundStatement) {
+    return executeSchemaChange(boundStatement, "truncate");
+  }
+
+  private Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
                 .getSession()
                 .executeAsync(
-                    boundStatement.setSerialConsistencyLevel(
-                        operationsConfig.queriesConfig().consistency().schemaChanges())));
+                    boundStatement
+                        .setExecutionProfileName(profile)
+                        .setIdempotent(true)
+                        .setSerialConsistencyLevel(
+                            operationsConfig.queriesConfig().consistency().schemaChanges())))
+        .onFailure(
+            error ->
+                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+        .recoverWithUni(
+            throwable -> {
+              logger.error(
+                  "Timeout/Invalid query executing schema change query : {}",
+                  boundStatement.getQuery());
+              SimpleStatement duplicate = SimpleStatement.newInstance(boundStatement.getQuery());
+              return Uni.createFrom()
+                  .item(throwable)
+                  .onItem()
+                  .delayIt()
+                  .by(Duration.ofMillis(operationsConfig.databaseConfig().ddlRetryDelayMillis()))
+                  .onItem()
+                  .transformToUni(
+                      v ->
+                          Uni.createFrom()
+                              .completionStage(
+                                  cqlSessionCache
+                                      .getSession()
+                                      .executeAsync(
+                                          duplicate
+                                              .setExecutionProfileName(profile)
+                                              .setIdempotent(true)
+                                              .setSerialConsistencyLevel(
+                                                  operationsConfig
+                                                      .queriesConfig()
+                                                      .consistency()
+                                                      .schemaChanges()))));
+            })
+        .onFailure(
+            error ->
+                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+        .retry()
+        .atMost(2);
   }
 
   /**
