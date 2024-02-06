@@ -396,7 +396,7 @@ blocks:
               }
             }
           }
-      
+    
 
     find-by-and:
       params:
@@ -445,7 +445,7 @@ blocks:
             }
           }
         }
-        
+      
 
       find-with-sort:
         params:
@@ -544,7 +544,7 @@ blocks:
                 }
               }
             }
-          
+      
 
       update-many-by-nonId:
         params:
@@ -563,7 +563,7 @@ blocks:
               "update" : {"$set" : { "country_code" : "{country_code}"}}
             }
           }
-       
+      
 
       ann-find-one-with-projection:
         params:
@@ -582,7 +582,7 @@ blocks:
               "projection" : {"$vector" : 1}
             }
           }
-        
+      
 
       ann-find-limit-5-with-similarity:
         params:
