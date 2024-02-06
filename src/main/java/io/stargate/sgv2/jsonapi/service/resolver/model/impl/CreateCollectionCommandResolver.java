@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -26,22 +27,26 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
 
+  private final OperationsConfig operationsConfig;
+
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
       DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig,
-      DatabaseLimitsConfig dbLimitsConfig) {
+      DatabaseLimitsConfig dbLimitsConfig,
+      OperationsConfig operationsConfig) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null);
+    this(null, null, null, null, null, null);
   }
 
   @Override
@@ -111,14 +116,27 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             command.name(),
             vectorSize,
             function,
-            comment);
+            comment,
+            operationsConfig.databaseConfig().ddlDelayMillis());
       } else {
         return CreateCollectionOperation.withoutVectorSearch(
-            ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name(), comment);
+            ctx,
+            dbLimitsConfig,
+            objectMapper,
+            cqlSessionCache,
+            command.name(),
+            comment,
+            operationsConfig.databaseConfig().ddlDelayMillis());
       }
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
-          ctx, dbLimitsConfig, objectMapper, cqlSessionCache, command.name(), null);
+          ctx,
+          dbLimitsConfig,
+          objectMapper,
+          cqlSessionCache,
+          command.name(),
+          null,
+          operationsConfig.databaseConfig().ddlDelayMillis());
     }
   }
 }

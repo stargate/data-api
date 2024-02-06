@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -39,11 +39,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object DYNAMIC_DATE_GROUP = new Object();
   private static final Object EXISTS_GROUP = new Object();
   private static final Object ALL_GROUP = new Object();
+  private static final Object NOT_ANY_GROUP = new Object();
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  @Inject DocumentLimitsConfig docLimits;
+  @Inject OperationsConfig operationsConfig;
 
   @Inject
   public FilterableResolver() {
@@ -126,6 +127,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         .compareValues("*", EnumSet.of(ElementComparisonOperator.EXISTS), JsonType.BOOLEAN)
         .capture(ALL_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.ALL), JsonType.ARRAY)
+        .capture(NOT_ANY_GROUP)
+        .compareValues("*", EnumSet.of(ArrayComparisonOperator.NOTANY), JsonType.ARRAY)
         .capture(SIZE_GROUP)
         .compareValues("*", EnumSet.of(ArrayComparisonOperator.SIZE), JsonType.NUMBER)
         .capture(ARRAY_EQUALS)
@@ -139,15 +142,19 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
+    // verify if filter fields are in deny list or not in allow list
+    if (commandContext != null && command.filterClause() != null) {
+      command.filterClause().validate(commandContext);
+    }
     LogicalExpression filter = matchRules.apply(commandContext, command);
-    if (filter.getTotalComparisonExpressionCount() > docLimits.maxFilterObjectProperties()) {
+    if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
           ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
               "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
               filter.getTotalComparisonExpressionCount(),
-              docLimits.maxFilterObjectProperties()));
+              operationsConfig.maxFilterObjectProperties()));
     }
     return filter;
   }
@@ -292,12 +299,27 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == ALL_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue));
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, false));
+      }
+
+      if (captureExpression.marker() == NOT_ANY_GROUP) {
+        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
+        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, true));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {
         BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
-        filters.add(new DBFilterBase.SizeFilter(captureExpression.path(), bigDecimal.intValue()));
+        // Flipping size operator will multiply the value by -1
+        // Negative means check array_size[?] != ?
+        int size = bigDecimal.intValue();
+        DBFilterBase.MapFilterBase.Operator operator;
+        if (size > 0) {
+          operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
+        } else {
+          operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+        }
+        filters.add(
+            new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
       }
 
       if (captureExpression.marker() == ARRAY_EQUALS) {

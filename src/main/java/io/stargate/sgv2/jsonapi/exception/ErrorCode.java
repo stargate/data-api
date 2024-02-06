@@ -3,8 +3,10 @@ package io.stargate.sgv2.jsonapi.exception;
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
   /** Command error codes. */
+  COUNT_READ_FAILED("Unable to count documents"),
   COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
-
+  INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
+  NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
@@ -25,9 +27,15 @@ public enum ErrorCode {
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
-  INVALID_REQUST("Request not supported by the data store"),
+  INVALID_REQUEST("Request not supported by the data store"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
+
+  UNINDEXED_FILTER_PATH("Unindexed filter path"),
+
+  UNINDEXED_SORT_PATH("Unindexed sort path"),
+
+  ID_NOT_INDEXED("_id is not indexed"),
 
   NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
 
@@ -60,7 +68,7 @@ public enum ErrorCode {
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
-  INVALID_COLLECTION_NAME("Invalid collection name "),
+  INVALID_COLLECTION_NAME("Invalid collection name"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
@@ -132,5 +140,9 @@ public enum ErrorCode {
 
   public String getMessage() {
     return message;
+  }
+
+  public JsonApiException toApiException(String format, Object... args) {
+    return new JsonApiException(this, message + ": " + String.format(format, args));
   }
 }

@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -16,16 +19,25 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @ApplicationScoped
 public class MeteredCommandProcessor {
+
+  private static final Logger logger = LoggerFactory.getLogger(MeteredCommandProcessor.class);
 
   private static final String UNKNOWN_VALUE = "unknown";
 
@@ -53,6 +65,7 @@ public class MeteredCommandProcessor {
   private final Tag defaultErrorCode;
 
   private final Tag defaultErrorClass;
+  private final CommandLevelLoggingConfig commandLevelLoggingConfig;
 
   @Inject
   public MeteredCommandProcessor(
@@ -60,7 +73,8 @@ public class MeteredCommandProcessor {
       MeterRegistry meterRegistry,
       StargateRequestInfo stargateRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      MetricsConfig metricsConfig) {
+      MetricsConfig metricsConfig,
+      CommandLevelLoggingConfig commandLevelLoggingConfig) {
     this.commandProcessor = commandProcessor;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -71,6 +85,7 @@ public class MeteredCommandProcessor {
     tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
     defaultErrorCode = Tag.of(jsonApiMetricsConfig.errorCode(), NA);
     defaultErrorClass = Tag.of(jsonApiMetricsConfig.errorClass(), NA);
+    this.commandLevelLoggingConfig = commandLevelLoggingConfig;
   }
 
   /**
@@ -84,6 +99,7 @@ public class MeteredCommandProcessor {
   public <T extends Command> Uni<CommandResult> processCommand(
       CommandContext commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
+    MDC.put("tenantId", stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
         .processCommand(commandContext, command)
@@ -93,7 +109,96 @@ public class MeteredCommandProcessor {
               Tags tags = getCustomTags(commandContext, command, result);
               // add metrics
               sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
+
+              if (isCommandLevelLoggingEnabled(result, false)) {
+                logger.info(buildCommandLog(commandContext, command, result));
+              }
+            })
+        .onFailure()
+        .invoke(
+            throwable -> {
+              if (isCommandLevelLoggingEnabled(null, true)) {
+                logger.error(buildCommandLog(commandContext, command, null), throwable);
+              }
             });
+  }
+
+  /**
+   * Builds the command level log in string format.
+   *
+   * @param commandContext Command context
+   * @param command Command
+   * @param result Command result
+   * @return Command log in string format
+   */
+  private String buildCommandLog(
+      CommandContext commandContext, Command command, CommandResult result) {
+    CommandLog commandLog =
+        new CommandLog(
+            command.getClass().getSimpleName(),
+            stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
+            commandContext.namespace(),
+            commandContext.collection(),
+            getIncomingDocumentsCount(command),
+            getOutgoingDocumentsCount(result),
+            result != null ? result.errors() : Collections.emptyList());
+    return new ObjectMapper().valueToTree(commandLog).toString();
+  }
+
+  /**
+   * Get outgoing documents count in a command result.
+   *
+   * @param result
+   * @return
+   */
+  private String getOutgoingDocumentsCount(CommandResult result) {
+    if (result == null) {
+      return "NA";
+    }
+    if (result.data() instanceof CommandResult.MultiResponseData
+        || result.data() instanceof CommandResult.SingleResponseData) {
+      return String.valueOf(result.data().getResponseDocuments().size());
+    }
+    return "NA";
+  }
+
+  /**
+   * Get incoming documents count in a command.
+   *
+   * @param command
+   * @return
+   */
+  private String getIncomingDocumentsCount(Command command) {
+    if (command instanceof InsertManyCommand) {
+      return String.valueOf(((InsertManyCommand) command).documents().size());
+    } else if (command instanceof InsertOneCommand) {
+      return String.valueOf(((InsertOneCommand) command).document() != null ? 1 : 0);
+    }
+    return "NA";
+  }
+
+  /**
+   * @param commandResult - command result
+   * @param isFailure - Is from the failure flow
+   * @return true if command level logging is allowed, false otherwise
+   */
+  private boolean isCommandLevelLoggingEnabled(CommandResult commandResult, boolean isFailure) {
+    if (!commandLevelLoggingConfig.enabled()) {
+      return false;
+    }
+    Set<String> allowedTenants =
+        commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
+    if (!allowedTenants.contains(ALL_TENANTS)
+        && !allowedTenants.contains(stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
+      return false;
+    }
+    if (!isFailure
+        && commandLevelLoggingConfig.onlyResultsWithErrors()
+        && (commandResult == null || commandResult.errors().isEmpty())) {
+      return false;
+    }
+    // return true in all other cases
+    return true;
   }
 
   /**

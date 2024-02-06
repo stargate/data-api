@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -17,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
@@ -34,8 +38,11 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
-    String comment)
+    String comment,
+    int ddlDelayMillis)
     implements Operation {
+  private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
+
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
@@ -47,7 +54,8 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
-      String comment) {
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -57,7 +65,8 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
-        comment);
+        comment,
+        ddlDelayMillis);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -66,7 +75,8 @@ public record CreateCollectionOperation(
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
       String name,
-      String comment) {
+      String comment,
+      int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -76,11 +86,13 @@ public record CreateCollectionOperation(
         false,
         0,
         null,
-        comment);
+        comment,
+        ddlDelayMillis);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+    logger.info("Executing CreateCollectionOperation for {}", name);
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession().getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -112,72 +124,48 @@ public record CreateCollectionOperation(
             CollectionSettings.SimilarityFunction.fromString(vectorFunction),
             comment,
             objectMapper);
-    // if table exists and user want to create a vector collection with the same name
-    if (vectorSearch) {
-      // if existing collection is a vector collection
-      if (collectionSettings.vectorEnabled()) {
-        if (collectionSettings.equals(collectionSettings_cur)) {
-          // if settings are equal, no error
-          return executeCollectionCreation(queryExecutor);
-        } else {
-          // if settings are not equal, error out
-          return Uni.createFrom()
-              .failure(
-                  new JsonApiException(
-                      ErrorCode.INVALID_COLLECTION_NAME,
-                      "The provided collection name '%s' already exists with a different vector setting."
-                          .formatted(name)));
-        }
-      } else {
-        // if existing collection is a non-vector collection, error out
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a non-vector setting."
-                        .formatted(name)));
-      }
-    } else { // if table exists and user want to create a non-vector collection
-      // if existing table is vector enabled, error out
-      if (collectionSettings.vectorEnabled()) {
-        return Uni.createFrom()
-            .failure(
-                new JsonApiException(
-                    ErrorCode.INVALID_COLLECTION_NAME,
-                    "The provided collection name '%s' already exists with a vector setting."
-                        .formatted(name)));
-      } else {
-        // if existing table is a non-vector collection, continue
-        return executeCollectionCreation(queryExecutor);
-      }
+    // if table exists we have to choices:
+    // (1) trying to create with same options -> ok, proceed
+    // (2) trying to create with different options -> error out
+    if (collectionSettings.equals(collectionSettings_cur)) {
+      return executeCollectionCreation(queryExecutor);
     }
+    return Uni.createFrom()
+        .failure(
+            ErrorCode.INVALID_COLLECTION_NAME.toApiException(
+                "provided collection ('%s') already exists with different 'vector' and/or 'indexing' options",
+                name));
   }
 
   private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
     final Uni<AsyncResultSet> execute =
-        queryExecutor.executeSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
+            .onItem()
+            .delayIt()
+            .by(Duration.ofMillis(ddlDelayMillis))
             .onItem()
             .transformToUni(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(commandContext.namespace(), name);
-                    List<Uni<AsyncResultSet>> indexes = new ArrayList<>(10);
-                    indexStatements.stream()
-                        .forEach(index -> indexes.add(queryExecutor.executeSchemaChange(index)));
-                    return Uni.combine()
-                        .all()
-                        .unis(indexes)
-                        .combinedWith(
+                    return Multi.createFrom()
+                        .items(indexStatements.stream())
+                        .onItem()
+                        .transformToUni(queryExecutor::executeCreateSchemaChange)
+                        .concatenate()
+                        .collect()
+                        .asList()
+                        .onItem()
+                        .transform(
                             results -> {
-                              final Optional<?> first =
+                              final Optional<AsyncResultSet> first =
                                   results.stream()
-                                      .filter(
-                                          indexRes -> !(((AsyncResultSet) indexRes).wasApplied()))
+                                      .filter(indexRes -> !(indexRes.wasApplied()))
                                       .findFirst();
-                              return first.isPresent() ? false : true;
+                              return !first.isPresent();
                             });
                   } else {
                     return Uni.createFrom().item(false);
@@ -222,13 +210,11 @@ public record CreateCollectionOperation(
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
         > dbLimitsConfig.indexesAvailablePerDatabase()) {
-      throw new JsonApiException(
-          ErrorCode.TOO_MANY_INDEXES,
-          String.format(
-              "%s: cannot create a new collection; %d indexes already created in database, maximum %d",
-              ErrorCode.TOO_MANY_INDEXES.getMessage(),
-              saisUsed,
-              dbLimitsConfig.indexesAvailablePerDatabase()));
+      throw ErrorCode.TOO_MANY_INDEXES.toApiException(
+          "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
+          dbLimitsConfig.indexesNeededPerCollection(),
+          saisUsed,
+          dbLimitsConfig.indexesAvailablePerDatabase());
     }
 
     return null;

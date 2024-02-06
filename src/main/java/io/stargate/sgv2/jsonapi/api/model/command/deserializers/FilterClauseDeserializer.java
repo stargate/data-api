@@ -45,6 +45,9 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
     validate(implicitAnd);
+    // push down not operator
+    implicitAnd.traverseForNot(null);
+
     return new FilterClause(implicitAnd);
   }
 
@@ -83,8 +86,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private void populateExpression(
       LogicalExpression logicalExpression, Map.Entry<String, JsonNode> entry) {
     if (entry.getValue().isObject()) {
+      if (entry.getKey().equals("$not")) {
+        LogicalExpression innerLogicalExpression = LogicalExpression.not();
+        populateExpression(innerLogicalExpression, entry.getValue());
+        logicalExpression.addLogicalExpression(innerLogicalExpression);
+      } else {
+        logicalExpression.addComparisonExpressions(createComparisonExpressionList(entry));
+      }
       // inside of this entry, only implicit and, no explicit $and/$or
-      logicalExpression.addComparisonExpressions(createComparisonExpressionList(entry));
     } else if (entry.getValue().isArray()) {
       LogicalExpression innerLogicalExpression = null;
       switch (entry.getKey()) {
@@ -368,6 +377,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 throw new JsonApiException(
                     ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
+            } else {
+              // handle an invalid filter use case:
+              // { "address": { "street": { "$xx": xxx } } }
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION,
+                  String.format("Invalid use of %s operator", node.fields().next().getKey()));
             }
           } else {
             ObjectNode objectNode = (ObjectNode) node;

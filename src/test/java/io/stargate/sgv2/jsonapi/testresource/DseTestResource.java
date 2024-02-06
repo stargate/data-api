@@ -12,14 +12,14 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-b259738f492f");
+          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-0248d170a615");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
       // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
       //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-6");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-8");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {
@@ -47,6 +47,17 @@ public class DseTestResource extends StargateTestResource {
   @Override
   public int getIndexesPerDBOverride() {
     return 100;
+  }
+
+  // Test count with count limit as 5 so more data can be tested
+  @Override
+  public int getMaxCountLimit() {
+    return 5;
+  }
+
+  // Setting this to 2 so data read with Pagination
+  public int getCountPageSize() {
+    return 2;
   }
 
   @Override

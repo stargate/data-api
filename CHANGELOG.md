@@ -1,5 +1,113 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0...HEAD)
+
+## [v1.0.0](https://github.com/stargate/jsonapi/tree/v1.0.0) (2024-02-02)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-3...v1.0.0)
+
+**Closed issues:**
+
+- INVALID\_REQUST error code typo [\#796](https://github.com/stargate/jsonapi/issues/796)
+- Document limits: remove individual max property name limit \(leave just max path limit\) [\#819](https://github.com/stargate/jsonapi/issues/819)
+- Document Limits: increase max property path length to 1000 \(from 250\) [\#820](https://github.com/stargate/jsonapi/issues/820)
+- Document limits: only apply Max Object Properties limits on indexed fields [\#821](https://github.com/stargate/jsonapi/issues/821)
+- Document limits: only apply Max Document Properties limits on indexed fields [\#850](https://github.com/stargate/jsonapi/issues/850)
+
+**Merged pull requests:**
+
+- Fixes \#820: increase max path length limit to 1000 \(from 250\) [\#853](https://github.com/stargate/jsonapi/pull/853) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#850: apply max-doc-properties on indexed properties only, not all [\#852](https://github.com/stargate/jsonapi/pull/852) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#819: remove max limit for Object property name \(leaving full path max\) [\#849](https://github.com/stargate/jsonapi/pull/849) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Backup of Data API Postman collection [\#846](https://github.com/stargate/jsonapi/pull/846) ([johnsmartco](https://github.com/johnsmartco))
+
+## [v1.0.0-RC-3](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-3) (2024-01-31)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-2...v1.0.0-RC-3)
+
+**Closed issues:**
+
+- Document limits: increase "max-number-length" from 50 to 100 digits [\#823](https://github.com/stargate/jsonapi/issues/823)
+- Document limits: only apply Max Array Element limit on indexed fields [\#822](https://github.com/stargate/jsonapi/issues/822)
+- Document limits: increase max doc length limit: 1M -\> 4M [\#817](https://github.com/stargate/jsonapi/issues/817)
+
+**Merged pull requests:**
+
+- Changes for adding retry delay [\#845](https://github.com/stargate/jsonapi/pull/845) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#821: apply max-object-properties/max-doc-properties only on indexed Objects [\#844](https://github.com/stargate/jsonapi/pull/844) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactoring: clean up / unify Shredder-thrown JsonApiExceptions [\#843](https://github.com/stargate/jsonapi/pull/843) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor exception mappers into single package \(instead of split\) [\#842](https://github.com/stargate/jsonapi/pull/842) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- increase max doc length limit: 1M -\> 4M [\#841](https://github.com/stargate/jsonapi/pull/841) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#822: only limit array size for indexed fields \(ignore non-indexed\) [\#838](https://github.com/stargate/jsonapi/pull/838) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#837](https://github.com/stargate/jsonapi/pull/837) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#823: increase max number length limit to 100 \(from 50\) [\#826](https://github.com/stargate/jsonapi/pull/826) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
+## [v1.0.0-RC-2](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-2) (2024-01-25)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-RC-1...v1.0.0-RC-2)
+
+**Closed issues:**
+
+- \[regression\] - Adding `indexing` options in the `createCollection` remove idempotence [\#835](https://github.com/stargate/jsonapi/issues/835)
+- Create collection error message is confusing [\#830](https://github.com/stargate/jsonapi/issues/830)
+- Add validation of `"options"` property of `createCollection` command to avoid silent failures [\#828](https://github.com/stargate/jsonapi/issues/828)
+- Document limits: increase allowed max nesting from 8 to 16 levels [\#818](https://github.com/stargate/jsonapi/issues/818)
+- Improve error message when collection name omitted [\#800](https://github.com/stargate/jsonapi/issues/800)
+- Optimize case of "no projection" \(include all\) so that `doc\_json` embedded directly [\#667](https://github.com/stargate/jsonapi/issues/667)
+
+**Merged pull requests:**
+
+- Fixes \#835: ensure "createCollection\(\)" still idempotent with "no-index" options [\#836](https://github.com/stargate/jsonapi/pull/836) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update dse-next to latest as of 2024-01-24: 4.0.11-0248d170a615 [\#834](https://github.com/stargate/jsonapi/pull/834) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Create collection index creation ordering [\#833](https://github.com/stargate/jsonapi/pull/833) ([maheshrajamani](https://github.com/maheshrajamani))
+- error out with invalid option when createCollection [\#832](https://github.com/stargate/jsonapi/pull/832) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- improve error msg, too many indexes and can not create a collection [\#831](https://github.com/stargate/jsonapi/pull/831) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#818: increase max doc depth allowed from 8 to 16 [\#825](https://github.com/stargate/jsonapi/pull/825) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#824](https://github.com/stargate/jsonapi/pull/824) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.0-RC-1](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-1) (2024-01-22)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-7...v1.0.0-RC-1)
+
+**Closed issues:**
+
+- Misnamed config property: `stargate.jsonapi.document.limits.max-filter-object-properties` -- should be Operations, not Doc Config [\#815](https://github.com/stargate/jsonapi/issues/815)
+- Count command optimization [\#809](https://github.com/stargate/jsonapi/issues/809)
+- Handle DOCUMENT\_ALREADY\_EXISTS error in insert [\#801](https://github.com/stargate/jsonapi/issues/801)
+- Invalid filter, misuse of `$` operators  [\#798](https://github.com/stargate/jsonapi/issues/798)
+- Sync Document Limit settings to `jsonapi /CONFIGURATION.md` [\#797](https://github.com/stargate/jsonapi/issues/797)
+- Validate paths used for `indexing` options for `CreateCollection` [\#790](https://github.com/stargate/jsonapi/issues/790)
+- \[Indexing options\] Error using non indexed fields for filtering, sorting [\#768](https://github.com/stargate/jsonapi/issues/768)
+- \[Indexing options\] Shredder changes to index fields [\#767](https://github.com/stargate/jsonapi/issues/767)
+- \[Indexing options\] Add indexing option to cache [\#766](https://github.com/stargate/jsonapi/issues/766)
+- \[Indexing options\] Create collection changes to add indexing options [\#765](https://github.com/stargate/jsonapi/issues/765)
+- Multiple filter for same field not resolved [\#763](https://github.com/stargate/jsonapi/issues/763)
+- Command-level logging [\#741](https://github.com/stargate/jsonapi/issues/741)
+- Add option to limit index creation [\#560](https://github.com/stargate/jsonapi/issues/560)
+
+**Merged pull requests:**
+
+- Fixes \#815: move "max filter properties" to `OperationsConfig` where it belongs [\#816](https://github.com/stargate/jsonapi/pull/816) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Simplify construction of JsonApiException, reduce boilerplate code [\#814](https://github.com/stargate/jsonapi/pull/814) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Change JSON API to Data API and update doc link seen in swagger [\#813](https://github.com/stargate/jsonapi/pull/813) ([johnsmartco](https://github.com/johnsmartco))
+- Count optimization changes [\#811](https://github.com/stargate/jsonapi/pull/811) ([maheshrajamani](https://github.com/maheshrajamani))
+- add tenantId to each log lines [\#810](https://github.com/stargate/jsonapi/pull/810) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Improve error message when collection name omitted [\#808](https://github.com/stargate/jsonapi/pull/808) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Changed the timeout and added retry logic. [\#807](https://github.com/stargate/jsonapi/pull/807) ([maheshrajamani](https://github.com/maheshrajamani))
+- Do not return HTTP 504 Gateway Timeout on DB timeout  [\#806](https://github.com/stargate/jsonapi/pull/806) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix to \#790 implementation to ensure \["\*"\] is accepted as "allow" or "deny" list [\#805](https://github.com/stargate/jsonapi/pull/805) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add validation of paths used for indexing "allow"/"deny" lists. [\#804](https://github.com/stargate/jsonapi/pull/804) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- invalid $ operator use case, INVALID\_REQUEST typo fix  [\#803](https://github.com/stargate/jsonapi/pull/803) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Handle DOCUMENT\_ALREADY\_EXISTS error on insert  [\#802](https://github.com/stargate/jsonapi/pull/802) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#797: update document limits in CONFIGURATION.md [\#799](https://github.com/stargate/jsonapi/pull/799) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Command level logging changes [\#794](https://github.com/stargate/jsonapi/pull/794) ([kathirsvn](https://github.com/kathirsvn))
+- Fixes \#767: Second part of "no-index" changes: allow large non-indexed String values, implicit allow for "$vector" [\#792](https://github.com/stargate/jsonapi/pull/792) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next jsonapi release [\#789](https://github.com/stargate/jsonapi/pull/789) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Error out when using non indexed fields [\#781](https://github.com/stargate/jsonapi/pull/781) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- `$not` operator [\#760](https://github.com/stargate/jsonapi/pull/760) ([maheshrajamani](https://github.com/maheshrajamani))
+
 ## [v1.0.0-BETA-7](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-7) (2024-01-11)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0-BETA-6...v1.0.0-BETA-7)
