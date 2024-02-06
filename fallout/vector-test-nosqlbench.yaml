@@ -3,11 +3,11 @@ min_version: "5.17.3"
 # Example command line
 # Against AstraDB
 # nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 stargate_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
-# Against local JSON API
+# Against local DATA API
 # nb5 -v http-jsonapi-vector-crud stargate_host=localhost docscount=1000 threads=20
 
 description: >2
-  This workload emulates vector CRUD operations for Stargate JSON API.
+  This workload emulates vector CRUD operations for Stargate DATA API.
   It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
   1536 is a standard vector size that openAI embedding generates, using this size for benchmark
 scenarios:

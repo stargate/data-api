@@ -166,7 +166,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [jsonapi, jsonapi-native]
+        image: [dataapi, jsonapi, jsonapi-native]
         exclude:
           - image: jsonapi-native
     env:

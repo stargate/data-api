@@ -1,8 +1,8 @@
-# JSON API Search Advanced
+# DATA API Search Advanced
 
 ## Description
 
-The JSON API Search Advanced workflow targets Stargate's JSON API using generated JSON documents. Specifically, it looks to benchmark more advanced search cases, using both complex boolean logic and filters that aren't natively supported by the underlying data store.
+The DATA API Search Advanced workflow targets Stargate's DATA API using generated JSON documents. Specifically, it looks to benchmark more advanced search cases, using both complex boolean logic and filters that aren't natively supported by the underlying data store.
 By default, the documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
 * Each document has 15 leaf values, with a maximum depth of 3

@@ -1,8 +1,8 @@
-# JSON API Vector CRUD
+# DATA API Vector CRUD
 
 ## Description
 
-The JSON API CRUD Dataset workflow targets Stargate's JSON API using JSON documents from an external dataset.
+The DATA API CRUD Dataset workflow targets Stargate's DATA API using JSON documents from an external dataset.
 The [dataset](#dataset) is mandatory and should contain a vector per row that should be used as the input for write, read and update operations.
 This workflow is perfect for testing Stargate performance using your own JSON dataset or any other realistic dataset.
 
@@ -42,7 +42,7 @@ Sample dataset is in [vector dataset](vector-dataset.txt)
 nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
 ```
 
-### Against Local JSON API
+### Against Local DATA API
 
 ```
 nb5 -v http-jsonapi-vector-crud jsonapi_host=localhost docscount=1000 threads=20

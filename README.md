@@ -1,7 +1,7 @@
-# Stargate JSON API
+# Stargate DATA API
 
-This project implements the stand-alone JSON API microservice for Stargate.
-JSON API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
+This project implements the stand-alone DATA API microservice for Stargate.
+DATA API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
 Specifications and design documents for this service are defined in the [docs](docs) directory.
 
@@ -22,23 +22,23 @@ The project depends on the [sgv2-quarkus-common](https://github.com/stargate/sta
 
 ## Quick Start
 
-Most users will want to use the JSON API through a client library such as the [stargate-mongoose](https://github.com/stargate/stargate-mongoose) for JavaScript development. See the [stargate-mongoose-sample-apps](https://github.com/stargate/stargate-mongoose-sample-apps) for a quick demonstration.
+Most users will want to use the DATA API through a client library such as the [stargate-mongoose](https://github.com/stargate/stargate-mongoose) for JavaScript development. See the [stargate-mongoose-sample-apps](https://github.com/stargate/stargate-mongoose-sample-apps) for a quick demonstration.
 
-The quickest way to test out the JSON API directly is to start a local copy of the service and supporting infrastructure using the [Docker compose](docker-compose) scripts:
+The quickest way to test out the DATA API directly is to start a local copy of the service and supporting infrastructure using the [Docker compose](docker-compose) scripts:
 
 ```shell
 cd docker-compose
 ./start_dse_next_dev_mode.sh
 ```
 
-This starts an instance of the JSON API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
+This starts an instance of the DATA API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
 
 > **Warning**
-> Running this script with no options will use the latest `v1` tagged version of JSON API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
+> Running this script with no options will use the latest `v1` tagged version of DATA API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
 
 Once the services are up, you can access the Swagger endpoint at: http://localhost:8181/swagger-ui/
 
-We also have a Postman collection you can use to learn about the various operations supported by the JSON API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
+We also have a Postman collection you can use to learn about the various operations supported by the DATA API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
 
 ## Concepts
 

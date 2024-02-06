@@ -22,8 +22,8 @@ threads: 20
 #  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
 #  workload_duration: workload duration time
 #  keyspace: Your existing AstraDB keyspace
-#  workload_file: workload_file is in JSON API repo
-#  dataset: dataset file is in JSON API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
+#  workload_file: workload_file is in DATA API repo
+#  dataset: dataset file is in DATA API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
 #  client_count: 1
 #  write_cycles: 600
 #  read_cycles: 600

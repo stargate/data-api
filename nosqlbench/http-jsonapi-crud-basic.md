@@ -1,8 +1,8 @@
-# JSON API CRUD Basic
+# DATA API CRUD Basic
 
 ## Description
 
-The JSON API CRUD Basic workflow targets Stargate's JSON API using generated JSON documents.
+The DATA API CRUD Basic workflow targets Stargate's DATA API using generated JSON documents.
 The documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
 * each document has 13 leaf values, with a maximum depth of 3

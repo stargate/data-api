@@ -65,7 +65,7 @@ quarkus:
 
   # general app properties
   application:
-    name: Stargate JSON API
+    name: Stargate DATA API
 
   # banner for the startup
   banner:
