@@ -196,6 +196,43 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void arraySizeFilter() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"tags" : { "$size" : 0}}
+            }
+          }
+          """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.SizeFilter("tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 0);
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
+              });
+    }
+
+    @Test
     public void byIdInAndOtherConditionTogether() throws Exception {
       String json =
           """
