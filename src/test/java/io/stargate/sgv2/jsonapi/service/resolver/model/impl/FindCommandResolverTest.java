@@ -214,7 +214,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new DBFilterBase.SizeFilter("tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 0);
+                    new DBFilterBase.SizeFilter(
+                        "tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 0);
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
