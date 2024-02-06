@@ -1,0 +1,2626 @@
+{
+	"info": {
+		"_postman_id": "1903b097-af32-4600-989d-2f68b01f0588",
+		"name": "Data API vector collection",
+		"description": "To execute Data API commands in this **public preview** release:\n\n1. In DataStax [Astra Portal](https://astra.datastax.com/), create a vector-enabled **Astra DB Serverless** database.\n2. When your database is Active, generate an **Application Token**. It's automatically associated with the Database Administrator role. Copy and/or download the token's value. Also take note of the **API Endpoint** that is specific to your created database.\n3. Define **local variables** here in Postman with values specific to your vector-enabled Astra DB Serverless database. In the Data API calls here in Postman, you'll need the appropriate values for **ASTRA_DB_APPLICATION_TOKEN** and the **ASTRA_DB_API_ENDPOINT**.\n    1. In Astra Portal, on your database's Overview tab, generate an auth token; copy and use that value in an ASTRA_DB_APPLICATION_TOKEN local variable in Postman.\n    2. Also in Astra Portal, copy your ASTRA_DB_API_ENDPOINT value from your database's Overview tab. Define that local variable in Postman.\n    3. An ASTRA_DB_API_ENDPOINT has this format:  \n        _https://{{ASTRA_DB_ID}}-{{ASTRA_DB_REGION}}.apps.astra.datastax.com_\n4. Also define local variables for an **ASTRA_DB_KEYSPACE**, and an **ASTRA_DB_COLLECTION** name.\n    1. An ASTRA_DB_KEYSPACE example: default_keyspace, which is present by default in your vector-enabled database.\n    2. An ASTRA_DB_COLLECTION example: vector_collection\n5. In Postman, only change the **Current value** of your local variables. And be sure to **Save** the local variable definitions.\n6. Download and install the [Postman app,](https://www.postman.com/downloads/) if you haven't already.\n    \n\n**TIP:** Notice in the Data API commands:\n\n- The fully qualified url path -- before the collection has been created, or when you want to find or delete an existing collection -- is: _ASTRA_DB_API_ENDPOINT_/api/json/v1/_ASTRA_DB_KEYSPACE_\n- Once the collection has been created, the fully qualified url path is: _ASTRA_DB_API_ENDPOINT_/api/json/v1/_ASTRA_DB_KEYSPACE_/_ASTRA_DB_COLLECTION_\n    \n\nAfter stepping through all the commands, you can reset the example data and start over by executing the final call, deleteCollection.\n\n**About local variables:** Here's an example of the local Variables UI in Postman (with redacted ID values) for a vector-enabled Astra DB Serverless database:\n\n<img src=\"https://content.pstmn.io/70b7789a-2713-4ce0-abec-2e8484540ee6/cG9zdG1hbi1sb2NhbC12YXJpYWJsZXMtZXhhbXBsZS5wbmc=\" alt=\"Example%20of%20local%20variables%20associated%20with%20existing%20Astra%20DB%20Serverless%20database\">",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25879866",
+		"_collection_link": "https://www.postman.com/datastax/workspace/stargate-cassandra/collection/25879866-1903b097-af32-4600-989d-2f68b01f0588?action=share&source=collection_link&creator=25879866"
+	},
+	"item": [
+		{
+			"name": "Create and find collections",
+			"item": [
+				{
+					"name": "createCollection with vector options",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify status body\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status.ok).to.equal(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"createCollection\": {\n    \"name\": \"{{ASTRA_DB_COLLECTION}}\",\n    \"options\" : {\n      \"vector\" : {\n        \"dimension\" : 5,\n        \"metric\" : \"cosine\"\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findCollections",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findCollections\": {\n    \"options\" : {\n      \"explain\" : true\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Prerequisite: If you haven't already, create a vector-enabled Astra DB Serverless database in [Astra Portal](https://astra.datastax.com). On the **Create Vector Database** dialog, enter a database name, and choose a cloud provider and region. Then here in Postman, define local variables as explained on the Overview tab of \"Data API vector collection.\""
+		},
+		{
+			"name": "Insert data",
+			"item": [
+				{
+					"name": "insertOne document with $vector",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify status body\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status.insertedIds).to.deep.equal([\"1\"])",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"insertOne\": {\n    \"document\": {\n      \"_id\": \"1\",\n      \"purchase_type\": \"Online\",\n      \"$vector\": [0.25, 0.25, 0.25, 0.25, 0.25],\n      \"customer\": {\n        \"name\": \"Jim A.\",\n        \"phone\": \"123-456-1111\",\n        \"age\": 51,\n        \"credit_score\": 782,\n        \"address\": {\n          \"address_line\": \"1234 Broadway\",\n          \"city\": \"New York\",\n          \"state\": \"NY\"\n        }\n      },\n      \"purchase_date\": {\"$date\": 1690045891},\n      \"seller\": {\n        \"name\": \"Jon B.\",\n        \"location\": \"Manhattan NYC\"\n      },\n      \"items\": [\n        {\n          \"car\" : \"BMW 330i Sedan\",\n          \"color\": \"Silver\"\n        },\n        \"Extended warranty - 5 years\"\n      ],\n      \"amount\": 47601,\n      \"status\" : \"active\",\n      \"preferred_customer\" : true\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "verify insertOne with find",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\" : {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "insertMany documents with $vector",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response is successful and has a body\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.withBody;",
+									"});",
+									"",
+									"let jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Check if inserted Ids exist\", function () {",
+									"    pm.expect(jsonData.status.insertedIds).to.deep.equal([",
+									"            \"2\",",
+									"            \"3\",",
+									"            \"4\",",
+									"            \"5\",",
+									"            \"6\",",
+									"            \"7\",",
+									"            \"8\",",
+									"            \"9\",",
+									"            \"10\",",
+									"            \"11\",",
+									"            \"12\",",
+									"            \"13\",",
+									"            \"14\",",
+									"            \"15\",",
+									"            \"16\",",
+									"            \"17\",",
+									"            \"18\",",
+									"            \"19\",",
+									"            \"20\",",
+									"            \"21\"])",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"insertMany\": {\n    \"documents\": [\n      {\n        \"_id\": \"2\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.05],\n        \"customer\": {\n          \"name\": \"Jack B.\",\n          \"phone\": \"123-456-2222\",\n        \"age\": 34,\n        \"credit_score\": 700,\n          \"address\": {\n            \"address_line\": \"888 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1690391491},\n        \"seller\": {\n          \"name\": \"Tammy S.\",\n          \"location\": \"Staten Island NYC\"\n        },\n        \"items\": [\n            {\n          \"car\" : \"Tesla Model 3\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 10 years\",\n            \"Service - 5 years\"\n        ],\n        \"amount\": 53990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"3\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.15, 0.1, 0.1, 0.35, 0.55],\n        \"customer\": {\n          \"name\": \"Jill D.\",\n          \"phone\": \"123-456-3333\",\n        \"age\": 30,\n        \"credit_score\": 742,\n          \"address\": {\n            \"address_line\": \"12345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1690564291},\n        \"seller\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        },\n        \"items\": \"Extended warranty - 10 years\",\n        \"amount\": 4600,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"4\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.25, 0.25, 0.25, 0.25, 0.26],\n        \"customer\": {\n          \"name\": \"Lester M.\",\n          \"phone\": \"123-456-4444\",\n        \"age\": 40,\n        \"credit_score\": 802,\n          \"address\": {\n            \"address_line\": \"12346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1690909891},\n        \"seller\": {\n          \"name\": \"Jon B.\",\n          \"location\": \"Manhattan NYC\"\n        },\n        \"items\": [\n            {\n          \"car\" : \"BMW 330i Sedan\",\n          \"color\": \"Red\"\n            },\n            \"Extended warranty - 5 years\",\n            \"Service - 5 years\"\n        ],\n        \"amount\": 48510,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"5\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.25, 0.045, 0.38, 0.31, 0.67],\n        \"customer\": {\n          \"name\": \"David C.\",\n          \"phone\": \"123-456-5555\",\n        \"age\": 50,\n        \"credit_score\": 800,\n          \"address\": {\n            \"address_line\": \"32345 Main Ave\",\n            \"city\": \"Jersey City\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1690996291},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [\n          {\n          \"car\" : \"Tesla Model S\",\n          \"color\": \"Red\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 94990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"6\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.11, 0.02, 0.78, 0.10, 0.27],\n        \"customer\": {\n          \"name\": \"Chris E.\",\n          \"phone\": \"123-456-6666\",\n        \"age\": 43,\n        \"credit_score\": 764,\n          \"address\": {\n            \"address_line\": \"32346 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1691860291},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [\n          {\n          \"car\" : \"Tesla Model X\",\n          \"color\": \"Blue\"\n            }\n        ],\n        \"amount\": 109990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"7\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.21, 0.22, 0.33, 0.44, 0.53],\n        \"customer\": {\n          \"name\": \"Jeff G.\",\n          \"phone\": \"123-456-7777\",\n        \"age\": 66,\n        \"credit_score\": 802,\n          \"address\": {\n            \"address_line\": \"22999 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1692119491},\n        \"seller\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW M440i Gran Coupe\",\n          \"color\": \"Black\"\n            },\n            \"Extended warranty - 5 years\"],\n        \"amount\": 61050,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"8\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.3, 0.23, 0.15, 0.17, 0.4],\n        \"customer\": {\n          \"name\": \"Harold S.\",\n          \"phone\": \"123-456-8888\",\n        \"age\": 29,\n        \"credit_score\": 710,\n          \"address\": {\n            \"address_line\": \"1234 Main St\",\n            \"city\": \"Orange\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1693329091},\n        \"seller\": {\n          \"name\": \"Tammy S.\",\n          \"location\": \"Staten Island NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW X3 SUV\",\n          \"color\": \"Black\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 46900,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"9\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.06],\n        \"customer\": {\n          \"name\": \"Richard Z.\",\n          \"phone\": \"123-456-9999\",\n        \"age\": 22,\n        \"credit_score\": 690,\n          \"address\": {\n            \"address_line\": \"22345 Broadway\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1693588291},\n        \"seller\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model 3\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 53990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"10\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.25, 0.045, 0.38, 0.31, 0.68],\n        \"customer\": {\n          \"name\": \"Eric B.\",\n          \"phone\": null,\n        \"age\": 54,\n        \"credit_score\": 780,\n          \"address\": {\n            \"address_line\": \"9999 River Rd\",\n            \"city\": \"Fair Haven\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1694797891},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model S\",\n          \"color\": \"Black\"\n            }\n        ],\n        \"amount\": 93800,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"11\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.44, 0.11, 0.33, 0.22, 0.88],\n        \"customer\": {\n          \"name\": \"Ann J.\",\n          \"phone\": \"123-456-1112\",\n        \"age\": 47,\n        \"credit_score\": 660,\n          \"address\": {\n            \"address_line\": \"99 Elm St\",\n            \"city\": \"Fair Lawn\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1695921091},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model Y\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 57500,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"12\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.33, 0.44, 0.55, 0.77, 0.66],\n        \"customer\": {\n          \"name\": \"John T.\",\n          \"phone\": \"123-456-1123\",\n        \"age\": 55,\n        \"credit_score\": 786,\n          \"address\": {\n            \"address_line\": \"23 Main Blvd\",\n            \"city\": \"Staten Island\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1696180291},\n        \"seller\": {\n          \"name\": \"Tammy S.\",\n          \"location\": \"Staten Island NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW 540i xDrive Sedan\",\n          \"color\": \"Black\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 64900,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"13\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.07],\n        \"customer\": {\n          \"name\": \"Aaron W.\",\n          \"phone\": \"123-456-1133\",\n        \"age\": 60,\n        \"credit_score\": 702,\n          \"address\": {\n            \"address_line\": \"1234 4th Ave\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1697389891},\n        \"seller\": {\n          \"name\": \"Jon B.\",\n          \"location\": \"Manhattan NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model 3\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 55000,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"14\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.11, 0.02, 0.78, 0.21, 0.27],\n        \"customer\": {\n          \"name\": \"Kris S.\",\n          \"phone\": \"123-456-1144\",\n        \"age\": 44,\n        \"credit_score\": 702,\n          \"address\": {\n            \"address_line\": \"1414 14th Pl\",\n            \"city\": \"Brooklyn\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1698513091},\n        \"seller\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model X\",\n          \"color\": \"White\"\n            }\n        ],\n        \"amount\": 110400,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"15\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.08],\n        \"customer\": {\n          \"name\": \"Maddy O.\",\n          \"phone\": \"123-456-1155\",\n        \"age\": 41,\n        \"credit_score\": 782,\n          \"address\": {\n            \"address_line\": \"1234 Maple Ave\",\n            \"city\": \"West New York\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1701191491},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": {\n          \"car\" : \"Tesla Model 3\",\n          \"color\": \"White\"\n            },\n        \"amount\": 52990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"16\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.44, 0.11, 0.33, 0.22, 0.88],\n        \"customer\": {\n          \"name\": \"Tim C.\",\n          \"phone\": \"123-456-1166\",\n        \"age\": 38,\n        \"credit_score\": 700,\n          \"address\": {\n            \"address_line\": \"1234 Main St\",\n            \"city\": \"Staten Island\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1701450691},\n        \"seller\": {\n          \"name\": \"Tammy S.\",\n          \"location\": \"Staten Island NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model Y\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 58990,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"17\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.1, 0.15, 0.3, 0.12, 0.09],\n        \"customer\": {\n          \"name\": \"Yolanda Z.\",\n          \"phone\": \"123-456-1177\",\n        \"age\": 61,\n        \"credit_score\": 694,\n          \"address\": {\n            \"address_line\": \"1234 Main St\",\n            \"city\": \"Hoboken\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1702660291},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model 3\",\n          \"color\": \"Blue\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 54900,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"18\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.15, 0.17, 0.15, 0.43, 0.55],\n        \"customer\": {\n          \"name\": \"Thomas D.\",\n          \"phone\": \"123-456-1188\",\n        \"age\": 45,\n        \"credit_score\": 724,\n          \"address\": {\n            \"address_line\": \"98980 20th St\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1703092291},\n        \"seller\": {\n          \"name\": \"Jon B.\",\n          \"location\": \"Manhattan NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW 750e xDrive Sedan\",\n          \"color\": \"Black\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 106900,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"19\",\n        \"purchase_type\": \"Online\",\n        \"$vector\": [0.25, 0.25, 0.25, 0.25, 0.27],\n        \"customer\": {\n          \"name\": \"Vivian W.\",\n          \"phone\": \"123-456-1199\",\n        \"age\": 20,\n        \"credit_score\": 698,\n          \"address\": {\n            \"address_line\": \"5678 Elm St\",\n            \"city\": \"Hartford\",\n            \"state\": \"CT\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1704215491},\n        \"seller\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW 330i Sedan\",\n          \"color\": \"White\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 46980,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"20\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.44, 0.11, 0.33, 0.22, 0.88],\n        \"customer\": {\n          \"name\": \"Leslie E.\",\n          \"phone\": null,\n        \"age\": 44,\n        \"credit_score\": 782,\n          \"address\": {\n            \"address_line\": \"1234 Main St\",\n            \"city\": \"Newark\",\n            \"state\": \"NJ\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1705338691},\n        \"seller\": {\n          \"name\": \"Jim A.\",\n          \"location\": \"Jersey City NJ\"\n        },\n        \"items\": [{\n          \"car\" : \"Tesla Model Y\",\n          \"color\": \"Black\"\n            },\n            \"Extended warranty - 5 years\"\n        ],\n        \"amount\": 59800,\n      \"status\" : \"active\"\n      },\n      {\n        \"_id\": \"21\",\n        \"purchase_type\": \"In Person\",\n        \"$vector\": [0.21, 0.22, 0.33, 0.44, 0.53],\n        \"customer\": {\n          \"name\": \"Rachel I.\",\n          \"phone\": null,\n        \"age\": 62,\n        \"credit_score\": 786,\n          \"address\": {\n            \"address_line\": \"1234 Park Ave\",\n            \"city\": \"New York\",\n            \"state\": \"NY\"\n          }\n        },\n        \"purchase_date\": {\"$date\": 1706202691},\n        \"seller\": {\n          \"name\": \"Jon B.\",\n          \"location\": \"Manhattan NYC\"\n        },\n        \"items\": [{\n          \"car\" : \"BMW M440i Gran Coupe\",\n          \"color\": \"Silver\"\n            },\n            \"Extended warranty - 5 years\",\n            \"Gap Insurance - 5 years\"\n        ],\n        \"amount\": 65250,\n      \"status\" : \"active\"\n      }\n    ],\n    \"options\": {\n        \"ordered\": false\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Data API commands that insert data."
+		},
+		{
+			"name": "Find data",
+			"item": [
+				{
+					"name": "find with $vector search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"options\" : {\n        \"limit\" : 100\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find sorted by $vector search, projection enabled, return similarity scores",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"projection\" : {\"$vector\" : 1},\n    \"options\" : {\n        \"includeSimilarity\" : true,\n        \"limit\" : 100\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOne sorted by specific $vector and projection enabled",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOne\": {\n    \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]},\n    \"projection\" : {\"$vector\" : 1}\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOne with filter using a document's _id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"let jsonData = pm.response.json();",
+									"pm.test(\"Check if findOne returned data\", function () {",
+									"    pm.expect(jsonData.data.document).to.deep.equal(",
+									"           {",
+									"            \"_id\": \"1\",",
+									"            \"purchase_type\": \"Online\",",
+									"            \"$vector\": [",
+									"                0.25,",
+									"                0.25,",
+									"                0.25,",
+									"                0.25,",
+									"                0.25",
+									"            ],",
+									"            \"customer\": {",
+									"                \"name\": \"Jim\",",
+									"                \"phone\": \"123-123-1234\",",
+									"                \"address\": {",
+									"                    \"address_line\": \"1234 Broadway\",",
+									"                    \"city\": \"New York\",",
+									"                    \"state\": \"NY\"",
+									"                }",
+									"            },",
+									"            \"purchase_date\": \"12/31/2022\",",
+									"            \"seller\": {",
+									"                \"name\": \"Jon\",",
+									"                \"location\": \"New York\"",
+									"            },",
+									"            \"items\": [",
+									"                {",
+									"                    \"car\": \"BMW\",",
+									"                    \"color\": \"Black\"",
+									"                },",
+									"                \"Extended warranty - 5 years\"",
+									"            ],",
+									"            \"amount\": 65000,",
+									"            \"status\": \"active\",",
+									"            \"preferred_customer\": true",
+									"        }",
+									" )",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOne\": {\n    \"filter\": {\"_id\" : \"14\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find one query using index filtered by purchase_date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"let jsonData = pm.response.json();",
+									"pm.test(\"Check if findOne returned data\", function () {",
+									"    pm.expect(jsonData.data.document).to.deep.equal(",
+									"           {",
+									"            \"_id\": \"1\",",
+									"            \"purchase_type\": \"Online\",",
+									"            \"$vector\": [",
+									"                0.25,",
+									"                0.25,",
+									"                0.25,",
+									"                0.25,",
+									"                0.25",
+									"            ],",
+									"            \"customer\": {",
+									"                \"name\": \"Jim\",",
+									"                \"phone\": \"123-123-1234\",",
+									"                \"address\": {",
+									"                    \"address_line\": \"1234 Broadway\",",
+									"                    \"city\": \"New York\",",
+									"                    \"state\": \"NY\"",
+									"                }",
+									"            },",
+									"            \"purchase_date\": \"12/31/2022\",",
+									"            \"seller\": {",
+									"                \"name\": \"Jon\",",
+									"                \"location\": \"New York\"",
+									"            },",
+									"            \"items\": [",
+									"                {",
+									"                    \"car\": \"BMW\",",
+									"                    \"color\": \"Black\"",
+									"                },",
+									"                \"Extended warranty - 5 years\"",
+									"            ],",
+									"            \"amount\": 65000,",
+									"            \"status\": \"active\",",
+									"            \"preferred_customer\": true",
+									"        }",
+									" )",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"findOne\": {\n        \"filter\": {\n            \"purchase_date\": {\n                \"$date\": 1703092291\n            }\n        }\n    }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find to return multiple documents: filter by online purchase_type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\"purchase_type\": \"Online\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find using property stored in an array, filtered by warranty type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\"items\" : \"Extended warranty - 10 years\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with multi-column filter for customers from specific city and state",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"customer.address.city\": \"Hoboken\",\n      \"customer.address.state\": \"NJ\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $and $or to filter whether seller and customer match given values",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"$and\": [\n                {\n                    \"$or\": [\n                        {\n                            \"customer.address.city\": \"Jersey City\"\n                        },\n                        {\n                            \"customer.address.city\": \"Orange\"\n                        }\n                    ]\n                },\n                {\n                    \"$or\": [\n                        {\n                            \"seller.name\": \"Jim A.\"\n                        },\n                        {\n                            \"seller.name\": \"Tammy S.\"\n                        }\n                    ]\n                }\n            ]\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $in to query city",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"customer.address.city\": {\n                \"$in\": [\n                    \"Hoboken\",\n                    \"Fair Haven\"\n                ]\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $exists where property is present",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"preferred_customer\": {\n        \"$exists\": true\n      }\n    }\n  }\n}\n\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $eq where document equals purchases by given seller’s name and location",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"seller\": {\n        \"$eq\": {\n          \"name\": \"Jasmine S.\",\n          \"location\": \"Brooklyn NYC\"\n        }\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $ne where documents have cars purchased by customers not residing in New Yor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"customer.address.state\": {\n                \"$ne\": \"NY\"\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $not to find documents that do not match the filter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"$not\": {\n                \"purchase_type\": \"In Person\"\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $nin where seller.location does not contain specified values",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"seller.location\": {\n                \"$nin\": [\"Manhattan NYC\",\"Brooklyn NYC\"]\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with range operators $gte and $lt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"find\": {\n        \"filter\": {\n            \"$and\": [\n                {\n                    \"customer.credit_score\": {\n                        \"$gte\": 700\n                    }\n                },\n                {\n                    \"customer.credit_score\": {\n                        \"$lt\": 800\n                    }\n                }\n            ]\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with $size: filter to get purchases with 3 items",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$size\": 3\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $all where array has two given items",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$all\": [\n          {\n            \"car\": \"Tesla Model Y\",\n            \"color\": \"White\"\n          },\n          \"Extended warranty - 5 years\"\n        ]\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find with $eq where array has only given data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"items\": {\n        \"$eq\": [\n          {\n            \"car\": \"BMW M440i Gran Coupe\",\n            \"color\": \"Silver\"\n          },\n          \"Extended warranty - 5 years\",\n          \"Gap Insurance - 5 years\"\n        ]\n      }\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find pagination example to get first 20 documents on page 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "find with pagingState: to get all purchases showing Page 2 results",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"options\" : {\"pageState\" : \"CgAAAAEBAAAAATQA8H///+sA\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Data API commands that find data. Operators are used in many of these find command examples."
+		},
+		{
+			"name": "Find and modify data",
+			"item": [
+				{
+					"name": "findOneAndUpdate with $sort and $set for active status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"findOneAndUpdate\": {\n        \"sort\": {\n            \"$vector\": [\n                0.25,\n                0.045,\n                0.38,\n                0.31,\n                0.67\n            ]\n        },\n        \"update\": {\n            \"$set\": {\n                \"status\": \"active\"\n            }\n        },\n        \"options\": {\n            \"returnDocument\": \"after\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate - upsert--> Query: Set array of tags, multi data type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\",\n      \"amount\": 65,\n      \"wait\" : 42\n    },\n    \"update\" : {\"$set\" : { \"tags\" : [\"my test\", 5, true, null], \"min_col\": 2, \"max_col\": 99}},\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : true}\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate - unset--> Query: Unset amount from the document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$unset\" : {\"amount\": \"\"}},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate - inc--> Query: Decrease wait list by 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$inc\" : {\"wait\": -1}},\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - push --> Query: Add data to tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\": \"High priority\" }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - pop --> Query: Remove last data to tags array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$pop\": { \"tags\": 1 }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - each - Add multiple elements to array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\": { \"$each\": [ \"last-1\", \"last\"] } } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - position - Add element to a particular position",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$push\": { \"tags\" : { \"$each\": [ \"first\", \"second\" ] ,\n           \"$position\" : 0 } } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - min and max - no update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$max\": { \"max_col\" : 25 }, \"$min\" : {\"min_col\" : 5} },\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - min and max - Update value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$max\": { \"max_col\" : 100 }, \"$min\" : {\"min_col\" : 1} },\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - addToSet - Add's data to array if value not part of the array",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$addToSet\": { \"tags\" : \"first\" }},\n    \"options\" : {\"returnDocument\" : \"after\"}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndUpdate  - Rename a field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"findOneAndUpdate\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : { \"$rename\": { \"min_col\" : \"minimum\", \"max_col\" : \"maximum\" } },\n    \"options\" : {\"returnDocument\" : \"after\", \"upsert\" : false}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findOneAndDelete with vector",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"findOneAndDelete\": {\n        \"sort\" : {\"$vector\" : [0.15, 0.1, 0.1, 0.35, 0.55]}\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Data API commands that find and modify data."
+		},
+		{
+			"name": "Update data",
+			"item": [
+				{
+					"name": "updateOne  - dot notation - Set element value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"updateOne\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    },\n    \"update\" : {\"$set\" : { \"customer.name\" : \"CUSTOMER 22\"}}\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify updateOne data with find  - dot notation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"find\": {\n    \"filter\": {\n      \"_id\": \"upsert-id\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateMany  - Set element value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"updateMany\": {\n    \"filter\": {\"status\" : \"active\" },\n    \"update\" : {\"$set\" : { \"status\" : \"inactive\"}}\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Data API commands that update data."
+		},
+		{
+			"name": "Delete data",
+			"item": [
+				{
+					"name": "deleteOne  - delete by tags value",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteOne\": {\n    \"filter\": {\n      \"tags\": \"first\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMany  - delete by status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteMany\": {\n    \"filter\": {\n      \"status\": \"inactive\"\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}/{{ASTRA_DB_COLLECTION}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}",
+								"{{ASTRA_DB_COLLECTION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteCollection  - delete by collection name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Token",
+								"value": "{{ASTRA_DB_APPLICATION_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deleteCollection\": {\n    \"name\": \"{{ASTRA_DB_COLLECTION}}\"\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ASTRA_DB_API_ENDPOINT}}/api/json/v1/{{ASTRA_DB_KEYSPACE}}",
+							"host": [
+								"{{ASTRA_DB_API_ENDPOINT}}"
+							],
+							"path": [
+								"api",
+								"json",
+								"v1",
+								"{{ASTRA_DB_KEYSPACE}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Data API commands that delete data, including an example that deletes the entire collection so that you can start over with the examples."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "ASTRA_DB_APPLICATION_TOKEN",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_API_ENDPOINT",
+			"value": "REPLACE ME",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_KEYSPACE",
+			"value": "default_keyspace",
+			"type": "string"
+		},
+		{
+			"key": "ASTRA_DB_COLLECTION",
+			"value": "REPLACE ME",
+			"type": "string"
+		}
+	]
+}
