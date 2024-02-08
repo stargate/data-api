@@ -3,8 +3,6 @@ name: Publish Docker Image to docker hub
 # runs on
 # * manual trigger
 on:
-  push:
-    branches: []
   workflow_dispatch:
 
 # global env vars, available in all jobs and steps
