@@ -1,6 +1,6 @@
-# JSON API Query Specification
+# DATA API Query Specification
 
-The target users for the JSON API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM)
+The target users for the DATA API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM)
 library such as [Mongoose](https://github.com/Automattic/mongoose). 
 
 - [Preamble](#preamble)
@@ -17,15 +17,15 @@ library such as [Mongoose](https://github.com/Automattic/mongoose).
 
 ## Preamble
 
-The nature of a JSON API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via [`mquery`](https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the JSON API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
+The nature of a DATA API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via [`mquery`](https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the DATA API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
 
-The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the JSON API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
+The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the DATA API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
 
-Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the JSON API service with other data services though the use of templates or code to generate a request.
+Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the DATA API service with other data services though the use of templates or code to generate a request.
 
 ## High Level Concepts
 
-The JSON API consists of the following high level concepts that are composed to create a request:
+The DATA API consists of the following high level concepts that are composed to create a request:
 
 -   **Namespace:** A logical container representing a distinct storage location and query boundary which can contain multiple collections. May map to a keyspace or database.
 -   **Collection:** A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.
@@ -44,7 +44,7 @@ These concepts are grouped together to form a **Request** sent by client softwar
 
 ## Conventions
 
-To aid in specifying the JSON API, we will use the following conventions in this document:
+To aid in specifying the DATA API, we will use the following conventions in this document:
 
 - Language rules will be given in a [BNF](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form)-like notation:
 
@@ -466,7 +466,7 @@ The following commands are supported for collections:
 -   [`updateMany`](#updatemany-command)
 -   [`updateOne`](#updateone-command)
 
-Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [JSON API HTTP Specification](jsonapi-network-spec.md).
+Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [DATA API HTTP Specification](jsonapi-network-spec.md).
 
 Commands are defined using the BNF-like syntax, with samples presented using a [JSON](https://www.json.org/) encoding of the language. The use of JSON in these samples does not preclude other encodings of the API in the future.
 
@@ -590,7 +590,7 @@ In the context of a vector-enabled Astra DB database, the dot product can be use
 * In high-dimensional vector spaces, such as those produced by embedding algorithms or neural networks, similar items are represented by vectors that are close to each other.
 * The cosine similarity between two vectors is a measure of their directional similarity, regardless of their magnitude. If you compute the dot product of two normalized vectors, you get the cosine similarity.
 
-Thus, by computing the dot product between a query vector and the vectors in the Astra DB database, you can efficiently find items in the database that are directionally similar to the query. With dot_product metric set in the JSON API createCollection command, Astra DB can use the dot product as a measure of similarity between vectors.
+Thus, by computing the dot product between a query vector and the vectors in the Astra DB database, you can efficiently find items in the database that are directionally similar to the query. With dot_product metric set in the DATA API createCollection command, Astra DB can use the dot product as a measure of similarity between vectors.
 
 ##### *euclidean*
 
@@ -616,7 +616,7 @@ In the context of a vector-enabled Astra DB database:
 
 * **Distance Between Vectors**: When you want to find how "close" two vectors are, you can use various metrics. The Euclidean distance is one of the most intuitive and commonly used metrics. If two vectors have a small Euclidean distance between them, they are close in the vector space; if they have a large Euclidean distance, they are far apart.
 
-* **Querying and Operations**: When you set the vector metric to `euclidean` in the JSON API `createCollection` command, Astra DB can use the Euclidean distance as the metric for any operations that require comparing vectors. For instance, if you’re performing a nearest neighbor search, the Astra DB database will return vectors that have the smallest Euclidean distance to the query vector.
+* **Querying and Operations**: When you set the vector metric to `euclidean` in the DATA API `createCollection` command, Astra DB can use the Euclidean distance as the metric for any operations that require comparing vectors. For instance, if you’re performing a nearest neighbor search, the Astra DB database will return vectors that have the smallest Euclidean distance to the query vector.
 
 ##### *cosine*
 
@@ -891,7 +891,7 @@ If `returnDocument` is `before`, return the existing document. if `returnDocumen
 
 Fail Fast, a storage failure causes the command to stop processing.
 
-If the replacement document `_id` field is different from the document read from the database, the JSON API throws an error.
+If the replacement document `_id` field is different from the document read from the database, the DATA API throws an error.
 
 NOTE: you can omit `_id` in the replacement document. If `_id` is in the replacement, it should be exactly equal to the `_id` in the database. But if `_id` was omitted, 
 `findOneAndReplace` will use the existing document's `_id`.
@@ -1181,12 +1181,12 @@ There are two category of storage failures under consideration:
 
 1.  **Availability Faults**: These occur when the underlying storage
     platform is unable to successfully complete an operation due node
-    failures. These errors may be transient and the JSON API may retry
+    failures. These errors may be transient and the DATA API may retry
     operations, if operations still fail after retrying the operation
     will be considered to have failed.
 2.  **Concurrency Faults**: These occur when the a document is under
     very high concurrent modification which make it impossible for the
-    JSON API to complete an optimistic "compare-and-set" update.
+    DATA API to complete an optimistic "compare-and-set" update.
     Modification operations read documents from the storage platform and
     update or delete it only if it has not changed since being read. If
     the document has changed, the filter that selected the document is

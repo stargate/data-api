@@ -46,8 +46,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and push (Docker Hub)
-        if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 ${{ matrix.profile }}
           docker push stargateio/dataapi:${{ github.sha }}
           docker push stargateio/jsonapi:${{ github.sha }}

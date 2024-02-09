@@ -1,7 +1,7 @@
 # JSON HTTP API Specification
 
-This document specifies the HTTP API for the JSON API. That is how clients can communicate with the service. 
-See the [JSON API Query Specification](jsonapi-spec.md) for details of data modelling and queries.
+This document specifies the HTTP API for the DATA API. That is how clients can communicate with the service. 
+See the [DATA API Query Specification](jsonapi-spec.md) for details of data modelling and queries.
 
 - [Preamble](#preamble)
 - [High-level concepts](#high-level-concepts)
@@ -15,13 +15,13 @@ See the [JSON API Query Specification](jsonapi-spec.md) for details of data mode
 
 ## Preamble
 
-The target users for the JSON API are Javascript developers who interact
+The target users for the DATA API are Javascript developers who interact
 with the service through a driver or Object Document Mapper (ODM)
 library such as [Mongoose](https://github.com/Automattic/mongoose). We
 expect both ODMs and developers not using an ODM to use a client library
 that manages connections and encoding, and provides a basic idiomatic
-representation of the JSON API. We do not expect developers to construct
-and make raw HTTP requests against the JSON API. With that in mind the
+representation of the DATA API. We do not expect developers to construct
+and make raw HTTP requests against the DATA API. With that in mind the
 HTTP API is designed to be processed by a client-side driver first, and
 humans second.
 
@@ -34,13 +34,13 @@ The HTTP API has the following design principles:
     possible to easy capture, store, and later send a request message to
     a different endpoint and compare the response message to the
     original response.
-2.  **Always Respond:** The JSON API **should** always send a response
+2.  **Always Respond:** The DATA API **should** always send a response
     message, even in the case of an error, this is a corollary to
     "Message Based". This means that errors in processing a request,
     such as authentication errors or a timeout, result in a HTTP `200`
     *OK* response with the error in the body of the message. Exceptions
     to this will be errors created by intermediate servers between the
-    client and JSON API, such as Gateway errors.
+    client and DATA API, such as Gateway errors.
 3.  **Always JSON:** All messages passed between the client and server
     **must** be valid [JSON](https://www.json.org/) documents.
 
@@ -60,7 +60,7 @@ API. The motivations for this decision are:
     delivery / RPC activation ("transport" defined in this HTTP API
     spec) from service functionality ("features" defined in the "JSON
     API Query Specification") alternative transports may more easily be
-    added. A natural path for the JSON API may be to also provide a
+    added. A natural path for the DATA API may be to also provide a
     [gRPC](https://grpc.io/) as the [Stargate](https://stargate.io/)
     project already provides a gRPC transport for Cassandra's CQL. By
     not leveraging HTTP verbs or URL path and query patterns we provide
@@ -89,7 +89,7 @@ concepts that are used to describe this process are:
 
 ## Conventions
 
-To aid in specifying the JSON API, we will use the following conventions
+To aid in specifying the DATA API, we will use the following conventions
 in this document:
 
 -   Language rules will be given in a
