@@ -24,9 +24,9 @@ public class DataVectorizerService {
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
     return vectorizeSortClause(commandContext, command)
         .onItem()
-        .transform(flag -> vectorizeUpdateClause(commandContext, command))
+        .transformToUni(flag -> vectorizeUpdateClause(commandContext, command))
         .onItem()
-        .transform(flag -> vectorizeDocument(commandContext, command))
+        .transformToUni(flag -> vectorizeDocument(commandContext, command))
         .onItem()
         .transform(flag -> command);
   }
