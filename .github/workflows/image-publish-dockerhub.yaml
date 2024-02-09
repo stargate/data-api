@@ -48,4 +48,6 @@ jobs:
       - name: Build and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.tag=${{ github.sha }} ${{ matrix.profile }}
+          docker push stargateio/jsonapi:${{ github.sha }}
+          docker push stargateio/dataapi:${{ github.sha }}
