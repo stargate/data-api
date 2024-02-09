@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
@@ -43,7 +43,11 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorize(documents);
+      try {
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       for (JsonNode document : documents) {
         assertThat(document.has("$vectorize")).isTrue();
         assertThat(document.has("$vector")).isTrue();
@@ -61,11 +65,21 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      Throwable failure = catchThrowable(() -> dataVectorizer.vectorize(documents));
-      assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTORIZE_VALUE)
-          .hasFieldOrPropertyWithValue("message", "$vectorize search needs to be text value");
+      try {
+        Throwable failure =
+            dataVectorizer
+                .vectorize(documents)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .getFailure();
+        assertThat(failure)
+            .isInstanceOf(JsonApiException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTORIZE_VALUE)
+            .hasFieldOrPropertyWithValue("message", "$vectorize search needs to be text value");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Test
@@ -77,7 +91,11 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorize(documents);
+      try {
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       for (JsonNode document : documents) {
         assertThat(document.has("$vectorize")).isTrue();
         assertThat(document.has("$vector")).isTrue();
@@ -95,18 +113,23 @@ public class DataVectorizerTest {
       documents.add(document);
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      Throwable t =
-          catchThrowable(
-              () -> {
-                dataVectorizer.vectorize(documents);
-              });
-
-      assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      try {
+        Throwable failure =
+            dataVectorizer
+                .vectorize(documents)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .getFailure();
+        assertThat(failure)
+            .isNotNull()
+            .isInstanceOf(JsonApiException.class)
+            .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+            .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -120,7 +143,11 @@ public class DataVectorizerTest {
       SortClause sortClause = new SortClause(sortExpressions);
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorize(sortClause);
+      try {
+        dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       assertThat(sortClause.hasVsearchClause()).isTrue();
       assertThat(sortClause.hasVectorizeSearchClause()).isFalse();
       assertThat(sortClause.sortExpressions().get(0).vector()).isNotNull();
@@ -145,7 +172,11 @@ public class DataVectorizerTest {
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorizeUpdateClause(updateClause);
+      try {
+        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
       assertThat(setNode.has("$vectorize")).isTrue();
       assertThat(setNode.has("$vector")).isTrue();
@@ -169,10 +200,12 @@ public class DataVectorizerTest {
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
       Throwable t =
-          catchThrowable(
-              () -> {
-                dataVectorizer.vectorizeUpdateClause(updateClause);
-              });
+          dataVectorizer
+              .vectorizeUpdateClause(updateClause)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -196,7 +229,11 @@ public class DataVectorizerTest {
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorizeUpdateClause(updateClause);
+      try {
+        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       final ObjectNode setNode =
           updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
       assertThat(setNode.has("$vectorize")).isTrue();
@@ -221,10 +258,12 @@ public class DataVectorizerTest {
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
       Throwable t =
-          catchThrowable(
-              () -> {
-                dataVectorizer.vectorizeUpdateClause(updateClause);
-              });
+          dataVectorizer
+              .vectorizeUpdateClause(updateClause)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -248,7 +287,11 @@ public class DataVectorizerTest {
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      dataVectorizer.vectorizeUpdateClause(updateClause);
+      try {
+        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
       assertThat(unsetNode.has("$vectorize")).isTrue();
       assertThat(unsetNode.has("$vector")).isTrue();
@@ -270,17 +313,24 @@ public class DataVectorizerTest {
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory());
-      Throwable t =
-          catchThrowable(
-              () -> {
-                dataVectorizer.vectorizeUpdateClause(updateClause);
-              });
-      assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      try {
+        Throwable t =
+            dataVectorizer
+                .vectorizeUpdateClause(updateClause)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .getFailure();
+
+        assertThat(t)
+            .isNotNull()
+            .isInstanceOf(JsonApiException.class)
+            .withFailMessage("`$vectorize` and `$vector` can't be used together.")
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
+            .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }
