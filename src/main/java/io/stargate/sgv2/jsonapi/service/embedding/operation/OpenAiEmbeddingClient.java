@@ -53,7 +53,7 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
         .onItem()
         .transform(
             resp -> {
-              return Arrays.stream(response.data()).map(data -> data.embedding()).toList();
+              return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });
   }
 }
