@@ -23,18 +23,17 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 ## Document limits configuration
 *Configuration for document limits, defined by [DocumentLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DocumentLimitsConfig.java).*
 
-| Property                                                        | Type  | Default     | Description                                                                          |
-|-----------------------------------------------------------------|-------|-------------|--------------------------------------------------------------------------------------|
-| `stargate.jsonapi.document.limits.max-size`                     | `int` | `1_000_000` | The maximum size of (in characters) a single document.                               |
-| `stargate.jsonapi.document.limits.max-depth`                    | `int` | `16`        | The maximum document depth (nesting).                                                |
-| `stargate.jsonapi.document.limits.max-property-name-length`     | `int` | `100`       | The maximum length of property names in a document for an individual segment.        |
-| `stargate.jsonapi.document.limits.max-property-path-length`     | `int` | `250`       | The maximum length of property paths in a document (segments and separating periods) |
-| `stargate.jsonapi.document.limits.max-object-properties`        | `int` | `1000`      | The maximum number of properties any single object in a document can contain.        |
-| `stargate.jsonapi.document.limits.max-document-properties`      | `int` | `2000`      | The maximum total number of properties all objects in a document can contain.        |
-| `stargate.jsonapi.document.limits.max-number-length`            | `int` | `100`       | The maximum length (in characters) of a single number value in a document.           |
-| `stargate.jsonapi.document.limits.max-string-length-in-bytes`   | `int` | `8000`      | The maximum length (in bytes) of a single string value in a document.                |
-| `stargate.jsonapi.document.limits.max-array-length`             | `int` | `1000`      | The maximum length (in elements) of a single indexable array in a document.          |
-| `stargate.jsonapi.document.limits.max-vector-embedding-length`  | `int` | `4096`      | The maximum length (in floats) of the $vector in a document.                         |
+| Property                                                        | Type  | Default     | Description                                                                             |
+|-----------------------------------------------------------------|-------|-------------|-----------------------------------------------------------------------------------------|
+| `stargate.jsonapi.document.limits.max-size`                     | `int` | `4_000_000` | The maximum size of (in characters) a single document.                                  |
+| `stargate.jsonapi.document.limits.max-depth`                    | `int` | `16`        | The maximum document depth (nesting).                                                   |
+| `stargate.jsonapi.document.limits.max-property-path-length`     | `int` | `1000`       | The maximum length of property paths in a document (segments and separating periods)    |
+| `stargate.jsonapi.document.limits.max-object-properties`        | `int` | `1000`      | The maximum number of properties any single indexable object in a document can contain. |
+| `stargate.jsonapi.document.limits.max-document-properties`      | `int` | `2000`      | The maximum number of total indexed properties a document can contain.                        |
+| `stargate.jsonapi.document.limits.max-number-length`            | `int` | `100`       | The maximum length (in characters) of a single number value in a document.              |
+| `stargate.jsonapi.document.limits.max-string-length-in-bytes`   | `int` | `8000`      | The maximum length (in bytes) of a single indexable string value in a document.         |
+| `stargate.jsonapi.document.limits.max-array-length`             | `int` | `1000`      | The maximum length (in elements) of a single indexable array in a document.             |
+| `stargate.jsonapi.document.limits.max-vector-embedding-length`  | `int` | `4096`      | The maximum length (in floats) of the $vector in a document.                            |
 
 ## Operations configuration
 *Configuration for the operation execution, defined by [OperationsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/OperationsConfig.java).*
@@ -47,13 +46,15 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 | `stargate.jsonapi.operations.max-document-insert-count`                 | `int` | `20`     | The maximum amount of documents that can be inserted in a single operation. The request will fail fast without inserts if the limit is broken.                                                      |
 | `stargate.jsonapi.operations.max-document-update-count`                 | `int` | `20`     | The maximum amount of documents that can be updated in a single operation. In case there are more documents that could be updated, the operation will set the `moreData` response status to `true`. |
 | `stargate.jsonapi.operations.max-document-delete-count`                 | `int` | `20`     | The maximum amount of documents that can be deleted in a single operation. In case there are more documents that could be deleted, the operation will set the `moreData` response status to `true`. |
-| `stargate.jsonapi.operations.max-filter-object-properties`              | `int` | `64`        | The maximum number of properties a single filter clause can contain.                 |
+| `stargate.jsonapi.operations.max-filter-object-properties`              | `int` | `64`     | The maximum number of properties a single filter clause can contain.                                                                                                                                |
 | `stargate.jsonapi.operations.max-in-operator-value-size`                | `int` | `100`    | The maximum number of _id values that can be passed for `$in` operator.                                                                                                                             |
 | `stargate.jsonapi.operations.lwt.retries`                               | `int` | `3`      | The amount of client side retries in case of a LWT failure.                                                                                                                                         |
 | `stargate.jsonapi.operations.database-config.session-cache-ttl-seconds` | `int` | `300`    | The amount of seconds that the cql session will be kept in memory after last access.                                                                                                                |
 | `stargate.jsonapi.operations.database-config.session-cache-max-size`    | `int` | `50`     | The maximum number of cql sessions that will be kept in memory.                                                                                                                                     |
 | `stargate.jsonapi.operations.default-count-page-size`                   | `int` | `100`    | The default Cassandra page size used for reading keys for count command.                                                                                                                            |
 | `stargate.jsonapi.operations.max-count-limit`                           | `int` | `1000`   | The default maximum number of rows to read for count operation.                                                                                                                                     |
+| `stargate.jsonapi.operations.database-config.ddl-retry-delay-millis`    | `int` | `1000`   | Delay time in seconds for DDL timeout.                                                                                                                                                              |
+| `stargate.jsonapi.operations.database-config.ddl-delay-millis`               | `int` | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                 |
 
 
 ## Jsonapi metering configuration
