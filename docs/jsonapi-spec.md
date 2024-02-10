@@ -540,6 +540,32 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
  
 If an error occurs the command will not return `status`.
 
+### estimatedDocumentCount Command
+
+Returns an estimated count of the number of documents in the collection. No guarantee is made on the accuracy of the count. No filtering is supported.
+
+*Sample:*
+
+```json
+{
+  "estimatedDocumentCount": {}
+}
+```
+
+#### estimatedDocumentCount Command Options
+
+The `estimatedDocumentCount` command does not support any options.
+
+#### estimatedDocumentCount Command Response
+
+| Response Elements | Description                                             |
+| ----------------- | ------------------------------------------------------- |
+| `data`            | Not present                                             |
+| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
+| `errors`          | Present if errors occur.                                |
+
+If an error occurs the command will not return `status`.
+
 
 ### createCollection Command
 
