@@ -5,18 +5,7 @@ import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -93,6 +82,7 @@ public class CollectionResource {
                         FindOneAndDeleteCommand.class,
                         FindOneAndReplaceCommand.class,
                         FindOneAndUpdateCommand.class,
+                        EstimatedDocumentCountCommand.class,
                         InsertOneCommand.class,
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
@@ -109,6 +99,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "findOneAndDelete"),
                 @ExampleObject(ref = "findOneAndReplace"),
                 @ExampleObject(ref = "findOneAndUpdate"),
+                @ExampleObject(ref = "estimatedDocumentCount"),
                 @ExampleObject(ref = "insertOne"),
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "updateMany"),

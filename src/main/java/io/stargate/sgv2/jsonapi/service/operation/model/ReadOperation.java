@@ -404,6 +404,27 @@ public interface ReadOperation extends Operation {
     }
   }
 
+  /**
+   * Run estimated count query and parse the result set
+   *
+   * @param queryExecutor
+   * @param simpleStatement
+   * @return
+   */
+  default Uni<CountResponse> estimateDocumentCount(
+      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+    // TODO: real implementation
+    return Uni.createFrom()
+        .completionStage(queryExecutor.executeCount(simpleStatement))
+        .onItem()
+        .transform(
+            rSet -> {
+              Row row = rSet.one(); // For count there will be only one row
+              long count = row.getLong(0); // Count value will be the first column value
+              return new CountResponse(count);
+            });
+  }
+
   record FindResponse(List<ReadDocument> docs, String pageState) {}
 
   record CountResponse(long count) {}
