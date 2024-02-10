@@ -22,7 +22,7 @@ USER root
 RUN microdnf update && microdnf install gzip && microdnf install procps-ng
 
 USER jboss
-RUN mkdir -p /opt/profiler && curl -fsL https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-${ARCH}.tar.gz | tar zxvf - -C /opt/profiler --strip-components 1
+RUN mkdir -p /opt/profiler && curl -fsL https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz | tar zxvf - -C /opt/profiler --strip-components 1
 RUN mkdir -p /opt/sjk-plus && curl -o /opt/sjk-plus/sjk-plus-0.20.jar https://repo.datastax.com/artifactory/dse/org/gridkit/jvmtool/sjk-plus/0.20/sjk-plus-0.20.jar;
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
