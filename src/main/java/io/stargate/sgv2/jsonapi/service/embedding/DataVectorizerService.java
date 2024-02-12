@@ -68,7 +68,7 @@ public class DataVectorizerService {
     } else if (command instanceof InsertManyCommand insertManyCommand) {
       return dataVectorizer.vectorize(insertManyCommand.documents());
     } else if (command instanceof FindOneAndReplaceCommand findOneAndReplaceCommand) {
-      dataVectorizer.vectorize(List.of(findOneAndReplaceCommand.replacementDocument()));
+      return dataVectorizer.vectorize(List.of(findOneAndReplaceCommand.replacementDocument()));
     }
     return Uni.createFrom().item(true);
   }
