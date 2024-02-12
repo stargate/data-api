@@ -32,40 +32,43 @@ public class DataVectorizerService {
    * @return
    */
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
-    if (!commandContext.isVectorEnabled()) return Uni.createFrom().item(command);
-    return vectorizeSortClause(commandContext, command)
+    if (!commandContext.isVectorEnabled() || commandContext.embeddingService() == null)
+      return Uni.createFrom().item(command);
+    final DataVectorizer dataVectorizer =
+        new DataVectorizer(commandContext.embeddingService(), objectMapper.getNodeFactory());
+    return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
-        .transformToUni(flag -> vectorizeUpdateClause(commandContext, command))
+        .transformToUni(flag -> vectorizeUpdateClause(dataVectorizer, commandContext, command))
         .onItem()
-        .transformToUni(flag -> vectorizeDocument(commandContext, command))
+        .transformToUni(flag -> vectorizeDocument(dataVectorizer, commandContext, command))
         .onItem()
         .transform(flag -> command);
   }
 
-  private Uni<Boolean> vectorizeSortClause(CommandContext commandContext, Command command) {
+  private Uni<Boolean> vectorizeSortClause(
+      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
     if (command instanceof Sortable sortable) {
-      return commandContext.tryVectorize(objectMapper.getNodeFactory(), sortable.sortClause());
+      return dataVectorizer.vectorize(sortable.sortClause());
     }
     return Uni.createFrom().item(true);
   }
 
-  private Uni<Boolean> vectorizeUpdateClause(CommandContext commandContext, Command command) {
+  private Uni<Boolean> vectorizeUpdateClause(
+      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
     if (command instanceof Updatable updatable) {
-      return commandContext.tryVectorize(objectMapper.getNodeFactory(), updatable.updateClause());
+      return dataVectorizer.vectorizeUpdateClause(updatable.updateClause());
     }
     return Uni.createFrom().item(true);
   }
 
-  private Uni<Boolean> vectorizeDocument(CommandContext commandContext, Command command) {
+  private Uni<Boolean> vectorizeDocument(
+      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
     if (command instanceof InsertOneCommand insertOneCommand) {
-      return commandContext.tryVectorize(
-          objectMapper.getNodeFactory(), List.of(insertOneCommand.document()));
+      return dataVectorizer.vectorize(List.of(insertOneCommand.document()));
     } else if (command instanceof InsertManyCommand insertManyCommand) {
-      return commandContext.tryVectorize(
-          objectMapper.getNodeFactory(), insertManyCommand.documents());
+      return dataVectorizer.vectorize(insertManyCommand.documents());
     } else if (command instanceof FindOneAndReplaceCommand findOneAndReplaceCommand) {
-      return commandContext.tryVectorize(
-          objectMapper.getNodeFactory(), List.of(findOneAndReplaceCommand.replacementDocument()));
+      dataVectorizer.vectorize(List.of(findOneAndReplaceCommand.replacementDocument()));
     }
     return Uni.createFrom().item(true);
   }
