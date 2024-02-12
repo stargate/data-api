@@ -417,6 +417,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadNoWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
                     });
               });
     }
@@ -608,6 +609,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
                     });
               });
 
@@ -632,6 +634,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
                     });
               });
     }

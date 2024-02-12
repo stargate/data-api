@@ -2668,6 +2668,7 @@ public class FindOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonBytesReadCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
                     });
               });
     }

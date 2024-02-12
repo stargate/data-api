@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.mockito.InjectMock;
+import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -36,6 +38,7 @@ public class ShredderTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject Shredder shredder;
+  @InjectMock protected StargateRequestInfo stargateRequestInfo;
 
   @Nested
   class OkCases {
@@ -634,6 +637,7 @@ public class ShredderTest {
                     line -> {
                       assertThat(line).contains("command=\"jsonBytesWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
                     });
               });
     }
