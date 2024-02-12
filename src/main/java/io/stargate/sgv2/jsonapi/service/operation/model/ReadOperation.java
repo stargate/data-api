@@ -53,6 +53,11 @@ public interface ReadOperation extends Operation {
           "query_null_values['%s']",
           "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
+
+  double TOTAL_TOKEN_RANGE = Math.pow(2, 64);
+  double MAX_TOKEN = Math.pow(2, 63) - 1;
+  double MIN_TOKEN = Math.pow(-2, 63);
+
   /**
    * Default implementation to query and parse the result set
    *
@@ -413,16 +418,44 @@ public interface ReadOperation extends Operation {
    */
   default Uni<CountResponse> estimateDocumentCount(
       QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
-    // TODO: real implementation
+    AtomicLong counter = new AtomicLong();
+    final CompletionStage<AsyncResultSet> async =
+        queryExecutor
+            .executeEstimatedCount(simpleStatement)
+            .whenComplete(
+                (rs, error) -> {
+                  getEstimatedCount(rs, error, counter);
+                });
+
     return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(simpleStatement))
+        .completionStage(async)
         .onItem()
         .transform(
-            rSet -> {
-              Row row = rSet.one(); // For count there will be only one row
-              long count = row.getLong(0); // Count value will be the first column value
-              return new CountResponse(count);
+            rs -> {
+              return new CountResponse(counter.get());
             });
+  }
+
+  private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
+    if (error != null) {
+      throw new JsonApiException(ErrorCode.COUNT_READ_FAILED);
+    } else {
+
+      for (Row row : rs.currentPage()) {
+        Long rangeStart = Long.valueOf(row.getString("range_start"));
+        Long rangeEnd = Long.valueOf(row.getString("range_end"));
+        double rangeSize = 0;
+        if (rangeStart > rangeEnd) {
+          rangeSize = (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
+        } else {
+          rangeSize = rangeEnd - rangeStart;
+        }
+        double percentage = (rangeSize / TOTAL_TOKEN_RANGE) * 100;
+        long partitionsCount = row.getLong("partitions_count");
+        double count = partitionsCount / percentage;
+        counter.addAndGet((long) count);
+      }
+    }
   }
 
   record FindResponse(List<ReadDocument> docs, String pageState) {}

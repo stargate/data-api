@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.model;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.api.common.cql.builder.Predicate;
-import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -29,18 +28,12 @@ public record EstimatedDocumentCountOperation(CommandContext commandContext)
   }
 
   private SimpleStatement buildSelectQuery() {
-
-    QueryOuterClass.Query query = null;
-    query =
-        new QueryBuilder()
-            .select()
-            .star()
-            .from("system", "size_estimates")
-            .where("keyspace_name", Predicate.EQ, commandContext.namespace())
-            .where("table_name", Predicate.EQ, commandContext.collection())
-            .build();
-
-    final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
-    return simpleStatement;
+    return selectFrom("system", "size_estimates")
+        .all()
+        .whereColumn("keyspace_name")
+        .isEqualTo(literal(commandContext.namespace()))
+        .whereColumn("table_name")
+        .isEqualTo(literal(commandContext.collection()))
+        .build();
   }
 }
