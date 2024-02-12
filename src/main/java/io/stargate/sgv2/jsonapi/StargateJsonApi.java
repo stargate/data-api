@@ -1,10 +1,17 @@
 package io.stargate.sgv2.jsonapi;
 
+import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.vertx.http.runtime.AuthConfig;
 import io.stargate.sgv2.api.common.grpc.SourceApiQualifier;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingApiKeyResolver;
+import io.stargate.sgv2.jsonapi.api.request.HeaderBasedEmbeddingApiKeyResolver;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Application;
+import org.checkerframework.checker.units.qual.A;
 import org.eclipse.microprofile.openapi.annotations.Components;
 import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
 import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
@@ -695,4 +702,10 @@ public class StargateJsonApi extends Application {
   public String sourceApi() {
     return "rest";
   }
+
+    @Produces
+    @ApplicationScoped
+    EmbeddingApiKeyResolver headerTokenResolver() {
+        return new HeaderBasedEmbeddingApiKeyResolver("embedding-api-key");
+    }
 }

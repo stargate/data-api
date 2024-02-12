@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility class to execute embedding serive to get vector embeddings for the text fields in the
@@ -26,6 +27,7 @@ import java.util.Map;
 public class DataVectorizer {
   private final EmbeddingService embeddingService;
   private final JsonNodeFactory nodeFactory;
+  private final Optional<String> apiKey;
 
   /**
    * Constructor
@@ -34,9 +36,10 @@ public class DataVectorizer {
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    */
-  public DataVectorizer(EmbeddingService embeddingService, JsonNodeFactory nodeFactory) {
+  public DataVectorizer(EmbeddingService embeddingService, JsonNodeFactory nodeFactory, Optional<String> apiKey) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
+    this.apiKey = apiKey;
   }
 
   /**
@@ -76,7 +79,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, apiKey);
         return vectors
             .onItem()
             .transform(
@@ -119,7 +122,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text));
+        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), apiKey);
         return vectors
             .onItem()
             .transform(
@@ -185,7 +188,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        final Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text));
+        final Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), apiKey);
         return vectors
             .onItem()
             .transform(

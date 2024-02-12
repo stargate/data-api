@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This is a test implementation of the EmbeddingService interface. It is used for
@@ -32,7 +33,7 @@ public class CustomITEmbeddingService implements EmbeddingService {
   ;
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {
     List<float[]> response = new ArrayList<>(texts.size());
     for (String text : texts) {
       if (TEST_DATA.containsKey(text)) {
