@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -10,6 +9,8 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.SSTWSessionMetadata;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.SSTableWriterSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -44,11 +45,13 @@ public class CQLSessionCache {
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
   /** CQLSession cache. */
-  private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
+  private final LoadingCache<SessionCacheKey, PersistenceSession> sessionCache;
   /** Database type Astra */
   public static final String ASTRA = "astra";
   /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
+  /** Persistence type SSTable Writer */
+  public static final String SIDE_LOADER = "sideloader";
 
   @ConfigProperty(name = "quarkus.application.name")
   private String APPLICATION_NAME;
@@ -56,7 +59,7 @@ public class CQLSessionCache {
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
     this.operationsConfig = operationsConfig;
-    LoadingCache<SessionCacheKey, CqlSession> sessionCache =
+    LoadingCache<SessionCacheKey, PersistenceSession> sessionCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
@@ -67,7 +70,7 @@ public class CQLSessionCache {
             // channels i.e. any in-flight query will be completed before the session is getting
             // closed.
             .removalListener(
-                (RemovalListener<SessionCacheKey, CqlSession>)
+                (RemovalListener<SessionCacheKey, PersistenceSession>)
                     (sessionCacheKey, session, cause) -> {
                       if (sessionCacheKey != null) {
                         if (LOGGER.isTraceEnabled()) {
@@ -95,7 +98,7 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+  private PersistenceSession getNewSession(SessionCacheKey cacheKey) {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -112,24 +115,30 @@ public class CQLSessionCache {
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
 
-      return new TenantAwareCqlSessionBuilder(
-              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .addContactPoints(seeds)
-          .withClassLoader(Thread.currentThread().getContextClassLoader())
-          .withAuthCredentials(
-              Objects.requireNonNull(databaseConfig.userName()),
-              Objects.requireNonNull(databaseConfig.password()))
-          .withApplicationName(APPLICATION_NAME)
-          .build();
+      return new PersistenceSession(
+          new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+              .addContactPoints(seeds)
+              .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withAuthCredentials(
+                  Objects.requireNonNull(databaseConfig.userName()),
+                  Objects.requireNonNull(databaseConfig.password()))
+              .withApplicationName(APPLICATION_NAME)
+              .build());
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
-          .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .withClassLoader(Thread.currentThread().getContextClassLoader())
-          .withApplicationName(APPLICATION_NAME)
-          .build();
+      return new PersistenceSession(
+          new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
+              .withAuthCredentials(
+                  TOKEN,
+                  Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
+              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+              .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withApplicationName(APPLICATION_NAME)
+              .build());
+    } else if (SIDE_LOADER.equals(databaseConfig.type())) {
+      return new PersistenceSession(
+          new SSTableWriterSession(
+              SSTWSessionMetadata.forTable(operationsConfig.ssTaableDefinition())));
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
@@ -139,7 +148,7 @@ public class CQLSessionCache {
    *
    * @return CQLSession
    */
-  public CqlSession getSession() {
+  public PersistenceSession getSession() {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {

@@ -131,6 +131,10 @@ public interface OperationsConfig {
   @Valid
   LwtConfig lwt();
 
+  @Nullable
+  @Valid
+  String ssTaableDefinition();
+
   /** Configuration setup for the Light-weight transactions. */
   interface LwtConfig {
 

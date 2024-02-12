@@ -6,7 +6,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
@@ -41,7 +40,7 @@ public class CqlSessionCacheTests {
    * is needed because, though the sessions evicted from the cache are closed, the sessions left
    * active on the cache are not closed, so we have to close them explicitly.
    */
-  private List<CqlSession> sessionsCreatedInTests;
+  private List<PersistenceSession> sessionsCreatedInTests;
 
   @BeforeEach
   public void tearUpEachTest() {
@@ -51,7 +50,7 @@ public class CqlSessionCacheTests {
 
   @AfterEach
   public void tearDownEachTest() {
-    sessionsCreatedInTests.forEach(CqlSession::close);
+    sessionsCreatedInTests.forEach(PersistenceSession::close);
   }
 
   @Test
@@ -65,7 +64,7 @@ public class CqlSessionCacheTests {
         cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
     stargateRequestInfoField.setAccessible(true);
     stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
             ((DefaultDriverContext) cqlSession.getContext())
@@ -100,7 +99,7 @@ public class CqlSessionCacheTests {
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
             ((DefaultDriverContext) cqlSession.getContext())
@@ -174,7 +173,7 @@ public class CqlSessionCacheTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
               ((DefaultDriverContext) cqlSession.getContext())
@@ -221,7 +220,7 @@ public class CqlSessionCacheTests {
           cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
       stargateRequestInfoField.setAccessible(true);
       stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
               ((DefaultDriverContext) cqlSession.getContext())
