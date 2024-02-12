@@ -313,7 +313,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         // Negative means check array_size[?] != ?
         int size = bigDecimal.intValue();
         DBFilterBase.MapFilterBase.Operator operator;
-        if (size > 0) {
+        if (size >= 0) {
           operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
         } else {
           operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
