@@ -32,9 +32,9 @@ public class CommandProcessor {
 
   private final QueryExecutor queryExecutor;
 
-  private final CommandResolverService commandResolverService;
-
   private final DataVectorizerService dataVectorizerService;
+
+  private final CommandResolverService commandResolverService;
 
   @Inject
   public CommandProcessor(
