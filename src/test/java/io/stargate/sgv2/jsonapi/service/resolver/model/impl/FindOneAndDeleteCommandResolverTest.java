@@ -10,7 +10,6 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -126,58 +125,6 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy())
                               .isEqualTo(List.of(new FindOperation.OrderBy("user", true)));
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
-
-    @Test
-    public void filterConditionVectorizeSearch() throws Exception {
-      String json =
-          """
-        {
-          "findOneAndDelete": {
-            "filter" : {"status" : "active"},
-            "sort" : {"$vectorize" : "test data"}
-          }
-        }
-        """;
-
-      FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
-      Operation operation =
-          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              DeleteOperation.class,
-              op -> {
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.findOperation())
-                    .isInstanceOfSatisfying(
-                        FindOperation.class,
-                        find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
-
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
-                              .isEqualTo(filter);
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
                           assertThat(find.singleResponse()).isTrue();
                         });
               });

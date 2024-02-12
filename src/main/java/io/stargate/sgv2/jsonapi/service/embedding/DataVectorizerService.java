@@ -10,18 +10,29 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.util.List;
 
-/** Service to vectorize the data for the embedding. */
+/** Service to vectorize the data to embedding vector. */
 @ApplicationScoped
 public class DataVectorizerService {
+
   private final ObjectMapper objectMapper;
 
+  @Inject
   public DataVectorizerService(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
+  /**
+   * This will vectorize the sort clause, update clause and the document with `$vectorize` field
+   *
+   * @param commandContext
+   * @param command
+   * @return
+   */
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
+    if (!commandContext.isVectorEnabled()) return Uni.createFrom().item(command);
     return vectorizeSortClause(commandContext, command)
         .onItem()
         .transformToUni(flag -> vectorizeUpdateClause(commandContext, command))
