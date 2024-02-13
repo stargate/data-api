@@ -64,10 +64,10 @@ public class InvalidCredentialsTests {
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field stargateRequestInfoField =
+    Field dataApiRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");

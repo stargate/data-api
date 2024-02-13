@@ -61,10 +61,10 @@ public class CqlSessionCacheTimingTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field stargateRequestInfoField =
+      Field dataApiRequestInfoField =
           cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+      dataApiRequestInfoField.setAccessible(true);
+      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       CqlSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
