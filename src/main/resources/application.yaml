@@ -52,7 +52,7 @@ stargate:
         # Hugging face embedding service configuration
         huggingface:
           enabled: true
-          url: https://api-inference.huggingface.co/pipeline/feature-extraction
+          url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           api-key: YOUR_API_KEY
 
         # Vertex AI embedding service configuration

@@ -1,12 +1,8 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.api.common.grpc.SourceApiQualifier;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingApiKeyResolver;
-import io.stargate.sgv2.jsonapi.api.request.HeaderBasedEmbeddingApiKeyResolver;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Application;
 import org.eclipse.microprofile.openapi.annotations.Components;
@@ -693,18 +689,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """),
             }))
 public class StargateJsonApi extends Application {
-
-  @Inject HttpConstants httpConstants;
-
   @Produces
   @SourceApiQualifier
   public String sourceApi() {
     return "rest";
-  }
-
-  @Produces
-  @ApplicationScoped
-  EmbeddingApiKeyResolver headerTokenResolver() {
-    return new HeaderBasedEmbeddingApiKeyResolver(httpConstants.embeddingApiKey());
   }
 }
