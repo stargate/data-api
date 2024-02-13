@@ -36,7 +36,8 @@ public class DataVectorizer {
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    */
-  public DataVectorizer(EmbeddingService embeddingService, JsonNodeFactory nodeFactory, Optional<String> apiKey) {
+  public DataVectorizer(
+      EmbeddingService embeddingService, JsonNodeFactory nodeFactory, Optional<String> apiKey) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
     this.apiKey = apiKey;

@@ -37,6 +37,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -431,7 +432,8 @@ public class CommandResolverWithVectorizer {
 
       new DataVectorizer(
               TestEmbeddingService.commandContextWithVectorize.embeddingService(),
-              objectMapper.getNodeFactory())
+              objectMapper.getNodeFactory(),
+              Optional.empty())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())

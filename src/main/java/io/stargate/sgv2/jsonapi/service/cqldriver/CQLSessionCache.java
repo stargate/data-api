@@ -7,8 +7,8 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,7 +34,7 @@ public class CQLSessionCache {
   private final OperationsConfig operationsConfig;
 
   /** Stargate request info. */
-  @Inject StargateRequestInfo stargateRequestInfo;
+  @Inject DataApiRequestInfo dataApiRequestInfo;
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
@@ -113,7 +113,7 @@ public class CQLSessionCache {
               .collect(Collectors.toList());
 
       return new TenantAwareCqlSessionBuilder(
-              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
           .withClassLoader(Thread.currentThread().getContextClassLoader())
@@ -123,9 +123,9 @@ public class CQLSessionCache {
           .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(stargateRequestInfo.getTenantId().orElseThrow())
+      return new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElseThrow())
           .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(stargateRequestInfo.getCassandraToken().orElseThrow()))
+              TOKEN, Objects.requireNonNull(dataApiRequestInfo.getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
@@ -142,7 +142,7 @@ public class CQLSessionCache {
   public CqlSession getSession() {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
-        && !stargateRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
+        && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
     return sessionCache.get(getSessionCacheKey());
@@ -166,21 +166,21 @@ public class CQLSessionCache {
   private SessionCacheKey getSessionCacheKey() {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
-        if (stargateRequestInfo.getCassandraToken().isPresent()) {
+        if (dataApiRequestInfo.getCassandraToken().isPresent()) {
           return new SessionCacheKey(
-              stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-              new TokenCredentials(stargateRequestInfo.getCassandraToken().orElseThrow()));
+              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+              new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         }
         return new SessionCacheKey(
-            stargateRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+            dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
             new UsernamePasswordCredentials(
                 operationsConfig.databaseConfig().userName(),
                 operationsConfig.databaseConfig().password()));
       }
       case ASTRA -> {
         return new SessionCacheKey(
-            stargateRequestInfo.getTenantId().orElseThrow(),
-            new TokenCredentials(stargateRequestInfo.getCassandraToken().orElseThrow()));
+            dataApiRequestInfo.getTenantId().orElseThrow(),
+            new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
       }
     }
     throw new RuntimeException(

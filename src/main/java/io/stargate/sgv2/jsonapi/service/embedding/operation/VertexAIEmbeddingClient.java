@@ -106,11 +106,14 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
     Uni<EmbeddingResponse> serviceResponse =
-        embeddingService.embed("Bearer " + apiKey, modelName, request);
+        embeddingService.embed(
+            "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
+            modelName,
+            request);
     return serviceResponse
         .onItem()
         .transform(

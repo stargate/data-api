@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-import io.stargate.sgv2.api.common.StargateRequestInfo;
-import io.stargate.sgv2.api.common.grpc.RetriableStargateBridge;
 import io.stargate.sgv2.api.common.tenant.TenantResolver;
 import io.stargate.sgv2.api.common.token.CassandraTokenResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -12,19 +10,31 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
 @RequestScoped
-public class DataApiRequestInfo extends StargateRequestInfo {
+public class DataApiRequestInfo {
   private final Optional<String> embeddingApiKey;
+  private final Optional<String> tenantId;
+  private final Optional<String> cassandraToken;
 
   @Inject
   public DataApiRequestInfo(
       RoutingContext routingContext,
       SecurityContext securityContext,
-      RetriableStargateBridge bridge,
       Instance<TenantResolver> tenantResolver,
       Instance<CassandraTokenResolver> tokenResolver,
       Instance<EmbeddingApiKeyResolver> apiKeyResolver) {
-    super(routingContext, securityContext, bridge, tenantResolver, tokenResolver);
     this.embeddingApiKey = apiKeyResolver.get().resolveApiKey(routingContext);
+    this.tenantId =
+        ((TenantResolver) tenantResolver.get()).resolve(routingContext, securityContext);
+    this.cassandraToken =
+        ((CassandraTokenResolver) tokenResolver.get()).resolve(routingContext, securityContext);
+  }
+
+  public Optional<String> getTenantId() {
+    return this.tenantId;
+  }
+
+  public Optional<String> getCassandraToken() {
+    return this.cassandraToken;
   }
 
   public Optional<String> getEmbeddingApiKey() {
