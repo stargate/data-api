@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -43,7 +43,7 @@ public class NamespaceResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private StargateRequestInfo stargateRequestInfo;
+  @Inject private DataApiRequestInfo dataApiRequestInfo;
 
   @Inject
   public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
