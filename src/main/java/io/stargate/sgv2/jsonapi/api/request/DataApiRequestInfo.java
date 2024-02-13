@@ -9,6 +9,10 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
+/**
+ * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey This
+ * is a replacement to StargateRequestInfo so bridge connection is removed.
+ */
 @RequestScoped
 public class DataApiRequestInfo {
   private final Optional<String> embeddingApiKey;

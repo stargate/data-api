@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class CommandResolverWithVectorizer {
+public class CommandResolverWithVectorizerTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject Shredder shredder;

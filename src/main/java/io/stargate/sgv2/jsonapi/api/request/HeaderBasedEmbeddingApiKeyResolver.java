@@ -4,6 +4,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import java.util.Optional;
 
+/** Functional interface to resolve the embedding api key from the request header. */
 public class HeaderBasedEmbeddingApiKeyResolver implements EmbeddingApiKeyResolver {
   private final String headerName;
 
