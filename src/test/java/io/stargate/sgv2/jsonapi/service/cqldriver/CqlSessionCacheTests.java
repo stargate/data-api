@@ -61,10 +61,10 @@ public class CqlSessionCacheTests {
     DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    Field stargateRequestInfoField =
+    Field dataApiRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     CqlSession cqlSession = cqlSessionCacheForTest.getSession();
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
@@ -91,10 +91,10 @@ public class CqlSessionCacheTests {
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field stargateRequestInfoField =
+    Field dataApiRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
@@ -126,10 +126,10 @@ public class CqlSessionCacheTests {
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field stargateRequestInfoField =
+    Field dataApiRequestInfoField =
         cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
@@ -170,10 +170,10 @@ public class CqlSessionCacheTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field stargateRequestInfoField =
+      Field dataApiRequestInfoField =
           cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+      dataApiRequestInfoField.setAccessible(true);
+      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       CqlSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
@@ -217,10 +217,10 @@ public class CqlSessionCacheTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field stargateRequestInfoField =
+      Field dataApiRequestInfoField =
           cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+      dataApiRequestInfoField.setAccessible(true);
+      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       CqlSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
