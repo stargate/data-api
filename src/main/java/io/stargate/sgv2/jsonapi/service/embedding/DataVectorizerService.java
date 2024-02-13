@@ -38,7 +38,10 @@ public class DataVectorizerService {
     if (!commandContext.isVectorEnabled() || commandContext.embeddingService() == null)
       return Uni.createFrom().item(command);
     final DataVectorizer dataVectorizer =
-        new DataVectorizer(commandContext.embeddingService(), objectMapper.getNodeFactory(), dataApiRequestInfo.getEmbeddingApiKey());
+        new DataVectorizer(
+            commandContext.embeddingService(),
+            objectMapper.getNodeFactory(),
+            dataApiRequestInfo.getEmbeddingApiKey());
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
         .transformToUni(flag -> vectorizeUpdateClause(dataVectorizer, commandContext, command))

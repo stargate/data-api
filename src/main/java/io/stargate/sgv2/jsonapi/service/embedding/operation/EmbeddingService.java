@@ -9,5 +9,5 @@ import java.util.Optional;
  * of chosen model.
  */
 public interface EmbeddingService {
-  Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey);
+  Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride);
 }

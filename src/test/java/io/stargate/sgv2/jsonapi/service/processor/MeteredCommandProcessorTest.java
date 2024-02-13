@@ -8,12 +8,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
@@ -31,7 +31,7 @@ import org.mockito.Mockito;
 public class MeteredCommandProcessorTest {
   @Inject MeteredCommandProcessor meteredCommandProcessor;
   @InjectMock protected CommandProcessor commandProcessor;
-  @InjectMock protected StargateRequestInfo stargateRequestInfo;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
   @Inject ObjectMapper objectMapper;
 
   @Nested
@@ -53,7 +53,7 @@ public class MeteredCommandProcessorTest {
       CommandResult commandResult = new CommandResult(Collections.emptyList());
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -105,7 +105,7 @@ public class MeteredCommandProcessorTest {
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -162,7 +162,7 @@ public class MeteredCommandProcessorTest {
       CommandResult commandResult = new CommandResult(Collections.singletonList(error));
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
