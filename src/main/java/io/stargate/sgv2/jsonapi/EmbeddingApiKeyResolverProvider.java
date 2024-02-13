@@ -8,6 +8,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Produces;
 
+/**
+ * Simple CDI producer for the {@link EmbeddingApiKeyResolver} to be used in the embedding service
+ */
 @Singleton
 public class EmbeddingApiKeyResolverProvider {
   @Inject HttpConstants httpConstants;
