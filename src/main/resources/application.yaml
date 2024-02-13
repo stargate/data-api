@@ -45,19 +45,19 @@ stargate:
       service:
         # Open AI embedding service configuration
         openai:
-          enabled: false
+          enabled: true
           url: https://api.openai.com/v1/
           api-key: YOUR_API_KEY
 
         # Hugging face embedding service configuration
         huggingface:
-          enabled: false
-          url: https://api-inference.huggingface.co
+          enabled: true
+          url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           api-key: YOUR_API_KEY
 
         # Vertex AI embedding service configuration
         vertexai:
-          enabled: false
+          enabled: true
           url: https://us-central1-aiplatform.googleapis.com
           api-key: YOUR_API_KEY
 

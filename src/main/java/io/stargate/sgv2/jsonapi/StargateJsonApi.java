@@ -689,7 +689,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """),
             }))
 public class StargateJsonApi extends Application {
-
   @Produces
   @SourceApiQualifier
   public String sourceApi() {

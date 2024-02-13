@@ -8,6 +8,7 @@ import jakarta.ws.rs.Path;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -45,10 +46,12 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
-    Uni<EmbeddingResponse> response = embeddingService.embed("Bearer " + apiKey, request);
+    Uni<EmbeddingResponse> response =
+        embeddingService.embed(
+            "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
     return response
         .onItem()
         .transform(

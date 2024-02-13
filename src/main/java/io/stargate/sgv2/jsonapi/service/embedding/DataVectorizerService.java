@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -18,10 +19,12 @@ import java.util.List;
 public class DataVectorizerService {
 
   private final ObjectMapper objectMapper;
+  private final DataApiRequestInfo dataApiRequestInfo;
 
   @Inject
-  public DataVectorizerService(ObjectMapper objectMapper) {
+  public DataVectorizerService(ObjectMapper objectMapper, DataApiRequestInfo dataApiRequestInfo) {
     this.objectMapper = objectMapper;
+    this.dataApiRequestInfo = dataApiRequestInfo;
   }
 
   /**
@@ -35,7 +38,10 @@ public class DataVectorizerService {
     if (!commandContext.isVectorEnabled() || commandContext.embeddingService() == null)
       return Uni.createFrom().item(command);
     final DataVectorizer dataVectorizer =
-        new DataVectorizer(commandContext.embeddingService(), objectMapper.getNodeFactory());
+        new DataVectorizer(
+            commandContext.embeddingService(),
+            objectMapper.getNodeFactory(),
+            dataApiRequestInfo.getEmbeddingApiKey());
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
         .transformToUni(flag -> vectorizeUpdateClause(dataVectorizer, commandContext, command))

@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This is a test implementation of the EmbeddingService interface. It is used for
@@ -13,6 +14,8 @@ import java.util.List;
  */
 @RegisterForReflection
 public class CustomITEmbeddingService implements EmbeddingService {
+
+  public static final String TEST_API_KEY = "test_embedding_service_api_key";
 
   public static HashMap<String, float[]> TEST_DATA = new HashMap<>();
 
@@ -29,11 +32,13 @@ public class CustomITEmbeddingService implements EmbeddingService {
         new float[] {0.1f, 0.05f, 0.08f, 0.3f, 0.6f});
     TEST_DATA.put("Updating new data", new float[] {0.22f, 0.55f, 0.68f, 0.36f, 0.6f});
   }
-  ;
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
     List<float[]> response = new ArrayList<>(texts.size());
+    if (texts.size() == 0) return Uni.createFrom().item(response);
+    if (!apiKeyOverride.isPresent() || !apiKeyOverride.get().equals(TEST_API_KEY))
+      return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
       if (TEST_DATA.containsKey(text)) {
         response.add(TEST_DATA.get(text));

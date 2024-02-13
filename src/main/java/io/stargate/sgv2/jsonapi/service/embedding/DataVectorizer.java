@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility class to execute embedding serive to get vector embeddings for the text fields in the
@@ -26,6 +27,7 @@ import java.util.Map;
 public class DataVectorizer {
   private final EmbeddingService embeddingService;
   private final JsonNodeFactory nodeFactory;
+  private final Optional<String> embeddingApiKey;
 
   /**
    * Constructor
@@ -33,10 +35,15 @@ public class DataVectorizer {
    * @param embeddingService - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
+   * @param embeddingApiKey - Optional override embedding api key came in request header
    */
-  public DataVectorizer(EmbeddingService embeddingService, JsonNodeFactory nodeFactory) {
+  public DataVectorizer(
+      EmbeddingService embeddingService,
+      JsonNodeFactory nodeFactory,
+      Optional<String> embeddingApiKey) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
+    this.embeddingApiKey = embeddingApiKey;
   }
 
   /**
@@ -84,7 +91,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey);
         return vectors
             .onItem()
             .transform(
@@ -127,7 +134,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text));
+        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey);
         return vectors
             .onItem()
             .transform(
@@ -193,7 +200,8 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        final Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text));
+        final Uni<List<float[]>> vectors =
+            embeddingService.vectorize(List.of(text), embeddingApiKey);
         return vectors
             .onItem()
             .transform(

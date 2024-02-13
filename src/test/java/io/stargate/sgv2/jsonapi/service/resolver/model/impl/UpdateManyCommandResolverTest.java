@@ -11,8 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -217,75 +215,6 @@ public class UpdateManyCommandResolverTest {
                                       .getDbFilters()
                                       .get(0))
                               .isEqualTo(filter);
-                        });
-              });
-    }
-
-    @Test
-    public void dynamicFilterConditionSetVectorize() throws Exception {
-      String json =
-          """
-                  {
-                    "updateMany": {
-                      "filter" : {"col" : "val"},
-                      "update" : {"$set" : {"$vectorize" : "test data"}}
-                    }
-                  }
-                  """;
-
-      UpdateManyCommand command = objectMapper.readValue(json, UpdateManyCommand.class);
-      Operation operation =
-          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
-
-      UpdateClause updateClause =
-          DocumentUpdaterUtils.updateClause(
-              UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
-      new DataVectorizer(
-              TestEmbeddingService.commandContextWithVectorize.embeddingService(),
-              objectMapper.getNodeFactory())
-          .vectorizeUpdateClause(updateClause);
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateOperation.class,
-              op -> {
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.shredder()).isEqualTo(shredder);
-                assertThat(op.updateLimit()).isEqualTo(20);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findOperation())
-                    .isInstanceOfSatisfying(
-                        FindOperation.class,
-                        find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
-
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                          assertThat(find.pageSize()).isEqualTo(20);
-                          assertThat(find.limit()).isEqualTo(21);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
-                              .isEqualTo(filter);
-                          assertThat(find.singleResponse()).isFalse();
                         });
               });
     }

@@ -8,6 +8,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -44,8 +45,11 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
-    return embeddingService.embed("Bearer " + apiKey, modelName, request);
+    return embeddingService.embed(
+        "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
+        modelName,
+        request);
   }
 }
