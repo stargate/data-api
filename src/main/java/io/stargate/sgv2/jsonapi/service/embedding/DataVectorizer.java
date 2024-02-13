@@ -27,7 +27,7 @@ import java.util.Optional;
 public class DataVectorizer {
   private final EmbeddingService embeddingService;
   private final JsonNodeFactory nodeFactory;
-  private final Optional<String> apiKey;
+  private final Optional<String> embeddingApiKey;
 
   /**
    * Constructor
@@ -35,12 +35,15 @@ public class DataVectorizer {
    * @param embeddingService - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
+   * @param embeddingApiKey - Optional override embedding api key came in request header
    */
   public DataVectorizer(
-      EmbeddingService embeddingService, JsonNodeFactory nodeFactory, Optional<String> apiKey) {
+      EmbeddingService embeddingService,
+      JsonNodeFactory nodeFactory,
+      Optional<String> embeddingApiKey) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
-    this.apiKey = apiKey;
+    this.embeddingApiKey = embeddingApiKey;
   }
 
   /**
@@ -57,7 +60,11 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-            throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+            throw new JsonApiException(
+                ErrorCode.INVALID_USAGE_OF_VECTORIZE,
+                ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
+                    + ", issue in document at position "
+                    + (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -67,7 +74,11 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw new JsonApiException(ErrorCode.SHRED_BAD_VECTORIZE_VALUE);
+            throw new JsonApiException(
+                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE,
+                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()
+                    + ", issue in document at position "
+                    + (position + 1));
           }
 
           vectorizeTexts.add(jsonNode.asText());
@@ -80,7 +91,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, apiKey);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey);
         return vectors
             .onItem()
             .transform(
@@ -123,7 +134,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), apiKey);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey);
         return vectors
             .onItem()
             .transform(
@@ -189,7 +200,8 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
         }
-        final Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), apiKey);
+        final Uni<List<float[]>> vectors =
+            embeddingService.vectorize(List.of(text), embeddingApiKey);
         return vectors
             .onItem()
             .transform(
