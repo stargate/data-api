@@ -37,7 +37,10 @@ public class ConstraintViolationExceptionMapper {
   private static CommandResult.Error getError(ConstraintViolation<?> violation) {
     String message = violation.getMessage();
     Path propertyPath = violation.getPropertyPath();
-    String msg = "Request invalid, the field %s not valid: %s.".formatted(propertyPath, message);
+    Object propertyValue = violation.getInvalidValue();
+    String msg =
+        "Request invalid, the field '%s' (value '%s') not valid: %s."
+            .formatted(propertyPath, propertyValue, message);
     return new CommandResult.Error(msg, ERROR_FIELDS, ERROR_FIELDS_METRICS_TAG, Response.Status.OK);
   }
 }
