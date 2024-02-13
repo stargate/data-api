@@ -8,7 +8,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -28,14 +28,14 @@ public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final OperationsConfig operationsConfig;
 
-  private final StargateRequestInfo stargateRequestInfo;
+  private final DataApiRequestInfo dataApiRequestInfo;
   /** CQLSession cache. */
   @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
-  public QueryExecutor(OperationsConfig operationsConfig, StargateRequestInfo stargateRequestInfo) {
+  public QueryExecutor(OperationsConfig operationsConfig, DataApiRequestInfo dataApiRequestInfo) {
     this.operationsConfig = operationsConfig;
-    this.stargateRequestInfo = stargateRequestInfo;
+    this.dataApiRequestInfo = dataApiRequestInfo;
   }
 
   /**
