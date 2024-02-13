@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -31,7 +32,7 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
     @POST
     @Path("/{modelId}:predict")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    EmbeddingResponse embed(
+    Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
         EmbeddingRequest request);
@@ -104,13 +105,18 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
-    EmbeddingResponse serviceResponse =
+    Uni<EmbeddingResponse> serviceResponse =
         embeddingService.embed("Bearer " + apiKey, modelName, request);
-    return serviceResponse.getPredictions().stream()
-        .map(prediction -> prediction.getEmbeddings().getValues())
-        .collect(Collectors.toList());
+    return serviceResponse
+        .onItem()
+        .transform(
+            response -> {
+              return response.getPredictions().stream()
+                  .map(prediction -> prediction.getEmbeddings().getValues())
+                  .collect(Collectors.toList());
+            });
   }
 }

@@ -47,10 +47,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     FindOperation findOperation = getFindOperation(commandContext, command);
 
     final DocumentProjector documentProjector = command.buildProjector();
-    // Vectorize replacement document
-    commandContext.tryVectorize(
-        objectMapper.getNodeFactory(), List.of(command.replacementDocument()));
-
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.replacementDocument());
 
     // resolve options
@@ -81,9 +77,6 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     if (sortClause != null) {
       sortClause.validate(commandContext);
     }
-
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

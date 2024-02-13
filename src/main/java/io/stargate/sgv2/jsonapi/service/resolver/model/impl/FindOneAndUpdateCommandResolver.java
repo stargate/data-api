@@ -47,8 +47,6 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     FindOperation findOperation = getFindOperation(commandContext, command);
 
     final DocumentProjector documentProjector = command.buildProjector();
-    // Vectorize update clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
 
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
@@ -81,9 +79,6 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     if (sortClause != null) {
       sortClause.validate(commandContext);
     }
-
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

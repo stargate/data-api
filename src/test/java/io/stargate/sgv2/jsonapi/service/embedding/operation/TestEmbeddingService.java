@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.ArrayList;
@@ -22,9 +23,9 @@ public class TestEmbeddingService implements EmbeddingService {
           new TestEmbeddingService());
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(List<String> texts) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
-    return response;
+    return Uni.createFrom().item(response);
   }
 }

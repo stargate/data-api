@@ -64,7 +64,9 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be text value"),
+
+  INVALID_VECTORIZE_VALUE_TYPE("$vectorize field needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
@@ -85,7 +87,7 @@ public enum ErrorCode {
   INVALID_SORT_CLAUSE_VALUE(
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),
 
-  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together."),
+  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
   UNSUPPORTED_OPERATION("Unsupported operation class"),
 
