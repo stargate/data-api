@@ -144,8 +144,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize search needs to be text value"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "$vectorize field needs to be text value, issue in document at position 1"))
+          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
@@ -177,8 +180,9 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith(ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage()))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body(
+              "errors[0].message", startsWith(ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()))
+          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
@@ -413,7 +417,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize search needs to be text value"))
+          .body("errors[0].message", startsWith("$vectorize search clause needs to be text value"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

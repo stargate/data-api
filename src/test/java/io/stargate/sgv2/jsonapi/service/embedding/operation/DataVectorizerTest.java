@@ -75,8 +75,10 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTORIZE_VALUE)
-            .hasFieldOrPropertyWithValue("message", "$vectorize search needs to be text value");
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+            .hasFieldOrPropertyWithValue(
+                "message",
+                "$vectorize field needs to be text value, issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -124,9 +126,9 @@ public class DataVectorizerTest {
         assertThat(failure)
             .isNotNull()
             .isInstanceOf(JsonApiException.class)
-            .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-            .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
+            .withFailMessage(
+                "$vectorize` and `$vector` can't be used together, issue in document at position 1")
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

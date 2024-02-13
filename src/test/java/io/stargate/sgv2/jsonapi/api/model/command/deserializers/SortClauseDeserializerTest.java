@@ -158,7 +158,8 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vectorize search needs to be text value");
+      assertThat(throwable.getMessage())
+          .contains("$vectorize search clause needs to be text value");
     }
 
     @Test
@@ -172,7 +173,8 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vectorize search needs to be text value");
+      assertThat(throwable.getMessage())
+          .contains("$vectorize search clause needs to be text value");
     }
 
     @Test
