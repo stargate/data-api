@@ -66,7 +66,7 @@ public final class ThrowableToErrorMapper {
             || throwable instanceof ReadTimeoutException) {
           return ErrorCode.DRIVER_TIMEOUT
               .toApiException()
-              .getCommandResultError(message, Response.Status.OK);
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           // Driver AllNodesFailedException a composite exception
           // peeling the errors from it
         } else if (throwable instanceof AllNodesFailedException) {
@@ -102,7 +102,7 @@ public final class ThrowableToErrorMapper {
               } else if (error instanceof NoNodeAvailableException) {
                 return ErrorCode.NO_NODE_AVAILABLE
                     .toApiException()
-                    .getCommandResultError(message, Response.Status.OK);
+                    .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
               }
             }
           }
@@ -110,7 +110,7 @@ public final class ThrowableToErrorMapper {
         } else if (throwable instanceof ClosedConnectionException) {
           return ErrorCode.DRIVER_CLOSED_CONNECTION
               .toApiException()
-              .getCommandResultError(message, Response.Status.OK);
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           // Unidentified Driver Exceptions, will not mapper into JsonApiException
         } else if (throwable instanceof DriverException) {
           return new CommandResult.Error(
