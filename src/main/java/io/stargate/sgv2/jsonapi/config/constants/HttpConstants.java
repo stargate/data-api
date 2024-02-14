@@ -13,7 +13,7 @@ public interface HttpConstants {
   String DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME = "X-Cassandra-Token";
 
   /** JSON API Embedding serive Authentication token header name. */
-  String EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME = "embedding-api-key";
+  String EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME = "x-embedding-api-key";
 
   /** @return Embedding service header name <code>20</code>. */
   @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
