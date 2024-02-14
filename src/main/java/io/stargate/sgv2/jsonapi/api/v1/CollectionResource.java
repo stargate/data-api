@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
