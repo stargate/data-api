@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingServiceConfigStore;
@@ -20,14 +20,14 @@ public class CreateEmbeddingServiceCommandResolver
     implements CommandResolver<CreateEmbeddingServiceCommand> {
 
   private EmbeddingServiceConfigStore embeddingServiceConfigStore;
-  private StargateRequestInfo stargateRequestInfo;
+  private DataApiRequestInfo dataApiRequestInfo;
 
   @Inject
   public CreateEmbeddingServiceCommandResolver(
       Instance<EmbeddingServiceConfigStore> embeddingServiceConfigStore,
-      StargateRequestInfo stargateRequestInfo) {
+      DataApiRequestInfo dataApiRequestInfo) {
     this.embeddingServiceConfigStore = embeddingServiceConfigStore.get();
-    this.stargateRequestInfo = stargateRequestInfo;
+    this.dataApiRequestInfo = dataApiRequestInfo;
   }
 
   @Override
@@ -45,7 +45,7 @@ public class CreateEmbeddingServiceCommandResolver
     }
 
     return new CreateEmbeddingServiceOperation(
-        stargateRequestInfo == null ? Optional.empty() : stargateRequestInfo.getTenantId(),
+        dataApiRequestInfo == null ? Optional.empty() : dataApiRequestInfo.getTenantId(),
         embeddingServiceConfigStore,
         command.name(),
         command.apiProvider(),
