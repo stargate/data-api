@@ -92,8 +92,10 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .then()
           .statusCode(200)
           .body("errors[0].exceptionClass", is("ConstraintViolationException"))
-          .body("errors[0].message", startsWith("Request invalid: field 'namespace' value"))
-          .body("errors[0].message", containsString("value \"7_no_leading_number\" not valid"));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
