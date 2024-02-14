@@ -21,96 +21,52 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
   @Order(1)
   class Count {
 
-    @Test
-    @Order(1)
-    public void setUp() {
+    private void insertMany() {
+
       String json =
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc1",
-                "username": "user1",
-                "active_user" : true
-              }
-            }
-          }
-          """;
-      insert(json);
-
-      json =
-          """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc2",
-                "username": "user2",
-                "subdoc" : {
-                   "id" : "abc"
+            "insertMany": {
+              "documents": [
+                {
+                    "username": "user1",
+                    "subdoc" : {
+                       "id" : "12345"
+                    },
+                    "array" : [
+                        "value1"
+                    ]
                 },
-                "array" : [
-                    "value1"
-                ]
-              }
-            }
-          }
-          """;
-      insert(json);
-
-      json =
-          """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc3",
-                "username": "user3",
-                "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
-              }
-            }
-          }
-          """;
-      insert(json);
-
-      json =
-          """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc4",
-                "indexedObject" : { "0": "value_0", "1": "value_1" }
-              }
-            }
-          }
-          """;
-      insert(json);
-
-      json =
-          """
-          {
-            "insertOne": {
-              "document": {
-                "_id": "doc5",
-                "username": "user5",
-                "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-              }
-            }
-          }
-          """;
-      insert(json);
-
-      json =
-          """
-              {
-                "insertOne": {
-                  "document": {}
+                {
+                    "username": "user2",
+                    "subdoc" : {
+                       "id" : "abc"
+                    },
+                    "array" : [
+                        "value2"
+                    ]
+                },
+                {
+                    "username": "user3",
+                    "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
+                    "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
+                },
+                {
+                    "username": "user4",
+                    "indexedObject" : { "0": "value_0", "1": "value_1" }
+                },
+                {
+                    "username": "user5",
+                    "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
                 }
+              ],
+              "options" : {
+                "ordered" : true
               }
-              """;
-      insert(json);
-    }
+            }
+          }
+          """;
 
-    private void insert(String json) {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -123,14 +79,112 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     }
 
     @Test
-    public void noFilter() {
-      String json =
+    @Order(1)
+    public void insertDocuments() throws InterruptedException {
+      String jsonEstimatedCount =
           """
           {
             "estimatedDocumentCount": {
             }
           }
           """;
+
+      String jsonActualCount =
+          """
+          {
+             "countDocuments": {
+             }
+          }
+          """;
+
+      // execute the insertMany command in a loop until the response indicates a non-zero count, or
+      // we have executed the command 100 times
+      int tries = 1;
+      while (tries < 1000) {
+        insertMany();
+
+        int estimatedCount =
+            given()
+                .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                .contentType(ContentType.JSON)
+                .body(jsonEstimatedCount)
+                .when()
+                .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                .then()
+                .statusCode(200)
+                .body("errors", is(nullValue()))
+                .extract()
+                .response()
+                .jsonPath()
+                .getInt("status.count");
+
+        int actualCount =
+            given()
+                .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                .contentType(ContentType.JSON)
+                .body(jsonActualCount)
+                .when()
+                .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                .then()
+                .statusCode(200)
+                .body("errors", is(nullValue()))
+                .extract()
+                .response()
+                .jsonPath()
+                .getInt("status.count");
+
+        System.out.println(
+            "Docs inserted: "
+                + tries * 5
+                + " Actual count: "
+                + actualCount
+                + " Estimated count: "
+                + estimatedCount);
+
+        if (estimatedCount > 0) {
+          break;
+        }
+        Thread.sleep(100);
+        tries++;
+      }
+    }
+
+    /**
+     * Verify that truncating the collection (DeleteMany with no filter) yields a zero estimated
+     * document count.
+     */
+    @Test
+    @Order(2)
+    public void truncate() {
+
+      String json =
+          """
+              {
+                "deleteMany": {
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.deletedCount", is(-1))
+          .body("status.moreData", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // ensure estimated doc count is zero
+      // does not find the documents
+      json = """
+      {
+        "estimatedDocumentCount": {
+      }
+      }
+      """;
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -140,8 +194,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.count", is(5))
-          .body("status.moreData", is(true))
+          .body("status.count", is(0))
           .body("errors", is(nullValue()));
     }
   }
