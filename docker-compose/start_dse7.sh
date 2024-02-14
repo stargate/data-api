@@ -10,7 +10,7 @@ fi
 LOGLEVEL=INFO
 
 # Get the latest DSE7 image tag from Docker Hub
-DSE7TAG="$(curl -s https://registry.hub.docker.com/v2/repositories/datastax/dse-server/tags/ | jq -r '[.results[] | select(.name | startswith("7.0.0"))] | sort_by(.last_updated) | last | .name')"
+DSE7TAG="$(curl -s 'https://registry.hub.docker.com/v2/repositories/datastax/dse-server/tags/?page_size=1000' | jq -r '[.results[] | select(.name | startswith("7.0.0"))] | sort_by(.last_updated) | last | .name')"
 
 # Default to latest released version
 JSONTAG="v1"
@@ -52,6 +52,7 @@ done
 export LOGLEVEL
 export REQUESTLOG
 export DSE7TAG
+export SGTAG
 export JSONTAG
 export JSONIMAGE
 
