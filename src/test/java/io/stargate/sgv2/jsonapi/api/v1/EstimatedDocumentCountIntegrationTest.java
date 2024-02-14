@@ -13,9 +13,26 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@QuarkusTestResource(
+    value =
+        io.stargate.sgv2.jsonapi.api.v1.EstimatedDocumentCountIntegrationTest
+            .EstimatedDocumentCountTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@Disabled // TODO: Enable when DSE 7 integration is complete
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
+
+  public static final int MAX_ITERATIONS = 1000;
+
+  // Need to set max count limit to -1, and count page size to -1 to avoid pagination
+  public static class EstimatedDocumentCountTestResource extends DseTestResource {
+    public EstimatedDocumentCountTestResource() {}
+
+    @Override
+    public int getMaxCountLimit() {
+      return -1;
+    }
+  }
+
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
@@ -100,7 +117,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       // execute the insertMany command in a loop until the response indicates a non-zero count, or
       // we have executed the command 100 times
       int tries = 1;
-      while (tries < 1000) {
+      while (tries <= MAX_ITERATIONS) {
         insertMany();
 
         int estimatedCount =
@@ -134,17 +151,19 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
                 .getInt("status.count");
 
         System.out.println(
-            "Docs inserted: "
+            "Iteration: "
+                + tries
+                + ", Docs inserted: "
                 + tries * 5
-                + " Actual count: "
+                + ", Actual count: "
                 + actualCount
-                + " Estimated count: "
+                + ", Estimated count: "
                 + estimatedCount);
 
         if (estimatedCount > 0) {
           break;
         }
-        Thread.sleep(100);
+        Thread.sleep(1000);
         tries++;
       }
     }
