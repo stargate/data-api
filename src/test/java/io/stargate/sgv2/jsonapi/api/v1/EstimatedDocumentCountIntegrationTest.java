@@ -18,7 +18,6 @@ import org.junit.jupiter.api.*;
         io.stargate.sgv2.jsonapi.api.v1.EstimatedDocumentCountIntegrationTest
             .EstimatedDocumentCountTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-@Disabled // TODO: Enable when DSE 7 integration is complete
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   public static final int MAX_ITERATIONS = 1000;
