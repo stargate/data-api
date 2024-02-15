@@ -138,8 +138,9 @@ public enum ErrorCode {
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
   NO_NODE_AVAILABLE("No node was available to execute the query"),
   NO_INDEX_ERROR(
-      "The collection has indexes creation failure, recommend to recreate the collection"),
-  COLLECTION_CREATION_ERROR("Collection creation failure, recommend to recreate the collection");
+      "Collection creation failure (unable to create indexes). Recommend re-creating the collection"),
+  COLLECTION_CREATION_ERROR(
+      "Collection creation failure (unable to create table). Recommend re-creating the collection");
 
   private final String message;
 
