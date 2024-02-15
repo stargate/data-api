@@ -136,7 +136,10 @@ public enum ErrorCode {
   INVALID_QUERY("Invalid query"),
   DRIVER_TIMEOUT("Driver timeout"),
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
-  NO_NODE_AVAILABLE("No node was available to execute the query");
+  NO_NODE_AVAILABLE("No node was available to execute the query"),
+  NO_INDEX_ERROR(
+      "The collection has indexes creation failure, recommend to recreate the collection"),
+  COLLECTION_CREATION_ERROR("Collection creation failure, recommend to recreate the collection");
 
   private final String message;
 
