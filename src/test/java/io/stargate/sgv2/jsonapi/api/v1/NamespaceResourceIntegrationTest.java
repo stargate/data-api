@@ -44,8 +44,8 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonParseException"))
+          .body("errors[0].message", is(not(blankString())));
     }
 
     @Test
@@ -66,10 +66,10 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
+          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
           .body(
               "errors[0].message",
-              startsWith("No \"unknownCommand\" command found as \"NamespaceCommand\""))
-          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"));
+              startsWith("No \"unknownCommand\" command found as \"NamespaceCommand\""));
     }
 
     @Test
@@ -91,10 +91,11 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, "7_no_leading_number")
           .then()
           .statusCode(200)
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, the field postCommand.namespace not valid"))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+              startsWith(
+                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
@@ -106,8 +107,8 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].message", is(not(blankString())));
     }
   }
 }
