@@ -7,8 +7,10 @@ import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -33,6 +35,8 @@ public class ShredderDocLimitsTest {
   @Inject Shredder shredder;
 
   @Inject DocumentLimitsConfig docLimits;
+
+  @InjectMock protected StargateRequestInfo stargateRequestInfo;
 
   // Tests for Document size/depth violations
   @Nested
