@@ -12,7 +12,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
@@ -56,14 +56,14 @@ public class CqlSessionCacheTimingTests {
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant_timing_test_" + i;
-      StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-      when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(stargateRequestInfo.getCassandraToken())
+      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
       Field stargateRequestInfoField =
-          cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
+          cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
       stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(

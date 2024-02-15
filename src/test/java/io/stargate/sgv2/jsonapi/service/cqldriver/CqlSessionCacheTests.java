@@ -14,7 +14,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
@@ -57,13 +57,13 @@ public class CqlSessionCacheTests {
   public void testOSSCxCQLSessionCacheDefaultTenant()
       throws NoSuchFieldException, IllegalAccessException {
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-    when(stargateRequestInfo.getCassandraToken())
+    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     Field stargateRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
+        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
     stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
@@ -85,15 +85,15 @@ public class CqlSessionCacheTests {
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
-    StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-    when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
-    when(stargateRequestInfo.getCassandraToken())
+    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
+    when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field stargateRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    Field dataApiRequestInfoField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
@@ -121,14 +121,14 @@ public class CqlSessionCacheTests {
   public void testOSSCxCQLSessionCacheWithInvalidFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
-    StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-    when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
-    when(stargateRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
+    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
+    when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field stargateRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
-    stargateRequestInfoField.setAccessible(true);
-    stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+    Field dataApiRequestInfoField =
+        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
+    dataApiRequestInfoField.setAccessible(true);
+    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
@@ -165,14 +165,14 @@ public class CqlSessionCacheTests {
     tenantIds.add("tenant5");
     for (String tenantId : tenantIds) {
       // set request info
-      StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-      when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(stargateRequestInfo.getCassandraToken())
+      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
       Field stargateRequestInfoField =
-          cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
+          cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
       stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
@@ -212,14 +212,14 @@ public class CqlSessionCacheTests {
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize() + 5;
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant" + i;
-      StargateRequestInfo stargateRequestInfo = mock(StargateRequestInfo.class);
-      when(stargateRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(stargateRequestInfo.getCassandraToken())
+      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
       Field stargateRequestInfoField =
-          cqlSessionCacheForTest.getClass().getDeclaredField("stargateRequestInfo");
+          cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
       stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, stargateRequestInfo);
+      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
       PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
