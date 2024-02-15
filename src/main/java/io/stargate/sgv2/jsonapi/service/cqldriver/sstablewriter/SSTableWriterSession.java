@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import io.stargate.sgv2.jsonapi.service.processor.SSTableWriterStatus;
 import java.util.concurrent.CompletionStage;
 
 public class SSTableWriterSession {
@@ -26,6 +27,21 @@ public class SSTableWriterSession {
     throw new UnsupportedOperationException("Not implemented");
   }
 
-  public void close() {
+  public void close() {}
+
+  public SSTableWriterStatus getStatus() {
+    return new SSTableWriterStatus();
+  }
+
+  public void setNamespace(String namespace) {}
+
+  public void setCollection(String collection) {}
+
+  public String getNamespace() {
+    return null;
+  }
+
+  public String getCollection() {
+    return null;
   }
 }

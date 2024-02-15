@@ -18,6 +18,11 @@ public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
 
+  public DataApiRequestInfo(Optional<String> tenantId, Optional<String> cassandraToken) {
+    this.tenantId = tenantId;
+    this.cassandraToken = cassandraToken;
+  }
+
   @Inject
   public DataApiRequestInfo(
       RoutingContext routingContext,

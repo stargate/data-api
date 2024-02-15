@@ -35,7 +35,7 @@ public class CQLSessionCache {
   private final OperationsConfig operationsConfig;
 
   /** Stargate request info. */
-  @Inject DataApiRequestInfo dataApiRequestInfo;
+  DataApiRequestInfo dataApiRequestInfo;
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
@@ -45,7 +45,7 @@ public class CQLSessionCache {
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
   /** CQLSession cache. */
-  private final LoadingCache<SessionCacheKey, PersistenceSession> sessionCache;
+  private static LoadingCache<SessionCacheKey, PersistenceSession> sessionCache;
   /** Database type Astra */
   public static final String ASTRA = "astra";
   /** Database type OSS cassandra */
@@ -54,42 +54,52 @@ public class CQLSessionCache {
   public static final String SIDE_LOADER = "sideloader";
 
   @ConfigProperty(name = "quarkus.application.name")
-  private String APPLICATION_NAME;
+  String APPLICATION_NAME;
 
   @Inject
-  public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
+  public CQLSessionCache(
+      DataApiRequestInfo dataApiRequestInfo,
+      OperationsConfig operationsConfig,
+      MeterRegistry meterRegistry) {
+    this.dataApiRequestInfo = dataApiRequestInfo;
     this.operationsConfig = operationsConfig;
-    LoadingCache<SessionCacheKey, PersistenceSession> sessionCache =
-        Caffeine.newBuilder()
-            .expireAfterAccess(
-                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
-            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-            // removal listener is invoked after the entry has been removed from the cache. So the
-            // idea is that we no longer return this session for any lookup as a first step, then
-            // close the session in the background asynchronously which is a graceful closing of
-            // channels i.e. any in-flight query will be completed before the session is getting
-            // closed.
-            .removalListener(
-                (RemovalListener<SessionCacheKey, PersistenceSession>)
-                    (sessionCacheKey, session, cause) -> {
-                      if (sessionCacheKey != null) {
-                        if (LOGGER.isTraceEnabled()) {
-                          LOGGER.trace(
-                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
+    if (sessionCache != null) {
+      LoadingCache<SessionCacheKey, PersistenceSession> loadingCache =
+          Caffeine.newBuilder()
+              .expireAfterAccess(
+                  Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
+              .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+              // removal listener is invoked after the entry has been removed from the cache. So the
+              // idea is that we no longer return this session for any lookup as a first step, then
+              // close the session in the background asynchronously which is a graceful closing of
+              // channels i.e. any in-flight query will be completed before the session is getting
+              // closed.
+              .removalListener(
+                  (RemovalListener<SessionCacheKey, PersistenceSession>)
+                      (sessionCacheKey, session, cause) -> {
+                        if (sessionCacheKey != null) {
+                          if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace(
+                                "Removing session for tenant : {}", sessionCacheKey.tenantId);
+                          }
                         }
-                      }
-                      if (session != null) {
-                        session.close();
-                      }
-                    })
-            .recordStats()
-            .build(this::getNewSession);
-    this.sessionCache =
-        CaffeineCacheMetrics.monitor(meterRegistry, sessionCache, "cql_sessions_cache");
-    LOGGER.info(
-        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
-        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
-        operationsConfig.databaseConfig().sessionCacheMaxSize());
+                        if (session != null) {
+                          session.close();
+                        }
+                      })
+              .recordStats()
+              .build(this::getNewSession);
+      if (meterRegistry != null) {
+        sessionCache =
+            CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+      } else {
+        sessionCache = loadingCache;
+      }
+      LOGGER.info(
+          "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+          operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+          operationsConfig.databaseConfig().sessionCacheMaxSize());
+    }
   }
 
   /**
@@ -115,7 +125,7 @@ public class CQLSessionCache {
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
 
-    return new PersistenceSession(
+      return new PersistenceSession(
           new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
               .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
               .addContactPoints(seeds)
