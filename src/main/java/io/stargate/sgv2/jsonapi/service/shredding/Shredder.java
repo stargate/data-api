@@ -353,7 +353,7 @@ public class Shredder {
       } else if (value.isArray()) {
         validateArrayValue(referringPropertyName, value);
       } else if (value.isTextual()) {
-        validateStringValue(value.textValue());
+        validateStringValue(referringPropertyName, value.textValue());
       }
     }
 
@@ -363,12 +363,12 @@ public class Shredder {
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
             throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-                "number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%d)",
+                "number of elements Vector embedding (field '%s') has (%d) exceeds maximum allowed (%d)",
                 referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
           }
         } else {
           throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-              "number of elements an indexable Array ('%s') has (%d) exceeds maximum allowed (%d)",
+              "number of elements an indexable Array (field '%s') has (%d) exceeds maximum allowed (%d)",
               referringPropertyName, arrayValue.size(), limits.maxArrayLength());
         }
       }
@@ -382,7 +382,7 @@ public class Shredder {
       final int propCount = objectValue.size();
       if (propCount > limits.maxObjectProperties()) {
         throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "number of properties an indexable Object ('%s') has (%d) exceeds maximum allowed (%s)",
+            "number of properties an indexable Object (field '%s') has (%d) exceeds maximum allowed (%s)",
             referringPropertyName, objectValue.size(), limits.maxObjectProperties());
       }
       totalProperties.addAndGet(propCount);
@@ -392,13 +392,13 @@ public class Shredder {
       }
     }
 
-    private void validateStringValue(String value) {
+    private void validateStringValue(String referringPropertyName, String value) {
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
         throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "indexed String value length (%d bytes) exceeds maximum allowed (%d bytes)",
-            encodedLength.getAsInt(), limits.maxStringLengthInBytes());
+            "indexed String value (field '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
+            referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
       }
     }
   }
