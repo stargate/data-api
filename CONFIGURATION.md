@@ -11,6 +11,10 @@ Here are some Stargate-relevant property groups that are necessary for correct s
 * `quarkus.grpc.clients.bridge` - property group for defining the Bridge gRPC client (see [gRPC Client configuration](https://quarkus.io/guides/grpc-service-consumption#client-configuration) for all options)
 * `quarkus.cache.caffeine.keyspace-cache` - property group  for defining the keyspace cache used by [SchemaManager](../sgv2-quarkus-common/src/main/java/io/stargate/sgv2/api/common/schema/SchemaManager.java) (see [Caffeine cache configuration](https://quarkus.io/guides/cache#caffeine-configuration-properties) for all options)
 
+Other Quarkus properties that are specifically relevant for the service:
+
+* `quarkus.http.limits.max-body-size` - maximum HTTP payload size (in bytes) that the server will accept. Default is 20MB.
+
 ## Database limits configuration
 *Configuration for document limits, defined by [DatabaseLimitsConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/DatabaseLimitsConfig.java).*
 
