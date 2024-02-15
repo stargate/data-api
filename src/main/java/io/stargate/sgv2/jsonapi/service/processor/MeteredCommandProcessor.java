@@ -93,8 +93,8 @@ public class MeteredCommandProcessor {
    *
    * @param commandContext {@link CommandContext}
    * @param command {@link Command}
-   * @return Uni emitting the result of the command execution.
    * @param <T> Type of the command.
+   * @return Uni emitting the result of the command execution.
    */
   public <T extends Command> Uni<CommandResult> processCommand(
       CommandContext commandContext, T command) {
@@ -289,7 +289,10 @@ public class MeteredCommandProcessor {
         if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
             || id.getName().startsWith(HISTOGRAM_METRICS_NAME)
             || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesWritten())
-            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesRead())) {
+            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesRead())
+        //            || id.getName().startsWith(jsonApiMetricsConfig.jsonWrittenCount())
+        //            || id.getName().startsWith(jsonApiMetricsConfig.jsonReadCount())
+        ) {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)

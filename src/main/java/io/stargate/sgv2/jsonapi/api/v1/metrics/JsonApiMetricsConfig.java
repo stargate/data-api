@@ -35,6 +35,14 @@ public interface JsonApiMetricsConfig {
   String jsonBytesRead();
 
   @NotBlank
+  @WithDefault("json.written.count")
+  String jsonWrittenCount();
+
+  @NotBlank
+  @WithDefault("json.read.count")
+  String jsonReadCount();
+
+  @NotBlank
   @WithDefault("command.processor.process")
   String metricsName();
 

@@ -46,6 +46,22 @@ public class JsonBytesMetricsReporter {
     ds.record(docJsonSize);
   }
 
+  public void reportJsonWrittenCountMetrics(String commandName, int docCount) {
+    DistributionSummary ds =
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonWrittenCount())
+            .tags(getCustomTags(commandName))
+            .register(meterRegistry);
+    ds.record(docCount);
+  }
+
+  public void reportJsonReadCountMetrics(String commandName, int docCount) {
+    DistributionSummary ds =
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonReadCount())
+            .tags(getCustomTags(commandName))
+            .register(meterRegistry);
+    ds.record(docCount);
+  }
+
   private Tags getCustomTags(String commandName) {
     Tag tenantTag =
         Tag.of(tenantConfig.tenantTag(), stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
