@@ -1,18 +1,3 @@
-/*
- * Copyright DataStax, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
@@ -28,15 +13,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * A {@link MetricIdGenerator} that generates metric identifiers using a combination of names and
- * tags.
+ * Customized Tagging Metric ID Generator for Driver Metric
  *
  * <p>Session metric identifiers contain a name starting with "session." and ending with the metric
- * path, and a tag with the key "session" and the value of the current session name.
+ * path, a tag with the key "session" and the value of the current session name, a tag with the key
+ * 'tenant' and the value of current tenantId.
  *
  * <p>Node metric identifiers contain a name starting with "nodes." and ending with the metric path,
- * and two tags: one with the key "session" and the value of the current session name, the other
- * with the key "node" and the value of the current node endpoint.
+ * and 3 tags: a tag with the key "session" and the value of the current session name, a tag with
+ * the key "node" and the value of the current node endpoint, a tag with the key 'tenant' and the
+ * value of current tenantId.
  */
 public class CustomTaggingMetricIdGenerator implements MetricIdGenerator {
 
@@ -59,7 +45,7 @@ public class CustomTaggingMetricIdGenerator implements MetricIdGenerator {
     tenantId =
         ((TenantAwareCqlSessionBuilder.TenantAwareDriverContext) context)
             .getStartupOptions()
-            .get("TENANT_ID");
+            .get(TenantAwareCqlSessionBuilder.TENANT_ID_PROPERTY_KEY);
   }
 
   @NonNull
