@@ -2089,6 +2089,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     public void checkMetrics() {
       UpdateOneIntegrationTest.super.checkMetrics("UpdateOneCommand");
+      UpdateOneIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

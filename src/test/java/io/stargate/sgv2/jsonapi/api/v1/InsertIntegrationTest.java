@@ -1518,6 +1518,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void checkInsertOneMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test

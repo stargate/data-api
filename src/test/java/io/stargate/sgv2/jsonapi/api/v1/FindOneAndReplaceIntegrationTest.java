@@ -737,6 +737,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     @Test
     public void checkMetrics() {
       FindOneAndReplaceIntegrationTest.super.checkMetrics("FindOneAndReplaceCommand");
+      FindOneAndReplaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }
