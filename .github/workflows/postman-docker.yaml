@@ -16,7 +16,7 @@ jobs:
   automated-api-tests:
     runs-on: ubuntu-latest
     env:
-      COLLECTION_ID: 25879866-266032b1-1fe9-4abd-aee9-e6e4b335f921
+      COLLECTION_ID: 25879866-1903b097-af32-4600-989d-2f68b01f0588
       ENVIRONMENT_ID: 12949543-2e78cf27-bd8c-43f2-909f-70a2b87d65fe
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
