@@ -263,7 +263,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
-              containsString("number of elements an indexable Array ('bigArray')"))
+              containsString("number of elements an indexable Array (field 'bigArray')"))
           .body("errors[0].message", containsString("exceeds maximum allowed"));
     }
 
@@ -335,7 +335,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
             .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
             .body(
                 "errors[0].message",
-                containsString("number of properties an indexable Object ('bigObject')"))
+                containsString("number of properties an indexable Object (field 'bigObject')"))
             .body("errors[0].message", containsString("exceeds maximum allowed"));
       }
     }
