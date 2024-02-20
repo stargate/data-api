@@ -560,7 +560,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an indexable Array (field 'arr') has ("
+                  "Document size limitation violated: number of elements an indexable Array (property 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
@@ -715,7 +715,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: indexed String value (field 'bigString') length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value (property 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -820,7 +820,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               endsWith(
-                  "indexable Object (field 'subdoc') has (1001) exceeds maximum allowed (1000)"));
+                  "indexable Object (property 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test

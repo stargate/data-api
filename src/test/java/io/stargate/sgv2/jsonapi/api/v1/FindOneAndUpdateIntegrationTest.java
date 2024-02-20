@@ -727,7 +727,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' field: $unset"));
+          .body("errors[0].message", is("Cannot use operator with '_id' property: $unset"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -780,7 +780,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' field: $set"));
+          .body("errors[0].message", is("Cannot use operator with '_id' property: $set"));
 
       // And finally verify also that nothing was changed:
       json =
