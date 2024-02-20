@@ -71,7 +71,7 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector field can't be empty");
+      assertThat(throwable.getMessage()).contains("$vector value can't be empty");
     }
 
     @Test
@@ -85,7 +85,7 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
+      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
     }
 
     @Test
@@ -99,7 +99,7 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
+      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
     }
 
     public void vectorSearchInvalidData() {

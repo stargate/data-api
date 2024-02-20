@@ -10,6 +10,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
@@ -110,6 +111,27 @@ public abstract class AbstractNamespaceIntegrationTestBase {
                         && line.contains("vector_enabled=\"false\""))
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
+  }
+
+  public static void checkDriverMetricsTenantId() {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    Optional<String> nodeLevelDriverMetricTenantId =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("nodes_cql_messages_seconds_bucket") && line.contains("tenant"))
+            .findFirst();
+    assertThat(nodeLevelDriverMetricTenantId.isPresent()).isTrue();
+    Optional<String> sessionLevelDriverMetricTenantId =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("session_cql_requests_seconds_bucket")
+                        && line.contains("tenant"))
+            .findFirst();
+    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {

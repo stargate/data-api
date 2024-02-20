@@ -129,6 +129,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void checkMetrics() {
       DeleteCollectionIntegrationTest.super.checkMetrics("DeleteCollectionCommand");
+      DeleteCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }
