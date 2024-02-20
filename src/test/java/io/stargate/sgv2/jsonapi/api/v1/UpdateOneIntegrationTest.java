@@ -2042,7 +2042,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body(
               "errors[0].message",
               is(
-                  "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
     }
 
     @Test
@@ -2089,6 +2089,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     public void checkMetrics() {
       UpdateOneIntegrationTest.super.checkMetrics("UpdateOneCommand");
+      UpdateOneIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

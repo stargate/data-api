@@ -147,7 +147,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an indexable Object ('subdoc') has ("
+              " number of properties an indexable Object (property 'subdoc') has ("
                   + tooManyProps
                   + ") exceeds maximum allowed ("
                   + maxObProps
@@ -201,7 +201,7 @@ public class ShredderDocLimitsTest {
       assertThat(shredder.shred(doc)).isNotNull();
     }
 
-    // Test to verify that max-array-size limit only imposed on indexable fields
+    // Test to verify that max-array-size limit only imposed on indexable properties
     @Test
     public void allowDocWithHugeArrayNoIndex() {
       // Max allowed 1000 normally, but if array not-indexed, not limited
@@ -222,7 +222,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an indexable Array ('arr') has ("
+              " number of elements an indexable Array (property 'arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
@@ -312,7 +312,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value length ("
+              " String value (property 'arr') length ("
                   + tooLongLength
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
@@ -344,7 +344,7 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value length ("
+              " String value (property 'text') length ("
                   + (tooLongCharLength * 3)
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
@@ -394,7 +394,7 @@ public class ShredderDocLimitsTest {
   class ValidationDocNameViolations {
     @ParameterizedTest
     @ValueSource(strings = {"name", "a123", "snake_case", "camelCase", "ab-cd-ef"})
-    public void allowRegularFieldNames(String validName) {
+    public void allowRegularPropertyNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(validName, 123456);
@@ -404,7 +404,7 @@ public class ShredderDocLimitsTest {
     }
 
     @Test
-    public void catchEmptyFieldName() {
+    public void catchEmptyPropertyName() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("", 123456);
 
@@ -419,7 +419,7 @@ public class ShredderDocLimitsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a/b", "a\\b"})
-    public void catchInvalidFieldName(String invalidName) {
+    public void catchInvalidPropertyName(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(invalidName, 123456);
