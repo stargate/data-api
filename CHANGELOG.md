@@ -2,7 +2,52 @@
 
 ## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0...HEAD)
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.1...HEAD)
+
+**Closed issues:**
+
+- Invalid request / allow filtering error on find command \(due to failed index creation for `createCollection`\) [\#812](https://github.com/stargate/jsonapi/issues/812)
+
+## [v1.0.1](https://github.com/stargate/jsonapi/tree/v1.0.1) (2024-02-20)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.0...v1.0.1)
+
+**Closed issues:**
+
+- Unify terms "field" and "property" in `ErrorCode` as "property" [\#884](https://github.com/stargate/jsonapi/issues/884)
+- Do not return AllNodesFailedException error to the client [\#882](https://github.com/stargate/jsonapi/issues/882)
+- Missing `property` name for "too long String" validation failure [\#875](https://github.com/stargate/jsonapi/issues/875)
+- Unclear error message for Bean Validation failures [\#873](https://github.com/stargate/jsonapi/issues/873)
+- Filtering array element by $size: 0 doesn't seem to work [\#862](https://github.com/stargate/jsonapi/issues/862)
+- Increase current `quarkus.http.limits.max-body-size` from `5M` to `20M` [\#856](https://github.com/stargate/jsonapi/issues/856)
+- Postman Collection workflow run failing [\#840](https://github.com/stargate/jsonapi/issues/840)
+- Document Limits: increase max property path length to 1000 \(from 250\) [\#820](https://github.com/stargate/jsonapi/issues/820)
+- Add tenant tags to driver metrics [\#795](https://github.com/stargate/jsonapi/issues/795)
+- Enable HTTP query logging [\#752](https://github.com/stargate/jsonapi/issues/752)
+- Catch and re-throw Java CQL Driver fail exceptions as `JsonApiException` with appropriate `errorCode`s [\#751](https://github.com/stargate/jsonapi/issues/751)
+- all-in-one soak test workload [\#739](https://github.com/stargate/jsonapi/issues/739)
+- Add option to include profiling tools in Docker image [\#671](https://github.com/stargate/jsonapi/issues/671)
+- Driver token map computation failure [\#661](https://github.com/stargate/jsonapi/issues/661)
+
+**Merged pull requests:**
+
+- Fixes \#884: unify JSON Object member reference to "property" \(from "field" etc\) [\#885](https://github.com/stargate/jsonapi/pull/885) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- add tenantId to driver metrics [\#883](https://github.com/stargate/jsonapi/pull/883) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- index creation failure msg, usage with collection not fully indexed [\#879](https://github.com/stargate/jsonapi/pull/879) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#875: improve error message by including field name [\#878](https://github.com/stargate/jsonapi/pull/878) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Create new  DataApiRequestInfo to remove stargate bridge connection [\#876](https://github.com/stargate/jsonapi/pull/876) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#873: improve Bean Validation failure messages [\#874](https://github.com/stargate/jsonapi/pull/874) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Increase default maximum HTTP body size at server level from 5MB to 20MB [\#869](https://github.com/stargate/jsonapi/pull/869) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Stargate v2.1.0-BETA-9 [\#868](https://github.com/stargate/jsonapi/pull/868) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix broken postman collection workflow [\#867](https://github.com/stargate/jsonapi/pull/867) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Bug fix for array size filter for `0` length [\#863](https://github.com/stargate/jsonapi/pull/863) ([maheshrajamani](https://github.com/maheshrajamani))
+- 05-Feb-2024 backup of Postman Data API collection [\#861](https://github.com/stargate/jsonapi/pull/861) ([johnsmartco](https://github.com/johnsmartco))
+- removed merge conflict in CONFIGURATION.md [\#859](https://github.com/stargate/jsonapi/pull/859) ([shubanker](https://github.com/shubanker))
+- Bumping version for next jsonapi release [\#858](https://github.com/stargate/jsonapi/pull/858) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Update pom.xml version for 1.0.0 \(final\) release [\#857](https://github.com/stargate/jsonapi/pull/857) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Build Docker image with profiling tools [\#855](https://github.com/stargate/jsonapi/pull/855) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- \(incremental\) Catch and re-throw Java CQL Driver fail exceptions as JsonApiException [\#851](https://github.com/stargate/jsonapi/pull/851) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- soak test [\#740](https://github.com/stargate/jsonapi/pull/740) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.0](https://github.com/stargate/jsonapi/tree/v1.0.0) (2024-02-02)
 
