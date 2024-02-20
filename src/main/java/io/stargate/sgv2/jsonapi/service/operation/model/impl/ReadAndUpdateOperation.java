@@ -130,13 +130,22 @@ public record ReadAndUpdateOperation(
         .asList()
         .onItem()
         .transform(
-            updates ->
-                new UpdateOperationPage(
-                    matchedCount.get(),
-                    modifiedCount.get(),
-                    updates,
-                    returnDocumentInResponse(),
-                    moreDataFlag.get()));
+            updates -> {
+              // create json doc read/write metrics
+              commandContext
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(commandContext().commandName(), matchedCount.get());
+              commandContext
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonWrittenDocsMetrics(
+                      commandContext().commandName(), modifiedCount.get());
+              return new UpdateOperationPage(
+                  matchedCount.get(),
+                  modifiedCount.get(),
+                  updates,
+                  returnDocumentInResponse(),
+                  moreDataFlag.get());
+            });
   }
 
   private Uni<UpdatedDocument> processUpdate(
@@ -178,7 +187,8 @@ public record ReadAndUpdateOperation(
                       .shred(
                           documentUpdaterResponse.document(),
                           readDocument.txnId(),
-                          commandContext().indexingProjector());
+                          commandContext().indexingProjector(),
+                          commandContext().commandName());
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
