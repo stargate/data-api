@@ -177,7 +177,8 @@ public record CreateCollectionOperation(
             res -> {
               if (!res) {
                 // table creation failure or index creation failure
-                return ErrorCode.COLLECTION_CREATION_ERROR.toApiException();
+                return ErrorCode.COLLECTION_CREATION_ERROR.toApiException(
+                    "provided collection ('%s')", name);
               } else {
                 return new SchemaChangeResult(true);
               }
