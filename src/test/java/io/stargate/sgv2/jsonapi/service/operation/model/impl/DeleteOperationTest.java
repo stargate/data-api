@@ -56,7 +56,8 @@ public class DeleteOperationTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT =
-        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
   }
 
   @Nested

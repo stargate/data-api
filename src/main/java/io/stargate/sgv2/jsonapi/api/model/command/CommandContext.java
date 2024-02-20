@@ -42,7 +42,7 @@ public record CommandContext(
         CollectionSettings.empty(),
         null,
         commandName,
-            jsonProcessingMetricsReporter);
+        jsonProcessingMetricsReporter);
   }
 
   private static final CommandContext EMPTY =

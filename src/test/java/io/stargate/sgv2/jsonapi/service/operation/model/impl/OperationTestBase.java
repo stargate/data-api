@@ -28,8 +28,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
 
-  @Inject
-  JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+  @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);

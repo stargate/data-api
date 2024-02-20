@@ -105,7 +105,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT =
-        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
     COMMAND_VECTOR_CONTEXT =
         new CommandContext(
             KEYSPACE_NAME,
@@ -120,7 +121,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-                jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

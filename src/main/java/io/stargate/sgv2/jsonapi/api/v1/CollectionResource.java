@@ -188,7 +188,7 @@ public class CollectionResource {
                         collectionProperty,
                         embeddingService,
                         command.getClass().getSimpleName(),
-                            jsonProcessingMetricsReporter);
+                        jsonProcessingMetricsReporter);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

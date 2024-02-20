@@ -65,7 +65,8 @@ public class FindOperationTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT =
-        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
     VECTOR_COMMAND_CONTEXT =
         new CommandContext(
             KEYSPACE_NAME,
@@ -80,7 +81,7 @@ public class FindOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-                jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter);
   }
 
   @Nested
