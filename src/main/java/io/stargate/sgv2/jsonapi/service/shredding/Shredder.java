@@ -234,9 +234,9 @@ public class Shredder {
   }
 
   /**
-   * Validator applied to the full document, before removing non-indexable properties. Used to ensure
-   * that the full document does not violate overall structural limits such as total length or
-   * maximum nesting depth, or invalid property names. Most checks are done at a later point with
+   * Validator applied to the full document, before removing non-indexable properties. Used to
+   * ensure that the full document does not violate overall structural limits such as total length
+   * or maximum nesting depth, or invalid property names. Most checks are done at a later point with
    * {@link IndexableValueValidator}.
    */
   static class FullDocValidator {
@@ -325,8 +325,8 @@ public class Shredder {
   }
 
   /**
-   * Secondary validator applied to the storable document after non-indexable properties (and branches)
-   * have been pruned.
+   * Secondary validator applied to the storable document after non-indexable properties (and
+   * branches) have been pruned.
    */
   static class IndexableValueValidator {
     final DocumentLimitsConfig limits;
