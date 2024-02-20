@@ -133,11 +133,11 @@ public record ReadAndUpdateOperation(
             updates -> {
               // create json doc read/write metrics
               commandContext
-                  .jsonBytesMetricsReporter()
-                  .reportJsonReadCountMetrics(commandContext().commandName(), matchedCount.get());
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(commandContext().commandName(), matchedCount.get());
               commandContext
-                  .jsonBytesMetricsReporter()
-                  .reportJsonWrittenCountMetrics(
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonWrittenDocsMetrics(
                       commandContext().commandName(), modifiedCount.get());
               return new UpdateOperationPage(
                   matchedCount.get(),

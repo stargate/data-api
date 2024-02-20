@@ -16,7 +16,7 @@ import jakarta.inject.Inject;
  * write/read operations, tagged with command and tenant information.
  */
 @ApplicationScoped
-public class JsonBytesMetricsReporter {
+public class JsonProcessingMetricsReporter {
   private static final String UNKNOWN_VALUE = "unknown";
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -25,7 +25,7 @@ public class JsonBytesMetricsReporter {
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
 
   @Inject
-  public JsonBytesMetricsReporter(
+  public JsonProcessingMetricsReporter(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       StargateRequestInfo stargateRequestInfo,
@@ -52,7 +52,7 @@ public class JsonBytesMetricsReporter {
     ds.record(docJsonSize);
   }
 
-  public void reportJsonWrittenCountMetrics(String commandName, int docCount) {
+  public void reportJsonWrittenDocsMetrics(String commandName, int docCount) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsWritten())
             .tags(getCustomTags(commandName))
@@ -60,7 +60,7 @@ public class JsonBytesMetricsReporter {
     ds.record(docCount);
   }
 
-  public void reportJsonReadCountMetrics(String commandName, int docCount) {
+  public void reportJsonReadDocsMetrics(String commandName, int docCount) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsRead())
             .tags(getCustomTags(commandName))

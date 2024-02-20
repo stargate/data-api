@@ -64,7 +64,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
   @PostConstruct
   public void init() {
     COMMAND_CONTEXT =
-        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonBytesMetricsReporter);
+        new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

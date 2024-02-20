@@ -297,8 +297,8 @@ public record FindOperation(
         .map(
             docs -> {
               commandContext
-                  .jsonBytesMetricsReporter()
-                  .reportJsonReadCountMetrics(commandContext().commandName(), docs.docs().size());
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
               return new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse);
             });
   }
@@ -334,7 +334,7 @@ public record FindOperation(
             projection(),
             vector() != null,
             commandContext.commandName(),
-            commandContext.jsonBytesMetricsReporter());
+            commandContext.jsonProcessingMetricsReporter());
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -349,7 +349,7 @@ public record FindOperation(
             limit(),
             vector() != null,
             commandContext.commandName(),
-            commandContext.jsonBytesMetricsReporter());
+            commandContext.jsonProcessingMetricsReporter());
       }
       default -> {
         JsonApiException failure =

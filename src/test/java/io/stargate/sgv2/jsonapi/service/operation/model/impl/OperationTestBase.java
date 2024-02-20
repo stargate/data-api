@@ -17,7 +17,7 @@ import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -28,7 +28,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
 
-  @Inject JsonBytesMetricsReporter jsonBytesMetricsReporter;
+  @Inject
+  JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
@@ -39,7 +40,7 @@ public class OperationTestBase {
 
   protected CommandContext createCommandContextWithCommandName(String commandName) {
     return new CommandContext(
-        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonBytesMetricsReporter);
+        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonProcessingMetricsReporter);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {

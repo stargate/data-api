@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonBytesMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
@@ -25,7 +25,7 @@ public record CommandContext(
     CollectionSettings collectionSettings,
     EmbeddingService embeddingService,
     String commandName,
-    JsonBytesMetricsReporter jsonBytesMetricsReporter) {
+    JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
   public CommandContext(String namespace, String collection) {
     this(namespace, collection, CollectionSettings.empty(), null, null, null);
@@ -35,14 +35,14 @@ public record CommandContext(
       String namespace,
       String collection,
       String commandName,
-      JsonBytesMetricsReporter jsonBytesMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     this(
         namespace,
         collection,
         CollectionSettings.empty(),
         null,
         commandName,
-        jsonBytesMetricsReporter);
+            jsonProcessingMetricsReporter);
   }
 
   private static final CommandContext EMPTY =

@@ -43,8 +43,8 @@ public record InsertOperation(
     }
     // create json doc write metrics
     commandContext
-        .jsonBytesMetricsReporter()
-        .reportJsonWrittenCountMetrics(commandContext().commandName(), documents.size());
+        .jsonProcessingMetricsReporter()
+        .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
     if (ordered) {
       return insertOrdered(queryExecutor, vectorEnabled);
     } else {

@@ -139,8 +139,8 @@ public record DeleteOperation(
         .transform(
             deletedInformation -> {
               commandContext
-                  .jsonBytesMetricsReporter()
-                  .reportJsonReadCountMetrics(
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(
                       commandContext().commandName(), deletedInformation.size());
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse);
