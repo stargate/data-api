@@ -26,18 +26,42 @@ public interface JsonApiMetricsConfig {
   @WithDefault("sort.type")
   String sortType();
 
+  /**
+   * Metric name for the count of bytes written in JSON operations, used to monitor the size of data
+   * written by a command.
+   *
+   * @return metric name for bytes written count.
+   */
   @NotBlank
   @WithDefault("json.bytes.written")
   String jsonBytesWritten();
 
+  /**
+   * Metric name for the count of bytes read in JSON operations, used to monitor the size of data
+   * read by a command.
+   *
+   * @return metric name for bytes read count.
+   */
   @NotBlank
   @WithDefault("json.bytes.read")
   String jsonBytesRead();
 
+  /**
+   * Metric name for the count of JSON write operations, indicating the number of write actions
+   * performed by a command.
+   *
+   * @return metric name for write operations count.
+   */
   @NotBlank
   @WithDefault("json.written.count")
   String jsonWrittenCount();
 
+  /**
+   * Metric name for the count of JSON read operations, indicating the number of read actions
+   * performed by a command.
+   *
+   * @return metric name for read operations count.
+   */
   @NotBlank
   @WithDefault("json.read.count")
   String jsonReadCount();

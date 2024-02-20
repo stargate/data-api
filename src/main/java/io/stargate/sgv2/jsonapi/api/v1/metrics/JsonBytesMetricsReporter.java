@@ -9,6 +9,12 @@ import io.stargate.sgv2.api.common.config.MetricsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+/**
+ * Reports metrics related to JSON byte sizes and operation counts for various commands. Utilizes
+ * Micrometer's {@link MeterRegistry} for metric registration and reporting, allowing integration
+ * with various monitoring systems. Metrics include JSON bytes written/read and counts of JSON
+ * write/read operations, tagged with command and tenant information.
+ */
 @ApplicationScoped
 public class JsonBytesMetricsReporter {
   private static final String UNKNOWN_VALUE = "unknown";
