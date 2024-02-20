@@ -54,7 +54,7 @@ public class JsonBytesMetricsReporter {
 
   public void reportJsonWrittenCountMetrics(String commandName, int docCount) {
     DistributionSummary ds =
-        DistributionSummary.builder(jsonApiMetricsConfig.jsonWrittenCount())
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsWritten())
             .tags(getCustomTags(commandName))
             .register(meterRegistry);
     ds.record(docCount);
@@ -62,7 +62,7 @@ public class JsonBytesMetricsReporter {
 
   public void reportJsonReadCountMetrics(String commandName, int docCount) {
     DistributionSummary ds =
-        DistributionSummary.builder(jsonApiMetricsConfig.jsonReadCount())
+        DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsRead())
             .tags(getCustomTags(commandName))
             .register(meterRegistry);
     ds.record(docCount);

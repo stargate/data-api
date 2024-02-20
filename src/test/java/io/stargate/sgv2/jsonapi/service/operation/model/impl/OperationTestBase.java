@@ -37,6 +37,11 @@ public class OperationTestBase {
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
+  protected CommandContext createCommandContextWithCommandName(String commandName) {
+    return new CommandContext(
+        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonBytesMetricsReporter);
+  }
+
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
     return buildColumnDefs(Arrays.asList(columns));
   }

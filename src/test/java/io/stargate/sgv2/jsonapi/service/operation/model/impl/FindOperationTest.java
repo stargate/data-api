@@ -106,6 +106,7 @@ public class FindOperationTest extends OperationTestBase {
                     "username": "user2"
                   }
                   """;
+      CommandContext commandContext = createCommandContextWithCommandName("jsonBytesReadCommand");
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(
@@ -124,7 +125,7 @@ public class FindOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
           FindOperation.unsorted(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,
@@ -151,6 +152,67 @@ public class FindOperationTest extends OperationTestBase {
           .containsOnly(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesReadMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      // should have three metrics in total
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonBytesReadCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, should be one
+      List<String> jsonDocsReadCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_count")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      assertThat(jsonDocsReadCountMetrics).hasSize(1);
+      jsonDocsReadCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- read two docs, should be two
+      List<String> jsonDocsReadSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_sum")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      assertThat(jsonDocsReadSumMetrics).hasSize(1);
+      jsonDocsReadSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(2.0);
+          });
     }
 
     @Test
@@ -2585,92 +2647,6 @@ public class FindOperationTest extends OperationTestBase {
             ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
-    }
-  }
-
-  @Nested
-  class JsonMetricsReporter {
-    @Test
-    public void validateJsonBytesReadMetrics() {
-      String collectionReadCql =
-          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
-
-      String doc1 =
-          """
-                          {
-                            "_id": "doc1",
-                            "username": "user1"
-                          }
-                          """;
-      String doc2 =
-          """
-                          {
-                            "_id": "doc2",
-                            "username": "user2"
-                          }
-                          """;
-      CommandContext commandContext =
-          new CommandContext(
-              KEYSPACE_NAME, COLLECTION_NAME, "jsonBytesReadCommand", jsonBytesMetricsReporter);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
-      List<Row> rows =
-          Arrays.asList(
-              resultRow(0, "doc1", UUID.randomUUID(), doc1),
-              resultRow(1, "doc2", UUID.randomUUID(), doc2));
-      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
-      final AtomicInteger callCount = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
-          .then(
-              invocation -> {
-                callCount.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
-
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      FindOperation operation =
-          FindOperation.unsorted(
-              commandContext,
-              implicitAnd,
-              DocumentProjector.identityProjector(),
-              null,
-              20,
-              20,
-              ReadType.DOCUMENT,
-              objectMapper);
-
-      Supplier<CommandResult> execute =
-          operation
-              .execute(queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      // verify metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> jsonBytesReadMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("json_bytes_read")
-                          && !line.startsWith("json_bytes_read_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("jsonBytesReadCommand"))
-              .toList();
-      assertThat(jsonBytesReadMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("command=\"jsonBytesReadCommand\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-                    });
-              });
     }
   }
 

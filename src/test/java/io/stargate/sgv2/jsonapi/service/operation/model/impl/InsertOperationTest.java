@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.eq;
@@ -260,9 +261,10 @@ public class InsertOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
+      CommandContext commandContext =
+          createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
       Supplier<CommandResult> execute =
-          new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true)
+          new InsertOperation(commandContext, List.of(shredDocument1, shredDocument2), true)
               .execute(queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -280,6 +282,67 @@ public class InsertOperationTest extends OperationTestBase {
               CommandStatus.INSERTED_IDS,
               List.of(new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2")));
       assertThat(result.errors()).isNull();
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonDocsWrittenMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written")
+                          && !line.startsWith("json_docs_written_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("jsonDocsWrittenInsertManyCommand"))
+              .toList();
+      // should have three metrics in total
+      assertThat(jsonDocsWrittenMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonDocsWrittenInsertManyCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, the value should be one
+      List<String> jsonDocsWrittenCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_count")
+                          && line.contains("jsonDocsWrittenInsertManyCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenCountMetrics).hasSize(1);
+      jsonDocsWrittenCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- insert two docs, should be two
+      List<String> jsonDocsWrittenSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_sum")
+                          && line.contains("jsonDocsWrittenInsertManyCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenSumMetrics).hasSize(1);
+      jsonDocsWrittenSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(2.0);
+          });
     }
 
     @Test

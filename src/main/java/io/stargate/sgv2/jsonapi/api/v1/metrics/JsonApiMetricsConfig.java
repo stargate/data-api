@@ -53,8 +53,8 @@ public interface JsonApiMetricsConfig {
    * @return metric name for write operations count.
    */
   @NotBlank
-  @WithDefault("json.written.count")
-  String jsonWrittenCount();
+  @WithDefault("json.docs.written")
+  String jsonDocsWritten();
 
   /**
    * Metric name for the count of JSON read operations, indicating the number of read actions
@@ -63,8 +63,8 @@ public interface JsonApiMetricsConfig {
    * @return metric name for read operations count.
    */
   @NotBlank
-  @WithDefault("json.read.count")
-  String jsonReadCount();
+  @WithDefault("json.docs.read")
+  String jsonDocsRead();
 
   @NotBlank
   @WithDefault("command.processor.process")
