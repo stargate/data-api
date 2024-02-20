@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -70,6 +71,8 @@ public interface ReadOperation extends Operation {
    * @param projection
    * @param limit - How many documents to return
    * @param vectorSearch - whether the query uses vector search
+   * @param commandName - The command that calls ReadOperation
+   * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
    * @return
    */
   default Uni<FindResponse> findDocument(
@@ -81,7 +84,9 @@ public interface ReadOperation extends Operation {
       ObjectMapper objectMapper,
       DocumentProjector projection,
       int limit,
-      boolean vectorSearch) {
+      boolean vectorSearch,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
     return Multi.createFrom()
         .items(queries.stream())
@@ -108,6 +113,10 @@ public interface ReadOperation extends Operation {
                 try {
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
+                    // create metrics
+                    jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
+                        commandName, row.getString(2).length());
+
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
                       projection.applyProjection(root, score);
@@ -173,6 +182,8 @@ public interface ReadOperation extends Operation {
    * @param errorLimit - Count of record on which system to error out, this will be (maximum read
    *     count for sort + 1)
    * @param vectorSearch - whether the query uses vector search
+   * @param commandName - The command that calls ReadOperation
+   * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
@@ -186,7 +197,9 @@ public interface ReadOperation extends Operation {
       int limit,
       int errorLimit,
       DocumentProjector projection,
-      boolean vectorSearch) {
+      boolean vectorSearch,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()
@@ -281,6 +294,8 @@ public interface ReadOperation extends Operation {
                             objectMapper, row.getString(2)), // Deserialized value of doc_json
                         sortValues);
                 documents.add(document);
+                jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
+                    commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })

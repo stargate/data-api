@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -33,6 +35,8 @@ public class ShredderDocLimitsTest {
   @Inject Shredder shredder;
 
   @Inject DocumentLimitsConfig docLimits;
+
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   // Tests for Document size/depth violations
   @Nested
@@ -130,7 +134,7 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
     }
 
     @Test
@@ -208,7 +212,7 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector)).isNotNull();
+      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
     }
 
     @Test

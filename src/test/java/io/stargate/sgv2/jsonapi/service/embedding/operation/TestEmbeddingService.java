@@ -19,7 +19,9 @@ public class TestEmbeddingService implements EmbeddingService {
               null,
               null,
               null),
-          new TestEmbeddingService());
+          new TestEmbeddingService(),
+          "testCommand",
+          null);
 
   @Override
   public List<float[]> vectorize(List<String> texts) {
