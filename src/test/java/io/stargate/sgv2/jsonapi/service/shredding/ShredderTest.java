@@ -271,7 +271,7 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector property can't be empty")
+          .hasMessage("$vector value can't be empty")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_SIZE);
     }
 
@@ -283,7 +283,7 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector search needs to be array of numbers")
+          .hasMessage("$vector value needs to be array of numbers")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_VALUE);
     }
 
