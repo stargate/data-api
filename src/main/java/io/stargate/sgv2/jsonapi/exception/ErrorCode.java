@@ -61,9 +61,9 @@ public enum ErrorCode {
 
   SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
 
-  SHRED_BAD_VECTOR_SIZE("$vector property can't be empty"),
+  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
-  SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
