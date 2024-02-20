@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.mockito.InjectMock;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -38,7 +38,7 @@ public class ShredderTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject Shredder shredder;
-  @InjectMock protected StargateRequestInfo stargateRequestInfo;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class OkCases {
