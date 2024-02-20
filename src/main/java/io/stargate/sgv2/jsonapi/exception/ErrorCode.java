@@ -61,7 +61,7 @@ public enum ErrorCode {
 
   SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
 
-  SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
+  SHRED_BAD_VECTOR_SIZE("$vector property can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
@@ -108,10 +108,10 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
 
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
@@ -121,7 +121,7 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
 
-  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
+  VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
