@@ -162,6 +162,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Test
     public void checkMetrics() {
       CreateNamespaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
+      CreateNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

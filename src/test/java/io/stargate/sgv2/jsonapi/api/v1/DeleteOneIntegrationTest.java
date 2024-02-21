@@ -526,6 +526,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     public void checkMetrics() {
       DeleteOneIntegrationTest.super.checkMetrics("DeleteOneCommand");
+      DeleteOneIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

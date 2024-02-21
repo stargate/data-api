@@ -61,12 +61,12 @@ public enum ErrorCode {
 
   SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
 
-  SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
+  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
-  SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be text value"),
 
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize field needs to be text value"),
+  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
@@ -106,10 +106,10 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
 
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
@@ -119,7 +119,7 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
 
-  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
+  VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
@@ -128,7 +128,13 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
 
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail");
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+
+  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
+  INVALID_QUERY("Invalid query"),
+  DRIVER_TIMEOUT("Driver timeout"),
+  DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
+  NO_NODE_AVAILABLE("No node was available to execute the query");
 
   private final String message;
 
@@ -142,5 +148,9 @@ public enum ErrorCode {
 
   public JsonApiException toApiException(String format, Object... args) {
     return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
+
+  public JsonApiException toApiException() {
+    return new JsonApiException(this, message);
   }
 }

@@ -48,7 +48,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     }
 
     // construct and return
-    CommandResult.Error error = getCommandResultError(message);
+    CommandResult.Error error = getCommandResultError(message, Response.Status.OK);
 
     // handle cause as well
     Throwable cause = getCause();
@@ -60,7 +60,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     }
   }
 
-  public CommandResult.Error getCommandResultError(String message) {
+  public CommandResult.Error getCommandResultError(String message, Response.Status status) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
     SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -72,7 +72,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
             ? Map.of(
                 "errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName())
             : Map.of("errorCode", errorCode.name());
-    return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+    return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
   }
 
   public ErrorCode getErrorCode() {
