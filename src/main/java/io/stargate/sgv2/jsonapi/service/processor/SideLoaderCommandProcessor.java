@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -13,8 +14,8 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.PersistenceSession;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import java.util.List;
 import java.util.Optional;
@@ -28,13 +29,11 @@ public class SideLoaderCommandProcessor {
     DataApiRequestInfo dataApiRequestInfo = buildDataApiRequestInfo(sessionId);
     OperationsConfig operationsConfig = buildOperationsConfig();
     MeterRegistry meterRegistry = buildMeterRegistry();
-    PersistenceSession persistenceSession =
+    CqlSession fileWriterSession =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry).getSession();
-    if (persistenceSession == null) {
+    if (fileWriterSession == null) {
       throw new RuntimeException("Can not create SSTable writer session");
     }
-    persistenceSession.setNamespace(namespace);
-    persistenceSession.setCollection(collection);
     return sessionId;
   }
 
@@ -49,9 +48,9 @@ public class SideLoaderCommandProcessor {
     MeteredCommandProcessor meteredCommandProcessor =
         getMeteredCommandProcessor(queryExecutor, meterRegistry, dataApiRequestInfo);
     // Build command and command context
-    PersistenceSession persistenceSession = cqlSessionCache.getSession();
+    FileWriterSession fileWriterSession = (FileWriterSession) cqlSessionCache.getSession();
     CommandContext commandContext =
-        new CommandContext(persistenceSession.getNamespace(), persistenceSession.getCollection());
+        new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
     InsertManyCommand.Options options = new InsertManyCommand.Options(false);
     Command insertManyCommand = new InsertManyCommand(documents, options);
     // Execute command
@@ -83,18 +82,20 @@ public class SideLoaderCommandProcessor {
         commandLevelLoggingConfig);
   }
 
-  private static SSTableWriterStatus toSSTableWriterStatus(CommandResult commandResult) {
-    return new SSTableWriterStatus();
+  private static SSTableWriterStatus toSSTableWriterStatus(
+      CommandContext commandContext, CommandResult commandResult) {
+    return new SSTableWriterStatus(commandContext.namespace(), commandContext.collection());
   }
 
   public static SSTableWriterStatus getWriterStatus(String sessionId) {
-    PersistenceSession persistenceSession = new CQLSessionCache(null, null, null).getSession();
-    return persistenceSession.getStatus();
+    FileWriterSession fileWriterSession =
+        (FileWriterSession) new CQLSessionCache(null, null, null).getSession();
+    return fileWriterSession.getStatus();
   }
 
   public static void endWriterSession(String sessionId) {
-    PersistenceSession persistenceSession = new CQLSessionCache(null, null, null).getSession();
-    persistenceSession.close();
+    CqlSession fileWriterSession = new CQLSessionCache(null, null, null).getSession();
+    fileWriterSession.close();
   }
 
   private static OperationsConfig buildOperationsConfig() {

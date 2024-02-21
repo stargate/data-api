@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
@@ -36,7 +37,7 @@ public class CqlSessionCacheTimingTests {
    * is needed because, though the sessions evicted from the cache are closed, the sessions left
    * active on the cache are not closed, so we have to close them explicitly.
    */
-  private List<PersistenceSession> sessionsCreatedInTests;
+  private List<CqlSession> sessionsCreatedInTests;
 
   @BeforeEach
   public void setupEachTest() {
@@ -46,13 +47,14 @@ public class CqlSessionCacheTimingTests {
 
   @AfterEach
   public void tearDownEachTest() {
-    sessionsCreatedInTests.forEach(PersistenceSession::close);
+    sessionsCreatedInTests.forEach(CqlSession::close);
   }
 
   @Test
   public void testOSSCxCQLSessionCacheTimedEviction()
       throws NoSuchFieldException, IllegalAccessException, InterruptedException {
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+    CQLSessionCache cqlSessionCacheForTest =
+        new CQLSessionCache(null, operationsConfig, meterRegistry);
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant_timing_test_" + i;
@@ -60,11 +62,11 @@ public class CqlSessionCacheTimingTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field stargateRequestInfoField =
+      Field dataApiRequestInfoField =
           cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      stargateRequestInfoField.setAccessible(true);
-      stargateRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
-      PersistenceSession cqlSession = cqlSessionCacheForTest.getSession();
+      dataApiRequestInfoField.setAccessible(true);
+      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
               ((DefaultDriverContext) cqlSession.getContext())
