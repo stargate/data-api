@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -30,12 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.service.processor.SSTableWriterStatus;
-
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 public class FileWriterSession implements CqlSession {
   private static final AtomicInteger counter = new AtomicInteger(0);
@@ -48,7 +45,17 @@ public class FileWriterSession implements CqlSession {
     this.sessionId = "fileWriterSession" + counter.getAndIncrement();
     this.keyspace = keyspace;
     this.table = table;
-    this.responseColumnDefinitions = DefaultColumnDefinitions.valueOf(List.of(new DefaultColumnDefinition(new ColumnSpec(keyspace, table, "[applied]", 0, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)), null)));
+    this.responseColumnDefinitions =
+        DefaultColumnDefinitions.valueOf(
+            List.of(
+                new DefaultColumnDefinition(
+                    new ColumnSpec(
+                        keyspace,
+                        table,
+                        "[applied]",
+                        0,
+                        RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)),
+                    null)));
   }
 
   @NonNull
@@ -102,8 +109,8 @@ public class FileWriterSession implements CqlSession {
     List<ColumnMetadata> partitionColumn =
         Lists.newArrayList(
             new DefaultColumnMetadata(
-                CqlIdentifier.fromInternal("ks"),
-                CqlIdentifier.fromInternal("table"),
+                CqlIdentifier.fromInternal(keyspace),
+                CqlIdentifier.fromInternal(table),
                 CqlIdentifier.fromInternal("key"),
                 DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT),
                 false));
@@ -111,80 +118,80 @@ public class FileWriterSession implements CqlSession {
     columns.put(
         CqlIdentifier.fromInternal("tx_id"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("tx_id"),
             DataTypes.TIMEUUID,
             false));
     columns.put(
         CqlIdentifier.fromInternal("doc_json"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("doc_json"),
             DataTypes.TEXT,
             false));
     columns.put(
         CqlIdentifier.fromInternal("exist_keys"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("exist_keys"),
             DataTypes.setOf(DataTypes.TEXT),
             false));
     columns.put(
         CqlIdentifier.fromInternal("array_size"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("array_size"),
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT),
             false));
     columns.put(
         CqlIdentifier.fromInternal("array_contains"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("array_contains"),
             DataTypes.setOf(DataTypes.TEXT),
             false));
     columns.put(
         CqlIdentifier.fromInternal("query_bool_values"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("query_bool_values"),
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.TINYINT),
             false));
     columns.put(
         CqlIdentifier.fromInternal("query_dbl_values"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("query_dbl_values"),
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.DECIMAL),
             false));
     columns.put(
         CqlIdentifier.fromInternal("query_text_values"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("query_text_values"),
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT),
             false));
     columns.put(
         CqlIdentifier.fromInternal("query_timestamp_values"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("query_timestamp_values"),
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.TIMESTAMP),
             false));
     columns.put(
         CqlIdentifier.fromInternal("query_null_values"),
         new DefaultColumnMetadata(
-            CqlIdentifier.fromInternal("ks"),
-            CqlIdentifier.fromInternal("table"),
+            CqlIdentifier.fromInternal(keyspace),
+            CqlIdentifier.fromInternal(table),
             CqlIdentifier.fromInternal("query_null_values"),
             DataTypes.setOf(DataTypes.TEXT),
             false));
@@ -255,7 +262,11 @@ public class FileWriterSession implements CqlSession {
     System.out.println("Bound values: " + boundValues);
     List<ByteBuffer> buffers = new ArrayList<>();
     buffers.add(TypeCodecs.BOOLEAN.encode(Boolean.TRUE, ProtocolVersion.DEFAULT));
-    CompletionStage<AsyncResultSet> resultSetCompletionStage = CompletionStages.completedStage(new FileWriterAsyncResultSet(responseColumnDefinitions, new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
+    CompletionStage<AsyncResultSet> resultSetCompletionStage =
+        CompletionStages.completedStage(
+            new FileWriterAsyncResultSet(
+                responseColumnDefinitions,
+                new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
     return (ResultT) resultSetCompletionStage;
   }
 
