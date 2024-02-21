@@ -62,6 +62,7 @@ public class SideLoaderCommandProcessor {
             .withMapping(MetricsConfig.class)
             .withMapping(CommandLevelLoggingConfig.class)
             .withMapping(DocumentLimitsConfig.class)
+            // TODO-SL increase cache expiry limit
             .withDefaultValue("stargate.jsonapi.operations.database-config.type", "sideloader")
             .build();
     this.operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);

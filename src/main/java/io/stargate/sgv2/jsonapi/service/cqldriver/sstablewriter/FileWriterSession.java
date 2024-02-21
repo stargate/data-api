@@ -21,6 +21,7 @@ import com.datastax.oss.protocol.internal.response.result.RawType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.smallrye.faulttolerance.core.util.CompletionStages;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -32,8 +33,16 @@ public class FileWriterSession implements CqlSession {
   private final String keyspace;
   private final String table;
   private final ColumnDefinitions responseColumnDefinitions;
+  private final CQLSessionCache cqlSessionCache;
+  private final CQLSessionCache.SessionCacheKey cacheKey;
 
-  public FileWriterSession(String keyspace, String table) {
+  public FileWriterSession(
+      CQLSessionCache cqlSessionCache,
+      CQLSessionCache.SessionCacheKey cacheKey,
+      String keyspace,
+      String table) {
+    this.cqlSessionCache = cqlSessionCache;
+    this.cacheKey = cacheKey;
     this.sessionId = "fileWriterSession" + counter.getAndIncrement();
     this.keyspace = keyspace;
     this.table = table;
@@ -131,6 +140,7 @@ public class FileWriterSession implements CqlSession {
   @NonNull
   @Override
   public CompletionStage<Void> closeAsync() {
+    cqlSessionCache.removeSession(this.cacheKey);
     return CompletionStages.completedStage(null);
   }
 

@@ -37,5 +37,10 @@ public class SideloaderTester {
     // 4
     sideLoaderCommandProcessor.endWriterSession(writerSessionId);
     System.out.println("Session ended");
+
+    // 5
+    SSTableWriterStatus statusAfterRemoval =
+            sideLoaderCommandProcessor.getWriterStatus(writerSessionId);
+    System.out.println("Status after close: " + statusAfterRemoval);
   }
 }

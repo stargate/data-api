@@ -149,7 +149,7 @@ public class CQLSessionCache {
         throw new InvalidFileWriterOptions("FileWriterParams not present in the request");
       }
       return new FileWriterSession(
-          fileWriterParams.getKeyspaceName(), fileWriterParams.getTableName());
+          this, cacheKey, fileWriterParams.getKeyspaceName(), fileWriterParams.getTableName());
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
@@ -221,12 +221,23 @@ public class CQLSessionCache {
   }
 
   /**
+   * Remove CQLSession from cache.
+   *
+   * @param cacheKey key for CQLSession cache
+   */
+  public void removeSession(SessionCacheKey cacheKey) {
+    sessionCache.invalidate(cacheKey);
+    sessionCache.cleanUp();
+    LOGGER.trace("Session removed for tenant : {}", cacheKey.tenantId);
+  }
+
+  /**
    * Key for CQLSession cache.
    *
    * @param tenantId tenant id
    * @param credentials credentials (username/password or token)
    */
-  private record SessionCacheKey(String tenantId, Credentials credentials) {}
+  public record SessionCacheKey(String tenantId, Credentials credentials) {}
 
   /**
    * Credentials for CQLSession cache when username and password is provided.
