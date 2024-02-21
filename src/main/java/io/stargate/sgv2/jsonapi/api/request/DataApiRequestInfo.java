@@ -21,7 +21,7 @@ public class DataApiRequestInfo {
   private final Optional<FileWriterParams> fileWriterParams;
 
   public DataApiRequestInfo(Optional<String> tenantId, FileWriterParams fileWriterParams) {
-    this.tenantId = Optional.empty();
+    this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
     this.fileWriterParams = Optional.ofNullable(fileWriterParams);
   }
