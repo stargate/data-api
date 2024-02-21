@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -63,16 +62,8 @@ public class InvalidCredentialsTests {
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
-    // set operation config
-    Field operationsConfigField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
-    operationsConfigField.setAccessible(true);
-    operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+    CQLSessionCache cqlSessionCacheForTest =
+        new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
     // Throwable
     Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
     assertThat(t).isInstanceOf(AllNodesFailedException.class);

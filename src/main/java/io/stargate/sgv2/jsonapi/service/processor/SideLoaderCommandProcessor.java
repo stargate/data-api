@@ -4,6 +4,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -16,9 +19,10 @@ import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
-import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.SideloaderConfigHelper;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.SSTableWriterStatus;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.InsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -35,16 +39,38 @@ public class SideLoaderCommandProcessor {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final MetricsConfig metricsConfig;
   private final CommandLevelLoggingConfig commandLevelLoggingConfig;
+  private final DocumentLimitsConfig documentLimitsConfig;
+  private final boolean vectorEnabled;
+  private final CollectionSettings.SimilarityFunction similarityFunction;
+  private final int vectorSize;
 
-  public SideLoaderCommandProcessor(String namespace, String collection) {
+  public SideLoaderCommandProcessor(
+      String namespace,
+      String collection,
+      boolean isVectorEnabled,
+      CollectionSettings.SimilarityFunction similarityFunction,
+      int vectorSize) {
+    this.vectorEnabled = isVectorEnabled;
+    this.similarityFunction = similarityFunction;
+    this.vectorSize = vectorSize;
     this.namespace = namespace;
     this.collection = collection;
-    this.operationsConfig = SideloaderConfigHelper.buildOperationsConfig();
-    ;
-    this.meterRegistry = SideloaderConfigHelper.buildMeterRegistry();
-    this.jsonApiMetricsConfig = SideloaderConfigHelper.buildJsonApiMetricsConfig();
-    this.metricsConfig = SideloaderConfigHelper.buildMetricsConfig();
-    this.commandLevelLoggingConfig = SideloaderConfigHelper.buildCommandLevelLoggingConfig();
+    SmallRyeConfig smallRyeConfig =
+        new SmallRyeConfigBuilder()
+            .withMapping(OperationsConfig.class)
+            .withMapping(JsonApiMetricsConfig.class)
+            .withMapping(MetricsConfig.class)
+            .withMapping(CommandLevelLoggingConfig.class)
+            .withMapping(DocumentLimitsConfig.class)
+            .withDefaultValue("stargate.jsonapi.operations.database-config.type", "sideloader")
+            .build();
+    this.operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);
+    this.jsonApiMetricsConfig = smallRyeConfig.getConfigMapping(JsonApiMetricsConfig.class);
+    this.metricsConfig = smallRyeConfig.getConfigMapping(MetricsConfig.class);
+    this.commandLevelLoggingConfig =
+        smallRyeConfig.getConfigMapping(CommandLevelLoggingConfig.class);
+    this.documentLimitsConfig = smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
+    this.meterRegistry = new SimpleMeterRegistry();
   }
 
   public String beginWriterSession() {
@@ -73,8 +99,19 @@ public class SideLoaderCommandProcessor {
     // Build command and command context
     FileWriterSession fileWriterSession = (FileWriterSession) cqlSessionCache.getSession();
     CommandContext commandContext =
-        new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
-    InsertManyCommand.Options options = new InsertManyCommand.Options(false);
+        new CommandContext(
+            fileWriterSession.getNamespace(),
+            fileWriterSession.getCollection(),
+            CollectionSettings.getCollectionSettings(
+                this.collection,
+                this.vectorEnabled,
+                this.vectorSize,
+                this.similarityFunction,
+                "", // TODO-SL handle vectorize and indexing json config
+                new ObjectMapper()),
+            null);
+    new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
+    InsertManyCommand.Options options = new InsertManyCommand.Options(true);
     Command insertManyCommand = new InsertManyCommand(documents, options);
     // Execute command
     CommandResult commandResult =
@@ -108,19 +145,28 @@ public class SideLoaderCommandProcessor {
   }
 
   public SSTableWriterStatus getWriterStatus(String sessionId) {
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(
+            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
     FileWriterSession fileWriterSession =
-        (FileWriterSession) new CQLSessionCache(null, null, null).getSession();
+        (FileWriterSession)
+            new CQLSessionCache(dataApiRequestInfo, this.operationsConfig, this.meterRegistry)
+                .getSession();
     return fileWriterSession.getStatus();
   }
 
   public void endWriterSession(String sessionId) {
-    CqlSession fileWriterSession = new CQLSessionCache(null, null, null).getSession();
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(
+            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
+    CqlSession fileWriterSession =
+        new CQLSessionCache(dataApiRequestInfo, this.operationsConfig, this.meterRegistry)
+            .getSession();
     fileWriterSession.close();
   }
 
-  private static CommandResolverService buildCommandResolverService() {
+  private CommandResolverService buildCommandResolverService() {
     ObjectMapper objectMapper = new ObjectMapper();
-    DocumentLimitsConfig documentLimitsConfig = SideloaderConfigHelper.buildDocumentLimitsConfig();
     Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
     return new CommandResolverService(
         List.of(new InsertManyCommandResolver(shredder, objectMapper)));

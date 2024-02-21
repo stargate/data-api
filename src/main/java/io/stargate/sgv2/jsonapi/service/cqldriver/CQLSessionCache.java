@@ -65,7 +65,7 @@ public class CQLSessionCache {
       MeterRegistry meterRegistry) {
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.operationsConfig = operationsConfig;
-    if (sessionCache != null) {
+    if (sessionCache == null) { // TODO-SL handle concurrency
       LoadingCache<SessionCacheKey, CqlSession> loadingCache =
           Caffeine.newBuilder()
               .expireAfterAccess(
@@ -91,12 +91,8 @@ public class CQLSessionCache {
                       })
               .recordStats()
               .build(this::getNewSession);
-      if (meterRegistry != null) {
-        sessionCache =
-            CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
-      } else {
-        sessionCache = loadingCache;
-      }
+      sessionCache =
+          CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
       LOGGER.info(
           "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
           operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -205,6 +201,9 @@ public class CQLSessionCache {
         return new SessionCacheKey(
             dataApiRequestInfo.getTenantId().orElseThrow(),
             new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
+      }
+      case SIDE_LOADER -> {
+        return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
       }
     }
     throw new RuntimeException(

@@ -62,10 +62,6 @@ public class CqlSessionCacheTests {
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     CqlSession cqlSession = cqlSessionCacheForTest.getSession();
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
@@ -93,10 +89,6 @@ public class CqlSessionCacheTests {
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
@@ -129,10 +121,6 @@ public class CqlSessionCacheTests {
     when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
     CQLSessionCache cqlSessionCacheForTest =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");

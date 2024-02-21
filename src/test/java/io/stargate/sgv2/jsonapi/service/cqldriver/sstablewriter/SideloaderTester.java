@@ -1,7 +1,9 @@
-package io.stargate.sgv2.jsonapi.service.processor;
+package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.processor.SideLoaderCommandProcessor;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -12,7 +14,8 @@ public class SideloaderTester {
     String collection = "players";
 
     SideLoaderCommandProcessor sideLoaderCommandProcessor =
-        new SideLoaderCommandProcessor(namespace, collection);
+        new SideLoaderCommandProcessor(
+            namespace, collection, true, CollectionSettings.SimilarityFunction.COSINE, 3);
 
     // 1
     String writerSessionId = sideLoaderCommandProcessor.beginWriterSession();
@@ -33,5 +36,6 @@ public class SideloaderTester {
 
     // 4
     sideLoaderCommandProcessor.endWriterSession(writerSessionId);
+    System.out.println("Session ended");
   }
 }
