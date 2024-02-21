@@ -54,6 +54,9 @@ public class EmbeddingServiceCache {
       case "vertexai":
         return new VertexAIEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
+      case "cohere":
+        return new CohereEmbeddingClient(
+            configuration.baseUrl(), configuration.apiKey(), modelName);
       case "custom":
         try {
           Optional<Class<?>> clazz = configuration.clazz();

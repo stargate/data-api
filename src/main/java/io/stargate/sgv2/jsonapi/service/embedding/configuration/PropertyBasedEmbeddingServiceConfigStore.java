@@ -51,6 +51,14 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
             ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+      case "cohere":
+        if (config.cohere().enabled()) {
+          return ServiceConfig.provider(
+              serviceName, serviceName, config.cohere().apiKey(), config.cohere().url().toString());
+        }
+        throw new JsonApiException(
+            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
+            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
       case "custom":
         if (config.custom().enabled()) {
           return ServiceConfig.custom(config.custom().clazz());

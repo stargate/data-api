@@ -21,6 +21,9 @@ public interface PropertyBasedEmbeddingServiceConfig {
   VertexAiConfig vertexai();
 
   @Nullable
+  CohereConfig cohere();
+
+  @Nullable
   CustomConfig custom();
 
   public interface OpenaiConfig {
@@ -50,6 +53,17 @@ public interface PropertyBasedEmbeddingServiceConfig {
     boolean enabled();
 
     @WithDefault("https://us-central1-aiplatform.googleapis.com/v1")
+    URL url();
+
+    @WithDefault("")
+    String apiKey();
+  }
+
+  public interface CohereConfig {
+    @WithDefault("false")
+    boolean enabled();
+
+    @WithDefault(" https://api.cohere.ai/v1/")
     URL url();
 
     @WithDefault("")

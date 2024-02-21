@@ -61,6 +61,12 @@ stargate:
           url: https://us-central1-aiplatform.googleapis.com
           api-key: YOUR_API_KEY
 
+        # Cohere embedding service configuration
+        cohere:
+          enabled: true
+          url: https://api.cohere.ai/v1/
+          api-key: YOUR_API_KEY
+
 quarkus:
 
   # general app properties

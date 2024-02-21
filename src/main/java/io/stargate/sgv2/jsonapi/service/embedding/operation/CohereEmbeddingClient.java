@@ -1,0 +1,117 @@
+package io.stargate.sgv2.jsonapi.service.embedding.operation;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+/**
+ * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
+ * of chosen Cohere model.
+ */
+public class CohereEmbeddingClient implements EmbeddingService {
+  private String apiKey;
+  private String modelName;
+  private String baseUrl;
+  private final CohereEmbeddingService embeddingService;
+
+  public CohereEmbeddingClient(String baseUrl, String apiKey, String modelName) {
+    this.apiKey = apiKey;
+    this.modelName = modelName;
+    this.baseUrl = baseUrl;
+    embeddingService =
+        QuarkusRestClientBuilder.newBuilder()
+            .baseUri(URI.create(baseUrl))
+            .build(CohereEmbeddingService.class);
+  }
+
+  @RegisterRestClient
+  public interface CohereEmbeddingService {
+    @POST
+    @Path("/embed")
+    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    Uni<EmbeddingResponse> embed(
+        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
+  }
+
+  private record EmbeddingRequest(String[] texts, String model, String input_type) {}
+
+  private static class EmbeddingResponse {
+
+    public EmbeddingResponse() {}
+
+    @JsonIgnore private String id;
+    @JsonIgnore private String[] texts;
+
+    private List<float[]> embeddings;
+
+    @JsonIgnore private Object meta;
+    @JsonIgnore private String response_type;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public String[] getTexts() {
+      return texts;
+    }
+
+    public void setTexts(String[] texts) {
+      this.texts = texts;
+    }
+
+    public List<float[]> getEmbeddings() {
+      return embeddings;
+    }
+
+    public void setEmbeddings(List<float[]> embeddings) {
+      this.embeddings = embeddings;
+    }
+
+    public Object getMeta() {
+      return meta;
+    }
+
+    public void setMeta(Object meta) {
+      this.meta = meta;
+    }
+
+    public String getResponse_type() {
+      return response_type;
+    }
+
+    public void setResponse_type(String response_type) {
+      this.response_type = response_type;
+    }
+  }
+
+  // Input type to be used for vector search should "search_query"
+  private static final String SEARCH_QUERY = "search_query";
+
+  @Override
+  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+    String[] textArray = new String[texts.size()];
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), modelName, SEARCH_QUERY);
+    Uni<EmbeddingResponse> response =
+        embeddingService.embed(
+            "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
+    return response
+        .onItem()
+        .transform(
+            resp -> {
+              return resp.getEmbeddings();
+            });
+  }
+}
