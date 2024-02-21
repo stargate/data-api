@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class EmbeddingServiceCacheTest {
 
-  @Inject EmbeddingServiceCache embeddingServiceCache;
+  @Inject EmbeddingServiceFactory embeddingServiceFactory;
 
   @Nested
   class ServiceCache {
@@ -26,14 +26,14 @@ public class EmbeddingServiceCacheTest {
     public void enabledService() {
       // check that the embedding service is returned based on property
       final EmbeddingService openai =
-          embeddingServiceCache.getConfiguration(Optional.empty(), "openai", "openai-model");
+          embeddingServiceFactory.getConfiguration(Optional.empty(), "openai", "openai-model");
       assertThat(openai).isNotNull();
       assertThat(openai).isInstanceOf(OpenAiEmbeddingClient.class);
 
       // check that the embedding service cache returns the same OpenAiEmbeddingClient instance for
       // same tenant and service name
       final EmbeddingService openaiReuse =
-          embeddingServiceCache.getConfiguration(Optional.empty(), "openai", "openai-model");
+          embeddingServiceFactory.getConfiguration(Optional.empty(), "openai", "openai-model");
       assertThat(openaiReuse).isNotNull();
       assertThat(openaiReuse).isInstanceOf(OpenAiEmbeddingClient.class);
       assertThat(openaiReuse).isEqualTo(openai);
@@ -41,7 +41,7 @@ public class EmbeddingServiceCacheTest {
       // check that the embedding service cache returns the different OpenAiEmbeddingClient instance
       // for different tenant or service name
       final EmbeddingService different =
-          embeddingServiceCache.getConfiguration(
+          embeddingServiceFactory.getConfiguration(
               Optional.of(UUID.randomUUID().toString()), "openai", "openai-model");
       assertThat(different).isNotNull();
       assertThat(different).isInstanceOf(OpenAiEmbeddingClient.class);
@@ -49,7 +49,7 @@ public class EmbeddingServiceCacheTest {
 
       // Try a different service provider
       final EmbeddingService huggingface =
-          embeddingServiceCache.getConfiguration(
+          embeddingServiceFactory.getConfiguration(
               Optional.empty(), "huggingface", "huggingface-model");
       assertThat(huggingface).isNotNull();
       assertThat(huggingface).isInstanceOf(HuggingFaceEmbeddingClient.class);
@@ -60,7 +60,7 @@ public class EmbeddingServiceCacheTest {
       Throwable failure =
           catchThrowable(
               () ->
-                  embeddingServiceCache.getConfiguration(
+                  embeddingServiceFactory.getConfiguration(
                       Optional.empty(), "vertexai", "vertexai-model"));
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)

@@ -22,7 +22,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceCache;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -61,7 +61,7 @@ public class CollectionResource {
 
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingServiceCache serviceCache;
+  @Inject private EmbeddingServiceFactory embeddingServiceFactory;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
@@ -172,7 +172,7 @@ public class CollectionResource {
                 if (collectionProperty.vectorizeServiceName() != null
                     && collectionProperty.modelName() != null) {
                   embeddingService =
-                      serviceCache.getConfiguration(
+                      embeddingServiceFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorizeServiceName(),
                           collectionProperty.modelName());
