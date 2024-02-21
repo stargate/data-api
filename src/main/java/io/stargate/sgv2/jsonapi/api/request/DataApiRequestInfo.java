@@ -18,9 +18,12 @@ public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
 
-  public DataApiRequestInfo(Optional<String> tenantId, Optional<String> cassandraToken) {
-    this.tenantId = tenantId;
-    this.cassandraToken = cassandraToken;
+  private final Optional<FileWriterParams> fileWriterParams;
+
+  public DataApiRequestInfo(Optional<String> tenantId, FileWriterParams fileWriterParams) {
+    this.tenantId = Optional.empty();
+    this.cassandraToken = Optional.empty();
+    this.fileWriterParams = Optional.ofNullable(fileWriterParams);
   }
 
   @Inject
@@ -33,6 +36,7 @@ public class DataApiRequestInfo {
         ((TenantResolver) tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken =
         ((CassandraTokenResolver) tokenResolver.get()).resolve(routingContext, securityContext);
+    this.fileWriterParams = Optional.empty();
   }
 
   public Optional<String> getTenantId() {
@@ -41,5 +45,9 @@ public class DataApiRequestInfo {
 
   public Optional<String> getCassandraToken() {
     return this.cassandraToken;
+  }
+
+  public Optional<FileWriterParams> getFileWriterParams() {
+    return this.fileWriterParams;
   }
 }

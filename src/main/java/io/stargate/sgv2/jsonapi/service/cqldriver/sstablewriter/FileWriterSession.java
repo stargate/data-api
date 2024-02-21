@@ -2,8 +2,11 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.ProtocolVersion;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -12,28 +15,40 @@ import com.datastax.oss.driver.api.core.metadata.schema.*;
 import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodecs;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinition;
+import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultKeyspaceMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
+import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
+import com.datastax.oss.protocol.internal.response.result.RawType;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.service.processor.SSTableWriterStatus;
+
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class FileWriterSession implements CqlSession {
   private static final AtomicInteger counter = new AtomicInteger(0);
   private final String sessionId;
   private final String keyspace;
   private final String table;
+  private final ColumnDefinitions responseColumnDefinitions;
 
   public FileWriterSession(String keyspace, String table) {
     this.sessionId = "fileWriterSession" + counter.getAndIncrement();
     this.keyspace = keyspace;
     this.table = table;
+    this.responseColumnDefinitions = DefaultColumnDefinitions.valueOf(List.of(new DefaultColumnDefinition(new ColumnSpec(keyspace, table, "[applied]", 0, RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)), null)));
   }
 
   @NonNull
@@ -234,8 +249,14 @@ public class FileWriterSession implements CqlSession {
   public <RequestT extends Request, ResultT> ResultT execute(
       @NonNull RequestT request, @NonNull GenericType<ResultT> resultType) {
     SimpleStatement simpleStatement = (SimpleStatement) request;
-    CompletionStage<AsyncResultSet> resultSetCompletionStage = null;
-    return null; // TODO
+    String query = simpleStatement.getQuery();
+    Map<CqlIdentifier, Object> boundValues = simpleStatement.getNamedValues();
+    System.out.println("Query: " + query);
+    System.out.println("Bound values: " + boundValues);
+    List<ByteBuffer> buffers = new ArrayList<>();
+    buffers.add(TypeCodecs.BOOLEAN.encode(Boolean.TRUE, ProtocolVersion.DEFAULT));
+    CompletionStage<AsyncResultSet> resultSetCompletionStage = CompletionStages.completedStage(new FileWriterAsyncResultSet(responseColumnDefinitions, new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
+    return (ResultT) resultSetCompletionStage;
   }
 
   @NonNull

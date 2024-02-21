@@ -11,24 +11,27 @@ public class SideloaderTester {
     String namespace = "demo_namespace";
     String collection = "players";
 
+    SideLoaderCommandProcessor sideLoaderCommandProcessor =
+        new SideLoaderCommandProcessor(namespace, collection);
+
     // 1
-    String writerSessionId = SideLoaderCommandProcessor.beginWriterSession(namespace, collection);
+    String writerSessionId = sideLoaderCommandProcessor.beginWriterSession();
 
     System.out.println("Writer session id: " + writerSessionId);
 
     // 2
     SSTableWriterStatus ssTableWriterStatus =
-        SideLoaderCommandProcessor.insertDocuments(
+        sideLoaderCommandProcessor.insertDocuments(
             writerSessionId, List.of(new ObjectMapper().readTree("{\"id\": 1}")));
 
     System.out.println("SSTable writer status: " + ssTableWriterStatus);
 
     // 3
     SSTableWriterStatus intermediateStatus =
-        SideLoaderCommandProcessor.getWriterStatus(writerSessionId);
+        sideLoaderCommandProcessor.getWriterStatus(writerSessionId);
     System.out.println("Intermediate status: " + intermediateStatus);
 
     // 4
-    SideLoaderCommandProcessor.endWriterSession(writerSessionId);
+    sideLoaderCommandProcessor.endWriterSession(writerSessionId);
   }
 }

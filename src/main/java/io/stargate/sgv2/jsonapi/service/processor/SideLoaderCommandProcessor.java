@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -24,9 +25,20 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 public class SideLoaderCommandProcessor {
-  public static String beginWriterSession(String namespace, String collection) {
+
+  private final String namespace;
+  private final String collection;
+
+  public SideLoaderCommandProcessor(String namespace, String collection) {
+    this.namespace = namespace;
+    this.collection = collection;
+  }
+
+  public String beginWriterSession() {
     String sessionId = UUID.randomUUID().toString();
-    DataApiRequestInfo dataApiRequestInfo = buildDataApiRequestInfo(sessionId);
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(
+            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
     OperationsConfig operationsConfig = buildOperationsConfig();
     MeterRegistry meterRegistry = buildMeterRegistry();
     CqlSession fileWriterSession =
@@ -37,10 +49,12 @@ public class SideLoaderCommandProcessor {
     return sessionId;
   }
 
-  public static SSTableWriterStatus insertDocuments(String sessionId, List<JsonNode> documents)
+  public SSTableWriterStatus insertDocuments(String sessionId, List<JsonNode> documents)
       throws ExecutionException, InterruptedException {
     OperationsConfig operationsConfig = buildOperationsConfig();
-    DataApiRequestInfo dataApiRequestInfo = buildDataApiRequestInfo(sessionId);
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(
+            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
     MeterRegistry meterRegistry = buildMeterRegistry();
     CQLSessionCache cqlSessionCache =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
@@ -61,7 +75,7 @@ public class SideLoaderCommandProcessor {
             .asCompletionStage()
             .get();
     // Convert result to SSTableWriterStatus
-    return toSSTableWriterStatus(commandResult);
+    return toSSTableWriterStatus(commandContext, commandResult);
   }
 
   private static MeteredCommandProcessor getMeteredCommandProcessor(
@@ -87,13 +101,13 @@ public class SideLoaderCommandProcessor {
     return new SSTableWriterStatus(commandContext.namespace(), commandContext.collection());
   }
 
-  public static SSTableWriterStatus getWriterStatus(String sessionId) {
+  public SSTableWriterStatus getWriterStatus(String sessionId) {
     FileWriterSession fileWriterSession =
         (FileWriterSession) new CQLSessionCache(null, null, null).getSession();
     return fileWriterSession.getStatus();
   }
 
-  public static void endWriterSession(String sessionId) {
+  public void endWriterSession(String sessionId) {
     CqlSession fileWriterSession = new CQLSessionCache(null, null, null).getSession();
     fileWriterSession.close();
   }
@@ -235,10 +249,6 @@ public class SideLoaderCommandProcessor {
         throw new UnsupportedOperationException("Not implemented");
       }
     };
-  }
-
-  private static DataApiRequestInfo buildDataApiRequestInfo(String sessionId) {
-    return new DataApiRequestInfo(Optional.of(sessionId), null);
   }
 
   private static MeterRegistry buildMeterRegistry() {

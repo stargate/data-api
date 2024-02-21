@@ -9,8 +9,10 @@ import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.InvalidFileWriterOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -108,7 +110,7 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey) {
+  private CqlSession getNewSession(SessionCacheKey cacheKey) throws InvalidFileWriterOptions {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -144,10 +146,14 @@ public class CQLSessionCache {
           .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (SIDE_LOADER.equals(databaseConfig.type())) {
-      /*return new PersistenceSession(
-      new FileWriterSession(
-          SSTWSessionMetadata.forTable(operationsConfig.ssTaableDefinition())));*/
-      return new FileWriterSession();
+      FileWriterParams fileWriterParams = null;
+      if (dataApiRequestInfo.getFileWriterParams().isPresent()) {
+        fileWriterParams = dataApiRequestInfo.getFileWriterParams().get();
+      } else {
+        throw new InvalidFileWriterOptions("FileWriterParams not present in the request");
+      }
+      return new FileWriterSession(
+          fileWriterParams.getKeyspaceName(), fileWriterParams.getTableName());
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
