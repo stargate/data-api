@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.quarkus.arc.lookup.LookupIfProperty;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Optional;
 
-@LookupIfProperty(name = "stargate.jsonapi.embedding.config.store", stringValue = "property")
 @ApplicationScoped
 public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServiceConfigStore {
 

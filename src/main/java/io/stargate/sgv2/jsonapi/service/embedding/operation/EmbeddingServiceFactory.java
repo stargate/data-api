@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingServiceConfigStore;
@@ -12,26 +10,16 @@ import java.util.Optional;
 import org.slf4j.Logger;
 
 @ApplicationScoped
-public class EmbeddingServiceCache {
+public class EmbeddingServiceFactory {
 
-  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingServiceCache.class);
+  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingServiceFactory.class);
   @Inject Instance<EmbeddingServiceConfigStore> embeddingServiceConfigStore;
 
   record CacheKey(Optional<String> tenant, String namespace, String modelName) {}
 
-  private final Cache<CacheKey, EmbeddingService> serviceConfigStore =
-      Caffeine.newBuilder().maximumSize(1000).build();
-
   public EmbeddingService getConfiguration(
       Optional<String> tenant, String serviceName, String modelName) {
-    EmbeddingService embeddingService =
-        serviceConfigStore.getIfPresent(new CacheKey(tenant, serviceName, modelName));
-    if (embeddingService == null) {
-      embeddingService = addService(tenant, serviceName, modelName);
-      if (embeddingService != null)
-        serviceConfigStore.put(new CacheKey(tenant, serviceName, modelName), embeddingService);
-    }
-    return embeddingService;
+    return addService(tenant, serviceName, modelName);
   }
 
   private synchronized EmbeddingService addService(
