@@ -315,20 +315,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       """),
               @ExampleObject(
-                  name = "createEmbeddingService",
-                  summary = "`createEmbeddingService` command",
-                  value =
-                      """
-                          {
-                            "createEmbeddingService": {
-                              "name": "open_ai_service_name",
-                              "apiProvider" : "openai",
-                              "apiKey" : "token",
-                              "baseUrl" : "https://api.openai.com/v1/"
-                            }
-                          }
-                      """),
-              @ExampleObject(
                   name = "createNamespaceWithReplication",
                   summary = "`CreateNamespace` command with replication",
                   value =
