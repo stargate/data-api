@@ -42,6 +42,9 @@ public class EmbeddingServiceFactory {
       case "vertexai":
         return new VertexAIEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
+      case "cohere":
+        return new CohereEmbeddingClient(
+            configuration.baseUrl(), configuration.apiKey(), modelName);
       case "custom":
         try {
           Optional<Class<?>> clazz = configuration.clazz();
@@ -64,9 +67,7 @@ public class EmbeddingServiceFactory {
                   + configuration.clazz().get().getCanonicalName());
         }
       default:
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
   }
 }
