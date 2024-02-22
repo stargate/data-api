@@ -48,6 +48,12 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
               serviceName, serviceName, config.cohere().apiKey(), config.cohere().url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
+      case "nvidia":
+        if (config.nvidia().enabled()) {
+          return ServiceConfig.provider(
+              serviceName, serviceName, config.nvidia().apiKey(), config.nvidia().url().toString());
+        }
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "custom":
         if (config.custom().enabled()) {
           return ServiceConfig.custom(config.custom().clazz());
