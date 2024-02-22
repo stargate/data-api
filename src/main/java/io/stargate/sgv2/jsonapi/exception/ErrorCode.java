@@ -122,8 +122,8 @@ public enum ErrorCode {
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
-  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
-  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported : "),
+  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled "),
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported "),
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),

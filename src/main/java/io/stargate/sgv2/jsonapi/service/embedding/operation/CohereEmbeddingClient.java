@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
@@ -45,54 +45,17 @@ public class CohereEmbeddingClient implements EmbeddingService {
 
   private static class EmbeddingResponse {
 
-    public EmbeddingResponse() {}
-
-    @JsonIgnore private String id;
-    @JsonIgnore private String[] texts;
+    protected EmbeddingResponse() {}
 
     private List<float[]> embeddings;
 
-    @JsonIgnore private Object meta;
-    @JsonIgnore private String response_type;
-
-    public String getId() {
-      return id;
-    }
-
-    public void setId(String id) {
-      this.id = id;
-    }
-
-    public String[] getTexts() {
-      return texts;
-    }
-
-    public void setTexts(String[] texts) {
-      this.texts = texts;
-    }
-
+    @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
     public List<float[]> getEmbeddings() {
       return embeddings;
     }
 
     public void setEmbeddings(List<float[]> embeddings) {
       this.embeddings = embeddings;
-    }
-
-    public Object getMeta() {
-      return meta;
-    }
-
-    public void setMeta(Object meta) {
-      this.meta = meta;
-    }
-
-    public String getResponse_type() {
-      return response_type;
-    }
-
-    public void setResponse_type(String response_type) {
-      this.response_type = response_type;
     }
   }
 

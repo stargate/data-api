@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Optional;
@@ -24,9 +23,7 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
           return ServiceConfig.provider(
               serviceName, serviceName, config.openai().apiKey(), config.openai().url().toString());
         }
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "huggingface":
         if (config.huggingface().enabled()) {
           return ServiceConfig.provider(
@@ -35,9 +32,7 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
               config.huggingface().apiKey(),
               config.huggingface().url().toString());
         }
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "vertexai":
         if (config.vertexai().enabled()) {
           return ServiceConfig.provider(
@@ -46,28 +41,20 @@ public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServic
               config.vertexai().apiKey(),
               config.vertexai().url().toString());
         }
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "cohere":
         if (config.cohere().enabled()) {
           return ServiceConfig.provider(
               serviceName, serviceName, config.cohere().apiKey(), config.cohere().url().toString());
         }
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "custom":
         if (config.custom().enabled()) {
           return ServiceConfig.custom(config.custom().clazz());
         }
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       default:
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
     }
   }
 }

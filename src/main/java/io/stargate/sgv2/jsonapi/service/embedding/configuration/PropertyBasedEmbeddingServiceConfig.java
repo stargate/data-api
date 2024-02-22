@@ -12,61 +12,25 @@ import org.eclipse.microprofile.config.spi.Converter;
 public interface PropertyBasedEmbeddingServiceConfig {
 
   @Nullable
-  OpenaiConfig openai();
+  ServiceConfig openai();
 
   @Nullable
-  HuggingFaceConfig huggingface();
+  ServiceConfig huggingface();
 
   @Nullable
-  VertexAiConfig vertexai();
+  ServiceConfig vertexai();
 
   @Nullable
-  CohereConfig cohere();
+  ServiceConfig cohere();
 
   @Nullable
   CustomConfig custom();
 
-  public interface OpenaiConfig {
-    @WithDefault("false")
+  public interface ServiceConfig {
     boolean enabled();
 
-    @WithDefault("https://api.openai.com/v1")
     URL url();
 
-    @WithDefault("Bearer")
-    String apiKey();
-  }
-
-  public interface HuggingFaceConfig {
-    @WithDefault("false")
-    boolean enabled();
-
-    @WithDefault("https://api-inference.huggingface.co")
-    URL url();
-
-    @WithDefault("")
-    String apiKey();
-  }
-
-  public interface VertexAiConfig {
-    @WithDefault("false")
-    boolean enabled();
-
-    @WithDefault("https://us-central1-aiplatform.googleapis.com/v1")
-    URL url();
-
-    @WithDefault("")
-    String apiKey();
-  }
-
-  public interface CohereConfig {
-    @WithDefault("false")
-    boolean enabled();
-
-    @WithDefault(" https://api.cohere.ai/v1/")
-    URL url();
-
-    @WithDefault("")
     String apiKey();
   }
 

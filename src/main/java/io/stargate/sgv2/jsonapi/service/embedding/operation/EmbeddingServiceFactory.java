@@ -67,9 +67,7 @@ public class EmbeddingServiceFactory {
                   + configuration.clazz().get().getCanonicalName());
         }
       default:
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNSUPPORTED.getMessage() + serviceName);
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
   }
 }
