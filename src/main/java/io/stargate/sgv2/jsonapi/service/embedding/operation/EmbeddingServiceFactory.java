@@ -45,6 +45,9 @@ public class EmbeddingServiceFactory {
       case "cohere":
         return new CohereEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
+      case "nvidia":
+        return new NVidiaEmbeddingClient(
+            configuration.baseUrl(), configuration.apiKey(), modelName);
       case "custom":
         try {
           Optional<Class<?>> clazz = configuration.clazz();
