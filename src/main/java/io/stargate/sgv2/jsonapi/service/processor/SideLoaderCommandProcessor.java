@@ -23,6 +23,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.SSTableWriterStatus;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.InsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -43,18 +45,37 @@ public class SideLoaderCommandProcessor {
   private final boolean vectorEnabled;
   private final CollectionSettings.SimilarityFunction similarityFunction;
   private final int vectorSize;
+  private final String comment;
+  private final FileWriterParams fileWriterParams;
 
   public SideLoaderCommandProcessor(
       String namespace,
       String collection,
       boolean isVectorEnabled,
       CollectionSettings.SimilarityFunction similarityFunction,
-      int vectorSize) {
+      int vectorSize,
+      String optionsSpecification,
+      String ssTableOutputDirectory) {
     this.vectorEnabled = isVectorEnabled;
     this.similarityFunction = similarityFunction;
     this.vectorSize = vectorSize;
     this.namespace = namespace;
     this.collection = collection;
+    this.comment = optionsSpecification; // TODO-SL handle vectorize and indexing json config
+    String createTableCQL =
+        CreateCollectionOperation.forCQL(this.vectorEnabled, this.vectorSize, this.comment)
+            .getCreateTable(this.namespace, this.collection)
+            .getQuery();
+    String insertStatementCQL =
+        InsertOperation.forCQL(new CommandContext(namespace, collection))
+            .buildInsertQuery(this.vectorEnabled);
+    this.fileWriterParams =
+        new FileWriterParams(
+            namespace,
+            collection,
+            ssTableOutputDirectory + "_" + namespace + "_" + collection,
+            createTableCQL,
+            insertStatementCQL);
     SmallRyeConfig smallRyeConfig =
         new SmallRyeConfigBuilder()
             .withMapping(OperationsConfig.class)
@@ -77,8 +98,7 @@ public class SideLoaderCommandProcessor {
   public String beginWriterSession() {
     String sessionId = UUID.randomUUID().toString();
     DataApiRequestInfo dataApiRequestInfo =
-        new DataApiRequestInfo(
-            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
+        new DataApiRequestInfo(Optional.of(sessionId), this.fileWriterParams);
     CqlSession fileWriterSession =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry).getSession();
     if (fileWriterSession == null) {
@@ -90,8 +110,7 @@ public class SideLoaderCommandProcessor {
   public SSTableWriterStatus insertDocuments(String sessionId, List<JsonNode> documents)
       throws ExecutionException, InterruptedException {
     DataApiRequestInfo dataApiRequestInfo =
-        new DataApiRequestInfo(
-            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
+        new DataApiRequestInfo(Optional.of(sessionId), this.fileWriterParams);
     CQLSessionCache cqlSessionCache =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
     QueryExecutor queryExecutor = new QueryExecutor(cqlSessionCache, operationsConfig);
@@ -108,7 +127,7 @@ public class SideLoaderCommandProcessor {
                 this.vectorEnabled,
                 this.vectorSize,
                 this.similarityFunction,
-                "", // TODO-SL handle vectorize and indexing json config
+                this.comment,
                 new ObjectMapper()),
             null);
     new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
@@ -147,8 +166,7 @@ public class SideLoaderCommandProcessor {
 
   public SSTableWriterStatus getWriterStatus(String sessionId) {
     DataApiRequestInfo dataApiRequestInfo =
-        new DataApiRequestInfo(
-            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
+        new DataApiRequestInfo(Optional.of(sessionId), this.fileWriterParams);
     FileWriterSession fileWriterSession =
         (FileWriterSession)
             new CQLSessionCache(dataApiRequestInfo, this.operationsConfig, this.meterRegistry)
@@ -158,8 +176,7 @@ public class SideLoaderCommandProcessor {
 
   public void endWriterSession(String sessionId) {
     DataApiRequestInfo dataApiRequestInfo =
-        new DataApiRequestInfo(
-            Optional.of(sessionId), new FileWriterParams(this.namespace, this.collection));
+        new DataApiRequestInfo(Optional.of(sessionId), this.fileWriterParams);
     CqlSession fileWriterSession =
         new CQLSessionCache(dataApiRequestInfo, this.operationsConfig, this.meterRegistry)
             .getSession();

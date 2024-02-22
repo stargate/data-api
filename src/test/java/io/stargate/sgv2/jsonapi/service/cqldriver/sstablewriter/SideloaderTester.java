@@ -15,7 +15,13 @@ public class SideloaderTester {
 
     SideLoaderCommandProcessor sideLoaderCommandProcessor =
         new SideLoaderCommandProcessor(
-            namespace, collection, true, CollectionSettings.SimilarityFunction.COSINE, 3);
+            namespace,
+            collection,
+            true,
+            CollectionSettings.SimilarityFunction.COSINE,
+            3,
+            null,
+            "/var/tmp/sstables_test");
 
     // 1
     String writerSessionId = sideLoaderCommandProcessor.beginWriterSession();
@@ -39,8 +45,8 @@ public class SideloaderTester {
     System.out.println("Session ended");
 
     // 5
-    SSTableWriterStatus statusAfterRemoval =
-            sideLoaderCommandProcessor.getWriterStatus(writerSessionId);
-    System.out.println("Status after close: " + statusAfterRemoval);
+    /*SSTableWriterStatus statusAfterRemoval =
+        sideLoaderCommandProcessor.getWriterStatus(writerSessionId);
+    System.out.println("Status after close: " + statusAfterRemoval);*/
   }
 }

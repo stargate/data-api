@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSessio
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.InvalidFileWriterOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
@@ -106,7 +107,8 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey) throws InvalidFileWriterOptions {
+  private CqlSession getNewSession(SessionCacheKey cacheKey)
+      throws InvalidFileWriterOptions, IOException {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -148,8 +150,7 @@ public class CQLSessionCache {
       } else {
         throw new InvalidFileWriterOptions("FileWriterParams not present in the request");
       }
-      return new FileWriterSession(
-          this, cacheKey, fileWriterParams.getKeyspaceName(), fileWriterParams.getTableName());
+      return new FileWriterSession(this, cacheKey, fileWriterParams);
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }

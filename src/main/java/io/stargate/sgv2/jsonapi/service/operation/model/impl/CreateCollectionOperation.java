@@ -90,6 +90,12 @@ public record CreateCollectionOperation(
         ddlDelayMillis);
   }
 
+  public static CreateCollectionOperation forCQL(
+      boolean vectorSearch, int vectorSize, String comment) {
+    return new CreateCollectionOperation(
+        null, null, null, null, null, vectorSearch, vectorSize, null, comment, 0);
+  }
+
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     logger.info("Executing CreateCollectionOperation for {}", name);
@@ -220,7 +226,7 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  protected SimpleStatement getCreateTable(String keyspace, String table) {
+  public SimpleStatement getCreateTable(String keyspace, String table) {
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("

@@ -25,11 +25,27 @@ import java.util.function.Supplier;
  * @param ordered If insert should be ordered.
  */
 public record InsertOperation(
-    CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered)
+    CommandContext commandContext,
+    List<WritableShreddedDocument> documents,
+    boolean ordered,
+    boolean conditionalInsert)
     implements ModifyOperation {
 
+  public InsertOperation(
+      CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
+    this(commandContext, documents, ordered, true);
+  }
+
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false);
+    this(commandContext, List.of(document), false, true);
+  }
+
+  private InsertOperation(CommandContext commandContext) {
+    this(commandContext, List.of(), false, false);
+  }
+
+  public static InsertOperation forCQL(CommandContext commandContext) {
+    return new InsertOperation(commandContext);
   }
 
   /** {@inheritDoc} */
@@ -152,13 +168,14 @@ public record InsertOperation(
   }
 
   // utility for building the insert query
-  private String buildInsertQuery(boolean vectorEnabled) {
+  public String buildInsertQuery(boolean vectorEnabled) {
     if (vectorEnabled) {
       String insertWithVector =
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
               + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+              + (conditionalInsert ? " IF NOT EXISTS" : "");
       return String.format(
           insertWithVector, commandContext.namespace(), commandContext.collection());
     } else {
@@ -166,7 +183,8 @@ public record InsertOperation(
           "INSERT INTO \"%s\".\"%s\""
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
               + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+              + (conditionalInsert ? " IF NOT EXISTS" : "");
       return String.format(insert, commandContext.namespace(), commandContext.collection());
     }
   }

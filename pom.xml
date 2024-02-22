@@ -107,6 +107,11 @@
       <artifactId>quarkus-logging-json</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.datastax.dse</groupId>
+      <artifactId>dse-db-all</artifactId>
+      <version>4.0.11-0248d170a615</version>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
       <scope>test</scope>
