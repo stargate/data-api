@@ -4,7 +4,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -12,26 +11,29 @@ import java.util.Optional;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAiEmbeddingClient implements EmbeddingService {
+/**
+ * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
+ * of chosen nvidia model.
+ */
+public class NVidiaEmbeddingClient implements EmbeddingService {
   private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final OpenAiEmbeddingService embeddingService;
+  private final NVidiaEmbeddingService embeddingService;
 
-  public OpenAiEmbeddingClient(String baseUrl, String apiKey, String modelName) {
+  public NVidiaEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     embeddingService =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(OpenAiEmbeddingService.class);
+            .build(NVidiaEmbeddingService.class);
   }
 
   @RegisterRestClient
-  public interface OpenAiEmbeddingService {
+  public interface NVidiaEmbeddingService {
     @POST
-    @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
@@ -39,8 +41,8 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
 
   private record EmbeddingRequest(String[] input, String model) {}
 
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
+  private record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    private record Data(int index, float[] embedding) {}
 
     private record Usage(int prompt_tokens, int total_tokens) {}
   }

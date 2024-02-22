@@ -24,6 +24,9 @@ public interface PropertyBasedEmbeddingServiceConfig {
   ServiceConfig cohere();
 
   @Nullable
+  ServiceConfig nvidia();
+
+  @Nullable
   CustomConfig custom();
 
   public interface ServiceConfig {
