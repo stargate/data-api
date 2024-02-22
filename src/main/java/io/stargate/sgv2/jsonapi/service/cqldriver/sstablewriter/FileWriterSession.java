@@ -89,6 +89,10 @@ public class FileWriterSession implements CqlSession {
             .forTable(fileWriterParams.createTableCQL())
             .using(fileWriterParams.insertStatementCQL())
             .build();
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Create table CQL: " + fileWriterParams.createTableCQL());
+      LOGGER.trace("Insert statement: " + fileWriterParams.insertStatementCQL());
+    }
     DatabaseDescriptor.getRawConfig().data_file_directories =
         new String[] {fileWriterParams.ssTableOutputDirectory()};
     DatabaseDescriptor.getRawConfig().commitlog_directory =
@@ -175,11 +179,11 @@ public class FileWriterSession implements CqlSession {
   public <RequestT extends Request, ResultT> ResultT execute(
       @NonNull RequestT request, @NonNull GenericType<ResultT> resultType) {
     SimpleStatement simpleStatement = (SimpleStatement) request;
-    String query = simpleStatement.getQuery();
     List<Object> boundValues = new ArrayList<>(simpleStatement.getPositionalValues());
     resetColumnValues(boundValues);
-    System.out.println("Query: " + query);
-    System.out.println("Bound values: " + boundValues);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Bound values: {}", boundValues);
+    }
     List<ByteBuffer> buffers = new ArrayList<>();
     try {
       this.cqlsSSTableWriter.addRow(boundValues);
