@@ -43,13 +43,13 @@ public class CohereEmbeddingClient implements EmbeddingService {
 
   private record EmbeddingRequest(String[] texts, String model, String input_type) {}
 
+  @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
   private static class EmbeddingResponse {
 
     protected EmbeddingResponse() {}
 
     private List<float[]> embeddings;
 
-    @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
     public List<float[]> getEmbeddings() {
       return embeddings;
     }
