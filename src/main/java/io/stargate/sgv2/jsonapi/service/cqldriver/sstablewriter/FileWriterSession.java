@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.*;
 import com.datastax.oss.driver.api.core.metrics.Metrics;
@@ -24,6 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -73,27 +75,29 @@ public class FileWriterSession implements CqlSession {
                         "[applied]",
                         0,
                         RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)),
-                    null)));
+                    AttachmentPoint.NONE)));
     if (Files.exists(Path.of(fileWriterParams.ssTableOutputDirectory()))) {
       recursiveDelete(Path.of(fileWriterParams.ssTableOutputDirectory()));
     }
     Files.createDirectories(Path.of(fileWriterParams.ssTableOutputDirectory()));
+    String dataDirectory = fileWriterParams.ssTableOutputDirectory() + File.separator + "data";
+    Files.createDirectories(Path.of(dataDirectory));
     this.cqlsSSTableWriter =
         CQLSSTableWriter.builder()
-            .inDirectory(fileWriterParams.ssTableOutputDirectory())
+            .inDirectory(dataDirectory)
             .forTable(fileWriterParams.createTableCQL())
             .using(fileWriterParams.insertStatementCQL())
             .build();
     DatabaseDescriptor.getRawConfig().data_file_directories =
         new String[] {fileWriterParams.ssTableOutputDirectory()};
     DatabaseDescriptor.getRawConfig().commitlog_directory =
-        fileWriterParams.ssTableOutputDirectory() + "/commitlog";
+        fileWriterParams.ssTableOutputDirectory() + File.separator + "commitlog";
     DatabaseDescriptor.getRawConfig().saved_caches_directory =
-        fileWriterParams.ssTableOutputDirectory() + "/saved_caches";
+        fileWriterParams.ssTableOutputDirectory() + File.separator + "saved_caches";
     DatabaseDescriptor.getRawConfig().hints_directory =
-        fileWriterParams.ssTableOutputDirectory() + "/hints";
+        fileWriterParams.ssTableOutputDirectory() + File.separator + "hints";
     DatabaseDescriptor.getRawConfig().metadata_directory =
-        fileWriterParams.ssTableOutputDirectory() + "/metadata_directory";
+        fileWriterParams.ssTableOutputDirectory() + File.separator + "metadata_directory";
     DatabaseDescriptor.getRawConfig().commitlog_sync = Config.CommitLogSync.batch;
   }
 
