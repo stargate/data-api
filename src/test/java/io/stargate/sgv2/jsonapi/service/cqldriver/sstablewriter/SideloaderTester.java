@@ -31,7 +31,8 @@ public class SideloaderTester {
     // 2
     SSTableWriterStatus ssTableWriterStatus =
         sideLoaderCommandProcessor.insertDocuments(
-            writerSessionId, List.of(new ObjectMapper().readTree("{\"id\": 1}")));
+            writerSessionId,
+            List.of(new ObjectMapper().readTree("{\"id\": 1, \"$vector\": [0.3,0.4,0.5]}")));
 
     System.out.println("SSTable writer status: " + ssTableWriterStatus);
 

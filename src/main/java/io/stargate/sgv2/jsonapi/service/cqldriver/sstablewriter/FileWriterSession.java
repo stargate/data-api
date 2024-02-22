@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.*;
@@ -175,20 +176,8 @@ public class FileWriterSession implements CqlSession {
       @NonNull RequestT request, @NonNull GenericType<ResultT> resultType) {
     SimpleStatement simpleStatement = (SimpleStatement) request;
     String query = simpleStatement.getQuery();
-    List<Object> boundValues =
-        new ArrayList<>(
-            simpleStatement
-                .getPositionalValues()); // TODO-SL handle key in the place where originally
-    //                                 // constructed
-    DefaultTupleValue tupleValue = (DefaultTupleValue) boundValues.get(0);
-    TupleValue cxTupleValue =
-        TupleType.of(
-                org.apache.cassandra.transport.ProtocolVersion.CURRENT,
-                new CodecRegistry(),
-                DataType.tinyint(),
-                DataType.text())
-            .newValue(tupleValue.get(0, TypeCodecs.TINYINT), tupleValue.get(1, TypeCodecs.TEXT));
-    boundValues.set(0, cxTupleValue);
+    List<Object> boundValues = new ArrayList<>(simpleStatement.getPositionalValues());
+    resetColumnValues(boundValues);
     System.out.println("Query: " + query);
     System.out.println("Bound values: " + boundValues);
     List<ByteBuffer> buffers = new ArrayList<>();
@@ -205,6 +194,29 @@ public class FileWriterSession implements CqlSession {
       LOGGER.error("Error writing to SSTable", e);
       throw new RuntimeException(e);
     }
+  }
+
+  private void resetColumnValues(List<Object> boundValues) {
+    // Change _id from com.datastax.oss.driver.internal.core.data.DefaultTupleValue to
+    // org.apache.cassandra.cql3.functions.types.TupleValue
+    DefaultTupleValue tupleValue = (DefaultTupleValue) boundValues.get(0);
+    TupleValue cxTupleValue =
+        TupleType.of(
+                org.apache.cassandra.transport.ProtocolVersion.CURRENT,
+                new CodecRegistry(),
+                DataType.tinyint(),
+                DataType.text())
+            .newValue(tupleValue.get(0, TypeCodecs.TINYINT), tupleValue.get(1, TypeCodecs.TEXT));
+    boundValues.set(0, cxTupleValue);
+    // Change $vector from com.datastax.oss.driver.api.core.data.CqlVector to java.nio.ByteBuffer
+    int vectorColumnIndex =
+        boundValues.size()
+            - 1; // TODO-SL: Need to find a better way to identify the vector column index
+    CqlVector<Float> cqlVector = (CqlVector<Float>) boundValues.get(vectorColumnIndex);
+    ByteBuffer encodedVectorData =
+        TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
+            .encode(cqlVector, ProtocolVersion.DEFAULT);
+    boundValues.set(vectorColumnIndex, encodedVectorData);
   }
 
   @NonNull
