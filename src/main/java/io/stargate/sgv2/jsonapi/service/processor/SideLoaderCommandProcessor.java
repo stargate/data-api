@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.OFFLINE_WRITER;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +58,7 @@ public class SideLoaderCommandProcessor {
       int vectorSize,
       String optionsSpecification,
       String ssTableOutputDirectory) {
+    // TODO-SL change it to accept create collection information
     this.vectorEnabled = isVectorEnabled;
     this.similarityFunction = similarityFunction;
     this.vectorSize = vectorSize;
@@ -68,7 +71,7 @@ public class SideLoaderCommandProcessor {
             .getQuery();
     String insertStatementCQL =
         InsertOperation.forCQL(new CommandContext(namespace, collection))
-            .buildInsertQuery(this.vectorEnabled);
+            .buildInsertQuery(this.vectorEnabled); // TODO-SL add conditionalInsert to method
     this.fileWriterParams =
         new FileWriterParams(
             namespace,
@@ -84,7 +87,7 @@ public class SideLoaderCommandProcessor {
             .withMapping(CommandLevelLoggingConfig.class)
             .withMapping(DocumentLimitsConfig.class)
             // TODO-SL increase cache expiry limit
-            .withDefaultValue("stargate.jsonapi.operations.database-config.type", "sideloader")
+            .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
             .build();
     this.operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);
     this.jsonApiMetricsConfig = smallRyeConfig.getConfigMapping(JsonApiMetricsConfig.class);
@@ -131,6 +134,7 @@ public class SideLoaderCommandProcessor {
                 new ObjectMapper()),
             null);
     new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
+    // TODO-SL create a new command called OfflineInsertManyCommand
     InsertManyCommand.Options options = new InsertManyCommand.Options(true);
     Command insertManyCommand = new InsertManyCommand(documents, options);
     // Execute command

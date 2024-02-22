@@ -54,7 +54,7 @@ public class CQLSessionCache {
   /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
   /** Persistence type SSTable Writer */
-  public static final String SIDE_LOADER = "sideloader";
+  public static final String OFFLINE_WRITER = "offline_writer";
 
   @ConfigProperty(name = "quarkus.application.name")
   String APPLICATION_NAME;
@@ -143,7 +143,7 @@ public class CQLSessionCache {
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
           .build();
-    } else if (SIDE_LOADER.equals(databaseConfig.type())) {
+    } else if (OFFLINE_WRITER.equals(databaseConfig.type())) {
       FileWriterParams fileWriterParams = null;
       if (dataApiRequestInfo.getFileWriterParams().isPresent()) {
         fileWriterParams = dataApiRequestInfo.getFileWriterParams().get();
@@ -203,7 +203,7 @@ public class CQLSessionCache {
             dataApiRequestInfo.getTenantId().orElseThrow(),
             new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
       }
-      case SIDE_LOADER -> {
+      case OFFLINE_WRITER -> {
         return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
       }
     }
