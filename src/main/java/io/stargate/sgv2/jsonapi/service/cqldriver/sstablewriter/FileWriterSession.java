@@ -82,7 +82,7 @@ public class FileWriterSession implements CqlSession {
           Path.of(
               fileWriterParams
                   .ssTableOutputDirectory())); // TODO-SL: avoid deleting recursively and check if
-                                               // its empty
+      // its empty
     }
     Files.createDirectories(Path.of(fileWriterParams.ssTableOutputDirectory()));
     String dataDirectory = fileWriterParams.ssTableOutputDirectory() + File.separator + "data";

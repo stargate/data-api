@@ -34,7 +34,9 @@ public class SideloaderTester {
             writerSessionId,
             List.of(
                 new ObjectMapper()
-                    .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}")));
+                    .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}"),
+                new ObjectMapper()
+                    .readTree("{\"_id\": 2, \"name\":\"mark\",\"$vector\": [0.7,0.7,0.6]}")));
 
     System.out.println("SSTable writer status: " + ssTableWriterStatus);
 
