@@ -1,62 +1,195 @@
+{{ if .Values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stargate-jsonapi
-  namespace: {{ .Release.Namespace }}
-  labels:
-    app: stargate-jsonapi
+  name: stargate-{{ .Chart.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: stargate-jsonapi
+      app.kubernetes.io/component: jsonapi
+      app.kubernetes.io/instance: apis
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "{{ .Values.metrics.port }}"
+        prometheus.io/scrape: "true"
+        2.prometheus.io/path: /metrics
+        2.prometheus.io/port: "{{ .Values.cqlrouter.metricsPort }}"
+        2.prometheus.io/scrape: "true"
       labels:
-        app: stargate-jsonapi
+        app.kubernetes.io/component: jsonapi
+        app.kubernetes.io/instance: apis
+        app.kubernetes.io/managed-by: stargate-apis-helm
+        app.kubernetes.io/name: stargate
+        app.kubernetes.io/namespace: {{ .Release.Namespace }}
+        app.kubernetes.io/part-of: stargate-apis-installation
+        app.kubernetes.io/version: {{ .Values.image.tag }}
     spec:
+      nodeSelector:
+        worker-group: coordinator
+        kubernetes.io/arch: amd64
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchLabels:
-                app: stargate-jsonapi
-            topologyKey: {{ .Values.topologyKey }}
-      initContainers:
-      - name: wait-for-bridge
-        image: busybox
-        command: ["sh", "-c", "until nc -z {{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }} 8091 > /dev/null; do echo Waiting for bridge.; sleep 5;done;"]
+            - topologyKey: {{ .Values.topologyKey }}
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: jsonapi
       containers:
-      - name: jsonapi
-        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        ports:
-        - containerPort: 8181
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.probe.readiness.url }}
-            port: {{ .Values.probe.readiness.port }}
-          timeoutSeconds: {{ .Values.probe.readiness.timeoutSeconds }}
-          periodSeconds: {{ .Values.probe.readiness.periodSeconds }}
-          failureThreshold: {{ .Values.probe.readiness.failureThreshold }}
-          initialDelaySeconds: {{ .Values.probe.readiness.initialDelaySeconds }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.probe.liveness.url }}
-            port: {{ .Values.probe.liveness.port }}
-          timeoutSeconds: {{ .Values.probe.liveness.timeoutSeconds }}
-          periodSeconds: {{ .Values.probe.liveness.periodSeconds }}
-          failureThreshold: {{ .Values.probe.liveness.failureThreshold }}
-          initialDelaySeconds: {{ .Values.probe.liveness.initialDelaySeconds }}
-        resources:
-          requests:
-            cpu: {{ .Values.cpu | default 1000 }}m
-            memory: {{ .Values.memory | default 1024 }}Mi
-        env:
-        - name: QUARKUS_GRPC_CLIENTS_BRIDGE_HOST
-          value: "{{ .Values.sgGrpcBridge.serviceName }}.{{ .Values.sgGrpcBridge.namespace }}"
-        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXRETRIES
-          value: "50"
-        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_MAXDURATION
-          value: "300"
-        - name: IO_STARGATE_SGV2_API_COMMON_PROPERTIES_DATASTORE_CONFIGURATION_DATASTOREPROPERTIESCONFIGURATION_FETCHSUPPORTEDFEATURES_RETRY_DELAY
-          value: "10"
+        - env:
+            - name: QUARKUS_HTTP_HOST
+              value: "0.0.0.0"
+            - name: QUARKUS_HTTP_PORT
+              value: "{{ .Values.api.port }}"
+            - name: QUARKUS_SHUTDOWN_TIMEOUT
+              value: "PT30S"
+            - name: QUARKUS_SMALLRYE_OPENAPI_SERVERS
+              value: /api/json
+            - name: QUARKUS_HTTP_ACCESS_LOG_ENABLED
+              value: "true"
+            - name: QUARKUS_HTTP_ACCESS_LOG_PATTERN
+              value: "{{ .Values.accessLogPattern }}"
+            - name: QUARKUS_LOG_MIN_LEVEL
+              value: "TRACE"
+            - name: QUARKUS_LOG_CONSOLE_JSON_EXCEPTION_OUTPUT_TYPE
+              value: formatted
+            {{- range $key, $value := .Values.logParams }}
+            {{- if hasPrefix "QUARKUS_LOG_" $key }}
+            - name: {{ $key }}
+              value: {{ $value }}
+            {{- end }}
+            {{- end }}
+            - name: STARGATE_DATA_STORE_IGNORE_BRIDGE
+              value: "true"
+            - name: STARGATE_DATA_STORE_SAI_ENABLED
+              value: "true"
+            - name: STARGATE_METRICS_TENANT_REQUEST_COUNTER_USER_AGENT_TAG_ENABLED
+              value: "true"
+            - name: STARGATE_MULTI_TENANCY_ENABLED
+              value: "true"
+            - name: STARGATE_MULTI_TENANCY_TENANT_RESOLVER_TYPE
+              value: "subdomain"
+            - name: STARGATE_MULTI_TENANCY_TENANT_RESOLVER_SUBDOMAIN_MAX_CHARS
+              value: "36"
+            - name: STARGATE_MULTI_TENANCY_TENANT_RESOLVER_SUBDOMAIN_REGEX
+              value: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+            - name: JAVA_MAX_MEM_RATIO
+              value: "75"
+            - name: JAVA_INITIAL_MEM_RATIO
+              value: "50"
+            - name: GC_CONTAINER_OPTIONS
+              value: "-XX:+UseG1GC"
+            - name : STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_TYPE
+              value: astra
+            - name : STARGATE_JSONAPI_DOCUMENT_LIMITS_MAX_ARRAY_LENGTH
+              value: "1000"
+            - name : STARGATE_JSONAPI_DOCUMENT_LIMITS_MAX_OBJECT_PROPERTIES
+              value: "1000"
+            - name : STARGATE_JSONAPI_DOCUMENT_LIMITS_MAX_PROPERTY_NAME_LENGTH
+              value: "100"
+            - name: STARGATE_JSONAPI_DOCUMENT_LIMITS_MAX_DOCUMENT_PROPERTIES
+              value: "5000"
+            - name: STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_LOCAL_DATACENTER
+              value: dc1
+            - name: QUARKUS_VERTX_EVENT_LOOPS_POOL_SIZE
+              {{- /*
+              1. if the cpuLimit limit ends with 'm' (millicores), then divide by 1000 (using divf) and multiply by 4 and if the result is less than 2, then use 2
+              2. divf is used here because if the cpuLimit is 1500 for an example, then the result of the division will be 1.5 (which will be 1 when div is used) and the result of the multiplication will be 6.
+              3. If the cpuLimit doesn't end with 'm', Check and fail if the cpuLimit is not a number (only millicores and cores are supported)
+              4. If the cpuLimit is a number, multiply it by 4 and if the result is less than 2, then use 2.
+              Examples:
+                1. cpuLimit: 1500m, Pool size: 6 (4 x (1500/1000)
+                2. cpuLimit: 700m, Pool size: 3 (4 x (700/1000) = 2.8 | ceil => 3)
+                3. cpuLimit: 800m, Pool size: 4 (4 x (800/1000) = 3.2 | ceil => 4)
+                4. cpuLimit: 100m, Pool size: 2 (4 x (100/1000) = 0.4 | ceil => 1 | max (1, 2))
+                5. cpuLimit: 1, Pool size: 4 (4 x 1)
+                6. cpuLimit: 2500Mi, 'Unhandled resource config type' error
+              */}}
+              {{- if .Values.cpuLimit | toString | hasSuffix "m" }}
+              value: {{ divf (.Values.cpuLimit | replace "m" "") 1000 | mulf 4 | ceil | int64 | max 2 | quote }}
+              {{- else if .Values.cpuLimit | toString | regexMatch "[0-9]+" | not }}
+              value: {{ fail "Unhandled resource config type" }}
+              {{- else }}
+              value: {{ .Values.cpuLimit | mul 4 | max 2 | quote }}
+              {{- end }}
+            - name: STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_SESSION_CACHE_TTL_SECONDS
+              value: "{{ .Values.sessionCacheTTL }}"
+            - name: STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_SESSION_CACHE_MAX_SIZE
+              value: "{{ .Values.sessionCacheMaxSize }}"
+              {{- /*
+                Token map building for routing queries is disabled, since the driver is going to communicate only with the cqlrouter always, fixing https://github.com/stargate/jsonapi/issues/661
+              */}}
+            - name: JAVA_OPTS_APPEND
+              value: "{{ .Values.enableRemoteDebug | ternary .Values.devRemoteDebugParams ""}}-Djava.util.logging.manager=org.jboss.logmanager.LogManager {{ .Values.datastaxJavaDriverOptions }}"
+          name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.port }}
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probe.readiness.httpGet.path }}
+              port: {{ .Values.probe.readiness.httpGet.port }}
+            timeoutSeconds: {{ .Values.probe.readiness.timeoutSeconds }}
+            periodSeconds: {{ .Values.probe.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probe.readiness.failureThreshold }}
+            initialDelaySeconds: {{ .Values.probe.readiness.initialDelaySeconds }}
+          livenessProbe:
+              httpGet:
+                path: {{ .Values.probe.liveness.httpGet.path }}
+                port: {{ .Values.probe.liveness.httpGet.port }}
+              timeoutSeconds: {{ .Values.probe.liveness.timeoutSeconds }}
+              periodSeconds: {{ .Values.probe.liveness.periodSeconds }}
+              failureThreshold: {{ .Values.probe.liveness.failureThreshold }}
+              initialDelaySeconds: {{ .Values.probe.liveness.initialDelaySeconds }}
+          resources:
+            limits:
+              cpu: {{ .Values.cpuLimit }}
+              memory: {{ .Values.memoryLimit }}
+            requests:
+              cpu: {{ .Values.cpuRequest }}
+              memory: {{ .Values.memoryRequest }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        - image: "{{ .Values.cqlrouter.image.registry }}/{{ .Values.cqlrouter.image.repository }}:{{ .Values.cqlrouter.image.tag }}"
+          imagePullPolicy: {{ .Values.cqlrouter.image.pullPolicy }}
+          name: cqlrouter
+          env:
+            - name: REST_PORT
+              value: "{{ .Values.cqlrouter.httpPort }}"
+          args:
+            - --cluster-name=cndb
+            - --etcd-hosts={{ .Values.cqlrouter.etcdHosts }}
+            - --listen-addr=0.0.0.0
+            - --my-ip=127.0.0.1
+            - --cql-port={{ .Values.cqlrouter.cqlPort }}
+          ports:
+            - containerPort: {{ .Values.cqlrouter.httpPort }}
+              name: metrics
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "{{ .Values.cqlrouter.resources.limits.cpu }}"
+              memory: "{{ .Values.cqlrouter.resources.limits.memory }}"
+            requests:
+              cpu: "{{ .Values.cqlrouter.resources.requests.cpu }}"
+              memory: "{{ .Values.cqlrouter.resources.requests.memory }}"
+          terminationMessagePath: /dev/cqlrouter-termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: { }
+      serviceAccount: cndb-cndb-sa
+      serviceAccountName: cndb-cndb-sa
+      terminationGracePeriodSeconds: 35
+{{ end }}

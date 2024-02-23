@@ -1,57 +1,64 @@
-# Default values for stargate.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+enabled: *global-vector-kube
+api:
+  port: &jsonapi-port 8181
+metrics:
+  port: 8181
+
+# image registry
+image:
+  registry: *global-docker-registry
+  tag: *global-json-api-version
+  pullPolicy: *global-pull-policy
+  repository: "stargateio/jsonapi"
 
 # API instance replica count
-replicaCount: 1
+replicaCount: 2
 
-# Coordinator or bridge registry and image
-image:
-  registry: "gcr.io"
-  repository: "stargateio/jsonapi"
-  tag: "v1"
+cpuRequest: 4000m
+memoryRequest: 6Gi
+cpuLimit: 4000m
+memoryLimit: 8Gi
+sessionCacheTTL: 300
+sessionCacheMaxSize: 50
+datastaxJavaDriverOptions: "-Ddatastax-java-driver.advanced.metadata.token-map.enabled=false -Ddatastax-java-driver.advanced.metadata.schema.request-timeout=30000 -Ddatastax-java-driver.advanced.retry-policy.class=io.stargate.sgv2.jsonapi.service.cqldriver.CqlProxyRetryPolicy -Ddatastax-java-driver.create.basic.request.timeout=30000"
+accessLogPattern: "%h %l %t \\\"%r\\\" %s %b \\\"%{i,User-Agent}\\\""
+cqlrouter:
+  httpPort: 8182
+  metricsPort: 8182
+  cqlPort: 9042
+  etcdHosts: "http://etcd.etcd.svc.cluster.local:2379"
+  image:
+    registry: *global-cqlrouter-image-registry
+    repository: *global-cqlrouter-image-repository
+    tag: *global-cqlrouter-image-version
+    pullPolicy: *global-cqlrouter-image-pull-policy
+  resources:
+    limits:
+      cpu: "4000m"
+      memory: "4Gi"
+    requests:
+      cpu: "4000m"
+      memory: "4Gi"
 
 # topology key for anti affinity
 topologyKey: "kubernetes.io/hostname"
-
-# Stargate gRPC bridge hostname and kubernetes namespace
-sgGrpcBridge:
-  serviceName: "stargate-bridge"
-  namespace: "default"
-
-# JSON API service image - don't change it. CPU and memory are both request
-cpu: 2000
-memory: 2048
+enableRemoteDebug: false
+devRemoteDebugParams: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 "
 probe:
   readiness:
-    url: /stargate/health/ready
-    port: 8181
-    timeoutSeconds: 10
-    periodSeconds: 10
-    failureThreshold: 30
-    initialDelaySeconds: 30
-  liveness:
-    url: /stargate/health/live
-    port: 8181
-    timeoutSeconds: 10
-    periodSeconds: 10
     failureThreshold: 5
-    initialDelaySeconds: 30
+    httpGet:
+      path: /stargate/health/ready
+      port: *jsonapi-port
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+  liveness:
+    failureThreshold: 20
+    httpGet:
+      path: /stargate/health/live
+      port: *jsonapi-port
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
 
-# HorizontalPodAutoscaler for coordinator and all services. This needs metrics server installed (kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml) in the cluster. 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
-# Ingress is not added to deployment by default. This needs to have ingress controller installed. Default configuration uses nginx controller. (Controller installed using 
-# helm upgrade --install ingress-nginx ingress-nginx \           
-#   --repo https://kubernetes.github.io/ingress-nginx \
-#   --namespace ingress-nginx --create-namespace
-
-ingress:
-  enabled: true
-  ingressClassName: nginx
- 
