@@ -55,9 +55,9 @@ public interface ReadOperation extends Operation {
           "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
 
-  double TOTAL_TOKEN_RANGE = Math.pow(2, 64);
-  double MAX_TOKEN = Math.pow(2, 63) - 1;
-  double MIN_TOKEN = Math.pow(-2, 63);
+  long TOTAL_TOKEN_RANGE = Math.pow(2, 64);
+  long MAX_TOKEN = Math.pow(2, 63) - 1;
+  long MIN_TOKEN = Math.pow(-2, 63);
 
   /**
    * Default implementation to query and parse the result set
@@ -453,12 +453,12 @@ public interface ReadOperation extends Operation {
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw new JsonApiException(ErrorCode.COUNT_READ_FAILED);
+      throw ErrorCode.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
     } else {
 
       for (Row row : rs.currentPage()) {
-        Long rangeStart = Long.valueOf(row.getString("range_start"));
-        Long rangeEnd = Long.valueOf(row.getString("range_end"));
+        long rangeStart = row.getLong("range_start"));
+        long rangeEnd = row.getLong("range_end"));
         double rangeSize = 0;
         if (rangeStart > rangeEnd) {
           rangeSize = (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);

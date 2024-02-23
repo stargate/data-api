@@ -558,11 +558,11 @@ The `estimatedDocumentCount` command does not support any options.
 
 #### estimatedDocumentCount Command Response
 
-| Response Elements | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `data`            | Not present                                             |
-| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
-| `errors`          | Present if errors occur.                                |
+| Response Elements | Description                                              |
+| ----------------- |----------------------------------------------------------|
+| `data`            | Not present                                              |
+| `status`          | Present with fields: `count: <zero-or-positive-integer>` |
+| `errors`          | Present if errors occur.                                 |
 
 If an error occurs the command will not return `status`.
 
