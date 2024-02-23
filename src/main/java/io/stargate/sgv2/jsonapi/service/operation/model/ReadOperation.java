@@ -465,9 +465,9 @@ public interface ReadOperation extends Operation {
         } else {
           rangeSize = rangeEnd - rangeStart;
         }
-        double percentage = (rangeSize / TOTAL_TOKEN_RANGE) * 100;
+        double rangeRatio = rangeSize / TOTAL_TOKEN_RANGE;
         long partitionsCount = row.getLong("partitions_count");
-        double count = partitionsCount / percentage;
+        double count = partitionsCount / rangeRatio;
         counter.addAndGet((long) count);
       }
     }
