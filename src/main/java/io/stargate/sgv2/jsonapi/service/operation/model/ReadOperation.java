@@ -55,9 +55,9 @@ public interface ReadOperation extends Operation {
           "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
 
-  long TOTAL_TOKEN_RANGE = Math.pow(2, 64);
-  long MAX_TOKEN = Math.pow(2, 63) - 1;
-  long MIN_TOKEN = Math.pow(-2, 63);
+  double TOTAL_TOKEN_RANGE = Math.pow(2, 64);
+  double MAX_TOKEN = Math.pow(2, 63) - 1;
+  double MIN_TOKEN = Math.pow(-2, 63);
 
   /**
    * Default implementation to query and parse the result set
@@ -457,8 +457,8 @@ public interface ReadOperation extends Operation {
     } else {
 
       for (Row row : rs.currentPage()) {
-        long rangeStart = row.getLong("range_start"));
-        long rangeEnd = row.getLong("range_end"));
+        long rangeStart = row.getLong("range_start");
+        long rangeEnd = row.getLong("range_end");
         double rangeSize = 0;
         if (rangeStart > rangeEnd) {
           rangeSize = (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
