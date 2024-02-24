@@ -456,19 +456,26 @@ public interface ReadOperation extends Operation {
       throw ErrorCode.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
     } else {
 
+      // calculate the total range size and total partitions count for each range
+      long totalPartitionsCount = 0;
+      long totalRangeSize = 0;
+
       for (Row row : rs.currentPage()) {
         long rangeStart = row.getLong("range_start");
         long rangeEnd = row.getLong("range_end");
-        double rangeSize = 0;
         if (rangeStart > rangeEnd) {
-          rangeSize = (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
+          totalRangeSize += (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
         } else {
-          rangeSize = rangeEnd - rangeStart;
+          totalRangeSize += rangeEnd - rangeStart;
         }
-        double rangeRatio = rangeSize / TOTAL_TOKEN_RANGE;
-        long partitionsCount = row.getLong("partitions_count");
-        double count = partitionsCount / rangeRatio;
-        counter.addAndGet((long) count);
+        totalPartitionsCount += row.getLong("partitions_count");
+      }
+
+      // estimate the total row count by dividing the total partition count by the ratio
+      // of the sum of all token ranges to the entire token range, avoiding division by zero
+      // relies on the assumption that the supershredding schema uses one row per partition
+      if (totalRangeSize > 0) {
+        counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }
     }
   }
