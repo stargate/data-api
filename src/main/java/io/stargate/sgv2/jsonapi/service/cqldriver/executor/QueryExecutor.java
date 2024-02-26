@@ -255,4 +255,8 @@ public class QueryExecutor {
   private static byte[] decodeBase64(String base64encoded) {
     return Base64.getDecoder().decode(base64encoded);
   }
+
+  public CQLSessionCache getCqlSessionCache() {
+    return this.cqlSessionCache;
+  }
 }

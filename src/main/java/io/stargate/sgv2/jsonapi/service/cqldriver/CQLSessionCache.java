@@ -64,41 +64,42 @@ public class CQLSessionCache {
       DataApiRequestInfo dataApiRequestInfo,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry) {
+    if (sessionCache != null) {
+      throw new AlreadyInitializedException("CQLSessionCache is already initialized");
+    }
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.operationsConfig = operationsConfig;
-    if (sessionCache == null) { // TODO-SL handle concurrency
-      LoadingCache<SessionCacheKey, CqlSession> loadingCache =
-          Caffeine.newBuilder()
-              .expireAfterAccess(
-                  Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
-              .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-              // removal listener is invoked after the entry has been removed from the cache. So the
-              // idea is that we no longer return this session for any lookup as a first step, then
-              // close the session in the background asynchronously which is a graceful closing of
-              // channels i.e. any in-flight query will be completed before the session is getting
-              // closed.
-              .removalListener(
-                  (RemovalListener<SessionCacheKey, CqlSession>)
-                      (sessionCacheKey, session, cause) -> {
-                        if (sessionCacheKey != null) {
-                          if (LOGGER.isTraceEnabled()) {
-                            LOGGER.trace(
-                                "Removing session for tenant : {}", sessionCacheKey.tenantId);
-                          }
+    // TODO-SL handle concurrency
+    LoadingCache<SessionCacheKey, CqlSession> loadingCache =
+        Caffeine.newBuilder()
+            .expireAfterAccess(
+                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
+            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+            // removal listener is invoked after the entry has been removed from the cache. So the
+            // idea is that we no longer return this session for any lookup as a first step, then
+            // close the session in the background asynchronously which is a graceful closing of
+            // channels i.e. any in-flight query will be completed before the session is getting
+            // closed.
+            .removalListener(
+                (RemovalListener<SessionCacheKey, CqlSession>)
+                    (sessionCacheKey, session, cause) -> {
+                      if (sessionCacheKey != null) {
+                        if (LOGGER.isTraceEnabled()) {
+                          LOGGER.trace(
+                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
                         }
-                        if (session != null) {
-                          session.close();
-                        }
-                      })
-              .recordStats()
-              .build(this::getNewSession);
-      sessionCache =
-          CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
-      LOGGER.info(
-          "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
-          operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
-          operationsConfig.databaseConfig().sessionCacheMaxSize());
-    }
+                      }
+                      if (session != null) {
+                        session.close();
+                      }
+                    })
+            .recordStats()
+            .build(this::getNewSession);
+    sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    LOGGER.info(
+        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+        operationsConfig.databaseConfig().sessionCacheMaxSize());
   }
 
   /**
