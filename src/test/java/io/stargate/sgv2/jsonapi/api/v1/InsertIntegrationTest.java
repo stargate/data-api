@@ -24,6 +24,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -1388,7 +1389,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1509,6 +1510,59 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
             .isInstanceOf(java.net.SocketException.class)
             .hasMessageStartingWith("Broken pipe");
       }
+    }
+  }
+
+  @Nested
+  @Order(6)
+  class InsertManyFails {
+    @Test
+    public void insertManyWithTooManyDocuments() {
+      ArrayNode docs = MAPPER.createArrayNode();
+      final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
+
+      // We need to both exceed doc count limit AND to create big enough payload to
+      // trigger message truncation (either by quarkus or client)
+      // Guessing that 20 x 1k == 20kB should be enough
+      final String TEXT_1K = "abcd 1234 ".repeat(1_000);
+
+      for (int i = 0; i < MAX_DOCS + 1; ++i) {
+        ObjectNode doc =
+            MAPPER
+                .createObjectNode()
+                .put("_id", "doc" + i)
+                .put("username", "user" + i)
+                .put("text", TEXT_1K);
+        docs.add(doc);
+      }
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": %s
+            }
+          }
+          """
+              .formatted(docs);
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body(
+              "errors[0].message",
+              endsWith(
+                  "not valid. Problem: amount of documents to insert is over the max limit ("
+                      + docs.size()
+                      + " vs "
+                      + MAX_DOCS
+                      + ")."));
     }
   }
 
