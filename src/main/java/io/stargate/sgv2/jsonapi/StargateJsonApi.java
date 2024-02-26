@@ -673,6 +673,56 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "findVectorProviders",
+                  summary = "`findVectorProviders` command result",
+                  value =
+                      """
+                        {
+                            "status": {
+                                "vectorProviders": {
+                                    "google": {
+                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict",
+                                        "enabled": true,
+                                        "properties": {
+                                            "timeoutMs": 1000,
+                                            "maxTokens": null,
+                                            "maxRetries": 3,
+                                            "retryDelayMs": 100
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": {
+                                                "type": "string",
+                                                "required": true,
+                                                "default_": null
+                                            }
+                                        },
+                                        "models": {
+                                            "textembedding-gecko@003": {
+                                                "properties": {
+                                                    "timeoutMs": null,
+                                                    "maxTokens": 3072,
+                                                    "maxRetries": null,
+                                                    "retryDelayMs": null
+                                                },
+                                                "parameters": {
+                                                    "autoTruncate": {
+                                                        "type": "boolean",
+                                                        "required": false,
+                                                        "default_": "true"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                      """)
             }))
 public class StargateJsonApi extends Application {
   @Produces

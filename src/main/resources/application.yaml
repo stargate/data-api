@@ -58,6 +58,31 @@ stargate:
           url: https://us-central1-aiplatform.googleapis.com
           api-key: YOUR_API_KEY
 
+        google:
+          enabled: true
+          url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict"
+          supported-authentication:
+            - "HEADER"
+            - "SHARED_SECRETS"
+          parameters:
+            PROJECT_ID:
+              type: "string"
+              required: true
+          properties:
+            max-retries: 3
+            retry-delay-ms: 100
+            timeout-ms: 1000
+          models:
+            textembedding-gecko@003:
+              parameters:
+                autoTruncate:
+                  type: "boolean"
+                  required: false
+                  default: true
+              properties:
+                max-tokens: 3072
+
+
         # Cohere embedding service configuration
         cohere:
           enabled: true
