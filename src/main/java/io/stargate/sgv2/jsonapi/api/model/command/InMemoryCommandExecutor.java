@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
+package io.stargate.sgv2.jsonapi.api.model.command;
 
 import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.OFFLINE_WRITER;
 
@@ -6,9 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineBeginWriterCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -21,53 +18,41 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineBeginWriterCommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineEndWriterCommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-public class OfflineBeginWriterTester {
-  public static void main(String[] args) throws ExecutionException, InterruptedException {
-    OfflineBeginWriterTester offlineBeginWriterTester = new OfflineBeginWriterTester();
-    offlineBeginWriterTester.testOfflineBeginWriter();
-  }
+public class InMemoryCommandExecutor {
+  private final CommandProcessor commandProcessor;
+  private final CommandContext commandContext;
 
-  private void testOfflineBeginWriter() throws ExecutionException, InterruptedException {
-    String namespace = "demo_namespace";
-    String collection = "players";
-    String ssTablesOutputDirectory = "/var/tmp/sstables_test";
+  public InMemoryCommandExecutor(
+      String namespace, String collection, String ssTablesOutputDirectory) {
+    String sessionId = UUID.randomUUID().toString();
     OfflineBeginWriterCommand offlineBeginWriterCommand =
         buildOfflineBeginWriterCommand(namespace, collection, ssTablesOutputDirectory);
-
-    CommandContext commandContext =
+    FileWriterParams fileWriterParams = offlineBeginWriterCommand.getFileWriterParams();
+    this.commandProcessor = buildCommandProcessor(sessionId, fileWriterParams);
+    this.commandContext =
         new CommandContext(
             namespace,
             collection,
             offlineBeginWriterCommand.getCollectionSettings(),
             offlineBeginWriterCommand.getEmbeddingService());
-    FileWriterParams fileWriterParams = offlineBeginWriterCommand.getFileWriterParams();
-    CommandProcessor commandProcessor =
-        new CommandProcessor(
-            buildQueryExecutor(offlineBeginWriterCommand.getSessionId(), fileWriterParams),
-            buildCommandResolverService());
-    Uni<CommandResult> commandResultUni =
-        commandProcessor.processCommand(commandContext, offlineBeginWriterCommand);
-    CommandResult commandResult = commandResultUni.subscribe().asCompletionStage().get();
-    System.out.println("CommandResult: " + commandResult);
   }
 
-  private CommandResolverService buildCommandResolverService() {
-    ObjectMapper objectMapper = new ObjectMapper();
-    SmallRyeConfig smallRyeConfig =
-        new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
-    DocumentLimitsConfig documentLimitsConfig =
-        smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
-    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
-    return new CommandResolverService(
-        List.of(new OfflineBeginWriterCommandResolver(shredder, objectMapper)));
+  private CommandProcessor buildCommandProcessor(
+      String sessionId, FileWriterParams fileWriterParams) {
+    return new CommandProcessor(
+        buildQueryExecutor(sessionId, fileWriterParams), buildCommandResolverService());
   }
 
-  private QueryExecutor buildQueryExecutor(String sessionId, FileWriterParams fileWriterParams) {
+  protected static QueryExecutor buildQueryExecutor(
+      String sessionId, FileWriterParams fileWriterParams) {
     SmallRyeConfig smallRyeConfig =
         new SmallRyeConfigBuilder()
             .withMapping(OperationsConfig.class)
@@ -76,13 +61,14 @@ public class OfflineBeginWriterTester {
             .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
             .build();
     OperationsConfig operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);
-    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId), fileWriterParams);
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(Optional.of(sessionId), fileWriterParams);
     CQLSessionCache cqlSessionCache =
         new CQLSessionCache(dataApiRequestInfo, operationsConfig, new SimpleMeterRegistry());
     return new QueryExecutor(cqlSessionCache, operationsConfig);
   }
 
-  private OfflineBeginWriterCommand buildOfflineBeginWriterCommand(
+  public static OfflineBeginWriterCommand buildOfflineBeginWriterCommand(
       String namespace, String collection, String ssTablesOutputDirectory) {
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
         new CreateCollectionCommand.Options.VectorSearchConfig(
@@ -93,5 +79,27 @@ public class OfflineBeginWriterTester {
         new CreateCollectionCommand(collection, createCollectionCommandOptions);
     return new OfflineBeginWriterCommand(
         namespace, createCollectionCommand, ssTablesOutputDirectory);
+  }
+
+  protected static CommandResolverService buildCommandResolverService() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    SmallRyeConfig smallRyeConfig =
+        new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
+    DocumentLimitsConfig documentLimitsConfig =
+        smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
+    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
+    return new CommandResolverService(
+        List.of(
+            new OfflineBeginWriterCommandResolver(shredder, objectMapper),
+            new OfflineInsertManyCommandResolver(shredder, objectMapper),
+            new OfflineEndWriterCommandResolver(shredder, objectMapper)));
+  }
+
+  public CommandResult runCommand(Command command) throws ExecutionException, InterruptedException {
+    return commandProcessor
+        .processCommand(commandContext, command)
+        .subscribe()
+        .asCompletionStage()
+        .get();
   }
 }
