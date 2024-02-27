@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
+import jakarta.inject.Inject;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -17,7 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /** Representation of the offline begin-writer API {@link Command}. */
 @Schema(description = "Command that initializes the offline writer.")
 @JsonTypeName("beginOfflineSession")
-public class BeginOfflineSessionCommand implements Command {
+public class BeginOfflineSessionCommand implements CollectionCommand {
   @Schema(
       description = "The namespace to write to.",
       type = SchemaType.STRING,
@@ -25,10 +27,11 @@ public class BeginOfflineSessionCommand implements Command {
   private final String namespace;
 
   @Schema(
-      description = "The namespace to write to.",
+      name = "createCollection",
+      description = "Create collection command.",
       type = SchemaType.OBJECT,
       implementation = CreateCollectionCommand.class)
-  private final CreateCollectionCommand createCollectionCommand;
+  private final CreateCollectionCommand createCollection;
 
   @Schema(
       description = "The SSTable output directory.",
@@ -45,15 +48,14 @@ public class BeginOfflineSessionCommand implements Command {
    * Constructs a new {@link BeginOfflineSessionCommand}.
    *
    * @param namespace the namespace to write to
-   * @param createCollectionCommand the create collection command
+   * @param createCollection the create collection command
    * @param ssTableOutputDirectory the SSTable output directory
    */
+  @Inject
   public BeginOfflineSessionCommand(
-      String namespace,
-      CreateCollectionCommand createCollectionCommand,
-      String ssTableOutputDirectory) {
+      String namespace, CreateCollectionCommand createCollection, String ssTableOutputDirectory) {
     this.namespace = namespace;
-    this.createCollectionCommand = createCollectionCommand;
+    this.createCollection = createCollection;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
     this.collectionSettings = buildCollectionSettings();
     this.embeddingService = null; // TODO-SL
@@ -63,18 +65,16 @@ public class BeginOfflineSessionCommand implements Command {
 
   private CollectionSettings buildCollectionSettings() {
     boolean isVectorEnabled =
-        this.createCollectionCommand.options() != null
-            && this.createCollectionCommand.options().vector() != null;
-    int vectorSize =
-        isVectorEnabled ? this.createCollectionCommand.options().vector().dimension() : 0;
+        this.createCollection.options() != null && this.createCollection.options().vector() != null;
+    int vectorSize = isVectorEnabled ? this.createCollection.options().vector().dimension() : 0;
     CollectionSettings.SimilarityFunction similarityFunction =
         isVectorEnabled
             ? CollectionSettings.SimilarityFunction.fromString(
-                this.createCollectionCommand.options().vector().metric())
+                this.createCollection.options().vector().metric())
             : null;
 
     return CollectionSettings.getCollectionSettings(
-        this.createCollectionCommand.name(),
+        this.createCollection.name(),
         isVectorEnabled,
         vectorSize,
         similarityFunction,
@@ -88,11 +88,10 @@ public class BeginOfflineSessionCommand implements Command {
                 this.collectionSettings.vectorEnabled(),
                 this.collectionSettings.vectorSize(),
                 null) // TODO-SL fix comments field
-            .getCreateTable(this.namespace, this.createCollectionCommand.name())
+            .getCreateTable(this.namespace, this.createCollection.name())
             .getQuery();
     String insertStatementCQL =
-        InsertOperation.forCQL(
-                new CommandContext(this.namespace, this.createCollectionCommand.name()))
+        InsertOperation.forCQL(new CommandContext(this.namespace, this.createCollection.name()))
             .buildInsertQuery(
                 this.collectionSettings.vectorEnabled()); // TODO-SL add conditionalInsert to method
     return new FileWriterParams(
@@ -108,7 +107,7 @@ public class BeginOfflineSessionCommand implements Command {
   }
 
   public CreateCollectionCommand getCreateCollectionCommand() {
-    return createCollectionCommand;
+    return createCollection;
   }
 
   public String getSsTableOutputDirectory() {

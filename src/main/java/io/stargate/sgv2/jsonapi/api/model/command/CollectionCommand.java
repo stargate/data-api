@@ -19,5 +19,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   @JsonSubTypes.Type(value = InsertManyCommand.class),
   @JsonSubTypes.Type(value = UpdateManyCommand.class),
   @JsonSubTypes.Type(value = UpdateOneCommand.class),
+  @JsonSubTypes.Type(value = BeginOfflineSessionCommand.class),
+  @JsonSubTypes.Type(value = OfflineInsertManyCommand.class),
+  @JsonSubTypes.Type(value = OfflineGetStatusCommand.class),
+  @JsonSubTypes.Type(value = EndOfflineSessionCommand.class),
 })
 public interface CollectionCommand extends Command {}
