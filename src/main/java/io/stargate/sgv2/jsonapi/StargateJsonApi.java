@@ -681,48 +681,75 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         {
                             "status": {
                                 "vectorProviders": {
-                                    "google": {
-                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict",
-                                        "enabled": true,
-                                        "properties": {
-                                            "timeoutMs": 1000,
-                                            "maxTokens": null,
-                                            "maxRetries": 3,
-                                            "retryDelayMs": 100
-                                        },
-                                        "parameters": {
-                                            "PROJECT_ID": {
-                                                "type": "string",
-                                                "required": true,
-                                                "default_": null
-                                            }
-                                        },
-                                        "models": {
-                                            "textembedding-gecko@003": {
-                                                "properties": {
-                                                    "timeoutMs": null,
-                                                    "maxTokens": 3072,
-                                                    "maxRetries": null,
-                                                    "retryDelayMs": null
-                                                },
-                                                "parameters": {
-                                                    "autoTruncate": {
-                                                        "type": "boolean",
-                                                        "required": false,
-                                                        "default_": "true"
-                                                    }
-                                                }
-                                            }
-                                        },
+                                    "cohere": {
+                                        "url": "https://api.cohere.ai/v1/",
                                         "supportedAuthentication": [
                                             "HEADER",
                                             "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [],
+                                        "models": []
+                                    },
+                                    "openai": {
+                                        "url": "https://api.openai.com/v1/",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [],
+                                        "models": []
+                                    },
+                                    "vertexai": {
+                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [
+                                            {
+                                                "name": "PROJECT_ID",
+                                                "type": "STRING",
+                                                "defaultValue": null,
+                                                "help": null,
+                                                "required": true
+                                            }
+                                        ],
+                                        "models": [
+                                            {
+                                                "name": "textembedding-gecko@003",
+                                                "parameters": [
+                                                    {
+                                                        "name": "autoTruncate",
+                                                        "type": "BOOLEAN",
+                                                        "defaultValue": "true",
+                                                        "help": null,
+                                                        "required": false
+                                                    }
+                                                ]
+                                            }
                                         ]
+                                    },
+                                    "huggingface": {
+                                        "url": "https://api-inference.huggingface.co/pipeline/feature-extraction/",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [],
+                                        "models": []
+                                    },
+                                    "nvidia": {
+                                        "url": "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [],
+                                        "models": []
                                     }
                                 }
                             }
-                        }
-                      """)
+                        }                      """)
             }))
 public class StargateJsonApi extends Application {
   @Produces
