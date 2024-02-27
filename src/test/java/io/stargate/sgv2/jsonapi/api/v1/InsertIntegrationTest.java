@@ -8,6 +8,7 @@ import static org.assertj.core.api.Fail.fail;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -1522,9 +1523,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
 
       // We need to both exceed doc count limit AND to create big enough payload to
-      // trigger message truncation (either by quarkus or client)
-      // Guessing that 20 x 1k == 20kB should be enough
-      final String TEXT_1K = "abcd 1234 ".repeat(1_000);
+      // trigger message truncation: 21 x 1k == 21kB should be enough
+      final String TEXT_1K = "abcd 1234 ".repeat(100);
 
       for (int i = 0; i < MAX_DOCS + 1; ++i) {
         ObjectNode doc =
@@ -1543,7 +1543,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
             }
           }
           """
-              .formatted(docs);
+              .formatted(docs.toString());
 
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
@@ -1562,7 +1562,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       + docs.size()
                       + " vs "
                       + MAX_DOCS
-                      + ")."));
+                      + ")."))
+          .body("errors[0].message", containsString("[TRUNCATED from "));
     }
   }
 
