@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -43,7 +43,9 @@ public class InMemoryCommandExecutor {
             namespace,
             collection,
             offlineBeginWriterCommand.getCollectionSettings(),
-            offlineBeginWriterCommand.getEmbeddingService());
+            offlineBeginWriterCommand.getEmbeddingService(),
+            offlineBeginWriterCommand.getClass().getSimpleName(),
+            null);
   }
 
   private CommandProcessor buildCommandProcessor(
@@ -88,7 +90,7 @@ public class InMemoryCommandExecutor {
         new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
     DocumentLimitsConfig documentLimitsConfig =
         smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
-    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
+    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
         List.of(
             new BeginOfflineSessionCommandResolver(shredder, objectMapper),

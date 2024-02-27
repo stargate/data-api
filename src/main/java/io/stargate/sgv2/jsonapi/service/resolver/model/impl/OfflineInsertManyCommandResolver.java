@@ -38,7 +38,9 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
 
     final DocumentProjector projection = ctx.indexingProjector();
     final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(doc -> shredder.shred(doc, null, projection)).toList();
+        command.documents().stream()
+            .map(doc -> shredder.shred(doc, null, projection, command.getClass().getSimpleName()))
+            .toList();
 
     boolean ordered =
         false; // TODO-SL this is a placeholder, we need to figure out how to handle this

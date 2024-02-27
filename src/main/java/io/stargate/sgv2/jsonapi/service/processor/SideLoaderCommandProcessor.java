@@ -132,6 +132,8 @@ public class SideLoaderCommandProcessor {
                 this.similarityFunction,
                 this.comment,
                 new ObjectMapper()),
+            null,
+            InsertManyCommand.class.getSimpleName(),
             null);
     new CommandContext(fileWriterSession.getNamespace(), fileWriterSession.getCollection());
     // TODO-SL create a new command called OfflineInsertManyCommand
@@ -189,7 +191,7 @@ public class SideLoaderCommandProcessor {
 
   private CommandResolverService buildCommandResolverService() {
     ObjectMapper objectMapper = new ObjectMapper();
-    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
+    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
         List.of(new InsertManyCommandResolver(shredder, objectMapper)));
   }
