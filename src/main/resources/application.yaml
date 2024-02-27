@@ -66,7 +66,7 @@ stargate:
             - "SHARED_SECRETS"
           parameters:
             PROJECT_ID:
-              type: "string"
+              type: STRING
               required: true
           properties:
             max-retries: 3
@@ -76,9 +76,9 @@ stargate:
             textembedding-gecko@003:
               parameters:
                 autoTruncate:
-                  type: "boolean"
+                  type: BOOLEAN
                   required: false
-                  default: true
+                  default-value: true
               properties:
                 max-tokens: 3072
 

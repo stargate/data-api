@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 import jakarta.annotation.Nullable;
 import java.net.URL;
 import java.util.List;
@@ -58,43 +57,37 @@ public interface PropertyBasedEmbeddingServiceConfig {
     Map<String, ParameterConfig> parameters();
 
     @JsonProperty
-    PropertiesConfig properties();
+    Map<String, String> properties();
 
     @JsonProperty
     Map<String, ModelConfig> models();
-
-    interface ParameterConfig {
-      @JsonProperty
-      String type();
-
-      @JsonProperty
-      boolean required();
-
-      @JsonProperty
-      @WithName("default")
-      Optional<String> default_();
-    }
-
-    interface PropertiesConfig {
-      @JsonProperty
-      Optional<Integer> maxRetries();
-
-      @JsonProperty
-      Optional<Integer> retryDelayMs();
-
-      @JsonProperty
-      Optional<Integer> timeoutMs();
-
-      @JsonProperty
-      Optional<Integer> maxTokens();
-    }
 
     interface ModelConfig {
       @JsonProperty
       Map<String, ParameterConfig> parameters();
 
       @JsonProperty
-      PropertiesConfig properties();
+      Map<String, String> properties();
+    }
+
+    interface ParameterConfig {
+      @JsonProperty
+      ParameterType type();
+
+      @JsonProperty
+      boolean required();
+
+      @JsonProperty
+      Optional<String> defaultValue();
+
+      @JsonProperty
+      Optional<String> help();
+    }
+
+    enum ParameterType {
+      STRING,
+      NUMBER,
+      BOOLEAN
     }
   }
 
