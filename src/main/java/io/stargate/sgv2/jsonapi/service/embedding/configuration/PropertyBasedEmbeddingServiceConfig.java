@@ -54,23 +54,29 @@ public interface PropertyBasedEmbeddingServiceConfig {
     List<String> supportedAuthentication();
 
     @JsonProperty
-    Map<String, ParameterConfig> parameters();
+    List<ParameterConfig> parameters();
 
     @JsonProperty
     Map<String, String> properties();
 
     @JsonProperty
-    Map<String, ModelConfig> models();
+    List<ModelConfig> models();
 
     interface ModelConfig {
       @JsonProperty
-      Map<String, ParameterConfig> parameters();
+      String name();
+
+      @JsonProperty
+      List<ParameterConfig> parameters();
 
       @JsonProperty
       Map<String, String> properties();
     }
 
     interface ParameterConfig {
+      @JsonProperty
+      String name();
+
       @JsonProperty
       ParameterType type();
 

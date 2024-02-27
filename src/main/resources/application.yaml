@@ -65,7 +65,7 @@ stargate:
             - "HEADER"
             - "SHARED_SECRETS"
           parameters:
-            PROJECT_ID:
+            - name: PROJECT_ID
               type: STRING
               required: true
           properties:
@@ -73,9 +73,9 @@ stargate:
             retry-delay-ms: 100
             timeout-ms: 1000
           models:
-            textembedding-gecko@003:
+            - name: textembedding-gecko@003
               parameters:
-                autoTruncate:
+                - name: "autoTruncate"
                   type: BOOLEAN
                   required: false
                   default-value: true
