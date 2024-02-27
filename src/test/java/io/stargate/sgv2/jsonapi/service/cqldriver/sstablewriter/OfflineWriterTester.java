@@ -62,5 +62,9 @@ public class OfflineWriterTester {
     CommandResult offlineEndWriterCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineEndWriterCommand);
     System.out.println("end command: " + offlineEndWriterCommandResponse);
+
+    offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
+    offlineGetStatusCommandResponse = inMemoryCommandExecutor.runCommand(offlineGetStatusCommand);
+    System.out.println("status again:" + offlineGetStatusCommandResponse);
   }
 }

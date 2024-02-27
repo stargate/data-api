@@ -21,7 +21,7 @@ public record OfflineBeginWriterOperation(
     implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    CqlSession session = queryExecutor.getCqlSessionCache().getSession();
+    CqlSession session = queryExecutor.getCqlSessionCache().getSession(true);
     CommandResult commandResult =
         new CommandResult(Map.of(CommandStatus.OFFLINE_WRITER_SESSION_ID, command.getSessionId()));
     return Uni.createFrom().item(() -> () -> commandResult);

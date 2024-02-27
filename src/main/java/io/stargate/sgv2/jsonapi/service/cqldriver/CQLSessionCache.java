@@ -162,10 +162,24 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
+    return getSession(true);
+  }
+
+  /**
+   * Get CQLSession from cache.
+   *
+   * @param createNewSessionIfNotAvailable if true, create new session if not available in the cache
+   * @return CQLSession
+   */
+  public CqlSession getSession(boolean createNewSessionIfNotAvailable) {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
+    }
+    if (!createNewSessionIfNotAvailable
+        && OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
+      return sessionCache.getIfPresent(getSessionCacheKey());
     }
     return sessionCache.get(getSessionCacheKey());
   }
