@@ -162,7 +162,7 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession() {
-    return getSession(true);
+    return getSession(!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type()));
   }
 
   /**
@@ -177,11 +177,11 @@ public class CQLSessionCache {
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
-    if (!createNewSessionIfNotAvailable
-        && OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
+    if (createNewSessionIfNotAvailable) {
+      return sessionCache.get(getSessionCacheKey());
+    } else {
       return sessionCache.getIfPresent(getSessionCacheKey());
     }
-    return sessionCache.get(getSessionCacheKey());
   }
 
   /**

@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -22,7 +24,11 @@ public record BeginOfflineSessionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     CqlSession session = queryExecutor.getCqlSessionCache().getSession(true);
-    // TODO-SL check session
+    if (session == null) {
+      throw new JsonApiException(
+          ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION,
+          ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION.getMessage() + command.getSessionId());
+    }
     CommandResult commandResult =
         new CommandResult(Map.of(CommandStatus.OFFLINE_WRITER_SESSION_ID, command.getSessionId()));
     return Uni.createFrom().item(() -> () -> commandResult);

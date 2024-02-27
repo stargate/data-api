@@ -96,7 +96,7 @@ public class Shredder {
     validateDocumentSize(documentLimits, docJson);
 
     // Create json bytes written metrics
-    if (jsonProcessingMetricsReporter != null) {//TODO-SL
+    if (jsonProcessingMetricsReporter != null) { // TODO-SL
       jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
     }
 

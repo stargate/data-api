@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.OfflineWriterSessionStatus;
@@ -24,6 +26,11 @@ public record OfflineGetStatusOperation(
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     FileWriterSession fileWriterSession =
         (FileWriterSession) queryExecutor.getCqlSessionCache().getSession();
+    if (fileWriterSession == null) {
+      throw new JsonApiException(
+          ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND,
+          ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND.getMessage() + command.sessionId());
+    }
     OfflineWriterSessionStatus offlineWriterSessionStatus =
         new OfflineWriterSessionStatus(
             command().sessionId(),

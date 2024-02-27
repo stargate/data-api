@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
@@ -8,7 +9,6 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.
@@ -63,7 +63,9 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message, Response.Status status) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    // SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    SmallRyeConfig config =
+        new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build(); // TODO-SL
     // enable debug mode for unit tests, since it can not be injected
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();

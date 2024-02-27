@@ -58,7 +58,7 @@ public record InsertOperation(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
     }
     // create json doc write metrics
-    if (commandContext.jsonProcessingMetricsReporter() != null) {//TODO-SL
+    if (commandContext.jsonProcessingMetricsReporter() != null) { // TODO-SL
       commandContext
           .jsonProcessingMetricsReporter()
           .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
