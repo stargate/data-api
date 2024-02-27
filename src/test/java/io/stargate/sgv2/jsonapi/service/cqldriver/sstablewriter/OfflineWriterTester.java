@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionComman
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -27,11 +28,22 @@ public class OfflineWriterTester {
     String ssTablesOutputDirectory = "/var/tmp/sstables_test";
 
     InMemoryCommandExecutor inMemoryCommandExecutor =
-        new InMemoryCommandExecutor(namespace, collection, ssTablesOutputDirectory);
+        new InMemoryCommandExecutor(
+            namespace,
+            collection,
+            ssTablesOutputDirectory,
+            true,
+            3,
+            CollectionSettings.SimilarityFunction.COSINE.toString());
 
     BeginOfflineSessionCommand offlineBeginWriterCommand =
         InMemoryCommandExecutor.buildOfflineBeginWriterCommand(
-            namespace, collection, ssTablesOutputDirectory);
+            namespace,
+            collection,
+            ssTablesOutputDirectory,
+            true,
+            3,
+            CollectionSettings.SimilarityFunction.COSINE.toString());
     CommandResult offlineBeingWirterCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineBeginWriterCommand);
     System.out.println("begin command: " + offlineBeingWirterCommandResponse);

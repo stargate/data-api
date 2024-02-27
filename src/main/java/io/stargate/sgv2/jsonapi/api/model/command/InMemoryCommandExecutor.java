@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
@@ -32,10 +31,21 @@ public class InMemoryCommandExecutor {
   private final CommandContext commandContext;
 
   public InMemoryCommandExecutor(
-      String namespace, String collection, String ssTablesOutputDirectory) {
+      String namespace,
+      String collection,
+      String ssTablesOutputDirectory,
+      boolean isVectorSearch,
+      int vectorSearchDimension,
+      String vectorSearchSimilarityFunction) {
     String sessionId = UUID.randomUUID().toString();
     BeginOfflineSessionCommand offlineBeginWriterCommand =
-        buildOfflineBeginWriterCommand(namespace, collection, ssTablesOutputDirectory);
+        buildOfflineBeginWriterCommand(
+            namespace,
+            collection,
+            ssTablesOutputDirectory,
+            isVectorSearch,
+            vectorSearchDimension,
+            vectorSearchSimilarityFunction);
     FileWriterParams fileWriterParams = offlineBeginWriterCommand.getFileWriterParams();
     this.commandProcessor = buildCommandProcessor(sessionId, fileWriterParams);
     this.commandContext =
@@ -72,10 +82,17 @@ public class InMemoryCommandExecutor {
   }
 
   public static BeginOfflineSessionCommand buildOfflineBeginWriterCommand(
-      String namespace, String collection, String ssTablesOutputDirectory) {
+      String namespace,
+      String collection,
+      String ssTablesOutputDirectory,
+      boolean isVectorSearch,
+      int vectorSearchDimension,
+      String vectorSearchSimilarityFunction) {
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
-        new CreateCollectionCommand.Options.VectorSearchConfig(
-            3, CollectionSettings.SimilarityFunction.COSINE.toString());
+        isVectorSearch
+            ? new CreateCollectionCommand.Options.VectorSearchConfig(
+                vectorSearchDimension, vectorSearchSimilarityFunction)
+            : null;
     CreateCollectionCommand.Options createCollectionCommandOptions =
         new CreateCollectionCommand.Options(vectorSearchConfig, null, null); // TODO-SL
     CreateCollectionCommand createCollectionCommand =
