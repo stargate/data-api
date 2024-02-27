@@ -53,12 +53,12 @@ public abstract class StargateTestResource
       return Collections.emptyMap();
     } else {
       boolean reuse = false;
-      ImmutableMap.Builder propsBuilder;
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
       if (this.containerNetworkId.isPresent()) {
         String networkId = (String) this.containerNetworkId.get();
-        propsBuilder = this.startWithContainerNetwork(networkId, reuse);
+        this.startWithContainerNetwork(networkId, reuse);
       } else {
-        propsBuilder = this.startWithoutContainerNetwork(reuse);
+        this.startWithoutContainerNetwork(reuse);
       }
 
       Integer authPort = this.stargateContainer.getMappedPort(8081);
@@ -96,7 +96,7 @@ public abstract class StargateTestResource
     return System.getProperty("quarkus.http.test-host") != null;
   }
 
-  public ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
+  public void startWithoutContainerNetwork(boolean reuse) {
     Network network = this.network();
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
@@ -104,14 +104,9 @@ public abstract class StargateTestResource
     this.stargateContainer = this.baseCoordinatorContainer(reuse);
     this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
     this.stargateContainer.start();
-    Integer bridgePort = this.stargateContainer.getMappedPort(8091);
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
-    return propsBuilder;
   }
 
-  private ImmutableMap.Builder<String, String> startWithContainerNetwork(
-      String networkId, boolean reuse) {
+  private void startWithContainerNetwork(String networkId, boolean reuse) {
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetworkMode(networkId);
     this.cassandraContainer.start();
@@ -123,11 +118,6 @@ public abstract class StargateTestResource
         .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
         .withEnv("SEED", cassandraHost);
     this.stargateContainer.start();
-    String stargateHost =
-        this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
-    return propsBuilder;
   }
 
   public void stop() {
