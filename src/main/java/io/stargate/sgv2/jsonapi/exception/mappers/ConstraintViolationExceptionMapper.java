@@ -57,6 +57,7 @@ public class ConstraintViolationExceptionMapper {
     return new CommandResult.Error(msg, ERROR_FIELDS, ERROR_FIELDS_METRICS_TAG, Response.Status.OK);
   }
 
+  /** Helper method for construction description of value that caused the constraint violation. */
   private static String valueDescription(Object rawValue) {
     if (rawValue == null) {
       return "`null`";
@@ -74,7 +75,7 @@ public class ConstraintViolationExceptionMapper {
     }
 
     String valueDesc = rawValue.toString();
-    if (valueDesc.length() < MAX_VALUE_LENGTH_TO_INCLUDE) {
+    if (valueDesc.length() <= MAX_VALUE_LENGTH_TO_INCLUDE) {
       return String.format("\"%s\"", valueDesc);
     }
     return String.format(
