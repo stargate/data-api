@@ -45,22 +45,24 @@ stargate:
           enabled: true
           url: https://api.openai.com/v1/
           api-key: YOUR_API_KEY
+          supported-authentication:
+            - "HEADER"
+            - "SHARED_SECRETS"
 
         # Hugging face embedding service configuration
         huggingface:
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           api-key: YOUR_API_KEY
+          supported-authentication:
+            - "HEADER"
+            - "SHARED_SECRETS"
 
         # Vertex AI embedding service configuration
         vertexai:
           enabled: true
-          url: https://us-central1-aiplatform.googleapis.com
-          api-key: YOUR_API_KEY
-
-        google:
-          enabled: true
           url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict"
+          api-key: YOUR_API_KEY
           supported-authentication:
             - "HEADER"
             - "SHARED_SECRETS"
@@ -88,12 +90,18 @@ stargate:
           enabled: true
           url: https://api.cohere.ai/v1/
           api-key: YOUR_API_KEY
+          supported-authentication:
+            - "HEADER"
+            - "SHARED_SECRETS"
 
         # NVidia embedding service configuration
         nvidia:
           enabled: true
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
           api-key: YOUR_API_KEY
+          supported-authentication:
+            - "HEADER"
+            - "SHARED_SECRETS"
 
 quarkus:
 

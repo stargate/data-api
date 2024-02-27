@@ -5,7 +5,6 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import jakarta.annotation.Nullable;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,33 +14,25 @@ import org.eclipse.microprofile.config.spi.Converter;
 public interface PropertyBasedEmbeddingServiceConfig {
 
   @Nullable
-  ServiceConfig openai();
+  VectorProviderConfig openai();
 
   @Nullable
-  ServiceConfig huggingface();
+  VectorProviderConfig huggingface();
 
   @Nullable
-  ServiceConfig vertexai();
+  VectorProviderConfig vertexai();
 
   @Nullable
-  ServiceConfig cohere();
+  VectorProviderConfig cohere();
 
   @Nullable
-  ServiceConfig nvidia();
+  VectorProviderConfig nvidia();
 
-  @Nullable
-  VectorProviderConfig google();
+  //  @Nullable
+  //  VectorProviderConfig google();
 
   @Nullable
   CustomConfig custom();
-
-  public interface ServiceConfig {
-    boolean enabled();
-
-    URL url();
-
-    String apiKey();
-  }
 
   interface VectorProviderConfig {
     @JsonProperty
@@ -51,14 +42,20 @@ public interface PropertyBasedEmbeddingServiceConfig {
     String url();
 
     @JsonProperty
+    String apiKey();
+
+    @JsonProperty
     List<String> supportedAuthentication();
 
+    @Nullable
     @JsonProperty
     List<ParameterConfig> parameters();
 
+    @Nullable
     @JsonProperty
     Map<String, String> properties();
 
+    @Nullable
     @JsonProperty
     List<ModelConfig> models();
 

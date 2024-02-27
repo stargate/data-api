@@ -23,13 +23,36 @@ public record FindVectorProvidersOperation(
     return Uni.createFrom()
         .item(
             () -> {
-              // TODO: get all available vector providers
               Map<String, ReturnVectorProviderConfig> vectorProviders = new HashMap<>();
-              if (propertyBasedEmbeddingServiceConfig.google().enabled()) {
+              if (propertyBasedEmbeddingServiceConfig.vertexai().enabled()) {
                 vectorProviders.put(
                     "vertexai",
                     ReturnVectorProviderConfig.provider(
-                        (propertyBasedEmbeddingServiceConfig.google())));
+                        (propertyBasedEmbeddingServiceConfig.vertexai())));
+              }
+              if (propertyBasedEmbeddingServiceConfig.huggingface().enabled()) {
+                vectorProviders.put(
+                    "huggingface",
+                    ReturnVectorProviderConfig.provider(
+                        (propertyBasedEmbeddingServiceConfig.huggingface())));
+              }
+              if (propertyBasedEmbeddingServiceConfig.openai().enabled()) {
+                vectorProviders.put(
+                    "openai",
+                    ReturnVectorProviderConfig.provider(
+                        (propertyBasedEmbeddingServiceConfig.openai())));
+              }
+              if (propertyBasedEmbeddingServiceConfig.cohere().enabled()) {
+                vectorProviders.put(
+                    "cohere",
+                    ReturnVectorProviderConfig.provider(
+                        (propertyBasedEmbeddingServiceConfig.cohere())));
+              }
+              if (propertyBasedEmbeddingServiceConfig.nvidia().enabled()) {
+                vectorProviders.put(
+                    "nvidia",
+                    ReturnVectorProviderConfig.provider(
+                        (propertyBasedEmbeddingServiceConfig.nvidia())));
               }
               return new Result(vectorProviders);
             });
