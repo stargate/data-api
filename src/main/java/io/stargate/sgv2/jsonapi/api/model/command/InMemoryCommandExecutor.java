@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineBeginWriterCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineEndWriterCommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.List;
@@ -74,7 +75,7 @@ public class InMemoryCommandExecutor {
         new CreateCollectionCommand.Options.VectorSearchConfig(
             3, CollectionSettings.SimilarityFunction.COSINE.toString());
     CreateCollectionCommand.Options createCollectionCommandOptions =
-        new CreateCollectionCommand.Options(vectorSearchConfig, null, null);
+        new CreateCollectionCommand.Options(vectorSearchConfig, null, null); // TODO-SL
     CreateCollectionCommand createCollectionCommand =
         new CreateCollectionCommand(collection, createCollectionCommandOptions);
     return new OfflineBeginWriterCommand(
@@ -92,6 +93,7 @@ public class InMemoryCommandExecutor {
         List.of(
             new OfflineBeginWriterCommandResolver(shredder, objectMapper),
             new OfflineInsertManyCommandResolver(shredder, objectMapper),
+            new OfflineGetStatusCommandResolver(shredder, objectMapper),
             new OfflineEndWriterCommandResolver(shredder, objectMapper)));
   }
 

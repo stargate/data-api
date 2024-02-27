@@ -5,12 +5,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-/** Representation of the offline end-writer API {@link Command}. */
-@Schema(description = "Command that ends the offline writer session.")
-@JsonTypeName("offlineEndWriter")
-public record OfflineEndWriterCommand(
+/** Representation of the offline get status API {@link Command}. */
+@Schema(description = "Command that gets the status of the offline writer.")
+@JsonTypeName("offlineGetStatus")
+public record OfflineGetStatusCommand(
     @Schema(
-            description = "The session ID to end",
+            description = "The session ID to get the status of",
             type = SchemaType.STRING,
             implementation = String.class)
         String sessionId)

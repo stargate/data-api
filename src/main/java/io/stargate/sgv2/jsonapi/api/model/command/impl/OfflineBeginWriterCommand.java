@@ -56,7 +56,7 @@ public class OfflineBeginWriterCommand implements Command {
     this.createCollectionCommand = createCollectionCommand;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
     this.collectionSettings = buildCollectionSettings();
-    this.embeddingService = null; // TODO
+    this.embeddingService = null; // TODO-SL
     this.sessionId = UUID.randomUUID().toString();
     this.fileWriterParams = buildFileWriterParams();
   }

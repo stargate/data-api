@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.InMemoryCommandExecutor;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineBeginWriterCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineEndWriterCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +34,7 @@ public class OfflineWriterTester {
             namespace, collection, ssTablesOutputDirectory);
     CommandResult offlineBeingWirterCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineBeginWriterCommand);
+    System.out.println("begin command: " + offlineBeingWirterCommandResponse);
     String sessionId =
         offlineBeingWirterCommandResponse
             .status()
@@ -49,11 +51,16 @@ public class OfflineWriterTester {
         new OfflineInsertManyCommand(sessionId, documents);
     CommandResult offlineInsertManyCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineInsertManyCommand);
-    System.out.println(offlineInsertManyCommandResponse);
+    System.out.println("insert many response: " + offlineInsertManyCommandResponse);
+
+    OfflineGetStatusCommand offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
+    CommandResult offlineGetStatusCommandResponse =
+        inMemoryCommandExecutor.runCommand(offlineGetStatusCommand);
+    System.out.println("status:" + offlineGetStatusCommandResponse);
 
     OfflineEndWriterCommand offlineEndWriterCommand = new OfflineEndWriterCommand(sessionId);
     CommandResult offlineEndWriterCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineEndWriterCommand);
-    System.out.println(offlineEndWriterCommandResponse);
+    System.out.println("end command: " + offlineEndWriterCommandResponse);
   }
 }

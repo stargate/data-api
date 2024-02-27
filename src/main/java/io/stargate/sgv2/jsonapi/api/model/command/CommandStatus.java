@@ -46,5 +46,12 @@ public enum CommandStatus {
    * the SSTable files for example
    */
   @JsonProperty("offlineWriterSessionId")
-  OFFLINE_WRITER_SESSION_ID;
+  OFFLINE_WRITER_SESSION_ID,
+
+  /**
+   * The element has the status of offline writer session, which is used to write the data offline
+   * to
+   */
+  @JsonProperty("offlineWriterSessionStatus")
+  OFFLINE_WRITER_SESSION_STATUS
 }
