@@ -59,6 +59,13 @@ public final class ThrowableToErrorMapper {
           if (message.contains("vector<float,")) {
             message = "Mismatched vector dimension";
           }
+          if (message.contains(
+                  "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
+              || message.contains("ANN ordering by vector requires the column to be indexed")) {
+            return ErrorCode.NO_INDEX_ERROR
+                .toApiException()
+                .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+          }
           return ErrorCode.INVALID_QUERY
               .toApiException()
               .getCommandResultError(message, Response.Status.OK);

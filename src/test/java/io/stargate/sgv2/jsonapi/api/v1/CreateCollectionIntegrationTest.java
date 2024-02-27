@@ -596,6 +596,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void checkMetrics() {
       CreateCollectionIntegrationTest.super.checkMetrics("CreateCollectionCommand");
+      CreateCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -18,7 +19,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.api.common.config.QueriesConfig;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -33,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -43,21 +44,21 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DeleteOperationTest extends OperationTestBase {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
-
-  @Inject QueryExecutor queryExecutor;
+  private CommandContext COMMAND_CONTEXT;
   @Inject ObjectMapper objectMapper;
-  @Inject QueriesConfig queriesConfig;
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+  }
 
   @Nested
   class Execute {
@@ -207,9 +208,11 @@ public class DeleteOperationTest extends OperationTestBase {
                   DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
+      CommandContext commandContext =
+          createCommandContextWithCommandName("jsonBytesReadDeleteCommand");
       FindOperation findOperation =
           FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
@@ -217,7 +220,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
-              COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
+              commandContext, findOperation, 3, DocumentProjector.identityProjector());
       Supplier<CommandResult> execute =
           operation
               .execute(queryExecutor)
@@ -235,6 +238,67 @@ public class DeleteOperationTest extends OperationTestBase {
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.DELETED_COUNT, 1);
       assertThat(result.data().getResponseDocuments()).hasSize(1);
       assertThat(result.data().getResponseDocuments().get(0).toString()).isEqualTo(docJson);
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesReadMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("jsonBytesReadDeleteCommand"))
+              .toList();
+      // should have three metrics in total
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonBytesReadDeleteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, should be one
+      List<String> jsonDocsReadCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_count")
+                          && line.contains("jsonBytesReadDeleteCommand"))
+              .toList();
+      assertThat(jsonDocsReadCountMetrics).hasSize(1);
+      jsonDocsReadCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- read one doc, should be one
+      List<String> jsonDocsReadSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_sum")
+                          && line.contains("jsonBytesReadDeleteCommand"))
+              .toList();
+      assertThat(jsonDocsReadSumMetrics).hasSize(1);
+      jsonDocsReadSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
     }
 
     @Test

@@ -177,7 +177,18 @@ public record CreateCollectionOperation(
                     return Uni.createFrom().item(false);
                   }
                 });
-    return indexResult.onItem().transform(SchemaChangeResult::new);
+    return indexResult
+        .onItem()
+        .transform(
+            res -> {
+              if (!res) {
+                // table creation failure or index creation failure
+                return ErrorCode.COLLECTION_CREATION_ERROR.toApiException(
+                    "provided collection ('%s')", name);
+              } else {
+                return new SchemaChangeResult(true);
+              }
+            });
   }
 
   /**

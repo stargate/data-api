@@ -83,10 +83,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         vectorSize = command.options().vector().dimension();
         if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
           throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG,
+              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
               String.format(
                   "%s: %d (max %d)",
-                  ErrorCode.VECTOR_SEARCH_FIELD_TOO_BIG.getMessage(),
+                  ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
                   vectorSize,
                   documentLimitsConfig.maxVectorEmbeddingLength()));
         }

@@ -689,6 +689,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void checkMetrics() {
       UpdateManyIntegrationTest.super.checkMetrics("UpdateManyCommand");
+      UpdateManyIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

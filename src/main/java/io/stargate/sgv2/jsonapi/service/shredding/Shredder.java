@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -37,10 +38,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
+  private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+
   @Inject
-  public Shredder(ObjectMapper objectMapper, DocumentLimitsConfig documentLimits) {
+  public Shredder(
+      ObjectMapper objectMapper,
+      DocumentLimitsConfig documentLimits,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
+    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
   }
 
   /**
@@ -54,10 +61,11 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    return shred(doc, txId, DocumentProjector.identityProjector());
+    return shred(doc, txId, DocumentProjector.identityProjector(), "testCommand");
   }
 
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId, DocumentProjector indexProjector) {
+  public WritableShreddedDocument shred(
+      JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -87,10 +95,13 @@ public class Shredder {
     // And then we can validate the document size
     validateDocumentSize(documentLimits, docJson);
 
+    // Create json bytes written metrics
+    jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
+
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
-    // Before value validation, indexing, may need to drop "non-indexed" fields. But if so,
+    // Before value validation, indexing, may need to drop "non-indexed" properties. But if so,
     // need to ensure we do not modify original document, so let's create a copy (may need
     // to be returned as "after" Document)
     ObjectNode indexableDocument;
@@ -106,18 +117,18 @@ public class Shredder {
     // and now we can finally validate (String) value lengths
     new IndexableValueValidator(documentLimits).validate(indexableDocument);
 
-    // And finally let's traverse the document to actually "shred" (build index fields)
+    // And finally let's traverse the document to actually "shred" (build index properties)
     traverse(indexableDocument, b, JsonPath.rootBuilder());
     return b.build();
   }
 
   /**
    * Method called to ensure that Document has Document Id (generating id if necessary), and that it
-   * is the very first field in the document (reordering as needed). Note that a new document is
+   * is the very first property in the document (reordering as needed). Note that a new document is
    * created and returned; input document is never modified.
    *
    * @param doc Document to use as the base
-   * @return Document that has _id as its first field
+   * @return Document that has _id as its first property
    */
   private ObjectNode normalizeDocumentId(ObjectNode doc) {
     // First: see if we have Object Id present or not
@@ -127,13 +138,13 @@ public class Shredder {
     if (idNode == null) {
       idNode = generateDocumentId();
     }
-    // Either way we need to construct actual document with _id as the first field;
-    // unfortunately there is no way to reorder fields in-place.
-    final ObjectNode docWithIdAsFirstField = objectMapper.createObjectNode();
-    docWithIdAsFirstField.set(DocumentConstants.Fields.DOC_ID, idNode);
-    // Ok to add all fields, possibly including doc id since order won't change
-    docWithIdAsFirstField.setAll(doc);
-    return docWithIdAsFirstField;
+    // Either way we need to construct actual document with _id as the first property;
+    // unfortunately there is no way to reorder properties in-place.
+    final ObjectNode docWithIdAsFirstProperty = objectMapper.createObjectNode();
+    docWithIdAsFirstProperty.set(DocumentConstants.Fields.DOC_ID, idNode);
+    // Ok to add all properties, possibly including doc id since order won't change
+    docWithIdAsFirstProperty.setAll(doc);
+    return docWithIdAsFirstProperty;
   }
 
   private JsonNode generateDocumentId() {
@@ -185,7 +196,7 @@ public class Shredder {
     if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
       traverseVector(path, value, callback);
     } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      // Do nothing, vectorize field will just sit in doc json
+      // Do nothing, vectorize property will just sit in doc json
     } else {
       if (value.isObject()) {
         ObjectNode ob = (ObjectNode) value;
@@ -234,9 +245,9 @@ public class Shredder {
   }
 
   /**
-   * Validator applied to the full document, before removing non-indexable fields. Used to ensure
-   * that the full document does not violate overall structural limits such as total length or
-   * maximum nesting depth, or invalid property names. Most checks are done at a later point with
+   * Validator applied to the full document, before removing non-indexable properties. Used to
+   * ensure that the full document does not violate overall structural limits such as total length
+   * or maximum nesting depth, or invalid property names. Most checks are done at a later point with
    * {@link IndexableValueValidator}.
    */
   static class FullDocValidator {
@@ -300,9 +311,9 @@ public class Shredder {
         if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
           ; // Fine, looks like legit Date value
         } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
-          ; // Fine, looks like legit vector field
+          ; // Fine, looks like legit vector property
         } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
-          ; // Fine, looks like legit vectorize field
+          ; // Fine, looks like legit vectorize property
         } else {
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
               "property name ('%s') contains character(s) not allowed", key);
@@ -325,8 +336,8 @@ public class Shredder {
   }
 
   /**
-   * Secondary validator applied to the storable document after non-indexable fields (and branches)
-   * have been pruned.
+   * Secondary validator applied to the storable document after non-indexable properties (and
+   * branches) have been pruned.
    */
   static class IndexableValueValidator {
     final DocumentLimitsConfig limits;
@@ -353,7 +364,7 @@ public class Shredder {
       } else if (value.isArray()) {
         validateArrayValue(referringPropertyName, value);
       } else if (value.isTextual()) {
-        validateStringValue(value.textValue());
+        validateStringValue(referringPropertyName, value.textValue());
       }
     }
 
@@ -363,12 +374,12 @@ public class Shredder {
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
             throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-                "number of elements Vector embedding ('%s') has (%d) exceeds maximum allowed (%d)",
+                "number of elements Vector embedding (property '%s') has (%d) exceeds maximum allowed (%d)",
                 referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
           }
         } else {
           throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-              "number of elements an indexable Array ('%s') has (%d) exceeds maximum allowed (%d)",
+              "number of elements an indexable Array (property '%s') has (%d) exceeds maximum allowed (%d)",
               referringPropertyName, arrayValue.size(), limits.maxArrayLength());
         }
       }
@@ -382,7 +393,7 @@ public class Shredder {
       final int propCount = objectValue.size();
       if (propCount > limits.maxObjectProperties()) {
         throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "number of properties an indexable Object ('%s') has (%d) exceeds maximum allowed (%s)",
+            "number of properties an indexable Object (property '%s') has (%d) exceeds maximum allowed (%s)",
             referringPropertyName, objectValue.size(), limits.maxObjectProperties());
       }
       totalProperties.addAndGet(propCount);
@@ -392,13 +403,13 @@ public class Shredder {
       }
     }
 
-    private void validateStringValue(String value) {
+    private void validateStringValue(String referringPropertyName, String value) {
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
         throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "indexed String value length (%d bytes) exceeds maximum allowed (%d bytes)",
-            encodedLength.getAsInt(), limits.maxStringLengthInBytes());
+            "indexed String value (property '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
+            referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
       }
     }
   }
