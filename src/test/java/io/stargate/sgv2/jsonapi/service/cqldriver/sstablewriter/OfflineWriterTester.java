@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.InMemoryCommandExecutor;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineBeginWriterCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineEndWriterCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import java.util.List;
@@ -29,7 +29,7 @@ public class OfflineWriterTester {
     InMemoryCommandExecutor inMemoryCommandExecutor =
         new InMemoryCommandExecutor(namespace, collection, ssTablesOutputDirectory);
 
-    OfflineBeginWriterCommand offlineBeginWriterCommand =
+    BeginOfflineSessionCommand offlineBeginWriterCommand =
         InMemoryCommandExecutor.buildOfflineBeginWriterCommand(
             namespace, collection, ssTablesOutputDirectory);
     CommandResult offlineBeingWirterCommandResponse =
@@ -58,7 +58,7 @@ public class OfflineWriterTester {
         inMemoryCommandExecutor.runCommand(offlineGetStatusCommand);
     System.out.println("status:" + offlineGetStatusCommandResponse);
 
-    OfflineEndWriterCommand offlineEndWriterCommand = new OfflineEndWriterCommand(sessionId);
+    EndOfflineSessionCommand offlineEndWriterCommand = new EndOfflineSessionCommand(sessionId);
     CommandResult offlineEndWriterCommandResponse =
         inMemoryCommandExecutor.runCommand(offlineEndWriterCommand);
     System.out.println("end command: " + offlineEndWriterCommandResponse);

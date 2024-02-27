@@ -7,8 +7,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /** Representation of the offline end-writer API {@link Command}. */
 @Schema(description = "Command that ends the offline writer session.")
-@JsonTypeName("offlineEndWriter")
-public record OfflineEndWriterCommand(
+@JsonTypeName("endOfflineSession")
+public record EndOfflineSessionCommand(
     @Schema(
             description = "The session ID to end",
             type = SchemaType.STRING,

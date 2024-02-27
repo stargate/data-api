@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineBeginWriterCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -17,8 +17,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
-import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineBeginWriterCommandResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineEndWriterCommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.BeginOfflineSessionCommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.EndOfflineSessionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -34,7 +34,7 @@ public class InMemoryCommandExecutor {
   public InMemoryCommandExecutor(
       String namespace, String collection, String ssTablesOutputDirectory) {
     String sessionId = UUID.randomUUID().toString();
-    OfflineBeginWriterCommand offlineBeginWriterCommand =
+    BeginOfflineSessionCommand offlineBeginWriterCommand =
         buildOfflineBeginWriterCommand(namespace, collection, ssTablesOutputDirectory);
     FileWriterParams fileWriterParams = offlineBeginWriterCommand.getFileWriterParams();
     this.commandProcessor = buildCommandProcessor(sessionId, fileWriterParams);
@@ -69,7 +69,7 @@ public class InMemoryCommandExecutor {
     return new QueryExecutor(cqlSessionCache, operationsConfig);
   }
 
-  public static OfflineBeginWriterCommand buildOfflineBeginWriterCommand(
+  public static BeginOfflineSessionCommand buildOfflineBeginWriterCommand(
       String namespace, String collection, String ssTablesOutputDirectory) {
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
         new CreateCollectionCommand.Options.VectorSearchConfig(
@@ -78,7 +78,7 @@ public class InMemoryCommandExecutor {
         new CreateCollectionCommand.Options(vectorSearchConfig, null, null); // TODO-SL
     CreateCollectionCommand createCollectionCommand =
         new CreateCollectionCommand(collection, createCollectionCommandOptions);
-    return new OfflineBeginWriterCommand(
+    return new BeginOfflineSessionCommand(
         namespace, createCollectionCommand, ssTablesOutputDirectory);
   }
 
@@ -91,10 +91,10 @@ public class InMemoryCommandExecutor {
     Shredder shredder = new Shredder(objectMapper, documentLimitsConfig);
     return new CommandResolverService(
         List.of(
-            new OfflineBeginWriterCommandResolver(shredder, objectMapper),
+            new BeginOfflineSessionCommandResolver(shredder, objectMapper),
             new OfflineInsertManyCommandResolver(shredder, objectMapper),
             new OfflineGetStatusCommandResolver(shredder, objectMapper),
-            new OfflineEndWriterCommandResolver(shredder, objectMapper)));
+            new EndOfflineSessionCommandResolver(shredder, objectMapper)));
   }
 
   public CommandResult runCommand(Command command) throws ExecutionException, InterruptedException {

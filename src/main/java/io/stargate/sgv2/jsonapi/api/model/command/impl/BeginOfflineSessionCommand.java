@@ -16,8 +16,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /** Representation of the offline begin-writer API {@link Command}. */
 @Schema(description = "Command that initializes the offline writer.")
-@JsonTypeName("offlineBeginWriter")
-public class OfflineBeginWriterCommand implements Command {
+@JsonTypeName("beginOfflineSession")
+public class BeginOfflineSessionCommand implements Command {
   @Schema(
       description = "The namespace to write to.",
       type = SchemaType.STRING,
@@ -42,13 +42,13 @@ public class OfflineBeginWriterCommand implements Command {
   @JsonIgnore private final FileWriterParams fileWriterParams;
 
   /**
-   * Constructs a new {@link OfflineBeginWriterCommand}.
+   * Constructs a new {@link BeginOfflineSessionCommand}.
    *
    * @param namespace the namespace to write to
    * @param createCollectionCommand the create collection command
    * @param ssTableOutputDirectory the SSTable output directory
    */
-  public OfflineBeginWriterCommand(
+  public BeginOfflineSessionCommand(
       String namespace,
       CreateCollectionCommand createCollectionCommand,
       String ssTableOutputDirectory) {
