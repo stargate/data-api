@@ -726,7 +726,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               endsWith("limit options should not be greater than 1000 for vector search."));
@@ -756,7 +757,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message", endsWith("skip options should not be used with vector search."));
     }
