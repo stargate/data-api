@@ -96,7 +96,8 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-  UNAVAILABLE_EMBEDDING_SERVICE("Unable to vectorize data, embedding service not available"),
+  UNAVAILABLE_EMBEDDING_SERVICE(
+      "Unable to vectorize data, embedding service not configured for the collection"),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
