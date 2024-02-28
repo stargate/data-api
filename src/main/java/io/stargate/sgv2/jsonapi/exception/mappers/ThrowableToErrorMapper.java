@@ -118,7 +118,7 @@ public final class ThrowableToErrorMapper {
           return ErrorCode.DRIVER_CLOSED_CONNECTION
               .toApiException()
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          // Unidentified Driver Exceptions, will not mapper into JsonApiException
+          // Unidentified Driver Exceptions, will not map into JsonApiException
         } else if (throwable instanceof DriverException) {
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);

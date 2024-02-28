@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
@@ -49,12 +51,12 @@ public class ConstraintViolationExceptionMapper {
       propertyPath = propertyPath.substring(PREFIX_POST_COMMAND.length());
     }
 
-    Object propertyValue = violation.getInvalidValue();
-    String propertyValueDesc = valueDescription(propertyValue);
-    String msg =
-        "Request invalid: field '%s' value %s not valid. Problem: %s."
-            .formatted(propertyPath, propertyValueDesc, message);
-    return new CommandResult.Error(msg, ERROR_FIELDS, ERROR_FIELDS_METRICS_TAG, Response.Status.OK);
+    String propertyValueDesc = valueDescription(violation.getInvalidValue());
+    JsonApiException ex =
+        ErrorCode.COMMAND_FIELD_INVALID.toApiException(
+            "field '%s' value %s not valid. Problem: %s.",
+            propertyPath, propertyValueDesc, message);
+    return ex.getCommandResultError(ex.getMessage(), Response.Status.OK);
   }
 
   /** Helper method for construction description of value that caused the constraint violation. */
