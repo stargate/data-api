@@ -33,11 +33,7 @@ public record OfflineGetStatusOperation(
           ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND,
           ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND.getMessage() + command.sessionId());
     }
-    OfflineWriterSessionStatus offlineWriterSessionStatus =
-        new OfflineWriterSessionStatus(
-            command().sessionId(),
-            fileWriterSession.getNamespace(),
-            fileWriterSession.getCollection());
+    OfflineWriterSessionStatus offlineWriterSessionStatus = fileWriterSession.getStatus();
     CommandResult commandResult =
         new CommandResult(
             Map.of(CommandStatus.OFFLINE_WRITER_SESSION_STATUS, offlineWriterSessionStatus));

@@ -54,6 +54,7 @@ public class FileWriterSession implements CqlSession {
   private final ColumnDefinitions responseColumnDefinitions;
   private final CQLSessionCache cqlSessionCache;
   private final CQLSessionCache.SessionCacheKey cacheKey;
+  private final String ssTableOutputDirectory;
   private final CQLSSTableWriter cqlsSSTableWriter;
 
   public FileWriterSession(
@@ -84,6 +85,7 @@ public class FileWriterSession implements CqlSession {
                   .ssTableOutputDirectory())); // TODO-SL: avoid deleting recursively and check if
       // its empty
     }
+    this.ssTableOutputDirectory = fileWriterParams.ssTableOutputDirectory();
     Files.createDirectories(Path.of(fileWriterParams.ssTableOutputDirectory()));
     String dataDirectory = fileWriterParams.ssTableOutputDirectory() + File.separator + "data";
     Files.createDirectories(Path.of(dataDirectory));
@@ -260,7 +262,8 @@ public class FileWriterSession implements CqlSession {
     return this.table;
   }
 
-  public SSTableWriterStatus getStatus() {
-    return new SSTableWriterStatus(this.keyspace, this.table);
+  public OfflineWriterSessionStatus getStatus() {
+    return new OfflineWriterSessionStatus(
+        this.sessionId, this.keyspace, this.table, this.ssTableOutputDirectory);
   }
 }
