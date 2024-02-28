@@ -35,8 +35,6 @@ public class DataVectorizerService {
    * @return
    */
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
-    if (!commandContext.isVectorEnabled() || commandContext.embeddingService() == null)
-      return Uni.createFrom().item(command);
     final DataVectorizer dataVectorizer =
         new DataVectorizer(
             commandContext.embeddingService(),
