@@ -9,13 +9,10 @@ import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
-import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.InvalidFileWriterOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
@@ -76,8 +73,7 @@ public class CQLSessionCache {
                         if (sessionCacheKey != null) {
                           if (LOGGER.isTraceEnabled()) {
                             LOGGER.trace(
-                                "Removing session for tenant : {}",
-                                sessionCacheKey.dataApiRequestInfo.getTenantId());
+                                "Removing session for tenant : {}", sessionCacheKey.tenantId());
                           }
                         }
                         if (session != null) {
@@ -103,8 +99,7 @@ public class CQLSessionCache {
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace(
-          "Creating new session for tenant : {}", cacheKey.dataApiRequestInfo.getTenantId());
+      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId());
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     if (LOGGER.isTraceEnabled()) {
@@ -119,8 +114,7 @@ public class CQLSessionCache {
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
 
-      return new TenantAwareCqlSessionBuilder(
-              cacheKey.getDataApiRequestInfo().getTenantId().orElse(DEFAULT_TENANT))
+      return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
           .withClassLoader(Thread.currentThread().getContextClassLoader())
@@ -130,30 +124,13 @@ public class CQLSessionCache {
           .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(
-              cacheKey.getDataApiRequestInfo().getTenantId().orElseThrow())
+      return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
           .withAuthCredentials(
-              TOKEN,
-              Objects.requireNonNull(
-                  cacheKey.getDataApiRequestInfo().getCassandraToken().orElseThrow()))
+              TOKEN, Objects.requireNonNull(((TokenCredentials) cacheKey.credentials()).token()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
           .build();
-    } else if (OFFLINE_WRITER.equals(databaseConfig.type())) {
-      FileWriterParams fileWriterParams = null;
-      if (cacheKey.getDataApiRequestInfo().getFileWriterParams().isPresent()) {
-        fileWriterParams = cacheKey.getDataApiRequestInfo().getFileWriterParams().get();
-      } else {
-        throw new InvalidFileWriterOptions("FileWriterParams not present in the request");
-      }
-      try {
-        return new FileWriterSession(this, cacheKey, fileWriterParams);
-      } catch (IOException e) {
-        InvalidFileWriterOptions t = new InvalidFileWriterOptions("Invalid FileWriterParams");
-        t.initCause(e);
-        throw t;
-      }
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
@@ -164,24 +141,12 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
-    return getSession(
-        dataApiRequestInfo, !OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type()));
-  }
-
-  /**
-   * Get CQLSession from cache.
-   *
-   * @param createNewSessionIfNotAvailable if true, create new session if not available in the cache
-   * @return CQLSession
-   */
-  public CqlSession getSession(
-      DataApiRequestInfo dataApiRequestInfo, boolean createNewSessionIfNotAvailable) {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
-    if (createNewSessionIfNotAvailable) {
+    if (!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
       return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
     } else {
       return sessionCache.getIfPresent(getSessionCacheKey(dataApiRequestInfo));
@@ -208,22 +173,22 @@ public class CQLSessionCache {
       case CASSANDRA -> {
         if (dataApiRequestInfo.getCassandraToken().isPresent()) {
           return new SessionCacheKey(
-              dataApiRequestInfo,
+              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         }
         return new SessionCacheKey(
-            dataApiRequestInfo,
+            dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
             new UsernamePasswordCredentials(
                 operationsConfig.databaseConfig().userName(),
                 operationsConfig.databaseConfig().password()));
       }
       case ASTRA -> {
         return new SessionCacheKey(
-            dataApiRequestInfo,
+            dataApiRequestInfo.getTenantId().orElseThrow(),
             new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
       }
       case OFFLINE_WRITER -> {
-        return new SessionCacheKey(dataApiRequestInfo, null);
+        return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
       }
     }
     throw new RuntimeException(
@@ -248,45 +213,21 @@ public class CQLSessionCache {
   public void removeSession(SessionCacheKey cacheKey) {
     sessionCache.invalidate(cacheKey);
     sessionCache.cleanUp();
-    LOGGER.trace("Session removed for tenant : {}", cacheKey.dataApiRequestInfo.getTenantId());
+    LOGGER.trace("Session removed for tenant : {}", cacheKey.tenantId());
+  }
+
+  /**
+   * Put CQLSession in cache.
+   *
+   * @param sessionCacheKey
+   * @param fileWriterSession
+   */
+  public void putSession(SessionCacheKey sessionCacheKey, FileWriterSession fileWriterSession) {
+    sessionCache.put(sessionCacheKey, fileWriterSession);
   }
 
   /** Key for CQLSession cache. */
-  public static final class SessionCacheKey {
-    private final transient DataApiRequestInfo dataApiRequestInfo;
-    private final Credentials credentials;
-
-    /**
-     * @param dataApiRequestInfo dataApiRequestInfo
-     * @param credentials credentials (username/password or token)
-     */
-    public SessionCacheKey(DataApiRequestInfo dataApiRequestInfo, Credentials credentials) {
-      this.dataApiRequestInfo = dataApiRequestInfo;
-      this.credentials = credentials;
-    }
-
-    public DataApiRequestInfo getDataApiRequestInfo() {
-      return dataApiRequestInfo;
-    }
-
-    public Credentials getCredentials() {
-      return credentials;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      SessionCacheKey cacheKey = (SessionCacheKey) o;
-      return Objects.equals(dataApiRequestInfo, cacheKey.dataApiRequestInfo)
-          && Objects.equals(credentials, cacheKey.credentials);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(dataApiRequestInfo, credentials);
-    }
-  }
+  public record SessionCacheKey(String tenantId, Credentials credentials) {}
 
   /**
    * Credentials for CQLSession cache when username and password is provided.

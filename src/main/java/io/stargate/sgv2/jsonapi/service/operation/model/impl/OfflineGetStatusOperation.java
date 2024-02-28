@@ -29,9 +29,11 @@ public record OfflineGetStatusOperation(
     FileWriterSession fileWriterSession =
         (FileWriterSession) queryExecutor.getCqlSessionCache().getSession(dataApiRequestInfo);
     if (fileWriterSession == null) {
-      throw new JsonApiException(
-          ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND,
-          ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND.getMessage() + command.sessionId());
+      JsonApiException jsonApiException =
+          new JsonApiException(
+              ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND,
+              ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND.getMessage() + command.sessionId());
+      return Uni.createFrom().failure(jsonApiException);
     }
     OfflineWriterSessionStatus offlineWriterSessionStatus = fileWriterSession.getStatus();
     CommandResult commandResult =

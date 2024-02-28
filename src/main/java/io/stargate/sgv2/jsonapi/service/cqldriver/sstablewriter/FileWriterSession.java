@@ -56,15 +56,17 @@ public class FileWriterSession implements CqlSession {
   private final CQLSessionCache.SessionCacheKey cacheKey;
   private final String ssTableOutputDirectory;
   private final CQLSSTableWriter cqlsSSTableWriter;
+  private int fileWriterBufferSizeInMB = 20;
 
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
       CQLSessionCache.SessionCacheKey cacheKey,
+      String sessionId,
       FileWriterParams fileWriterParams)
       throws IOException {
     this.cqlSessionCache = cqlSessionCache;
     this.cacheKey = cacheKey;
-    this.sessionId = "fileWriterSession" + counter.getAndIncrement();
+    this.sessionId = sessionId;
     this.keyspace = fileWriterParams.keyspaceName();
     this.table = fileWriterParams.tableName();
     this.responseColumnDefinitions =
@@ -86,6 +88,9 @@ public class FileWriterSession implements CqlSession {
       // its empty
     }
     this.ssTableOutputDirectory = fileWriterParams.ssTableOutputDirectory();
+    if (fileWriterParams.fileWriterBufferSizeInMB() > 0) {
+      this.fileWriterBufferSizeInMB = fileWriterParams.fileWriterBufferSizeInMB();
+    }
     Files.createDirectories(Path.of(fileWriterParams.ssTableOutputDirectory()));
     String dataDirectory = fileWriterParams.ssTableOutputDirectory() + File.separator + "data";
     Files.createDirectories(Path.of(dataDirectory));
@@ -94,6 +99,7 @@ public class FileWriterSession implements CqlSession {
             .inDirectory(dataDirectory)
             .forTable(fileWriterParams.createTableCQL())
             .using(fileWriterParams.insertStatementCQL())
+            .withBufferSizeInMB(fileWriterParams.fileWriterBufferSizeInMB())
             .build();
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Create table CQL: " + fileWriterParams.createTableCQL());
@@ -264,6 +270,10 @@ public class FileWriterSession implements CqlSession {
 
   public OfflineWriterSessionStatus getStatus() {
     return new OfflineWriterSessionStatus(
-        this.sessionId, this.keyspace, this.table, this.ssTableOutputDirectory);
+        this.sessionId,
+        this.keyspace,
+        this.table,
+        this.ssTableOutputDirectory,
+        this.fileWriterBufferSizeInMB);
   }
 }

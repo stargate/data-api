@@ -31,136 +31,140 @@ import java.util.concurrent.ExecutionException;
 
 public class OfflineLoaderTester {
   public static void main(String[] args)
-          throws ExecutionException, InterruptedException, JsonProcessingException {
+      throws ExecutionException, InterruptedException, JsonProcessingException {
     OfflineLoaderTester offlineLoaderTester = new OfflineLoaderTester();
     offlineLoaderTester.testOfflineLoader();
   }
 
   private void testOfflineLoader()
-          throws ExecutionException, InterruptedException, JsonProcessingException {
+      throws ExecutionException, InterruptedException, JsonProcessingException {
 
     CommandProcessor commandProcessor =
-            new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
-
+        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
 
     // Create the beginOfflineSession command so we can create a new offline session
     String namespace = "demo_namespace";
     String collection = "players";
     String ssTablesOutputDirectory = "/var/tmp/sstables_test";
     int vectorSize = 3;
+    int fileWriterBufferSizeInMB = 25;
     String similarityFunction = CollectionSettings.SimilarityFunction.COSINE.toString();
 
-    var vectorSearchConfig = new CreateCollectionCommand.Options.VectorSearchConfig(vectorSize, similarityFunction);
+    var vectorSearchConfig =
+        new CreateCollectionCommand.Options.VectorSearchConfig(vectorSize, similarityFunction);
     var options = new CreateCollectionCommand.Options(vectorSearchConfig, null, null);
     var createCollectionCommand = new CreateCollectionCommand(collection, options);
-    var beginOfflineSessionCommand = new BeginOfflineSessionCommand(namespace, createCollectionCommand, ssTablesOutputDirectory);
+    var beginOfflineSessionCommand =
+        new BeginOfflineSessionCommand(
+            namespace, createCollectionCommand, ssTablesOutputDirectory, fileWriterBufferSizeInMB);
 
     EmbeddingService embeddingService = null; // TODO
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter = null; // TODO
-
 
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
 
     // TODO: - SL  can we add a static to CommandContext or something to make creating this easier
     String commandName = beginOfflineSessionCommand.getClass().getSimpleName();
     CommandContext commandContext =
-            new CommandContext(
-                    namespace,
-                    collection,
-                    beginOfflineSessionCommand.getCollectionSettings(),
-                    embeddingService,
-                    commandName,
-                    jsonProcessingMetricsReporter);
+        new CommandContext(
+            namespace,
+            collection,
+            beginOfflineSessionCommand.getCollectionSettings(),
+            embeddingService,
+            commandName,
+            jsonProcessingMetricsReporter);
 
     CommandResult commandResult =
-            commandProcessor
-                    .processCommand(dataApiRequestInfo, commandContext, beginOfflineSessionCommand)
-                    .subscribe()
-                    .asCompletionStage()
-                    .get();
+        commandProcessor
+            .processCommand(dataApiRequestInfo, commandContext, beginOfflineSessionCommand)
+            .subscribe()
+            .asCompletionStage()
+            .get();
 
-    //TODO - SL - ? Can we make a OfflineBeginSessionResponse.fromCommandResult(commandResult) ?
-    // so we can hide the CommandResult from the user and give them a typed result that understands the command
+    // TODO - SL - ? Can we make a OfflineBeginSessionResponse.fromCommandResult(commandResult) ?
+    // so we can hide the CommandResult from the user and give them a typed result that understands
+    // the command
     String sessionId =
-            commandResult.status().get(CommandStatus.OFFLINE_WRITER_SESSION_ID).toString();
+        commandResult.status().get(CommandStatus.OFFLINE_WRITER_SESSION_ID).toString();
     System.out.println(commandResult);
 
     // TODO - SL, what is the max number of docs in the offline insert many ?
     // TODO - SL, what happens if some documents fail ?
     OfflineInsertManyCommand offlineInsertManyCommand =
-            new OfflineInsertManyCommand(
-                    sessionId,
-                    List.of(
-                            new ObjectMapper()
-                                    .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}"),
-                            new ObjectMapper()
-                                    .readTree("{\"_id\": 2, \"name\":\"mark\",\"$vector\": [0.7,0.7,0.6]}")));
+        new OfflineInsertManyCommand(
+            sessionId,
+            List.of(
+                new ObjectMapper()
+                    .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}"),
+                new ObjectMapper()
+                    .readTree("{\"_id\": 2, \"name\":\"mark\",\"$vector\": [0.7,0.7,0.6]}")));
     CommandResult offlineInsertManyCommandResponse =
-            commandProcessor
-                    .processCommand(dataApiRequestInfo, commandContext, offlineInsertManyCommand)
-                    .subscribe()
-                    .asCompletionStage()
-                    .get();
+        commandProcessor
+            .processCommand(dataApiRequestInfo, commandContext, offlineInsertManyCommand)
+            .subscribe()
+            .asCompletionStage()
+            .get();
     System.out.println(offlineInsertManyCommandResponse);
 
-    // TODO: SL - Add a test that loops calling insertMany, checking the size of the SSTable with get status and stops when it gets to 10 mb ?
+    // TODO: SL - Add a test that loops calling insertMany, checking the size of the SSTable with
+    // get status and stops when it gets to 10 mb ?
     // TODO: AL - a test that is running multiple sessions at the same time
 
     // TODO SL - remember to include the file size
     OfflineGetStatusCommand offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
     CommandResult offlineGetStatusCommandResponse =
-            commandProcessor
-                    .processCommand(dataApiRequestInfo, commandContext, offlineGetStatusCommand)
-                    .subscribe()
-                    .asCompletionStage()
-                    .get();
+        commandProcessor
+            .processCommand(dataApiRequestInfo, commandContext, offlineGetStatusCommand)
+            .subscribe()
+            .asCompletionStage()
+            .get();
     System.out.println(offlineGetStatusCommandResponse);
 
-    //TODO SL - response should include file path and size
+    // TODO SL - response should include file path and size
     EndOfflineSessionCommand offlineEndWriterCommand = new EndOfflineSessionCommand(sessionId);
     CommandResult offlineEndWriterCommandResponse =
-            commandProcessor
-                    .processCommand(dataApiRequestInfo, commandContext, offlineEndWriterCommand)
-                    .subscribe()
-                    .asCompletionStage()
-                    .get();
+        commandProcessor
+            .processCommand(dataApiRequestInfo, commandContext, offlineEndWriterCommand)
+            .subscribe()
+            .asCompletionStage()
+            .get();
     System.out.println(offlineEndWriterCommandResponse);
 
     offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
     offlineGetStatusCommandResponse =
-            commandProcessor
-                    .processCommand(dataApiRequestInfo, commandContext, offlineGetStatusCommand)
-                    .subscribe()
-                    .asCompletionStage()
-                    .get();
+        commandProcessor
+            .processCommand(dataApiRequestInfo, commandContext, offlineGetStatusCommand)
+            .subscribe()
+            .asCompletionStage()
+            .get();
     System.out.println(offlineGetStatusCommandResponse);
   }
 
   private CommandResolverService buildCommandResolverService() {
     ObjectMapper objectMapper = new ObjectMapper();
     SmallRyeConfig smallRyeConfig =
-            new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
+        new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
     DocumentLimitsConfig documentLimitsConfig =
-            smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
+        smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
     Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
-            List.of(
-                    new BeginOfflineSessionCommandResolver(shredder, objectMapper),
-                    new EndOfflineSessionCommandResolver(shredder, objectMapper),
-                    new OfflineGetStatusCommandResolver(shredder, objectMapper),
-                    new OfflineInsertManyCommandResolver(shredder, objectMapper)));
+        List.of(
+            new BeginOfflineSessionCommandResolver(shredder, objectMapper),
+            new EndOfflineSessionCommandResolver(shredder, objectMapper),
+            new OfflineGetStatusCommandResolver(shredder, objectMapper),
+            new OfflineInsertManyCommandResolver(shredder, objectMapper)));
   }
 
   private QueryExecutor buildQueryExecutor() {
     SmallRyeConfig smallRyeConfig =
-            new SmallRyeConfigBuilder()
-                    .withMapping(OperationsConfig.class)
-                    // TODO-SL increase cache expiry limit
-                    .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
-                    .build();
+        new SmallRyeConfigBuilder()
+            .withMapping(OperationsConfig.class)
+            // TODO-SL increase cache expiry limit
+            .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
+            .build();
     OperationsConfig operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);
     CQLSessionCache cqlSessionCache =
-            new CQLSessionCache(operationsConfig, new SimpleMeterRegistry());
+        new CQLSessionCache(operationsConfig, new SimpleMeterRegistry());
     return new QueryExecutor(cqlSessionCache, operationsConfig);
   }
 }

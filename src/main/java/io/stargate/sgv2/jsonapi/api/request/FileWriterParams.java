@@ -4,6 +4,7 @@ public record FileWriterParams(
     String keyspaceName,
     String tableName,
     String ssTableOutputDirectory,
+    int fileWriterBufferSizeInMB,
     String createTableCQL,
     String insertStatementCQL) {
   public FileWriterParams {

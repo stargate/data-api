@@ -39,13 +39,19 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
       implementation = String.class)
   private final String ssTableOutputDirectory;
 
+  @Schema(
+      description = "The file writer buffer size.",
+      type = SchemaType.INTEGER,
+      implementation = Integer.class)
+  private final int fileWriterBufferSizeInMB;
+
   @JsonIgnore private final CollectionSettings collectionSettings;
   @JsonIgnore private final EmbeddingService embeddingService;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
 
   /**
-   * Constructs a new {@link BeginOfflineSessionCommand}.
+   * fileWriterBufferSize Constructs a new {@link BeginOfflineSessionCommand}.
    *
    * @param namespace the namespace to write to
    * @param createCollection the create collection command
@@ -53,13 +59,17 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
    */
   @Inject
   public BeginOfflineSessionCommand(
-      String namespace, CreateCollectionCommand createCollection, String ssTableOutputDirectory) {
+      String namespace,
+      CreateCollectionCommand createCollection,
+      String ssTableOutputDirectory,
+      int fileWriterBufferSizeInMB) {
     this.namespace = namespace;
     this.createCollection = createCollection;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
     this.collectionSettings = buildCollectionSettings();
     this.embeddingService = null; // TODO-SL
     this.sessionId = UUID.randomUUID().toString();
+    this.fileWriterBufferSizeInMB = fileWriterBufferSizeInMB;
     this.fileWriterParams = buildFileWriterParams();
   }
 
@@ -98,6 +108,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         this.namespace,
         this.getCreateCollectionCommand().name(),
         this.getSsTableOutputDirectory(),
+        fileWriterBufferSizeInMB,
         createTableCQL,
         insertStatementCQL);
   }

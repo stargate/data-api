@@ -7,7 +7,6 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -18,8 +17,6 @@ import java.util.Optional;
 public class DataApiRequestInfo {
   private Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-
-  private Optional<FileWriterParams> fileWriterParams;
 
   public DataApiRequestInfo() {
     this.cassandraToken = Optional.empty();
@@ -40,7 +37,6 @@ public class DataApiRequestInfo {
         ((TenantResolver) tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken =
         ((CassandraTokenResolver) tokenResolver.get()).resolve(routingContext, securityContext);
-    this.fileWriterParams = Optional.empty();
   }
 
   public void setTenantId(String tenantId) {
@@ -53,28 +49,5 @@ public class DataApiRequestInfo {
 
   public Optional<String> getCassandraToken() {
     return this.cassandraToken;
-  }
-
-  public Optional<FileWriterParams> getFileWriterParams() {
-    return this.fileWriterParams;
-  }
-
-  public void setFileWriterParams(FileWriterParams fileWriterParams) {
-    this.fileWriterParams = Optional.ofNullable(fileWriterParams);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DataApiRequestInfo that = (DataApiRequestInfo) o;
-    return Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(cassandraToken, that.cassandraToken)
-        && Objects.equals(fileWriterParams, that.fileWriterParams);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(tenantId, cassandraToken, fileWriterParams);
   }
 }

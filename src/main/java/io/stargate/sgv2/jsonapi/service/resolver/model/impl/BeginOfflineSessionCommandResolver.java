@@ -31,6 +31,7 @@ public class BeginOfflineSessionCommandResolver
 
   @Override
   public Operation resolveCommand(CommandContext ctx, BeginOfflineSessionCommand command) {
-    return new BeginOfflineSessionOperation(ctx, command, shredder, objectMapper);
+    return new BeginOfflineSessionOperation(
+        ctx, command.getSessionId(), command.getFileWriterParams(), shredder, objectMapper);
   }
 }
