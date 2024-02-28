@@ -28,9 +28,6 @@ public interface PropertyBasedEmbeddingServiceConfig {
   @Nullable
   VectorProviderConfig nvidia();
 
-  //  @Nullable
-  //  VectorProviderConfig google();
-
   @Nullable
   CustomConfig custom();
 
