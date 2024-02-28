@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
-@ConfigMapping(prefix = "stargate.jsonapi.embedding.service")
+@ConfigMapping(prefix = "jsonapi.embedding.service")
 public interface PropertyBasedEmbeddingServiceConfig {
 
   @Nullable
