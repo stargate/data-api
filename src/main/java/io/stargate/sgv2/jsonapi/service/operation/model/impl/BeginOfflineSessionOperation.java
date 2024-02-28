@@ -17,24 +17,26 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public record BeginOfflineSessionOperation(
-    CommandContext ctx,
-    BeginOfflineSessionCommand command,
-    Shredder shredder,
-    ObjectMapper objectMapper)
-    implements Operation {
+        CommandContext ctx,
+        // TODO-SL: remove the command from the parameter
+        BeginOfflineSessionCommand command,
+        Shredder shredder,
+        ObjectMapper objectMapper)
+        implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+          DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     dataApiRequestInfo.setTenantId(command.getSessionId());
     dataApiRequestInfo.setFileWriterParams(command.getFileWriterParams());
+    // TODO-SL: Make the Offline session of oject here and push into the cache
     CqlSession session = queryExecutor.getCqlSessionCache().getSession(dataApiRequestInfo, true);
     if (session == null) {
       throw new JsonApiException(
-          ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION,
-          ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION.getMessage() + command.getSessionId());
+              ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION,
+              ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION.getMessage() + command.getSessionId());
     }
     CommandResult commandResult =
-        new CommandResult(Map.of(CommandStatus.OFFLINE_WRITER_SESSION_ID, command.getSessionId()));
+            new CommandResult(Map.of(CommandStatus.OFFLINE_WRITER_SESSION_ID, command.getSessionId()));
     return Uni.createFrom().item(() -> () -> commandResult);
   }
 }
