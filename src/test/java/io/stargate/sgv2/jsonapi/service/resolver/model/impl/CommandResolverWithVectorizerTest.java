@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -23,6 +24,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
@@ -40,6 +44,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.inject.Inject;
 import java.util.Optional;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +77,21 @@ public class CommandResolverWithVectorizerTest {
 
   @Nested
   class Resolve {
+    protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
+    protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+    private final CommandContext VECTOR_COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME,
+            COLLECTION_NAME,
+            new CollectionSettings(
+                COLLECTION_NAME,
+                true,
+                -1,
+                CollectionSettings.SimilarityFunction.COSINE,
+                null,
+                null,
+                null),
+            null);
 
     @Test
     public void find() throws Exception {
@@ -115,6 +135,40 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
                 assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+              });
+    }
+
+    @Test
+    public void findNonVectorize() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "sort" : {"$vectorize" : "test data"}
+            }
+          }
+          """;
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+
+      Throwable throwable =
+          dataVectorizerService
+              .vectorize(VECTOR_COMMAND_CONTEXT, findOneCommand)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .getFailure();
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException exception = (JsonApiException) e;
+                assertThat(exception.getMessage())
+                    .isEqualTo(
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
+                assertThat(exception.getErrorCode())
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -257,6 +311,40 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
                           assertThat(find.singleResponse()).isTrue();
                         });
+              });
+    }
+
+    @Test
+    public void updateNonVectorize() throws Exception {
+      String json =
+          """
+                    {
+                      "updateOne": {
+                        "filter" : {"col" : "val"},
+                        "update" : {"$set" : {"location" : "New York"}},
+                        "sort" : {"$vectorize" : "test data"}
+                      }
+                    }
+                    """;
+
+      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+      Throwable throwable =
+          dataVectorizerService
+              .vectorize(VECTOR_COMMAND_CONTEXT, command)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .getFailure();
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException exception = (JsonApiException) e;
+                assertThat(exception.getMessage())
+                    .isEqualTo(
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
+                assertThat(exception.getErrorCode())
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -437,13 +525,13 @@ public class CommandResolverWithVectorizerTest {
       new DataVectorizer(
               TestEmbeddingService.commandContextWithVectorize.embeddingService(),
               objectMapper.getNodeFactory(),
-              Optional.empty())
+              Optional.empty(),
+              TestEmbeddingService.commandContextWithVectorize.collection())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())
           .awaitItem()
           .getItem();
-      ;
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -592,6 +680,50 @@ public class CommandResolverWithVectorizerTest {
                     .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
                 assertThat(op.ordered()).isFalse();
                 assertThat(op.documents()).containsExactly(first, second);
+              });
+    }
+
+    @Test
+    public void insertManyNonVectorize() throws Exception {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        {
+                          "_id": "1",
+                          "location": "London",
+                          "$vectorize" : "test data"
+                        },
+                        {
+                          "_id": "2",
+                          "location": "New York",
+                          "$vectorize" : "test data"
+                        }
+                      ]
+                    }
+                  }
+                  """;
+
+      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+      final Throwable throwable =
+          dataVectorizerService
+              .vectorize(VECTOR_COMMAND_CONTEXT, command)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .getFailure();
+
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException exception = (JsonApiException) e;
+                assertThat(exception.getMessage())
+                    .isEqualTo(
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
+                assertThat(exception.getErrorCode())
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
