@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -62,10 +61,14 @@ public class InvalidCredentialsTests {
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    CQLSessionCache cqlSessionCacheForTest =
-        new CQLSessionCache(dataApiRequestInfo, operationsConfig, meterRegistry);
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     // Throwable
-    Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
+    Throwable t = null;
+    try {
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+    } catch (Throwable throwable) {
+      t = throwable;
+    }
     assertThat(t).isInstanceOf(AllNodesFailedException.class);
     CommandResult.Error error =
         ThrowableToErrorMapper.getMapperWithMessageFunction().apply(t, t.getMessage());

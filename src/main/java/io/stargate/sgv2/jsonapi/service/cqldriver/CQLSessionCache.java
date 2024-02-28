@@ -37,9 +37,6 @@ public class CQLSessionCache {
   /** Configuration for the JSON API operations. */
   private final OperationsConfig operationsConfig;
 
-  /** Stargate request info. */
-  DataApiRequestInfo dataApiRequestInfo;
-
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
    * request
@@ -60,46 +57,41 @@ public class CQLSessionCache {
   String APPLICATION_NAME;
 
   @Inject
-  public CQLSessionCache(
-      DataApiRequestInfo dataApiRequestInfo,
-      OperationsConfig operationsConfig,
-      MeterRegistry meterRegistry) {
-    if (sessionCache != null) {
-      throw new AlreadyInitializedException("CQLSessionCache is already initialized");
-    }
-    this.dataApiRequestInfo = dataApiRequestInfo;
+  public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
     this.operationsConfig = operationsConfig;
-    // TODO-SL handle concurrency
-    LoadingCache<SessionCacheKey, CqlSession> loadingCache =
-        Caffeine.newBuilder()
-            .expireAfterAccess(
-                Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
-            .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
-            // removal listener is invoked after the entry has been removed from the cache. So the
-            // idea is that we no longer return this session for any lookup as a first step, then
-            // close the session in the background asynchronously which is a graceful closing of
-            // channels i.e. any in-flight query will be completed before the session is getting
-            // closed.
-            .removalListener(
-                (RemovalListener<SessionCacheKey, CqlSession>)
-                    (sessionCacheKey, session, cause) -> {
-                      if (sessionCacheKey != null) {
-                        if (LOGGER.isTraceEnabled()) {
-                          LOGGER.trace(
-                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
-                        }
-                      }
-                      if (session != null) {
-                        session.close();
-                      }
-                    })
-            .recordStats()
-            .build(this::getNewSession);
-    sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
-    LOGGER.info(
-        "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
-        operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
-        operationsConfig.databaseConfig().sessionCacheMaxSize());
+    if (sessionCache == null) {
+      LoadingCache<SessionCacheKey, CqlSession> loadingCache =
+              Caffeine.newBuilder()
+                      .expireAfterAccess(
+                              Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
+                      .maximumSize(operationsConfig.databaseConfig().sessionCacheMaxSize())
+                      // removal listener is invoked after the entry has been removed from the cache. So the
+                      // idea is that we no longer return this session for any lookup as a first step, then
+                      // close the session in the background asynchronously which is a graceful closing of
+                      // channels i.e. any in-flight query will be completed before the session is getting
+                      // closed.
+                      .removalListener(
+                              (RemovalListener<SessionCacheKey, CqlSession>)
+                                      (sessionCacheKey, session, cause) -> {
+                                        if (sessionCacheKey != null) {
+                                          if (LOGGER.isTraceEnabled()) {
+                                            LOGGER.trace(
+                                                    "Removing session for tenant : {}",
+                                                    sessionCacheKey.dataApiRequestInfo.getTenantId());
+                                          }
+                                        }
+                                        if (session != null) {
+                                          session.close();
+                                        }
+                                      })
+                      .recordStats()
+                      .build(this::getNewSession);
+      sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+      LOGGER.info(
+              "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
+              operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
+              operationsConfig.databaseConfig().sessionCacheMaxSize());
+    }
   }
 
   /**
@@ -108,10 +100,10 @@ public class CQLSessionCache {
    * @return CQLSession
    * @throws RuntimeException if database type is not supported
    */
-  private CqlSession getNewSession(SessionCacheKey cacheKey)
-      throws InvalidFileWriterOptions, IOException {
+  private CqlSession getNewSession(SessionCacheKey cacheKey) {
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
+      LOGGER.trace(
+          "Creating new session for tenant : {}", cacheKey.dataApiRequestInfo.getTenantId());
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     if (LOGGER.isTraceEnabled()) {
@@ -127,7 +119,7 @@ public class CQLSessionCache {
               .collect(Collectors.toList());
 
       return new TenantAwareCqlSessionBuilder(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+              cacheKey.getDataApiRequestInfo().getTenantId().orElse(DEFAULT_TENANT))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .addContactPoints(seeds)
           .withClassLoader(Thread.currentThread().getContextClassLoader())
@@ -137,21 +129,30 @@ public class CQLSessionCache {
           .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElseThrow())
+      return new TenantAwareCqlSessionBuilder(
+              cacheKey.getDataApiRequestInfo().getTenantId().orElseThrow())
           .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(dataApiRequestInfo.getCassandraToken().orElseThrow()))
+              TOKEN,
+              Objects.requireNonNull(
+                  cacheKey.getDataApiRequestInfo().getCassandraToken().orElseThrow()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
           .build();
     } else if (OFFLINE_WRITER.equals(databaseConfig.type())) {
       FileWriterParams fileWriterParams = null;
-      if (dataApiRequestInfo.getFileWriterParams().isPresent()) {
-        fileWriterParams = dataApiRequestInfo.getFileWriterParams().get();
+      if (cacheKey.getDataApiRequestInfo().getFileWriterParams().isPresent()) {
+        fileWriterParams = cacheKey.getDataApiRequestInfo().getFileWriterParams().get();
       } else {
         throw new InvalidFileWriterOptions("FileWriterParams not present in the request");
       }
-      return new FileWriterSession(this, cacheKey, fileWriterParams);
+      try {
+        return new FileWriterSession(this, cacheKey, fileWriterParams);
+      } catch (IOException e) {
+        InvalidFileWriterOptions t = new InvalidFileWriterOptions("Invalid FileWriterParams");
+        t.initCause(e);
+        throw t;
+      }
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
   }
@@ -161,8 +162,9 @@ public class CQLSessionCache {
    *
    * @return CQLSession
    */
-  public CqlSession getSession() {
-    return getSession(!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type()));
+  public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
+    return getSession(
+        dataApiRequestInfo, !OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type()));
   }
 
   /**
@@ -171,16 +173,17 @@ public class CQLSessionCache {
    * @param createNewSessionIfNotAvailable if true, create new session if not available in the cache
    * @return CQLSession
    */
-  public CqlSession getSession(boolean createNewSessionIfNotAvailable) {
+  public CqlSession getSession(
+      DataApiRequestInfo dataApiRequestInfo, boolean createNewSessionIfNotAvailable) {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException("Unauthorized");
     }
     if (createNewSessionIfNotAvailable) {
-      return sessionCache.get(getSessionCacheKey());
+      return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
     } else {
-      return sessionCache.getIfPresent(getSessionCacheKey());
+      return sessionCache.getIfPresent(getSessionCacheKey(dataApiRequestInfo));
     }
   }
 
@@ -199,27 +202,27 @@ public class CQLSessionCache {
    *
    * @return key for CQLSession cache
    */
-  private SessionCacheKey getSessionCacheKey() {
+  private SessionCacheKey getSessionCacheKey(DataApiRequestInfo dataApiRequestInfo) {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
         if (dataApiRequestInfo.getCassandraToken().isPresent()) {
           return new SessionCacheKey(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+              dataApiRequestInfo,
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         }
         return new SessionCacheKey(
-            dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+            dataApiRequestInfo,
             new UsernamePasswordCredentials(
                 operationsConfig.databaseConfig().userName(),
                 operationsConfig.databaseConfig().password()));
       }
       case ASTRA -> {
         return new SessionCacheKey(
-            dataApiRequestInfo.getTenantId().orElseThrow(),
+            dataApiRequestInfo,
             new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
       }
       case OFFLINE_WRITER -> {
-        return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
+        return new SessionCacheKey(dataApiRequestInfo, null);
       }
     }
     throw new RuntimeException(
@@ -244,16 +247,45 @@ public class CQLSessionCache {
   public void removeSession(SessionCacheKey cacheKey) {
     sessionCache.invalidate(cacheKey);
     sessionCache.cleanUp();
-    LOGGER.trace("Session removed for tenant : {}", cacheKey.tenantId);
+    LOGGER.trace("Session removed for tenant : {}", cacheKey.dataApiRequestInfo.getTenantId());
   }
 
-  /**
-   * Key for CQLSession cache.
-   *
-   * @param tenantId tenant id
-   * @param credentials credentials (username/password or token)
-   */
-  public record SessionCacheKey(String tenantId, Credentials credentials) {}
+  /** Key for CQLSession cache. */
+  public static final class SessionCacheKey {
+    private final transient DataApiRequestInfo dataApiRequestInfo;
+    private final Credentials credentials;
+
+    /**
+     * @param dataApiRequestInfo dataApiRequestInfo
+     * @param credentials credentials (username/password or token)
+     */
+    public SessionCacheKey(DataApiRequestInfo dataApiRequestInfo, Credentials credentials) {
+      this.dataApiRequestInfo = dataApiRequestInfo;
+      this.credentials = credentials;
+    }
+
+    public DataApiRequestInfo getDataApiRequestInfo() {
+      return dataApiRequestInfo;
+    }
+
+    public Credentials getCredentials() {
+      return credentials;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      SessionCacheKey cacheKey = (SessionCacheKey) o;
+      return Objects.equals(dataApiRequestInfo, cacheKey.dataApiRequestInfo)
+          && Objects.equals(credentials, cacheKey.credentials);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(dataApiRequestInfo, credentials);
+    }
+  }
 
   /**
    * Credentials for CQLSession cache when username and password is provided.

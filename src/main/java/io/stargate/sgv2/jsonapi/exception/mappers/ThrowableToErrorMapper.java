@@ -12,7 +12,6 @@ import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -22,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
@@ -36,9 +36,10 @@ public final class ThrowableToErrorMapper {
         }
 
         // construct fieldsForMetricsTag, only expose exceptionClass in debugMode
-        // SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);//TODO-SL
-        SmallRyeConfig config =
-            new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class); //
+        // TODO-SL
+        // SmallRyeConfig config =
+        //  new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
         DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
         final boolean debugEnabled = debugModeConfig.enabled();
         Map<String, Object> fields =

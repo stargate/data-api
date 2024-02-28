@@ -7,6 +7,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.SecurityContext;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -15,15 +16,18 @@ import java.util.Optional;
  */
 @RequestScoped
 public class DataApiRequestInfo {
-  private final Optional<String> tenantId;
+  private Optional<String> tenantId;
   private final Optional<String> cassandraToken;
 
-  private final Optional<FileWriterParams> fileWriterParams;
+  private Optional<FileWriterParams> fileWriterParams;
 
-  public DataApiRequestInfo(Optional<String> tenantId, FileWriterParams fileWriterParams) {
+  public DataApiRequestInfo() {
+    this.cassandraToken = Optional.empty();
+  }
+
+  public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
-    this.fileWriterParams = Optional.ofNullable(fileWriterParams);
   }
 
   @Inject
@@ -39,6 +43,10 @@ public class DataApiRequestInfo {
     this.fileWriterParams = Optional.empty();
   }
 
+  public void setTenantId(String tenantId) {
+    this.tenantId = Optional.ofNullable(tenantId);
+  }
+
   public Optional<String> getTenantId() {
     return this.tenantId;
   }
@@ -49,5 +57,24 @@ public class DataApiRequestInfo {
 
   public Optional<FileWriterParams> getFileWriterParams() {
     return this.fileWriterParams;
+  }
+
+  public void setFileWriterParams(FileWriterParams fileWriterParams) {
+    this.fileWriterParams = Optional.ofNullable(fileWriterParams);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DataApiRequestInfo that = (DataApiRequestInfo) o;
+    return Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(cassandraToken, that.cassandraToken)
+        && Objects.equals(fileWriterParams, that.fileWriterParams);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(tenantId, cassandraToken, fileWriterParams);
   }
 }

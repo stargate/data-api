@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -22,8 +23,11 @@ public record BeginOfflineSessionOperation(
     ObjectMapper objectMapper)
     implements Operation {
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    CqlSession session = queryExecutor.getCqlSessionCache().getSession(true);
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+    dataApiRequestInfo.setTenantId(command.getSessionId());
+    dataApiRequestInfo.setFileWriterParams(command.getFileWriterParams());
+    CqlSession session = queryExecutor.getCqlSessionCache().getSession(dataApiRequestInfo, true);
     if (session == null) {
       throw new JsonApiException(
           ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION,

@@ -10,6 +10,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -97,10 +98,11 @@ public record CreateCollectionOperation(
   }
 
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info("Executing CreateCollectionOperation for {}", name);
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
-        cqlSessionCache.getSession().getMetadata().getKeyspaces();
+        cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
         allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.namespace()));
     if (currKeyspace == null) {
@@ -115,7 +117,7 @@ public record CreateCollectionOperation(
 
     // table doesn't exist, continue
     if (table == null) {
-      return executeCollectionCreation(queryExecutor);
+      return executeCollectionCreation(dataApiRequestInfo, queryExecutor);
     }
     // if table exist:
     // get collection settings from the existing collection
@@ -134,7 +136,7 @@ public record CreateCollectionOperation(
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
     if (collectionSettings.equals(collectionSettings_cur)) {
-      return executeCollectionCreation(queryExecutor);
+      return executeCollectionCreation(dataApiRequestInfo, queryExecutor);
     }
     return Uni.createFrom()
         .failure(
@@ -143,9 +145,11 @@ public record CreateCollectionOperation(
                 name));
   }
 
-  private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
+  private Uni<Supplier<CommandResult>> executeCollectionCreation(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     final Uni<AsyncResultSet> execute =
-        queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
+        queryExecutor.executeCreateSchemaChange(
+            dataApiRequestInfo, getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -160,7 +164,10 @@ public record CreateCollectionOperation(
                     return Multi.createFrom()
                         .items(indexStatements.stream())
                         .onItem()
-                        .transformToUni(queryExecutor::executeCreateSchemaChange)
+                        .transformToUni(
+                            indexStatement ->
+                                queryExecutor.executeCreateSchemaChange(
+                                    dataApiRequestInfo, indexStatement))
                         .concatenate()
                         .collect()
                         .asList()

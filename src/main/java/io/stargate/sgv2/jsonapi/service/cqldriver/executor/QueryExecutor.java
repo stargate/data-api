@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -47,7 +48,10 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+      DataApiRequestInfo dataApiRequestInfo,
+      SimpleStatement simpleStatement,
+      Optional<String> pagingState,
+      int pageSize) {
     simpleStatement =
         simpleStatement
             .setPageSize(pageSize)
@@ -57,7 +61,8 @@ public class QueryExecutor {
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+        .completionStage(
+            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
   }
 
   /**
@@ -67,12 +72,13 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public CompletionStage<AsyncResultSet> executeCount(SimpleStatement simpleStatement) {
+  public CompletionStage<AsyncResultSet> executeCount(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return cqlSessionCache.getSession().executeAsync(simpleStatement);
+    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
   }
 
   /**
@@ -86,7 +92,10 @@ public class QueryExecutor {
    * @return
    */
   public Uni<AsyncResultSet> executeVectorSearch(
-      SimpleStatement simpleStatement, Optional<String> pagingState, int pageSize) {
+      DataApiRequestInfo dataApiRequestInfo,
+      SimpleStatement simpleStatement,
+      Optional<String> pagingState,
+      int pageSize) {
     simpleStatement =
         simpleStatement
             .setPageSize(pageSize)
@@ -96,7 +105,8 @@ public class QueryExecutor {
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession().executeAsync(simpleStatement));
+        .completionStage(
+            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
   }
 
   /**
@@ -106,11 +116,12 @@ public class QueryExecutor {
    *     must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
+  public Uni<AsyncResultSet> executeWrite(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement statement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession()
+                .getSession(dataApiRequestInfo)
                 .executeAsync(
                     statement
                         .setIdempotent(true)
@@ -127,8 +138,9 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeCreateSchemaChange(SimpleStatement boundStatement) {
-    return executeSchemaChange(boundStatement, "create");
+  public Uni<AsyncResultSet> executeCreateSchemaChange(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+    return executeSchemaChange(dataApiRequestInfo, boundStatement, "create");
   }
 
   /**
@@ -138,8 +150,9 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeDropSchemaChange(SimpleStatement boundStatement) {
-    return executeSchemaChange(boundStatement, "drop");
+  public Uni<AsyncResultSet> executeDropSchemaChange(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+    return executeSchemaChange(dataApiRequestInfo, boundStatement, "drop");
   }
 
   /**
@@ -149,15 +162,17 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public Uni<AsyncResultSet> executeTruncateSchemaChange(SimpleStatement boundStatement) {
-    return executeSchemaChange(boundStatement, "truncate");
+  public Uni<AsyncResultSet> executeTruncateSchemaChange(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+    return executeSchemaChange(dataApiRequestInfo, boundStatement, "truncate");
   }
 
-  private Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement, String profile) {
+  private Uni<AsyncResultSet> executeSchemaChange(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession()
+                .getSession(dataApiRequestInfo)
                 .executeAsync(
                     boundStatement
                         .setExecutionProfileName(profile)
@@ -184,7 +199,7 @@ public class QueryExecutor {
                           Uni.createFrom()
                               .completionStage(
                                   cqlSessionCache
-                                      .getSession()
+                                      .getSession(dataApiRequestInfo)
                                       .executeAsync(
                                           duplicate
                                               .setExecutionProfileName(profile)
@@ -209,12 +224,13 @@ public class QueryExecutor {
    * @param collectionName
    * @return
    */
-  protected Uni<Optional<TableMetadata>> getSchema(String namespace, String collectionName) {
+  protected Uni<Optional<TableMetadata>> getSchema(
+      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
     KeyspaceMetadata keyspaceMetadata;
     try {
       keyspaceMetadata =
           cqlSessionCache
-              .getSession()
+              .getSession(dataApiRequestInfo)
               .getMetadata()
               .getKeyspaces()
               .get(CqlIdentifier.fromInternal(namespace));
@@ -240,9 +256,11 @@ public class QueryExecutor {
    * @param collectionName - collection name
    * @return TableMetadata
    */
-  protected Uni<TableMetadata> getCollectionSchema(String namespace, String collectionName) {
+  protected Uni<TableMetadata> getCollectionSchema(
+      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
     Optional<KeyspaceMetadata> keyspaceMetadata;
-    if ((keyspaceMetadata = cqlSessionCache.getSession().getMetadata().getKeyspace(namespace))
+    if ((keyspaceMetadata =
+            cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspace(namespace))
         .isPresent()) {
       Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
       if (tableMetadata.isPresent()) {

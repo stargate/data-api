@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.bridge.grpc.Values;
 import io.stargate.bridge.proto.QueryOuterClass;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -81,7 +82,8 @@ public interface ReadOperation extends Operation {
       int limit,
       boolean vectorSearch,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiRequestInfo dataApiRequestInfo) {
 
     return Multi.createFrom()
         .items(queries.stream())
@@ -90,10 +92,10 @@ public interface ReadOperation extends Operation {
             simpleStatement -> {
               if (vectorSearch) {
                 return queryExecutor.executeVectorSearch(
-                    simpleStatement, Optional.ofNullable(pageState), pageSize);
+                    dataApiRequestInfo, simpleStatement, Optional.ofNullable(pageState), pageSize);
               } else {
                 return queryExecutor.executeRead(
-                    simpleStatement, Optional.ofNullable(pageState), pageSize);
+                    dataApiRequestInfo, simpleStatement, Optional.ofNullable(pageState), pageSize);
               }
             })
         .onItem()
@@ -194,7 +196,8 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection,
       boolean vectorSearch,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiRequestInfo dataApiRequestInfo) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()
@@ -210,12 +213,19 @@ public interface ReadOperation extends Operation {
                           if (vectorSearch) {
                             return queryExecutor
                                 .executeVectorSearch(
-                                    q, Optional.ofNullable(stateRef.get()), pageSize)
+                                    dataApiRequestInfo,
+                                    q,
+                                    Optional.ofNullable(stateRef.get()),
+                                    pageSize)
                                 .onItem()
                                 .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                           } else {
                             return queryExecutor
-                                .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .executeRead(
+                                    dataApiRequestInfo,
+                                    q,
+                                    Optional.ofNullable(stateRef.get()),
+                                    pageSize)
                                 .onItem()
                                 .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                           }
@@ -369,11 +379,13 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
-      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
     AtomicLong counter = new AtomicLong();
     final CompletionStage<AsyncResultSet> async =
         queryExecutor
-            .executeCount(simpleStatement)
+            .executeCount(dataApiRequestInfo, simpleStatement)
             .whenComplete(
                 (rs, error) -> {
                   getCount(rs, error, counter);
@@ -396,9 +408,11 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<CountResponse> countDocuments(
-      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
     return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(simpleStatement))
+        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
         .onItem()
         .transform(
             rSet -> {

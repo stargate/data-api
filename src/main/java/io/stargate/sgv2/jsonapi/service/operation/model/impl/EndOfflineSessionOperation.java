@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -20,8 +21,9 @@ public record EndOfflineSessionOperation(
     ObjectMapper objectMapper)
     implements Operation {
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    CqlSession session = queryExecutor.getCqlSessionCache().getSession();
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+    CqlSession session = queryExecutor.getCqlSessionCache().getSession(dataApiRequestInfo);
     session.close();
     CommandResult commandResult =
         new CommandResult(
