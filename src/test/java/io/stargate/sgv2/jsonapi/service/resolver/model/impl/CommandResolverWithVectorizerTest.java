@@ -165,9 +165,10 @@ public class CommandResolverWithVectorizerTest {
                 JsonApiException exception = (JsonApiException) e;
                 assertThat(exception.getMessage())
                     .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection");
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -340,9 +341,10 @@ public class CommandResolverWithVectorizerTest {
                 JsonApiException exception = (JsonApiException) e;
                 assertThat(exception.getMessage())
                     .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection");
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -523,13 +525,13 @@ public class CommandResolverWithVectorizerTest {
       new DataVectorizer(
               TestEmbeddingService.commandContextWithVectorize.embeddingService(),
               objectMapper.getNodeFactory(),
-              Optional.empty())
+              Optional.empty(),
+              TestEmbeddingService.commandContextWithVectorize.collection())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())
           .awaitItem()
           .getItem();
-      ;
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -718,9 +720,10 @@ public class CommandResolverWithVectorizerTest {
                 JsonApiException exception = (JsonApiException) e;
                 assertThat(exception.getMessage())
                     .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection");
+                        "Unable to vectorize data, embedding service not configured for the collection : "
+                            + VECTOR_COMMAND_CONTEXT.collection());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 

@@ -28,6 +28,7 @@ public class DataVectorizer {
   private final EmbeddingService embeddingService;
   private final JsonNodeFactory nodeFactory;
   private final Optional<String> embeddingApiKey;
+  private final String collectionName;
 
   /**
    * Constructor
@@ -36,14 +37,17 @@ public class DataVectorizer {
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingApiKey - Optional override embedding api key came in request header
+   * @param collectionName - Collection name for which the vectorize is called
    */
   public DataVectorizer(
       EmbeddingService embeddingService,
       JsonNodeFactory nodeFactory,
-      Optional<String> embeddingApiKey) {
+      Optional<String> embeddingApiKey,
+      String collectionName) {
     this.embeddingService = embeddingService;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;
+    this.collectionName = collectionName;
   }
 
   /**
@@ -89,7 +93,7 @@ public class DataVectorizer {
 
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingService == null) {
-          throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
         Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey);
         return vectors
@@ -132,7 +136,7 @@ public class DataVectorizer {
         SortExpression expression = sortExpressions.get(0);
         String text = expression.vectorize();
         if (embeddingService == null) {
-          throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
         Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey);
         return vectors
@@ -198,7 +202,7 @@ public class DataVectorizer {
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
         if (embeddingService == null) {
-          throw new JsonApiException(ErrorCode.UNAVAILABLE_EMBEDDING_SERVICE);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
         final Uni<List<float[]>> vectors =
             embeddingService.vectorize(List.of(text), embeddingApiKey);
