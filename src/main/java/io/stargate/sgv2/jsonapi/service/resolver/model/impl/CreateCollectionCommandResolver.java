@@ -58,7 +58,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
 
     if (command.options() != null) {
-      boolean vectorize = false;
+      boolean vector = false;
       boolean indexing = false;
       int vectorSize = 0;
       String function = null;
@@ -72,7 +72,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
       }
 
-      // handling vector and vectorize options
+      // handling vector option
       if (command.options().vector() != null) {
         if (!dataStoreConfig.vectorSearchEnabled()) {
           throw new JsonApiException(
@@ -90,20 +90,21 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                   vectorSize,
                   documentLimitsConfig.maxVectorEmbeddingLength()));
         }
-        if (command.options().vectorize() != null) {
-          vectorize = true;
-        }
+        vector = true;
       }
 
       String comment = null;
-      if (indexing || vectorize) {
+      if (indexing || vector) {
         final ObjectNode objectNode = objectMapper.createObjectNode();
+        ObjectNode collectionOptionsNode =
+            objectMapper.createObjectNode(); // Create a new ObjectNode for collectionOptions
         if (indexing) {
-          objectNode.putPOJO("indexing", command.options().indexing());
+          collectionOptionsNode.putPOJO("indexing", command.options().indexing());
         }
-        if (vectorize) {
-          objectNode.putPOJO("vectorize", command.options().vectorize());
+        if (vector) {
+          collectionOptionsNode.putPOJO("vector", command.options().vector());
         }
+        objectNode.putPOJO("collectionOptions", collectionOptionsNode);
         comment = objectNode.toString();
       }
 

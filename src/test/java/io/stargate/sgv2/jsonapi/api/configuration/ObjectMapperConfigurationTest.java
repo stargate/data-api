@@ -456,23 +456,35 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-                        {
-                          "createCollection": {
+                    {
+                        "createCollection": {
                             "name": "some_name",
                             "options": {
-                              "vector": {
-                                "dimension": 5,
-                                "metric": "cosine"
-                              },
-                              "vectorize" : {
-                                "service" : "my_service",
-                                "options" : {
-                                  "modelName": "text-embedding-ada-002"
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1536,
+                                    "service": {
+                                        "provider": "openai",
+                                        "model_name": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "SHARED_SECRET"
+                                            ],
+                                            "secret_name": "name_given_by_user"
+                                        },
+                                        "parameters": {
+                                            "project_id": "test project"
+                                        }
+                                    }
+                                },
+                                "indexing": {
+                                    "deny": [
+                                        "address"
+                                    ]
                                 }
-                              }
                             }
-                          }
                         }
+                    }
                         """;
 
       Command result = objectMapper.readValue(json, Command.class);
@@ -485,14 +497,49 @@ class ObjectMapperConfigurationTest {
                 assertThat(name).isNotNull();
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
-                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(1536);
                 assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
-                assertThat(createCollection.options().vectorize()).isNotNull();
-                assertThat(createCollection.options().vectorize().service())
-                    .isEqualTo("my_service");
-                assertThat(createCollection.options().vectorize().options()).isNotNull();
-                assertThat(createCollection.options().vectorize().options().modelName())
+                assertThat(createCollection.options().vector().vectorizeConfig()).isNotNull();
+                assertThat(createCollection.options().vector().vectorizeConfig().provider())
+                    .isEqualTo("openai");
+                assertThat(createCollection.options().vector().vectorizeConfig().modelName())
                     .isEqualTo("text-embedding-ada-002");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceAuthentication()
+                            .type())
+                    .contains("SHARED_SECRET");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceAuthentication()
+                            .secretName())
+                    .isEqualTo("name_given_by_user");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceParameter()
+                            .projectId())
+                    .isNotNull();
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceParameter()
+                            .projectId())
+                    .isEqualTo("test project");
+                assertThat(createCollection.options().indexing()).isNotNull();
+                assertThat(createCollection.options().indexing().allow()).isNull();
+                assertThat(createCollection.options().indexing().deny()).hasSize(1);
+                assertThat(createCollection.options().indexing().deny()).contains("address");
               });
     }
 

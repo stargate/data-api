@@ -75,7 +75,9 @@ public class NamespaceCache {
                     return Uni.createFrom()
                         .item(
                             new CollectionSettings(
-                                collectionName, false, 0, null, null, null, null));
+                                collectionName,
+                                CollectionSettings.VectorConfig.notEnabledVectorConfig(),
+                                null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {

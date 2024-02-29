@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.VECTORIZECONFIG_CHECK_FAIL;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -11,6 +9,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Lists;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Refactored as seperate class that represent a collection property.
@@ -28,21 +29,13 @@ import java.util.function.Supplier;
  * @param collectionName
  * @param vectorEnabled
  * @param vectorSize
- * @param similarityFunction
- * @param vectorizeServiceName
- * @param modelName
+ * @param similarityFunction #TODO
  */
 public record CollectionSettings(
-    String collectionName,
-    boolean vectorEnabled,
-    int vectorSize,
-    SimilarityFunction similarityFunction,
-    String vectorizeServiceName,
-    String modelName,
-    IndexingConfig indexingConfig) {
+    String collectionName, VectorConfig vectorConfig, IndexingConfig indexingConfig) {
 
   private static final CollectionSettings EMPTY =
-      new CollectionSettings("", false, 0, null, null, null, null);
+      new CollectionSettings("", VectorConfig.notEnabledVectorConfig(), null);
 
   public static CollectionSettings empty() {
     return EMPTY;
@@ -94,6 +87,76 @@ public record CollectionSettings(
     }
   }
 
+  public record VectorConfig(
+      boolean vectorEnabled,
+      int vectorSize,
+      SimilarityFunction similarityFunction,
+      VectorizeConfig vectorizeConfig) {
+
+    public static VectorConfig notEnabledVectorConfig() {
+      return new VectorConfig(false, -1, null, null);
+    }
+
+    public static VectorConfig fromJson(JsonNode jsonNode) {
+      // dimension, similarityFunction, must exist
+      int dimension = jsonNode.get("dimension").asInt();
+      SimilarityFunction similarityFunction =
+          SimilarityFunction.fromString(jsonNode.get("metric").asText());
+
+      VectorizeConfig vectorizeConfig = null;
+      // construct vectorizeConfig
+      if (jsonNode.has("service")) {
+        JsonNode vectorizeServiceNode = jsonNode.get("service");
+        // provider, model_name, authentication, must exist
+        String provider = vectorizeServiceNode.get("provider").asText();
+        String modelName = vectorizeServiceNode.get("model_name").asText();
+        // construct VectorizeConfig.VectorizeServiceAuthentication
+        JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
+        Set<AuthenticationType> authenticationTypeSet = new HashSet<>();
+        vectorizeServiceAuthenticationNode
+            .get("type")
+            .forEach(
+                node -> authenticationTypeSet.add(AuthenticationType.fromString(node.asText())));
+        // when stored_secrets authentication is used must be provided with the name of a
+        // pre-registered secret.
+        String authenticationSecretName =
+            vectorizeServiceAuthenticationNode.has("secret_name")
+                ? vectorizeServiceAuthenticationNode.get("secret_name").asText()
+                : null;
+        VectorizeConfig.VectorizeServiceAuthentication vectorizeServiceAuthentication =
+            new VectorizeConfig.VectorizeServiceAuthentication(
+                authenticationTypeSet, authenticationSecretName);
+
+        // construct VectorizeConfig.VectorizeServiceParameter
+        JsonNode VectorizeServiceParameterNode = vectorizeServiceNode.get("parameters");
+        String projectId =
+            VectorizeServiceParameterNode.has("project_id")
+                ? VectorizeServiceParameterNode.get("project_id").asText()
+                : null;
+        VectorizeConfig.VectorizeServiceParameter vectorizeServiceParameter =
+            new VectorizeConfig.VectorizeServiceParameter(projectId);
+
+        vectorizeConfig =
+            new VectorizeConfig(
+                provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
+      }
+
+      return new VectorConfig(true, dimension, similarityFunction, vectorizeConfig);
+    }
+
+    public record VectorizeConfig(
+        String provider,
+        String modelName,
+        VectorizeServiceAuthentication vectorizeServiceAuthentication,
+        VectorizeServiceParameter vectorizeServiceParameter) {
+
+      public record VectorizeServiceAuthentication(
+          Set<AuthenticationType> type, String secretName) {}
+
+      public record VectorizeServiceParameter(String projectId) {}
+    }
+  }
+
   /**
    * The similarity function used for the vector index. This is only applicable if the vector index
    * is enabled.
@@ -113,6 +176,24 @@ public record CollectionSettings(
         default -> throw new JsonApiException(
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
             ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+      };
+    }
+  }
+
+  public enum AuthenticationType {
+    NONE,
+    HEADER,
+    SHARED_SECRET,
+    UNDEFINED;
+
+    public static AuthenticationType fromString(String authenticationType) {
+      if (authenticationType == null) return UNDEFINED;
+      return switch (authenticationType.toLowerCase()) {
+        case "none" -> NONE;
+        case "header" -> HEADER;
+        case "shared_secret" -> SHARED_SECRET;
+        default -> throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
+            "'%s'", authenticationType);
       };
     }
   }
@@ -147,13 +228,13 @@ public record CollectionSettings(
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
-          collectionName, vectorEnabled, vectorSize, function, comment, objectMapper);
+          collectionName, true, vectorSize, function, comment, objectMapper);
     } else { // if not vector collection
       // handling comment so get the indexing config from comment
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
           collectionName,
-          vectorEnabled,
+          false,
           0,
           CollectionSettings.SimilarityFunction.UNDEFINED,
           comment,
@@ -179,13 +260,16 @@ public record CollectionSettings(
       SimilarityFunction function,
       String comment,
       ObjectMapper objectMapper) {
-
     if (comment == null || comment.isBlank()) {
-      return new CollectionSettings(
-          collectionName, vectorEnabled, vectorSize, function, null, null, null);
+      // vector column exists -> vectorEnabled, vectorSize
+      // vector index exists -> similarityFunction
+      if (vectorEnabled) {
+        return new CollectionSettings(
+            collectionName, new VectorConfig(true, vectorSize, function, null), null);
+      } else {
+        return new CollectionSettings(collectionName, VectorConfig.notEnabledVectorConfig(), null);
+      }
     } else {
-      String vectorizeServiceName = null;
-      String modelName = null;
       JsonNode commentConfig;
       try {
         commentConfig = objectMapper.readTree(comment);
@@ -193,35 +277,114 @@ public record CollectionSettings(
         // This should never happen, already check if vectorize is a valid JSON
         throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
       }
-      JsonNode vectorizeConfig = commentConfig.path("vectorize");
-      if (!vectorizeConfig.isMissingNode()) {
-        vectorizeServiceName = vectorizeConfig.path("service").textValue();
-        JsonNode optionsNode = vectorizeConfig.path("options");
-        modelName = optionsNode.path("modelName").textValue();
-        if (!(vectorizeServiceName != null
-            && !vectorizeServiceName.isEmpty()
-            && modelName != null
-            && !modelName.isEmpty())) {
-          // This should never happen, VectorizeConfig check null, unless it fails
-          throw new JsonApiException(
-              VECTORIZECONFIG_CHECK_FAIL,
-              "%s, please check 'vectorize' configuration."
-                  .formatted(VECTORIZECONFIG_CHECK_FAIL.getMessage()));
+
+      // new table comment design, with collectionOptions as top-level key
+      if (commentConfig.has("collectionOptions")) {
+        JsonNode collectionOptionsNode = commentConfig.get("collectionOptions");
+        VectorConfig vectorConfig = null;
+        JsonNode vector = collectionOptionsNode.path("vector");
+        if (!vector.isMissingNode()) {
+          vectorConfig = VectorConfig.fromJson(vector);
         }
+        IndexingConfig indexingConfig = null;
+        JsonNode indexing = collectionOptionsNode.path("indexing");
+        if (!indexing.isMissingNode()) {
+          indexingConfig = IndexingConfig.fromJson(indexing);
+        }
+        return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
+      } else {
+        // backward compatibility for old vectorize table comment
+        VectorConfig.VectorizeConfig vectorizeConfig = null;
+        JsonNode vectorize = commentConfig.path("vectorize");
+        if (!vectorize.isMissingNode()) {
+          String service = vectorize.get("service").asText();
+          String modelName = null;
+          JsonNode vectorizeOptions = vectorize.path("options");
+          if (!vectorizeOptions.isMissingNode()) {
+            modelName = vectorizeOptions.get("modelName").asText();
+          }
+          vectorizeConfig =
+              new VectorConfig.VectorizeConfig(
+                  service,
+                  modelName,
+                  new VectorConfig.VectorizeConfig.VectorizeServiceAuthentication(
+                      Set.of(AuthenticationType.HEADER), null),
+                  null);
+        }
+        VectorConfig vectorConfig =
+            new VectorConfig(vectorEnabled, vectorSize, function, vectorizeConfig);
+
+        // backward compatibility for old indexing table comment
+        IndexingConfig indexingConfig = null;
+        JsonNode indexing = commentConfig.path("indexing");
+        if (!indexing.isMissingNode()) {
+          indexingConfig = IndexingConfig.fromJson(indexing);
+        }
+        return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
       }
-      IndexingConfig indexingConfig = null;
-      JsonNode indexing = commentConfig.path("indexing");
-      if (!indexing.isMissingNode()) {
-        indexingConfig = IndexingConfig.fromJson(indexing);
-      }
-      return new CollectionSettings(
-          collectionName,
-          vectorEnabled,
-          vectorSize,
-          function,
-          vectorizeServiceName,
-          modelName,
-          indexingConfig);
     }
+  }
+
+  public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
+      CollectionSettings collectionSetting) {
+    CreateCollectionCommand.Options options = null;
+    CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
+    CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
+    // populate the vectorSearchConfig
+    if (collectionSetting.vectorConfig.vectorEnabled) {
+      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
+      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
+              .VectorizeServiceAuthentication
+          vectorizeServiceAuthentication =
+              new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
+                  .VectorizeServiceAuthentication(
+                  collectionSetting
+                      .vectorConfig
+                      .vectorizeConfig
+                      .vectorizeServiceAuthentication
+                      .type
+                      .stream()
+                      .map(Enum::name)
+                      .collect(Collectors.toList()),
+                  collectionSetting
+                      .vectorConfig
+                      .vectorizeConfig
+                      .vectorizeServiceAuthentication
+                      .secretName);
+      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig.VectorizeServiceParameter
+          vectorizeServiceParameter =
+              new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
+                  .VectorizeServiceParameter(
+                  collectionSetting
+                      .vectorConfig
+                      .vectorizeConfig
+                      .vectorizeServiceParameter
+                      .projectId);
+      vectorizeConfig =
+          new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
+              collectionSetting.vectorConfig.vectorizeConfig.provider,
+              collectionSetting.vectorConfig.vectorizeConfig.modelName,
+              vectorizeServiceAuthentication,
+              vectorizeServiceParameter);
+      vectorSearchConfig =
+          new CreateCollectionCommand.Options.VectorSearchConfig(
+              collectionSetting.vectorConfig.vectorSize,
+              collectionSetting.vectorConfig.similarityFunction.name().toLowerCase(),
+              vectorizeConfig);
+    }
+    // populate the indexingConfig
+    if (collectionSetting.indexingConfig() != null) {
+      indexingConfig =
+          new CreateCollectionCommand.Options.IndexingConfig(
+              Lists.newArrayList(collectionSetting.indexingConfig().allowed()),
+              Lists.newArrayList(collectionSetting.indexingConfig().denied()));
+    }
+    if (vectorSearchConfig != null || indexingConfig != null) {
+      options = new CreateCollectionCommand.Options(vectorSearchConfig, indexingConfig);
+    }
+
+    // CreateCollectionCommand object is created for convenience to generate json
+    // response. The code is not creating a collection here.
+    return new CreateCollectionCommand(collectionSetting.collectionName(), options);
   }
 }
