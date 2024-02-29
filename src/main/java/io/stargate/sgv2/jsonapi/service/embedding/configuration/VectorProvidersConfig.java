@@ -13,7 +13,7 @@ public class VectorProvidersConfig
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
     try {
-      URL resourceURL = forClassLoader.getResource("vectorProviders.yaml");
+      URL resourceURL = forClassLoader.getResource("vector-providers-config.yaml");
       if (resourceURL != null) {
         YamlConfigSource configSource = new YamlConfigSource(resourceURL);
         return Collections.singletonList(configSource);
