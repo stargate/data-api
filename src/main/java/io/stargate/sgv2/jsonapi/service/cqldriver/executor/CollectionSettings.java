@@ -24,7 +24,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Refactored as seperate class that represent a collection property.
+ * Refactored as seperate class that represent a collection property.*
+ *
  * @param collectionName
  * @param vectorConfig
  * @param indexingConfig
@@ -204,7 +205,7 @@ public record CollectionSettings(
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
     boolean vectorEnabled = vectorColumn.isPresent();
-    // if vector column exist
+    // if vector column exists
     if (vectorEnabled) {
       final int vectorSize = ((VectorType) vectorColumn.get().getType()).getDimensions();
       // get vector index
@@ -331,8 +332,13 @@ public record CollectionSettings(
     // populate the vectorSearchConfig
     if (collectionSetting.vectorConfig.vectorEnabled) {
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
-      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
-              .VectorizeServiceAuthentication
+      if (collectionSetting.vectorConfig.vectorizeConfig != null) {
+        CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
+                .VectorizeServiceAuthentication
+            vectorizeServiceAuthentication = null;
+        CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig.VectorizeServiceParameter
+            vectorizeServiceParameter = null;
+        if (collectionSetting.vectorConfig.vectorizeConfig.vectorizeServiceAuthentication != null) {
           vectorizeServiceAuthentication =
               new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
                   .VectorizeServiceAuthentication(
@@ -349,7 +355,8 @@ public record CollectionSettings(
                       .vectorizeConfig
                       .vectorizeServiceAuthentication
                       .secretName);
-      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig.VectorizeServiceParameter
+        }
+        if (collectionSetting.vectorConfig.vectorizeConfig.vectorizeServiceParameter != null) {
           vectorizeServiceParameter =
               new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
                   .VectorizeServiceParameter(
@@ -358,12 +365,14 @@ public record CollectionSettings(
                       .vectorizeConfig
                       .vectorizeServiceParameter
                       .projectId);
-      vectorizeConfig =
-          new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
-              collectionSetting.vectorConfig.vectorizeConfig.provider,
-              collectionSetting.vectorConfig.vectorizeConfig.modelName,
-              vectorizeServiceAuthentication,
-              vectorizeServiceParameter);
+        }
+        vectorizeConfig =
+            new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
+                collectionSetting.vectorConfig.vectorizeConfig.provider,
+                collectionSetting.vectorConfig.vectorizeConfig.modelName,
+                vectorizeServiceAuthentication,
+                vectorizeServiceParameter);
+      }
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
               collectionSetting.vectorConfig.vectorSize,

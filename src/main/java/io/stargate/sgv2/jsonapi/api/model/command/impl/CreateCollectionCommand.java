@@ -59,6 +59,7 @@ public record CreateCollectionCommand(
                 implementation = Integer.class)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
+            @NotNull
             Integer dimension,
         @Nullable
             @Pattern(
@@ -75,6 +76,7 @@ public record CreateCollectionCommand(
             String metric,
         @Valid
             @Nullable
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             @Schema(
                 description = "Optional vectorize configuration to provide embedding service",
                 type = SchemaType.OBJECT,
