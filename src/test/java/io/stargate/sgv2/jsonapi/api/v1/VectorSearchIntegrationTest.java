@@ -162,7 +162,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
-              contains("function name can only be 'dot_product', 'cosine' or 'euclidean'"));
+              containsString(
+                  "Problem: function name can only be 'dot_product', 'cosine' or 'euclidean'"));
     }
   }
 
