@@ -17,10 +17,11 @@ public class VectorProvidersConfig
       if (resourceURL != null) {
         YamlConfigSource configSource = new YamlConfigSource(resourceURL);
         return Collections.singletonList(configSource);
+      } else {
+        throw new RuntimeException("Failed to load vector provider config, resource is null");
       }
     } catch (IOException e) {
-      throw new RuntimeException("Failed to load vectorProviders.yaml", e);
+      throw new RuntimeException("Failed to load vector provider config", e);
     }
-    return Collections.emptyList();
   }
 }
