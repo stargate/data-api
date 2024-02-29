@@ -25,11 +25,9 @@ import java.util.stream.Collectors;
 
 /**
  * Refactored as seperate class that represent a collection property.
- *
  * @param collectionName
- * @param vectorEnabled
- * @param vectorSize
- * @param similarityFunction #TODO
+ * @param vectorConfig
+ * @param indexingConfig
  */
 public record CollectionSettings(
     String collectionName, VectorConfig vectorConfig, IndexingConfig indexingConfig) {
