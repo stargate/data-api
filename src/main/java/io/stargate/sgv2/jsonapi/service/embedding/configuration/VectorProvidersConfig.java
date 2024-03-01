@@ -6,20 +6,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 @StaticInitSafe
-public class VectorProvidersConfig
-    implements org.eclipse.microprofile.config.spi.ConfigSourceProvider {
+public class VectorProvidersConfig implements ConfigSourceProvider {
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
     try {
       URL resourceURL = forClassLoader.getResource("vector-providers-config.yaml");
-      if (resourceURL != null) {
-        YamlConfigSource configSource = new YamlConfigSource(resourceURL);
-        return Collections.singletonList(configSource);
-      } else {
-        throw new RuntimeException("Failed to load vector provider config, resource is null");
-      }
+      YamlConfigSource configSource = new YamlConfigSource(resourceURL);
+      return Collections.singletonList(configSource);
     } catch (IOException e) {
       throw new RuntimeException("Failed to load vector provider config", e);
     }

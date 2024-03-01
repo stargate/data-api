@@ -681,15 +681,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         {
                             "status": {
                                 "vectorProviders": {
-                                    "cohere": {
-                                        "url": "https://api.cohere.ai/v1/",
-                                        "supportedAuthentication": [
-                                            "HEADER",
-                                            "SHARED_SECRETS"
-                                        ],
-                                        "parameters": [],
-                                        "models": []
-                                    },
                                     "openai": {
                                         "url": "https://api.openai.com/v1/",
                                         "supportedAuthentication": [
@@ -728,24 +719,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                 ]
                                             }
                                         ]
-                                    },
-                                    "huggingface": {
-                                        "url": "https://api-inference.huggingface.co/pipeline/feature-extraction/",
-                                        "supportedAuthentication": [
-                                            "HEADER",
-                                            "SHARED_SECRETS"
-                                        ],
-                                        "parameters": [],
-                                        "models": []
-                                    },
-                                    "nvidia": {
-                                        "url": "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520",
-                                        "supportedAuthentication": [
-                                            "HEADER",
-                                            "SHARED_SECRETS"
-                                        ],
-                                        "parameters": [],
-                                        "models": []
                                     }
                                 }
                             }

@@ -77,9 +77,11 @@ public interface PropertyBasedEmbeddingServiceConfig {
       @JsonProperty
       boolean required();
 
+      @Nullable
       @JsonProperty
       Optional<String> defaultValue();
 
+      @Nullable
       @JsonProperty
       Optional<String> help();
     }
