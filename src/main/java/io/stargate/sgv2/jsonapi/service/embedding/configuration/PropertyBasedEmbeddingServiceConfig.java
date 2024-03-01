@@ -44,10 +44,23 @@ public interface PropertyBasedEmbeddingServiceConfig {
     @JsonProperty
     List<String> supportedAuthentication();
 
+    /**
+     * A list of parameters for user customization. Parameters are used to construct the URL or to
+     * customize the model according to user requirements.
+     *
+     * @return A list of parameters representing the customizable aspects of the model for external
+     *     users, or empty list if no parameters are defined.
+     */
     @Nullable
     @JsonProperty
     List<ParameterConfig> parameters();
 
+    /**
+     * A map of internal properties used for model interaction. Properties are utilized by the
+     * system to configure the actual model usage, such as retry policies and timeouts.
+     *
+     * @return A map of internal configuration properties, or empty map if none are defined.
+     */
     @Nullable
     @JsonProperty
     Map<String, String> properties();
@@ -93,7 +106,7 @@ public interface PropertyBasedEmbeddingServiceConfig {
     }
   }
 
-  public interface CustomConfig {
+  interface CustomConfig {
     @WithDefault("false")
     boolean enabled();
 
