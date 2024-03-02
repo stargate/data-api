@@ -5,14 +5,12 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -509,8 +507,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.document' value `null` not valid. Problem: must not be null"));
     }
   }
 
@@ -1554,7 +1556,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               endsWith(

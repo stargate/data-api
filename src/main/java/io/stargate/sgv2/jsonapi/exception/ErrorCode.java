@@ -9,6 +9,12 @@ public enum ErrorCode {
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
+  /**
+   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
+   * JsonApiException}
+   */
+  COMMAND_FIELD_INVALID("Request invalid"),
+
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
   COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
