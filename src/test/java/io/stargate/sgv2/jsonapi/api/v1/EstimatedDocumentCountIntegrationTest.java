@@ -20,7 +20,7 @@ import org.junit.jupiter.api.*;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  public static final int MAX_ITERATIONS = 1000;
+  public static final int MAX_ITERATIONS = 1000000;
 
   // Need to set max count limit to -1, and count page size to -1 to avoid pagination
   public static class EstimatedDocumentCountTestResource extends DseTestResource {
@@ -119,50 +119,54 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       while (tries <= MAX_ITERATIONS) {
         insertMany();
 
-        int estimatedCount =
-            given()
-                .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                .contentType(ContentType.JSON)
-                .body(jsonEstimatedCount)
-                .when()
-                .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-                .then()
-                .statusCode(200)
-                .body("errors", is(nullValue()))
-                .extract()
-                .response()
-                .jsonPath()
-                .getInt("status.count");
+        // get count results every 100 tries
+        if (tries % 1000 == 0) {
 
-        int actualCount =
-            given()
-                .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                .contentType(ContentType.JSON)
-                .body(jsonActualCount)
-                .when()
-                .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-                .then()
-                .statusCode(200)
-                .body("errors", is(nullValue()))
-                .extract()
-                .response()
-                .jsonPath()
-                .getInt("status.count");
+          int estimatedCount =
+              given()
+                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                  .contentType(ContentType.JSON)
+                  .body(jsonEstimatedCount)
+                  .when()
+                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                  .then()
+                  .statusCode(200)
+                  .body("errors", is(nullValue()))
+                  .extract()
+                  .response()
+                  .jsonPath()
+                  .getInt("status.count");
 
-        System.out.println(
-            "Iteration: "
-                + tries
-                + ", Docs inserted: "
-                + tries * 5
-                + ", Actual count: "
-                + actualCount
-                + ", Estimated count: "
-                + estimatedCount);
+          int actualCount =
+              given()
+                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                  .contentType(ContentType.JSON)
+                  .body(jsonActualCount)
+                  .when()
+                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+                  .then()
+                  .statusCode(200)
+                  .body("errors", is(nullValue()))
+                  .extract()
+                  .response()
+                  .jsonPath()
+                  .getInt("status.count");
 
-        if (estimatedCount > 0) {
-          break;
+          System.out.println(
+              "Iteration: "
+                  + tries
+                  + ", Docs inserted: "
+                  + tries * 5
+                  + ", Actual count: "
+                  + actualCount
+                  + ", Estimated count: "
+                  + estimatedCount);
+
+          if (estimatedCount > 0) {
+            break;
+          }
         }
-        Thread.sleep(1000);
+
         tries++;
       }
     }
