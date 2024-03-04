@@ -29,7 +29,7 @@ public enum ErrorCode {
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
-      "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+      "Cannot have more than one _id equals filter clause: use $in operator instead"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
