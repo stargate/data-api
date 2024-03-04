@@ -6,9 +6,11 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
@@ -27,6 +29,7 @@ public class InsertManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject Shredder shredder;
   @Inject InsertManyCommandResolver resolver;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class ResolveCommand {

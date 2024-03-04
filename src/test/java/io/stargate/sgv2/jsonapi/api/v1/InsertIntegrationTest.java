@@ -5,13 +5,12 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -24,6 +23,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -507,8 +507,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.document' value `null` not valid. Problem: must not be null"));
     }
   }
 
@@ -560,7 +564,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an indexable Array ('arr') has ("
+                  "Document size limitation violated: number of elements an indexable Array (property 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
@@ -715,7 +719,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: indexed String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value (property 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -819,7 +823,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               startsWith("Document size limitation violated: number of properties"))
           .body(
               "errors[0].message",
-              endsWith("indexable Object ('subdoc') has (1001) exceeds maximum allowed (1000)"));
+              endsWith(
+                  "indexable Object (property 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -1387,7 +1392,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1512,11 +1517,66 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
+  @Order(6)
+  class InsertManyFails {
+    @Test
+    public void insertManyWithTooManyDocuments() {
+      ArrayNode docs = MAPPER.createArrayNode();
+      final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
+
+      // We need to both exceed doc count limit AND to create big enough payload to
+      // trigger message truncation: 21 x 1k == 21kB should be enough
+      final String TEXT_1K = "abcd 1234 ".repeat(100);
+
+      for (int i = 0; i < MAX_DOCS + 1; ++i) {
+        ObjectNode doc =
+            MAPPER
+                .createObjectNode()
+                .put("_id", "doc" + i)
+                .put("username", "user" + i)
+                .put("text", TEXT_1K);
+        docs.add(doc);
+      }
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": %s
+            }
+          }
+          """
+              .formatted(docs.toString());
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              endsWith(
+                  "not valid. Problem: amount of documents to insert is over the max limit ("
+                      + docs.size()
+                      + " vs "
+                      + MAX_DOCS
+                      + ")."))
+          .body("errors[0].message", containsString("[TRUNCATED from "));
+    }
+  }
+
+  @Nested
   @Order(99)
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test

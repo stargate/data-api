@@ -47,8 +47,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonParseException"))
+          .body("errors[0].message", is(not(blankString())));
     }
 
     @Test
@@ -69,10 +69,10 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
           .body(
               "errors[0].message",
-              startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""))
-          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"));
+              startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""));
     }
 
     @Test
@@ -94,10 +94,12 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
           .then()
           .statusCode(200)
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, the field postCommand.namespace not valid"))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+              startsWith(
+                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
@@ -119,10 +121,12 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, the field postCommand.collection not valid"))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+              startsWith(
+                  "Request invalid: field 'collection' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
@@ -134,8 +138,11 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid: field 'command' value `null` not valid"));
     }
   }
 }

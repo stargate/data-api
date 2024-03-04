@@ -468,6 +468,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void checkMetrics() {
       DeleteManyIntegrationTest.super.checkMetrics("DeleteManyCommand");
+      DeleteManyIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }
