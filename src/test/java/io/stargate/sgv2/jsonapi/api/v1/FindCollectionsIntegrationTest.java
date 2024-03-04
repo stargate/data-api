@@ -348,7 +348,10 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     }
                   }
                   """;
-
+      String expected =
+          """
+                  {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -358,7 +361,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
-          .body("status.collections", hasItem("collection4"));
+          .body("status.collections", containsInAnyOrder(jsonEquals(expected)));
     }
   }
 
