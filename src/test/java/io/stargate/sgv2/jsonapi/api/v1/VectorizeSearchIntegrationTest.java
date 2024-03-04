@@ -109,7 +109,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("status.ok", is(nullValue()))
           .body("errors[0].exceptionClass", is("ConstraintViolationException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               containsString(

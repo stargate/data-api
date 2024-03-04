@@ -12,6 +12,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -269,53 +270,35 @@ public record CollectionSettings(
         return new CollectionSettings(collectionName, VectorConfig.notEnabledVectorConfig(), null);
       }
     } else {
-      JsonNode commentConfig;
+      JsonNode commentConfigNode;
       try {
-        commentConfig = objectMapper.readTree(comment);
+        commentConfigNode = objectMapper.readTree(comment);
       } catch (JsonProcessingException e) {
         // This should never happen, already check if vectorize is a valid JSON
         throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
       }
 
-      // new table comment design, with collectionOptions as top-level key
-      if (commentConfig.has("collectionOptions")) {
-        JsonNode collectionOptionsNode = commentConfig.get("collectionOptions");
-        VectorConfig vectorConfig = null;
-        JsonNode vector = collectionOptionsNode.path("vector");
+      // new table comment design, with collection as top-level key
+      if (commentConfigNode.has(TableCommentConstants.TOP_LEVEL_KEY)) {
+        JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
+        JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
+        VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
+        JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
         if (!vector.isMissingNode()) {
           vectorConfig = VectorConfig.fromJson(vector);
         }
         IndexingConfig indexingConfig = null;
-        JsonNode indexing = collectionOptionsNode.path("indexing");
+        JsonNode indexing =
+            collectionOptionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
         if (!indexing.isMissingNode()) {
           indexingConfig = IndexingConfig.fromJson(indexing);
         }
         return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
       } else {
-        // backward compatibility for old vectorize table comment
-        VectorConfig.VectorizeConfig vectorizeConfig = null;
-        JsonNode vectorize = commentConfig.path("vectorize");
-        if (!vectorize.isMissingNode()) {
-          String service = vectorize.get("service").asText();
-          String modelName = null;
-          JsonNode vectorizeOptions = vectorize.path("options");
-          if (!vectorizeOptions.isMissingNode()) {
-            modelName = vectorizeOptions.get("modelName").asText();
-          }
-          vectorizeConfig =
-              new VectorConfig.VectorizeConfig(
-                  service,
-                  modelName,
-                  new VectorConfig.VectorizeConfig.VectorizeServiceAuthentication(
-                      Set.of(AuthenticationType.HEADER), null),
-                  null);
-        }
-        VectorConfig vectorConfig =
-            new VectorConfig(vectorEnabled, vectorSize, function, vectorizeConfig);
-
+        VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
         // backward compatibility for old indexing table comment
         IndexingConfig indexingConfig = null;
-        JsonNode indexing = commentConfig.path("indexing");
+        JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
         if (!indexing.isMissingNode()) {
           indexingConfig = IndexingConfig.fromJson(indexing);
         }
