@@ -261,8 +261,6 @@ public record CollectionSettings(
       String comment,
       ObjectMapper objectMapper) {
     if (comment == null || comment.isBlank()) {
-      // vector column exists -> vectorEnabled, vectorSize
-      // vector index exists -> similarityFunction
       if (vectorEnabled) {
         return new CollectionSettings(
             collectionName, new VectorConfig(true, vectorSize, function, null), null);
@@ -295,8 +293,11 @@ public record CollectionSettings(
         }
         return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
       } else {
-        VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
         // backward compatibility for old indexing table comment
+        // indexing options have been used in production, and the table comment structure is not
+        // compatible with schema-version 1.
+        // sample comment : {"indexing":{"deny":["address"]}}}
+        VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
         IndexingConfig indexingConfig = null;
         JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
         if (!indexing.isMissingNode()) {

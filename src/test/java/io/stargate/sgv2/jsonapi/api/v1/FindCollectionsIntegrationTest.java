@@ -3,11 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -361,7 +357,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
-          .body("status.collections", containsInAnyOrder(jsonEquals(expected)));
+          .body("status.collections", contains(jsonEquals(expected)));
     }
   }
 
