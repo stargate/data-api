@@ -1,12 +1,10 @@
 # Stargate JSON API deployment using Helm
 
 ## Pre-requisites
+### Stargate Coordinator Instance
+You'll need the Stargate Coordinator instance deployed with port 9042 accessible
 
-### Stargate GRPC Bridge Instance
-You'll need the Stargate Bridge instance deployed with port 8091 accessible
-
-#### Stargate GRPC Bridge Setup
-You can deploy the stargate bridge / coordinator node using the helm setup at https://github.com/stargate/stargate/tree/main/helm
+You can deploy the stargate coordinator node using the helm setup at https://github.com/stargate/stargate/tree/main/helm
 
 ### Autoscaling
 Autoscaling uses metrics server. Metrics server can be installed by executing the command:
@@ -41,13 +39,10 @@ helm install jsonapi jsonapi
 ```
 
 Note:
-- The default values in the Helm values file (`values.yaml`) are set to assume that Stargate GRPC Bridge is setup in `default` kubernetes namespace
-
-To install with overriden values, you can use the `--set` option as shown below:
+To install with override values, you can use the `--set` option as shown below:
 
 ```shell script
 helm install jsonapi jsonapi \
 --namespace <ENTER_NAMESPACE_HERE> \
---set sgGrpcBridge.namespace=<SG_GRPC_BRIDGE_NAMESPACE> \
 --set replicaCount=2
 ```

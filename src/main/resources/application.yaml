@@ -3,9 +3,6 @@
 
 stargate:
 
-  data-store:
-    ignore-bridge: true
-
   database:
     limits:
       max-collections: 5
