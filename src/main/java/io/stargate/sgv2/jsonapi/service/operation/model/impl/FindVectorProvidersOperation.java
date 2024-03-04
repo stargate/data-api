@@ -23,35 +23,35 @@ public record FindVectorProvidersOperation(
     return Uni.createFrom()
         .item(
             () -> {
-              Map<String, ReturnVectorProviderConfig> vectorProviders = new HashMap<>();
+              Map<String, VectorProviderResponse> vectorProviders = new HashMap<>();
               if (propertyBasedEmbeddingServiceConfig.vertexai().enabled()) {
                 vectorProviders.put(
                     "vertexai",
-                    ReturnVectorProviderConfig.provider(
+                    VectorProviderResponse.provider(
                         (propertyBasedEmbeddingServiceConfig.vertexai())));
               }
               if (propertyBasedEmbeddingServiceConfig.huggingface().enabled()) {
                 vectorProviders.put(
                     "huggingface",
-                    ReturnVectorProviderConfig.provider(
+                    VectorProviderResponse.provider(
                         (propertyBasedEmbeddingServiceConfig.huggingface())));
               }
               if (propertyBasedEmbeddingServiceConfig.openai().enabled()) {
                 vectorProviders.put(
                     "openai",
-                    ReturnVectorProviderConfig.provider(
+                    VectorProviderResponse.provider(
                         (propertyBasedEmbeddingServiceConfig.openai())));
               }
               if (propertyBasedEmbeddingServiceConfig.cohere().enabled()) {
                 vectorProviders.put(
                     "cohere",
-                    ReturnVectorProviderConfig.provider(
+                    VectorProviderResponse.provider(
                         (propertyBasedEmbeddingServiceConfig.cohere())));
               }
               if (propertyBasedEmbeddingServiceConfig.nvidia().enabled()) {
                 vectorProviders.put(
                     "nvidia",
-                    ReturnVectorProviderConfig.provider(
+                    VectorProviderResponse.provider(
                         (propertyBasedEmbeddingServiceConfig.nvidia())));
               }
               return new Result(vectorProviders);
@@ -59,7 +59,7 @@ public record FindVectorProvidersOperation(
   }
 
   // simple result wrapper
-  private record Result(Map<String, ReturnVectorProviderConfig> vectorProviders)
+  private record Result(Map<String, VectorProviderResponse> vectorProviders)
       implements Supplier<CommandResult> {
 
     @Override
@@ -70,20 +70,30 @@ public record FindVectorProvidersOperation(
     }
   }
 
-  private record ReturnVectorProviderConfig(
+  /**
+   * A simplified representation of a vector provider's configuration for API responses. Excludes
+   * internal properties (retry, timeout etc.) to focus on data relevant to clients, including URL,
+   * authentication methods, and model customization parameters.
+   *
+   * @param url URL of the vector provider's service.
+   * @param supportedAuthentication Supported methods for authentication.
+   * @param parameters Customizable parameters for the provider's service.
+   * @param models Model configurations available from the provider.
+   */
+  private record VectorProviderResponse(
       String url,
       List<String> supportedAuthentication,
       List<PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ParameterConfig> parameters,
-      List<ReturnModelConfig> models) {
-    private static ReturnVectorProviderConfig provider(
+      List<ModelConfigResponse> models) {
+    private static VectorProviderResponse provider(
         PropertyBasedEmbeddingServiceConfig.VectorProviderConfig vectorProviderConfig) {
-      ArrayList<ReturnModelConfig> modelsRemoveProperties = new ArrayList<>();
+      ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
       for (PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ModelConfig model :
           vectorProviderConfig.models()) {
-        ReturnModelConfig returnModel = new ReturnModelConfig(model.name(), model.parameters());
+        ModelConfigResponse returnModel = new ModelConfigResponse(model.name(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
-      return new ReturnVectorProviderConfig(
+      return new VectorProviderResponse(
           vectorProviderConfig.url(),
           vectorProviderConfig.supportedAuthentication(),
           vectorProviderConfig.parameters(),
@@ -91,7 +101,15 @@ public record FindVectorProvidersOperation(
     }
   }
 
-  private record ReturnModelConfig(
+  /**
+   * Configuration details for a model offered by a vector provider, tailored for external clients.
+   * Includes the model name and parameters for customization, excluding internal properties (retry,
+   * timeout etc.).
+   *
+   * @param name Identifier name of the model.
+   * @param parameters Parameters for customizing the model.
+   */
+  private record ModelConfigResponse(
       String name,
       List<PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ParameterConfig> parameters) {}
 }
