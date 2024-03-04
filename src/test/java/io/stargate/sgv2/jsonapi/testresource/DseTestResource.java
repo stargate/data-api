@@ -65,9 +65,9 @@ public class DseTestResource extends StargateTestResource {
     Map<String, String> env = super.start();
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
-    propsBuilder.put("stargate.jsonapi.embedding.service.custom.enabled", "true");
+    propsBuilder.put("jsonapi.vector.provider.custom.enabled", "true");
     propsBuilder.put(
-        "stargate.jsonapi.embedding.service.custom.clazz",
+        "jsonapi.vector.provider.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
     if (this.containerNetworkId.isPresent()) {
       String host = System.getProperty("quarkus.grpc.clients.bridge.host");
