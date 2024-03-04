@@ -294,7 +294,13 @@ public record FindOperation(
     return getDocuments(queryExecutor, pageState(), null)
 
         // map the response to result
-        .map(docs -> new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse));
+        .map(
+            docs -> {
+              commandContext
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+              return new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse);
+            });
   }
 
   /**
@@ -326,7 +332,9 @@ public record FindOperation(
             limit(),
             maxSortReadLimit(),
             projection(),
-            vector() != null);
+            vector() != null,
+            commandContext.commandName(),
+            commandContext.jsonProcessingMetricsReporter());
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -339,7 +347,9 @@ public record FindOperation(
             objectMapper,
             projection,
             limit(),
-            vector() != null);
+            vector() != null,
+            commandContext.commandName(),
+            commandContext.jsonProcessingMetricsReporter());
       }
       default -> {
         JsonApiException failure =

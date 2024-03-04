@@ -57,6 +57,13 @@ public final class ThrowableToErrorMapper {
           if (message.contains("vector<float,")) {
             message = "Mismatched vector dimension";
           }
+          if (message.contains(
+                  "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
+              || message.contains("ANN ordering by vector requires the column to be indexed")) {
+            return ErrorCode.NO_INDEX_ERROR
+                .toApiException()
+                .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+          }
           return ErrorCode.INVALID_QUERY
               .toApiException()
               .getCommandResultError(message, Response.Status.OK);
@@ -111,7 +118,7 @@ public final class ThrowableToErrorMapper {
           return ErrorCode.DRIVER_CLOSED_CONNECTION
               .toApiException()
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          // Unidentified Driver Exceptions, will not mapper into JsonApiException
+          // Unidentified Driver Exceptions, will not map into JsonApiException
         } else if (throwable instanceof DriverException) {
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
