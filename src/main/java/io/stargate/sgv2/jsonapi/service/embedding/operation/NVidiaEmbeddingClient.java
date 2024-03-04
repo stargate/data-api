@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.HeaderParam;
@@ -41,9 +42,12 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
 
   private record EmbeddingRequest(String[] input, String model) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
   private record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 

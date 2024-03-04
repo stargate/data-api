@@ -43,7 +43,7 @@ public class DataVectorizerTest {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
       }
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -65,7 +65,7 @@ public class DataVectorizerTest {
       }
 
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         Throwable failure =
             dataVectorizer
@@ -93,7 +93,7 @@ public class DataVectorizerTest {
       }
 
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -115,7 +115,7 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       documents.add(document);
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         Throwable failure =
             dataVectorizer
@@ -145,7 +145,7 @@ public class DataVectorizerTest {
       sortExpressions.add(sortExpression);
       SortClause sortClause = new SortClause(sortExpressions);
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -174,7 +174,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -201,7 +201,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       Throwable t =
           dataVectorizer
               .vectorizeUpdateClause(updateClause)
@@ -231,7 +231,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -259,7 +259,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       Throwable t =
           dataVectorizer
               .vectorizeUpdateClause(updateClause)
@@ -289,7 +289,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -315,7 +315,7 @@ public class DataVectorizerTest {
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty());
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), Optional.empty(), "test");
       try {
         Throwable t =
             dataVectorizer
