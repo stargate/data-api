@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -93,13 +95,24 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   }
 
   private FileWriterParams buildFileWriterParams() {
-    String createTableCQL =
+    CreateCollectionOperation createCollectionOperation =
         CreateCollectionOperation.forCQL(
-                this.collectionSettings.vectorEnabled(),
-                this.collectionSettings.vectorSize(),
-                null) // TODO-SL fix comments field
+            this.collectionSettings.vectorEnabled(),
+            this.collectionSettings.vectorEnabled()
+                ? this.collectionSettings.similarityFunction().toString()
+                : null,
+            this.collectionSettings.vectorEnabled() ? this.collectionSettings.vectorSize() : 0,
+            null); // TODO-SL fix comments field
+    String createTableCQL =
+        createCollectionOperation
             .getCreateTable(this.namespace, this.createCollection.name())
             .getQuery();
+    List<String> indexCQLs =
+        createCollectionOperation
+            .getIndexStatements(this.namespace, this.createCollection.name())
+            .stream()
+            .map(SimpleStatement::getQuery)
+            .toList();
     String insertStatementCQL =
         InsertOperation.forCQL(new CommandContext(this.namespace, this.createCollection.name()))
             .buildInsertQuery(
@@ -110,7 +123,9 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         this.getSsTableOutputDirectory(),
         fileWriterBufferSizeInMB,
         createTableCQL,
-        insertStatementCQL);
+        insertStatementCQL,
+        indexCQLs,
+        this.collectionSettings.vectorEnabled());
   }
 
   public String getNamespace() {

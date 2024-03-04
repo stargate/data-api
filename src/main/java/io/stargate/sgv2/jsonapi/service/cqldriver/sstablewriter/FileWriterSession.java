@@ -57,6 +57,7 @@ public class FileWriterSession implements CqlSession {
   private final String ssTableOutputDirectory;
   private final CQLSSTableWriter cqlsSSTableWriter;
   private int fileWriterBufferSizeInMB = 20;
+  private final FileWriterParams fileWriterParams;
 
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
@@ -64,6 +65,7 @@ public class FileWriterSession implements CqlSession {
       String sessionId,
       FileWriterParams fileWriterParams)
       throws IOException {
+    this.fileWriterParams = fileWriterParams;
     this.cqlSessionCache = cqlSessionCache;
     this.cacheKey = cacheKey;
     this.sessionId = sessionId;
@@ -224,15 +226,17 @@ public class FileWriterSession implements CqlSession {
                 DataType.text())
             .newValue(tupleValue.get(0, TypeCodecs.TINYINT), tupleValue.get(1, TypeCodecs.TEXT));
     boundValues.set(0, cxTupleValue);
-    // Change $vector from com.datastax.oss.driver.api.core.data.CqlVector to java.nio.ByteBuffer
-    int vectorColumnIndex =
-        boundValues.size()
-            - 1; // TODO-SL: Need to find a better way to identify the vector column index
-    CqlVector<Float> cqlVector = (CqlVector<Float>) boundValues.get(vectorColumnIndex);
-    ByteBuffer encodedVectorData =
-        TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
-            .encode(cqlVector, ProtocolVersion.DEFAULT);
-    boundValues.set(vectorColumnIndex, encodedVectorData);
+    if (this.fileWriterParams.vectorEnabled()) {
+      // Change $vector from com.datastax.oss.driver.api.core.data.CqlVector to java.nio.ByteBuffer
+      int vectorColumnIndex =
+          boundValues.size()
+              - 1; // TODO-SL: Need to find a better way to identify the vector column index
+      CqlVector<Float> cqlVector = (CqlVector<Float>) boundValues.get(vectorColumnIndex);
+      ByteBuffer encodedVectorData =
+          TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
+              .encode(cqlVector, ProtocolVersion.DEFAULT);
+      boundValues.set(vectorColumnIndex, encodedVectorData);
+    }
   }
 
   @NonNull

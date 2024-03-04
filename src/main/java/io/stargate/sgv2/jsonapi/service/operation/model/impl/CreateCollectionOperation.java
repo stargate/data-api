@@ -92,9 +92,9 @@ public record CreateCollectionOperation(
   }
 
   public static CreateCollectionOperation forCQL(
-      boolean vectorSearch, int vectorSize, String comment) {
+      boolean vectorSearch, String vectorFunction, int vectorSize, String comment) {
     return new CreateCollectionOperation(
-        null, null, null, null, null, vectorSearch, vectorSize, null, comment, 0);
+        null, null, null, null, null, vectorSearch, vectorSize, vectorFunction, comment, 0);
   }
 
   @Override
@@ -289,7 +289,7 @@ public record CreateCollectionOperation(
     }
   }
 
-  protected List<SimpleStatement> getIndexStatements(String keyspace, String table) {
+  public List<SimpleStatement> getIndexStatements(String keyspace, String table) {
     List<SimpleStatement> statements = new ArrayList<>(10);
 
     String existKeys =

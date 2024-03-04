@@ -52,7 +52,7 @@ public class OfflineLoaderTester {
 
     var vectorSearchConfig =
         new CreateCollectionCommand.Options.VectorSearchConfig(vectorSize, similarityFunction);
-    var options = new CreateCollectionCommand.Options(vectorSearchConfig, null, null);
+    var options = new CreateCollectionCommand.Options(null, null, null);
     var createCollectionCommand = new CreateCollectionCommand(collection, options);
     var beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
@@ -63,16 +63,13 @@ public class OfflineLoaderTester {
 
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
 
-    // TODO: - SL  can we add a static to CommandContext or something to make creating this easier
-    String commandName = beginOfflineSessionCommand.getClass().getSimpleName();
     CommandContext commandContext =
-        new CommandContext(
+        CommandContext.from(
             namespace,
             collection,
             beginOfflineSessionCommand.getCollectionSettings(),
             embeddingService,
-            commandName,
-            jsonProcessingMetricsReporter);
+            beginOfflineSessionCommand.getClass().getSimpleName());
 
     CommandResult commandResult =
         commandProcessor
@@ -93,11 +90,15 @@ public class OfflineLoaderTester {
     OfflineInsertManyCommand offlineInsertManyCommand =
         new OfflineInsertManyCommand(
             sessionId,
-            List.of(
-                new ObjectMapper()
-                    .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}"),
-                new ObjectMapper()
-                    .readTree("{\"_id\": 2, \"name\":\"mark\",\"$vector\": [0.7,0.7,0.6]}")));
+            beginOfflineSessionCommand.getCollectionSettings().vectorEnabled()
+                ? (List.of(
+                    new ObjectMapper()
+                        .readTree("{\"_id\": 1, \"name\":\"jim\",\"$vector\": [0.3,0.4,0.5]}"),
+                    new ObjectMapper()
+                        .readTree("{\"_id\": 2, \"name\":\"mark\",\"$vector\": [0.7,0.7,0.6]}")))
+                : List.of(
+                    new ObjectMapper().readTree("{\"_id\": 1, \"name\":\"jim\"}"),
+                    new ObjectMapper().readTree("{\"_id\": 2, \"name\":\"mark\"}")));
     CommandResult offlineInsertManyCommandResponse =
         commandProcessor
             .processCommand(dataApiRequestInfo, commandContext, offlineInsertManyCommand)
@@ -130,14 +131,21 @@ public class OfflineLoaderTester {
             .get();
     System.out.println(offlineEndWriterCommandResponse);
 
-    offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
+    /*offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
     offlineGetStatusCommandResponse =
         commandProcessor
             .processCommand(dataApiRequestInfo, commandContext, offlineGetStatusCommand)
             .subscribe()
             .asCompletionStage()
-            .get();
+            .get();*/
     System.out.println(offlineGetStatusCommandResponse);
+    System.out.println("Statements : ");
+    System.out.println(beginOfflineSessionCommand.getFileWriterParams().createTableCQL() + ";");
+    beginOfflineSessionCommand
+        .getFileWriterParams()
+        .indexCQLs()
+        .forEach(s -> System.out.println(s + ";"));
+    System.out.println(beginOfflineSessionCommand.getFileWriterParams().insertStatementCQL() + ";");
   }
 
   private CommandResolverService buildCommandResolverService() {
