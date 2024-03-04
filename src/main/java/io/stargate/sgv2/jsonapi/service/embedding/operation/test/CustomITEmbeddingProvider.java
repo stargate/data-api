@@ -2,18 +2,18 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * This is a test implementation of the EmbeddingService interface. It is used for
+ * This is a test implementation of the EmbeddingProvider interface. It is used for
  * VectorizeSearchIntegrationTest
  */
 @RegisterForReflection
-public class CustomITEmbeddingService implements EmbeddingService {
+public class CustomITEmbeddingProvider implements EmbeddingProvider {
 
   public static final String TEST_API_KEY = "test_embedding_service_api_key";
 

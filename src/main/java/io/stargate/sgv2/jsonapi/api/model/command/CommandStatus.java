@@ -14,7 +14,7 @@ public enum CommandStatus {
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
   /** Status for reporting existing embedding services. */
-  @JsonProperty("vectorProviders")
+  @JsonProperty("embeddingProviders")
   EXISTING_VECTOR_PROVIDERS,
   /** Status for reporting existing collections. */
   @JsonProperty("collections")

@@ -9,11 +9,11 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 @StaticInitSafe
-public class VectorProvidersConfig implements ConfigSourceProvider {
+public class EmbeddingProvidersConfig implements ConfigSourceProvider {
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
     try {
-      URL resourceURL = forClassLoader.getResource("vector-providers-config.yaml");
+      URL resourceURL = forClassLoader.getResource("embedding-providers-config.yaml");
       YamlConfigSource configSource = new YamlConfigSource(resourceURL);
       return Collections.singletonList(configSource);
     } catch (IOException e) {

@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingServiceConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,56 +16,57 @@ import java.util.function.Supplier;
  * Operation that list all available vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
-public record FindVectorProvidersOperation(
-    PropertyBasedEmbeddingServiceConfig propertyBasedEmbeddingServiceConfig) implements Operation {
+public record FindEmbeddingProvidersOperation(
+    PropertyBasedEmbeddingProviderConfig propertyBasedEmbeddingProviderConfig)
+    implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     return Uni.createFrom()
         .item(
             () -> {
-              Map<String, VectorProviderResponse> vectorProviders = new HashMap<>();
-              if (propertyBasedEmbeddingServiceConfig.vertexai().enabled()) {
-                vectorProviders.put(
+              Map<String, EmbeddingProviderResponse> embeddingProviders = new HashMap<>();
+              if (propertyBasedEmbeddingProviderConfig.vertexai().enabled()) {
+                embeddingProviders.put(
                     "vertexai",
-                    VectorProviderResponse.provider(
-                        (propertyBasedEmbeddingServiceConfig.vertexai())));
+                    EmbeddingProviderResponse.provider(
+                        (propertyBasedEmbeddingProviderConfig.vertexai())));
               }
-              if (propertyBasedEmbeddingServiceConfig.huggingface().enabled()) {
-                vectorProviders.put(
+              if (propertyBasedEmbeddingProviderConfig.huggingface().enabled()) {
+                embeddingProviders.put(
                     "huggingface",
-                    VectorProviderResponse.provider(
-                        (propertyBasedEmbeddingServiceConfig.huggingface())));
+                    EmbeddingProviderResponse.provider(
+                        (propertyBasedEmbeddingProviderConfig.huggingface())));
               }
-              if (propertyBasedEmbeddingServiceConfig.openai().enabled()) {
-                vectorProviders.put(
+              if (propertyBasedEmbeddingProviderConfig.openai().enabled()) {
+                embeddingProviders.put(
                     "openai",
-                    VectorProviderResponse.provider(
-                        (propertyBasedEmbeddingServiceConfig.openai())));
+                    EmbeddingProviderResponse.provider(
+                        (propertyBasedEmbeddingProviderConfig.openai())));
               }
-              if (propertyBasedEmbeddingServiceConfig.cohere().enabled()) {
-                vectorProviders.put(
+              if (propertyBasedEmbeddingProviderConfig.cohere().enabled()) {
+                embeddingProviders.put(
                     "cohere",
-                    VectorProviderResponse.provider(
-                        (propertyBasedEmbeddingServiceConfig.cohere())));
+                    EmbeddingProviderResponse.provider(
+                        (propertyBasedEmbeddingProviderConfig.cohere())));
               }
-              if (propertyBasedEmbeddingServiceConfig.nvidia().enabled()) {
-                vectorProviders.put(
+              if (propertyBasedEmbeddingProviderConfig.nvidia().enabled()) {
+                embeddingProviders.put(
                     "nvidia",
-                    VectorProviderResponse.provider(
-                        (propertyBasedEmbeddingServiceConfig.nvidia())));
+                    EmbeddingProviderResponse.provider(
+                        (propertyBasedEmbeddingProviderConfig.nvidia())));
               }
-              return new Result(vectorProviders);
+              return new Result(embeddingProviders);
             });
   }
 
   // simple result wrapper
-  private record Result(Map<String, VectorProviderResponse> vectorProviders)
+  private record Result(Map<String, EmbeddingProviderResponse> embeddingProviders)
       implements Supplier<CommandResult> {
 
     @Override
     public CommandResult get() {
       Map<CommandStatus, Object> statuses =
-          Map.of(CommandStatus.EXISTING_VECTOR_PROVIDERS, vectorProviders);
+          Map.of(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders);
       return new CommandResult(statuses);
     }
   }
@@ -80,23 +81,23 @@ public record FindVectorProvidersOperation(
    * @param parameters Customizable parameters for the provider's service.
    * @param models Model configurations available from the provider.
    */
-  private record VectorProviderResponse(
+  private record EmbeddingProviderResponse(
       String url,
       List<String> supportedAuthentication,
-      List<PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ParameterConfig> parameters,
+      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
-    private static VectorProviderResponse provider(
-        PropertyBasedEmbeddingServiceConfig.VectorProviderConfig vectorProviderConfig) {
+    private static EmbeddingProviderResponse provider(
+        PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
-      for (PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ModelConfig model :
-          vectorProviderConfig.models()) {
+      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
+          embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel = new ModelConfigResponse(model.name(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
-      return new VectorProviderResponse(
-          vectorProviderConfig.url(),
-          vectorProviderConfig.supportedAuthentication(),
-          vectorProviderConfig.parameters(),
+      return new EmbeddingProviderResponse(
+          embeddingProviderConfig.url(),
+          embeddingProviderConfig.supportedAuthentication(),
+          embeddingProviderConfig.parameters(),
           modelsRemoveProperties);
     }
   }
@@ -111,5 +112,6 @@ public record FindVectorProvidersOperation(
    */
   private record ModelConfigResponse(
       String name,
-      List<PropertyBasedEmbeddingServiceConfig.VectorProviderConfig.ParameterConfig> parameters) {}
+      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
+          parameters) {}
 }

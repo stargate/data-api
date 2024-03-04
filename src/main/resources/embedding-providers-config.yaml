@@ -1,6 +1,6 @@
 # custom properties for enabling vectorize method
 jsonapi:
-  vector:
+  embedding:
     provider:
       # Open AI embedding service configuration
       openai:

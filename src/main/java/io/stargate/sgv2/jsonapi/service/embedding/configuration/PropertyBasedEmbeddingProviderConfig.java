@@ -10,28 +10,28 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
-@ConfigMapping(prefix = "jsonapi.vector.provider")
-public interface PropertyBasedEmbeddingServiceConfig {
+@ConfigMapping(prefix = "jsonapi.embedding.provider")
+public interface PropertyBasedEmbeddingProviderConfig {
 
   @Nullable
-  VectorProviderConfig openai();
+  EmbeddingProviderConfig openai();
 
   @Nullable
-  VectorProviderConfig huggingface();
+  EmbeddingProviderConfig huggingface();
 
   @Nullable
-  VectorProviderConfig vertexai();
+  EmbeddingProviderConfig vertexai();
 
   @Nullable
-  VectorProviderConfig cohere();
+  EmbeddingProviderConfig cohere();
 
   @Nullable
-  VectorProviderConfig nvidia();
+  EmbeddingProviderConfig nvidia();
 
   @Nullable
   CustomConfig custom();
 
-  interface VectorProviderConfig {
+  interface EmbeddingProviderConfig {
     @JsonProperty
     boolean enabled();
 

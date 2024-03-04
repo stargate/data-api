@@ -37,7 +37,7 @@ public class DataVectorizerService {
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
     final DataVectorizer dataVectorizer =
         new DataVectorizer(
-            commandContext.embeddingService(),
+            commandContext.embeddingProvider(),
             objectMapper.getNodeFactory(),
             dataApiRequestInfo.getEmbeddingApiKey(),
             commandContext.collection());

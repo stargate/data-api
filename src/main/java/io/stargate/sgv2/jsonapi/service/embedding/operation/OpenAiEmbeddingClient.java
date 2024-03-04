@@ -12,24 +12,24 @@ import java.util.Optional;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAiEmbeddingClient implements EmbeddingService {
+public class OpenAiEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final OpenAiEmbeddingService embeddingService;
+  private final OpenAiEmbeddingProvider embeddingProvider;
 
   public OpenAiEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(OpenAiEmbeddingService.class);
+            .build(OpenAiEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface OpenAiEmbeddingService {
+  public interface OpenAiEmbeddingProvider {
     @POST
     @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -50,7 +50,7 @@ public class OpenAiEmbeddingClient implements EmbeddingService {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
     Uni<EmbeddingResponse> response =
-        embeddingService.embed(
+        embeddingProvider.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
     return response
         .onItem()

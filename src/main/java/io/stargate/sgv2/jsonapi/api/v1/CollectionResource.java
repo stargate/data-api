@@ -21,8 +21,8 @@ import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceFactory;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -61,7 +61,7 @@ public class CollectionResource {
 
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingServiceFactory embeddingServiceFactory;
+  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
@@ -168,18 +168,19 @@ public class CollectionResource {
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
-                EmbeddingService embeddingService = null;
+                EmbeddingProvider embeddingProvider = null;
                 if (collectionProperty.vectorizeServiceName() != null
                     && collectionProperty.modelName() != null) {
-                  embeddingService =
-                      embeddingServiceFactory.getConfiguration(
+                  embeddingProvider =
+                      embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorizeServiceName(),
                           collectionProperty.modelName());
                 }
 
                 CommandContext commandContext =
-                    new CommandContext(namespace, collection, collectionProperty, embeddingService);
+                    new CommandContext(
+                        namespace, collection, collectionProperty, embeddingProvider);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

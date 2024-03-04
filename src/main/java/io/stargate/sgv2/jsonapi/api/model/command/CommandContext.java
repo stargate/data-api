@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 
 /**
@@ -16,7 +16,7 @@ public record CommandContext(
     String namespace,
     String collection,
     CollectionSettings collectionSettings,
-    EmbeddingService embeddingService) {
+    EmbeddingProvider embeddingProvider) {
 
   public CommandContext(String namespace, String collection) {
     this(namespace, collection, CollectionSettings.empty(), null);

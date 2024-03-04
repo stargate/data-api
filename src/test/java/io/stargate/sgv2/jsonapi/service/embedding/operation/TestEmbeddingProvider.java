@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class TestEmbeddingService implements EmbeddingService {
+public class TestEmbeddingProvider implements EmbeddingProvider {
 
   public static CommandContext commandContextWithVectorize =
       new CommandContext(
@@ -21,7 +21,7 @@ public class TestEmbeddingService implements EmbeddingService {
               null,
               null,
               null),
-          new TestEmbeddingService());
+          new TestEmbeddingProvider());
 
   @Override
   public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {
