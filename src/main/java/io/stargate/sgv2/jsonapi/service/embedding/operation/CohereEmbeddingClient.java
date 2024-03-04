@@ -63,7 +63,8 @@ public class CohereEmbeddingClient implements EmbeddingService {
   private static final String SEARCH_QUERY = "search_query";
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts, Optional<String> apiKeyOverride, boolean isWrite) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request =
         new EmbeddingRequest(texts.toArray(textArray), modelName, SEARCH_QUERY);

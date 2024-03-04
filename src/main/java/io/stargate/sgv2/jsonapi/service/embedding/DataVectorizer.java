@@ -95,7 +95,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey, true);
         return vectors
             .onItem()
             .transform(
@@ -138,7 +138,7 @@ public class DataVectorizer {
         if (embeddingService == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey);
+        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey, false);
         return vectors
             .onItem()
             .transform(
@@ -205,7 +205,7 @@ public class DataVectorizer {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
         final Uni<List<float[]>> vectors =
-            embeddingService.vectorize(List.of(text), embeddingApiKey);
+            embeddingService.vectorize(List.of(text), embeddingApiKey, true);
         return vectors
             .onItem()
             .transform(

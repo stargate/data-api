@@ -40,7 +40,7 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
   }
 
-  private record EmbeddingRequest(String[] input, String model) {}
+  private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record EmbeddingResponse(Data[] data, String model, Usage usage) {
@@ -52,9 +52,17 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts, Optional<String> apiKeyOverride, boolean isWrite) {
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
+    String input_type;
+    if (isWrite) {
+      input_type = "passage";
+    } else {
+      input_type = "query";
+    }
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
         embeddingService.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
