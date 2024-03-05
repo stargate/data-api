@@ -82,7 +82,7 @@ jobs:
     # matrix props:
     strategy:
       matrix:
-        image: [ dataapi, jsonapi, jsonapi-native ]
+        image: [jsonapi, jsonapi-native ]
         exclude:
           - image: jsonapi-native
     env:
