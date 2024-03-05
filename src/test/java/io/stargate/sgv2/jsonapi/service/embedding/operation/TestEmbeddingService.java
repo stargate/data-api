@@ -25,7 +25,7 @@ public class TestEmbeddingService implements EmbeddingService {
 
   @Override
   public Uni<List<float[]>> vectorize(
-      List<String> texts, Optional<String> apiKey, boolean isWrite) {
+      List<String> texts, Optional<String> apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
     return Uni.createFrom().item(response);
