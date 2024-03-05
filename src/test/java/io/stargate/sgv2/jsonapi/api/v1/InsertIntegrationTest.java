@@ -3,14 +3,14 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -23,6 +23,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -41,6 +42,8 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
+  private final ObjectMapper MAPPER = new ObjectMapper();
+
   @AfterEach
   public void cleanUpData() {
     deleteAllDocuments();
@@ -504,16 +507,18 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.document' value `null` not valid. Problem: must not be null"));
     }
   }
 
   @Nested
   @Order(2)
   class InsertOneConstraintChecking {
-    private final ObjectMapper MAPPER = new ObjectMapper();
-
     private static final int MAX_ARRAY_LENGTH = DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH;
 
     @Test
@@ -559,7 +564,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an indexable Array ('arr') has ("
+                  "Document size limitation violated: number of elements an indexable Array (property 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
@@ -714,7 +719,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: indexed String value length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value (property 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -818,7 +823,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               startsWith("Document size limitation violated: number of properties"))
           .body(
               "errors[0].message",
-              endsWith("indexable Object ('subdoc') has (1001) exceeds maximum allowed (1000)"));
+              endsWith(
+                  "indexable Object (property 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -903,51 +909,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(doc.toString()));
-    }
-
-    private JsonNode createBigDoc(String docId, int minDocSize) throws IOException {
-      // While it'd be cleaner to build JsonNode representation, checking for
-      // size much more expensive so go low-tech instead
-      StringBuilder sb = new StringBuilder(minDocSize + 1000);
-      sb.append("{\"_id\":\"").append(docId).append('"');
-
-      boolean bigEnough = false;
-
-      // Since we add one property before loop, reduce max by 1.
-      // Target is around 1 meg; can have at most 2000 properties, and for
-      // big doc we don't want to exceed 1000 bytes per property.
-      // So let's make properties arrays of 4 Strings to get there.
-      final int ROOT_PROPS = 99;
-      final int LEAF_PROPS = 20; // so it's slightly under 2000 total properties, max
-      final String TEXT_1K = "abcd123 ".repeat(120); // 960 chars
-
-      // Use double loop to create a document with a lot of properties, 2-level nesting
-      for (int i = 0; i < ROOT_PROPS && !bigEnough; ++i) {
-        sb.append(",\n\"root").append(i).append("\":{");
-        // Add one short entry to simplify following loop
-        sb.append("\n \"subId\":").append(i);
-        for (int j = 0; j < LEAF_PROPS && !bigEnough; ++j) {
-          sb.append(",\n \"sub").append(j).append("\":");
-          sb.append('[');
-          sb.append('"').append(TEXT_1K).append("\",");
-          sb.append('"').append(TEXT_1K).append("\",");
-          sb.append('"').append(TEXT_1K).append("\",");
-          sb.append('"').append(TEXT_1K).append("\"");
-          sb.append(']');
-          bigEnough = sb.length() >= minDocSize;
-        }
-        sb.append("\n}");
-      }
-      sb.append("\n}");
-      if (!bigEnough) {
-        fail(
-            "Failed to create a document big enough, size: "
-                + sb.length()
-                + " bytes; needed "
-                + minDocSize);
-      }
-
-      return MAPPER.readTree(sb.toString());
     }
   }
 
@@ -1431,8 +1392,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(4)
-  class InsertManyFailing {
+  @Order(5)
+  class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
       // Max number length: 100; use 110
@@ -1471,6 +1432,142 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               startsWith("Document size limitation violated: Number value length"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"));
     }
+
+    @Test
+    public void insertBigButNotTooBigPayload() {
+      final int bigSize = DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 50_000;
+      // 5 x bit under 4 M should be just under limit
+      String json =
+          """
+                      {
+                        "insertMany": {
+                          "documents": [
+                            %s,
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                          ]
+                        }
+                      }
+                      """
+              .formatted(
+                  createBigDoc("big1", bigSize).toString(),
+                  createBigDoc("big2", bigSize).toString(),
+                  createBigDoc("big3", bigSize).toString(),
+                  createBigDoc("big4", bigSize).toString(),
+                  createBigDoc("big5", bigSize).toString());
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200);
+    }
+
+    // Testing Quarkus max payload (20M); separate from Max Doc Size limit (4M)
+    // (so need 6 documents to exceed)
+    @Test
+    public void tryInsertTooBigPayload() {
+      final int bigSize = DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 50_000;
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                      ]
+                    }
+                  }
+                  """
+              .formatted(
+                  createBigDoc("toobig1", bigSize).toString(),
+                  createBigDoc("toobig2", bigSize).toString(),
+                  createBigDoc("toobig3", bigSize).toString(),
+                  createBigDoc("toobig4", bigSize).toString(),
+                  createBigDoc("toobig5", bigSize).toString(),
+                  createBigDoc("toobig6", bigSize).toString());
+      // Either we get 413 (Payload Too Large) due to Quarkus limit, or,
+      // java.net.SocketException: Broken Pipe
+      // in latter case, it's via "sneaky throw", unfortunately, so catch
+      // needs to be for Exception and only then verifying
+      try {
+        given()
+            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .contentType(ContentType.JSON)
+            .body(json)
+            .when()
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+            .then()
+            .statusCode(403);
+      } catch (Exception e) {
+        // Sneaky throw, must catch any Exception, verify type separately
+        assertThat(e)
+            .isInstanceOf(java.net.SocketException.class)
+            .hasMessageStartingWith("Broken pipe");
+      }
+    }
+  }
+
+  @Nested
+  @Order(6)
+  class InsertManyFails {
+    @Test
+    public void insertManyWithTooManyDocuments() {
+      ArrayNode docs = MAPPER.createArrayNode();
+      final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
+
+      // We need to both exceed doc count limit AND to create big enough payload to
+      // trigger message truncation: 21 x 1k == 21kB should be enough
+      final String TEXT_1K = "abcd 1234 ".repeat(100);
+
+      for (int i = 0; i < MAX_DOCS + 1; ++i) {
+        ObjectNode doc =
+            MAPPER
+                .createObjectNode()
+                .put("_id", "doc" + i)
+                .put("username", "user" + i)
+                .put("text", TEXT_1K);
+        docs.add(doc);
+      }
+      String json =
+          """
+          {
+            "insertMany": {
+              "documents": %s
+            }
+          }
+          """
+              .formatted(docs.toString());
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              endsWith(
+                  "not valid. Problem: amount of documents to insert is over the max limit ("
+                      + docs.size()
+                      + " vs "
+                      + MAX_DOCS
+                      + ")."))
+          .body("errors[0].message", containsString("[TRUNCATED from "));
+    }
   }
 
   @Nested
@@ -1479,11 +1576,61 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void checkInsertOneMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test
     public void checkInsertManyMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
+    }
+  }
+
+  private JsonNode createBigDoc(String docId, int minDocSize) {
+    // While it'd be cleaner to build JsonNode representation, checking for
+    // size much more expensive so go low-tech instead
+    StringBuilder sb = new StringBuilder(minDocSize + 1000);
+    sb.append("{\"_id\":\"").append(docId).append('"');
+
+    boolean bigEnough = false;
+
+    // Since we add one property before loop, reduce max by 1.
+    // Target is around 1 meg; can have at most 2000 properties, and for
+    // big doc we don't want to exceed 1000 bytes per property.
+    // So let's make properties arrays of 4 Strings to get there.
+    final int ROOT_PROPS = 99;
+    final int LEAF_PROPS = 20; // so it's slightly under 2000 total properties, max
+    final String TEXT_1K = "abcd123 ".repeat(120); // 960 chars
+
+    // Use double loop to create a document with a lot of properties, 2-level nesting
+    for (int i = 0; i < ROOT_PROPS && !bigEnough; ++i) {
+      sb.append(",\n\"root").append(i).append("\":{");
+      // Add one short entry to simplify following loop
+      sb.append("\n \"subId\":").append(i);
+      for (int j = 0; j < LEAF_PROPS && !bigEnough; ++j) {
+        sb.append(",\n \"sub").append(j).append("\":");
+        sb.append('[');
+        sb.append('"').append(TEXT_1K).append("\",");
+        sb.append('"').append(TEXT_1K).append("\",");
+        sb.append('"').append(TEXT_1K).append("\",");
+        sb.append('"').append(TEXT_1K).append("\"");
+        sb.append(']');
+        bigEnough = sb.length() >= minDocSize;
+      }
+      sb.append("\n}");
+    }
+    sb.append("\n}");
+    if (!bigEnough) {
+      fail(
+          "Failed to create a document big enough, size: "
+              + sb.length()
+              + " bytes; needed "
+              + minDocSize);
+    }
+
+    try {
+      return MAPPER.readTree(sb.toString());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }

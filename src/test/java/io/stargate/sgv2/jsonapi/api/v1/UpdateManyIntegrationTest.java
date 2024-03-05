@@ -670,11 +670,12 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               is(
-                  "Request invalid, the field postCommand.command.updateClause not valid: must not be null."));
+                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
     }
   }
 
@@ -689,6 +690,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void checkMetrics() {
       UpdateManyIntegrationTest.super.checkMetrics("UpdateManyCommand");
+      UpdateManyIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

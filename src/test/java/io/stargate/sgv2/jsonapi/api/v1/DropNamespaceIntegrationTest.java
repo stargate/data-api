@@ -181,6 +181,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
     @Test
     public void checkMetrics() {
       DropNamespaceIntegrationTest.super.checkMetrics("DropNamespaceCommand");
+      DropNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

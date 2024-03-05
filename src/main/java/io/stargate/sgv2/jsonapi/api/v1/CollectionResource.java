@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -17,6 +16,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -63,7 +64,9 @@ public class CollectionResource {
 
   @Inject private EmbeddingServiceCache serviceCache;
 
-  @Inject private StargateRequestInfo stargateRequestInfo;
+  @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -154,7 +157,7 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(stargateRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionSettings(dataApiRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
             (collectionProperty, throwable) -> {
@@ -173,13 +176,19 @@ public class CollectionResource {
                     && collectionProperty.modelName() != null) {
                   embeddingService =
                       serviceCache.getConfiguration(
-                          stargateRequestInfo.getTenantId(),
+                          dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorizeServiceName(),
                           collectionProperty.modelName());
                 }
 
                 CommandContext commandContext =
-                    new CommandContext(namespace, collection, collectionProperty, embeddingService);
+                    new CommandContext(
+                        namespace,
+                        collection,
+                        collectionProperty,
+                        embeddingService,
+                        command.getClass().getSimpleName(),
+                        jsonProcessingMetricsReporter);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

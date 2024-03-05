@@ -532,11 +532,11 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 
 #### countDocuments Command Response
 
-| Response Elements | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `data`            | Not present                                             |
-| `status`          | Preset with fields: `count: <zero-or-positive-integer>` |
-| `errors`          | Present if errors occur.                                |
+| Response Elements | Description                                              |
+| ----------------- |----------------------------------------------------------|
+| `data`            | Not present                                              |
+| `status`          | Present with fields: `count: <zero-or-positive-integer>` |
+| `errors`          | Present if errors occur.                                 |
  
 If an error occurs the command will not return `status`.
 
@@ -683,11 +683,11 @@ The maximum amount of documents that can be deleted in a single operation is 20.
 
 #### deleteMany Command Response
 
-| Response Elements | Description                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------ |
-| `data`            | Not present                                                                          |
-| `status`          | Preset with fields: `deletedCount: <zero-or-positive-integer>`, `moreData` with value `true` if there are more documents that match the delete `filter`, but were not deleted since the limit of documents to delete in the single operation was hit. |
-| `errors`          | Present if errors occur. |
+| Response Elements | Description                                                                                                                                                                                                                                            |
+| ----------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `data`            | Not present                                                                                                                                                                                                                                            |
+| `status`          | Present with fields: `deletedCount: <zero-or-positive-integer>`, `moreData` with value `true` if there are more documents that match the delete `filter`, but were not deleted since the limit of documents to delete in the single operation was hit. |
+| `errors`          | Present if errors occur.                                                                                                                                                                                                                               |
 
 If an error occurs the command will still return `status` as some documents may have been deleted.
 
@@ -714,11 +714,11 @@ See [Multi-Document Failure Considerations](#multi-document-failure-consideratio
 
 #### deleteOne Command Response
 
-| Response Elements | Description                                               |
-| ----------------- | --------------------------------------------------------- |
-| `data`            | Not present                                               |
-| `status`          | Preset with fields: `deletedCount: <zero-or-one-integer>` |
-| `errors`          | Present if errors occur.                                  |
+| Response Elements | Description                                                |
+| ----------------- |------------------------------------------------------------|
+| `data`            | Not present                                                |
+| `status`          | Present with fields: `deletedCount: <zero-or-one-integer>` |
+| `errors`          | Present if errors occur.                                   |
  
 If an error occurs the command will not return `status`.
 
@@ -905,7 +905,7 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 | Response Elements | Description                                                                                                                                        |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | `data`            | Present with fields : `document` only, see [findOneAndReplace Command Options](#findOneAndReplace-command-options) for controlling the projection. |
-| `status`          | Preset with fields: `upsertedId: <id of document upserted>`, if a document was upserted.                                                           |
+| `status`          | Present with fields: `upsertedId: <id of document upserted>`, if a document was upserted.                                                          |
 | `errors`          | Present if errors occur.                                                                                                                           |
 
 If an error occurs the command will not return `data` or `status`.
@@ -980,7 +980,7 @@ If `<sort-clause>` is present, the maximum amount of documents that could be sor
 | Response Elements | Description                                                                                                                                      |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | `data`            | Present with fields : `document` only, see [findOneAndUpdate Command Options](#findOneAndUpdate-command-options) for controlling the projection. |
-| `status`          | Preset with fields: `upsertedId: <json-value>` only if a document was upserted.                                                                  |
+| `status`          | Present with fields: `upsertedId: <json-value>` only if a document was upserted.                                                                 |
 | `errors`          | Present if errors occur.                                                                                                                         |
 
 

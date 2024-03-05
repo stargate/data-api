@@ -68,6 +68,11 @@ jobs:
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' ${{ matrix.profile }}
 
+      - name: Build and push image for profiling (Amazon ECR)
+        run: |
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' -Dquarkus.container-image.name=jsonapi-profiling -Dquarkus.docker.dockerfile-jvm-path=src/main/docker/Dockerfile-profiling.jvm ${{ matrix.profile }}
+
+
   # signs docker image with cosign
   sign:
     name: Sign image
@@ -107,6 +112,20 @@ jobs:
         shell: bash
         env:
           COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}:${{ github.sha }}
+          COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64 }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_KEY_FILE: _cosign_key_
+          AUX_KEY: signedby
+          AUX_VALUE: stargate
+        run: |
+          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "=== signing image [$COSIGN_IMAGE] ..."
+          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+
+      - name: Sign profiling docker image
+        shell: bash
+        env:
+          COSIGN_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/${{ matrix.image }}-profiling:${{ github.sha }}
           COSIGN_PRIVATE_BASE64: ${{ secrets.COSIGN_PRIVATE_BASE64 }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_KEY_FILE: _cosign_key_

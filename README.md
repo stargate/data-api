@@ -197,6 +197,11 @@ Or, if you want to create a native-runnable Docker image named `io.stargate/json
 ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
 ```
 
+You can create a JVM-based Docker image (`stargateio/jsonapi-profiling`) with additional profiling tools by using:
+```shell script
+./mvnw -B -ntp package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.container-image.name=jsonapi-profiling -Dquarkus.docker.dockerfile-jvm-path=src/main/docker/Dockerfile-profiling.jvm
+```
+
 If you want to learn more about building container images, please consult [Container images](https://quarkus.io/guides/container-image).
 
 ## Quarkus Extensions
