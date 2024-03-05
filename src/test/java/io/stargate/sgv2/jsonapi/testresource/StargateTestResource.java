@@ -277,7 +277,7 @@ public abstract class StargateTestResource
     String STARGATE_IMAGE_TAG = "v2.1";
     String CLUSTER_NAME = "int-test-cluster";
     String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
-    String CLUSTER_DSE = null;
+    String CLUSTER_DSE = "true";
     long CASSANDRA_STARTUP_TIMEOUT = 2L;
     long COORDINATOR_STARTUP_TIMEOUT = 3L;
   }

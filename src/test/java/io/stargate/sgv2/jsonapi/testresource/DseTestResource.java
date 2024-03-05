@@ -12,7 +12,7 @@ public class DseTestResource extends StargateTestResource {
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-0248d170a615");
+          "testing.containers.cassandra-image", "datastax/dse-server:7.0.0-alpha.4");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
@@ -27,7 +27,7 @@ public class DseTestResource extends StargateTestResource {
     }
 
     if (null == System.getProperty("testing.containers.cluster-dse")) {
-      System.setProperty("testing.containers.cluster-dse", "false");
+      System.setProperty("testing.containers.cluster-dse", "true");
     }
 
     if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
