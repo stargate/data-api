@@ -16,24 +16,24 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen nvidia model.
  */
-public class NVidiaEmbeddingClient implements EmbeddingService {
+public class NVidiaEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final NVidiaEmbeddingService embeddingService;
+  private final NVidiaEmbeddingProvider embeddingProvider;
 
   public NVidiaEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(NVidiaEmbeddingService.class);
+            .build(NVidiaEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface NVidiaEmbeddingService {
+  public interface NVidiaEmbeddingProvider {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
@@ -65,7 +65,7 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
-        embeddingService.embed(
+        embeddingProvider.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
     return response
         .onItem()

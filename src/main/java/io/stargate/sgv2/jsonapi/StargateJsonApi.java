@@ -674,13 +674,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "findVectorProviders",
-                  summary = "`findVectorProviders` command result",
+                  name = "findEmbeddingProviders",
+                  summary = "`findEmbeddingProviders` command result",
                   value =
                       """
                         {
                             "status": {
-                                "vectorProviders": {
+                                "embeddingProviders": {
                                     "openai": {
                                         "url": "https://api.openai.com/v1/",
                                         "supportedAuthentication": [

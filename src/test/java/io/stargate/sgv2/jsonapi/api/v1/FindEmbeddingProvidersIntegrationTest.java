@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getTestPort;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -15,17 +14,17 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindVectorProvidersIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+public class FindEmbeddingProvidersIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested
   @Order(1)
-  class FindVectorProviders {
+  class FindEmbeddingProviders {
 
     @Test
     public final void happyPath() {
       String json =
           """
                     {
-                      "findVectorProviders": {
+                      "findEmbeddingProviders": {
                       }
                     }
                     """;
@@ -39,7 +38,7 @@ public class FindVectorProvidersIntegrationTest extends AbstractNamespaceIntegra
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.vectorProviders", notNullValue());
+          .body("status.embeddingProviders", notNullValue());
     }
   }
 
@@ -48,8 +47,8 @@ public class FindVectorProvidersIntegrationTest extends AbstractNamespaceIntegra
   class Metrics {
     @Test
     public void checkMetrics() {
-      FindVectorProvidersIntegrationTest.super.checkMetrics("FindVectorProvidersCommand");
-      FindVectorProvidersIntegrationTest.super.checkDriverMetricsTenantId();
+      FindEmbeddingProvidersIntegrationTest.super.checkMetrics("FindEmbeddingProvidersCommand");
+      FindEmbeddingProvidersIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

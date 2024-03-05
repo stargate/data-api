@@ -8,7 +8,7 @@ import java.util.Optional;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen model.
  */
-public interface EmbeddingService {
+public interface EmbeddingProvider {
   /**
    * Vectorizes the given list of texts and returns the embeddings.
    *

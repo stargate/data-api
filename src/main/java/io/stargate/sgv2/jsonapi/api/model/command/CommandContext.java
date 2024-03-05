@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 
 /**
@@ -17,7 +17,7 @@ public record CommandContext(
     String namespace,
     String collection,
     CollectionSettings collectionSettings,
-    EmbeddingService embeddingService,
+    EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 

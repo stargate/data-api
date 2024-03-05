@@ -1,1 +1,1 @@
-io.stargate.sgv2.jsonapi.service.embedding.configuration.VectorProvidersConfig
+io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig

@@ -31,7 +31,7 @@ public class DataVectorizerTest {
   @Inject ObjectMapper objectMapper;
 
   CommandContext commandContext = CommandContext.empty();
-  private EmbeddingService testService = new TestEmbeddingService();
+  private EmbeddingProvider testService = new TestEmbeddingProvider();
 
   @Nested
   public class TestTextValues {

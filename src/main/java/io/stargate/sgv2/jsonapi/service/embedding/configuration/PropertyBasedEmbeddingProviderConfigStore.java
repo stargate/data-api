@@ -6,16 +6,16 @@ import jakarta.inject.Inject;
 import java.util.Optional;
 
 @ApplicationScoped
-public class PropertyBasedEmbeddingServiceConfigStore implements EmbeddingServiceConfigStore {
+public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProviderConfigStore {
 
-  @Inject private PropertyBasedEmbeddingServiceConfig config;
+  @Inject private PropertyBasedEmbeddingProviderConfig config;
 
   @Override
   public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
     throw new UnsupportedOperationException("Not implemented");
   }
 
-  public EmbeddingServiceConfigStore.ServiceConfig getConfiguration(
+  public EmbeddingProviderConfigStore.ServiceConfig getConfiguration(
       Optional<String> tenant, String serviceName) {
     switch (serviceName) {
       case "openai":

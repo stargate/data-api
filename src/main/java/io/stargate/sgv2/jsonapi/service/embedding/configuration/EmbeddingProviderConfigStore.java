@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import java.util.Optional;
 
-public interface EmbeddingServiceConfigStore {
+public interface EmbeddingProviderConfigStore {
 
   record ServiceConfig(
       String serviceName,
