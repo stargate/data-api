@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -32,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -50,21 +52,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOperationTest extends OperationTestBase {
-  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
 
-  private final CommandContext VECTOR_COMMAND_CONTEXT =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          new CollectionSettings(
-              COLLECTION_NAME,
-              true,
-              -1,
-              CollectionSettings.SimilarityFunction.COSINE,
-              null,
-              null,
-              null),
-          null);
+  private CommandContext VECTOR_COMMAND_CONTEXT;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -72,8 +62,27 @@ public class FindOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
-  // !!! Only left temporarily for Disabled tests
-  private QueryExecutor queryExecutor0 = mock(QueryExecutor.class);
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    VECTOR_COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME,
+            COLLECTION_NAME,
+            new CollectionSettings(
+                COLLECTION_NAME,
+                true,
+                -1,
+                CollectionSettings.SimilarityFunction.COSINE,
+                null,
+                null,
+                null),
+            null,
+            "testCommand",
+            jsonProcessingMetricsReporter);
+  }
 
   @Nested
   class Execute {
@@ -98,6 +107,7 @@ public class FindOperationTest extends OperationTestBase {
                     "username": "user2"
                   }
                   """;
+      CommandContext commandContext = createCommandContextWithCommandName("jsonBytesReadCommand");
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(
@@ -116,7 +126,7 @@ public class FindOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       FindOperation operation =
           FindOperation.unsorted(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,
@@ -143,6 +153,67 @@ public class FindOperationTest extends OperationTestBase {
           .containsOnly(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesReadMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      // should have three metrics in total
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonBytesReadCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, should be one
+      List<String> jsonDocsReadCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_count")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      assertThat(jsonDocsReadCountMetrics).hasSize(1);
+      jsonDocsReadCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- read two docs, should be two
+      List<String> jsonDocsReadSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_sum")
+                          && line.contains("jsonBytesReadCommand"))
+              .toList();
+      assertThat(jsonDocsReadSumMetrics).hasSize(1);
+      jsonDocsReadSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(2.0);
+          });
     }
 
     @Test

@@ -33,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -49,8 +50,7 @@ import org.junit.jupiter.api.Test;
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
@@ -60,6 +60,13 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
           OperationTestBase.TestColumn.keyColumn(),
           OperationTestBase.TestColumn.ofUuid("tx_id"),
           OperationTestBase.TestColumn.ofVarchar("doc_json"));
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+  }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
     List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();

@@ -21,10 +21,13 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
               null,
               null,
               null),
-          new TestEmbeddingProvider());
+          new TestEmbeddingProvider(),
+          "testCommand",
+          null);
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts, Optional<String> apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
     return Uni.createFrom().item(response);

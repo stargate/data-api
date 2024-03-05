@@ -135,8 +135,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
 
   private void validate(LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
-      throw new JsonApiException(
-          ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
+      throw ErrorCode.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
       validate(subLogicalExpression);

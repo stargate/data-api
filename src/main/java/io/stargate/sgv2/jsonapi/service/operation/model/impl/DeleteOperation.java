@@ -137,9 +137,14 @@ public record DeleteOperation(
         .asList()
         .onItem()
         .transform(
-            deletedInformation ->
-                new DeleteOperationPage(
-                    deletedInformation, moreData.get(), returnDocumentInResponse));
+            deletedInformation -> {
+              commandContext
+                  .jsonProcessingMetricsReporter()
+                  .reportJsonReadDocsMetrics(
+                      commandContext().commandName(), deletedInformation.size());
+              return new DeleteOperationPage(
+                  deletedInformation, moreData.get(), returnDocumentInResponse);
+            });
   }
 
   private ReadDocument applyProjection(ReadDocument document) {

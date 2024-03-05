@@ -7,9 +7,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -27,6 +29,7 @@ class InsertOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject InsertOneCommandResolver resolver;
   @Inject Shredder shredder;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class ResolveCommand {

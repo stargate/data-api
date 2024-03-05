@@ -46,7 +46,10 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
     Uni<EmbeddingResponse> response =

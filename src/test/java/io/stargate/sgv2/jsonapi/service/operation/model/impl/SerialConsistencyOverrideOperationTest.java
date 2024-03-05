@@ -37,6 +37,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -52,7 +53,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
 public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
-  private final CommandContext COMMAND_CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
@@ -71,6 +72,13 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           .put("stargate.queries.serial-consistency", "LOCAL_SERIAL")
           .build();
     }
+  }
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
   }
 
   @Nested
