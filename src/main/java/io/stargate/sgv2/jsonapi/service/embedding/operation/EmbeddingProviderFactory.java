@@ -43,10 +43,10 @@ public class EmbeddingProviderFactory {
         return new VertexAIEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
       case "cohere":
-        return new OpenAiEmbeddingClient(
+        return new CohereEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
       case "nvidia":
-        return new OpenAiEmbeddingClient(
+        return new NVidiaEmbeddingClient(
             configuration.baseUrl(), configuration.apiKey(), modelName);
       case "custom":
         try {
