@@ -46,7 +46,9 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
 
   @Override
   public Uni<List<float[]>> vectorize(
-      List<String> texts, Optional<String> apiKeyOverride, boolean isWrite) {
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
     return embeddingService.embed(
         "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),

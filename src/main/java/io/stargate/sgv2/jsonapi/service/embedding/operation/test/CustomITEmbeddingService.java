@@ -35,7 +35,9 @@ public class CustomITEmbeddingService implements EmbeddingService {
 
   @Override
   public Uni<List<float[]>> vectorize(
-      List<String> texts, Optional<String> apiKeyOverride, boolean isWrite) {
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(response);
     if (!apiKeyOverride.isPresent() || !apiKeyOverride.get().equals(TEST_API_KEY))

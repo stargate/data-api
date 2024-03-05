@@ -51,16 +51,17 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 
+  private static final String PASSAGE = "passage";
+  private static final String QUERY = "query";
+
   @Override
   public Uni<List<float[]>> vectorize(
-      List<String> texts, Optional<String> apiKeyOverride, boolean isWrite) {
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
-    String input_type;
-    if (isWrite) {
-      input_type = "passage";
-    } else {
-      input_type = "query";
-    }
+    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
+
     EmbeddingRequest request =
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
