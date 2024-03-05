@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -37,10 +38,16 @@ public class Shredder {
 
   private final DocumentLimitsConfig documentLimits;
 
+  private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+
   @Inject
-  public Shredder(ObjectMapper objectMapper, DocumentLimitsConfig documentLimits) {
+  public Shredder(
+      ObjectMapper objectMapper,
+      DocumentLimitsConfig documentLimits,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
+    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
   }
 
   /**
@@ -54,10 +61,11 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    return shred(doc, txId, DocumentProjector.identityProjector());
+    return shred(doc, txId, DocumentProjector.identityProjector(), "testCommand");
   }
 
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId, DocumentProjector indexProjector) {
+  public WritableShreddedDocument shred(
+      JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -86,6 +94,9 @@ public class Shredder {
 
     // And then we can validate the document size
     validateDocumentSize(documentLimits, docJson);
+
+    // Create json bytes written metrics
+    jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);

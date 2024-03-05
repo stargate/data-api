@@ -14,24 +14,33 @@ import com.datastax.oss.driver.internal.core.cql.DefaultColumnDefinitions;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
+
+  @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
+
+  protected CommandContext createCommandContextWithCommandName(String commandName) {
+    return new CommandContext(
+        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonProcessingMetricsReporter);
+  }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
     return buildColumnDefs(Arrays.asList(columns));

@@ -41,6 +41,10 @@ public record InsertOperation(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
     }
+    // create json doc write metrics
+    commandContext
+        .jsonProcessingMetricsReporter()
+        .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
     if (ordered) {
       return insertOrdered(queryExecutor, vectorEnabled);
     } else {

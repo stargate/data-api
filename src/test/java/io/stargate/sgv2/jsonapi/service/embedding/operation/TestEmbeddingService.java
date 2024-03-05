@@ -21,7 +21,9 @@ public class TestEmbeddingService implements EmbeddingService {
               null,
               null,
               null),
-          new TestEmbeddingService());
+          new TestEmbeddingService(),
+          "testCommand",
+          null);
 
   @Override
   public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {

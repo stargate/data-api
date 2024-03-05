@@ -9,6 +9,12 @@ public enum ErrorCode {
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
+  /**
+   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
+   * JsonApiException}
+   */
+  COMMAND_FIELD_INVALID("Request invalid"),
+
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
   COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
@@ -23,7 +29,7 @@ public enum ErrorCode {
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
-      "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+      "Cannot have more than one _id equals filter clause: use $in operator instead"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
@@ -111,9 +117,6 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
   UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
-
-  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
-
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
@@ -128,14 +131,16 @@ public enum ErrorCode {
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
-
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   INVALID_QUERY("Invalid query"),
   DRIVER_TIMEOUT("Driver timeout"),
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
-  NO_NODE_AVAILABLE("No node was available to execute the query");
+  NO_NODE_AVAILABLE("No node was available to execute the query"),
+  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
+  COLLECTION_CREATION_ERROR(
+      "Collection creation failure (unable to create table). Recommend re-creating the collection");
 
   private final String message;
 

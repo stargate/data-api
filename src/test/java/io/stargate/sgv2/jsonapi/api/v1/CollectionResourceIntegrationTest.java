@@ -94,7 +94,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith(
@@ -120,7 +121,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith(
@@ -136,8 +138,11 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
-          .body("errors[0].message", is(not(blankString())));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid: field 'command' value `null` not valid"));
     }
   }
 }
