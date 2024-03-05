@@ -466,7 +466,7 @@ The following commands are supported for collections:
 -   [`updateMany`](#updatemany-command)
 -   [`updateOne`](#updateone-command)
 
-Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [DATA API HTTP Specification](jsonapi-network-spec.md).
+Each command always results in a single response, unless there is an unexpected exception. See [Request and Response Messages](#request-and-response-messages). Also refer to the [DATA API HTTP Specification](dataapi-network-spec.md).
 
 Commands are defined using the BNF-like syntax, with samples presented using a [JSON](https://www.json.org/) encoding of the language. The use of JSON in these samples does not preclude other encodings of the API in the future.
 
