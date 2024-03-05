@@ -9,6 +9,12 @@ public enum ErrorCode {
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
+  /**
+   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
+   * JsonApiException}
+   */
+  COMMAND_FIELD_INVALID("Request invalid"),
+
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
   COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
@@ -23,7 +29,7 @@ public enum ErrorCode {
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
-      "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+      "Cannot have more than one _id equals filter clause: use $in operator instead"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
@@ -61,9 +67,9 @@ public enum ErrorCode {
 
   SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
 
-  SHRED_BAD_VECTOR_SIZE("$vector field can't be empty"),
+  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
-  SHRED_BAD_VECTOR_VALUE("$vector search needs to be array of numbers"),
+  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
@@ -108,20 +114,17 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
 
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
-
-  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
-
+  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
 
-  VECTOR_SEARCH_FIELD_TOO_BIG("Vector embedding field '$vector' length too big"),
+  VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
   VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
@@ -129,8 +132,16 @@ public enum ErrorCode {
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail");
+  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
+  INVALID_QUERY("Invalid query"),
+  DRIVER_TIMEOUT("Driver timeout"),
+  DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
+  NO_NODE_AVAILABLE("No node was available to execute the query"),
+  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
+  COLLECTION_CREATION_ERROR(
+      "Collection creation failure (unable to create table). Recommend re-creating the collection");
 
   private final String message;
 
@@ -144,5 +155,9 @@ public enum ErrorCode {
 
   public JsonApiException toApiException(String format, Object... args) {
     return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
+
+  public JsonApiException toApiException() {
+    return new JsonApiException(this, message);
   }
 }

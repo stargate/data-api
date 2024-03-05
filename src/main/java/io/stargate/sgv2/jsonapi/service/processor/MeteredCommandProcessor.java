@@ -11,7 +11,6 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.StargateRequestInfo;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -20,6 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -47,7 +47,7 @@ public class MeteredCommandProcessor {
 
   private final MeterRegistry meterRegistry;
 
-  private final StargateRequestInfo stargateRequestInfo;
+  private final DataApiRequestInfo dataApiRequestInfo;
 
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
@@ -71,7 +71,7 @@ public class MeteredCommandProcessor {
   public MeteredCommandProcessor(
       CommandProcessor commandProcessor,
       MeterRegistry meterRegistry,
-      StargateRequestInfo stargateRequestInfo,
+      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       MetricsConfig metricsConfig,
       CommandLevelLoggingConfig commandLevelLoggingConfig) {
@@ -79,7 +79,7 @@ public class MeteredCommandProcessor {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     tenantConfig = metricsConfig.tenantRequestCounter();
-    this.stargateRequestInfo = stargateRequestInfo;
+    this.dataApiRequestInfo = dataApiRequestInfo;
     errorTrue = Tag.of(tenantConfig.errorTag(), "true");
     errorFalse = Tag.of(tenantConfig.errorTag(), "false");
     tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
@@ -93,13 +93,13 @@ public class MeteredCommandProcessor {
    *
    * @param commandContext {@link CommandContext}
    * @param command {@link Command}
-   * @return Uni emitting the result of the command execution.
    * @param <T> Type of the command.
+   * @return Uni emitting the result of the command execution.
    */
   public <T extends Command> Uni<CommandResult> processCommand(
       CommandContext commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
-    MDC.put("tenantId", stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
         .processCommand(commandContext, command)
@@ -136,7 +136,7 @@ public class MeteredCommandProcessor {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
-            stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
+            dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
             commandContext.namespace(),
             commandContext.collection(),
             getIncomingDocumentsCount(command),
@@ -189,7 +189,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
+        && !allowedTenants.contains(dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }
     if (!isFailure
@@ -210,7 +210,7 @@ public class MeteredCommandProcessor {
    */
   private Tags getCustomTags(CommandContext commandContext, Command command, CommandResult result) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = stargateRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
+    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
     Tag errorTag = errorFalse;
     Tag errorClassTag = defaultErrorClass;
@@ -287,7 +287,11 @@ public class MeteredCommandProcessor {
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
         if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
-            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)) {
+            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)
+            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesWritten())
+            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesRead())
+            || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsWritten())
+            || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsRead())) {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)

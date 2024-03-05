@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +24,8 @@ public record CreateCollectionCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Valid
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(
             description = "Configuration for the collection",
@@ -34,7 +36,8 @@ public record CreateCollectionCommand(
   public record Options(
 
       // limit of returned documents
-      @JsonInclude(JsonInclude.Include.NON_NULL)
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search index configuration for the collection",
               type = SchemaType.OBJECT,

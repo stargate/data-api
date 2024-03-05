@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
-import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -118,8 +116,12 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"));
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
     }
   }
 
@@ -129,6 +131,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void checkMetrics() {
       DeleteCollectionIntegrationTest.super.checkMetrics("DeleteCollectionCommand");
+      DeleteCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

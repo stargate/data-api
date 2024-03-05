@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -8,7 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -35,6 +38,7 @@ public class ShredderTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject Shredder shredder;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class OkCases {
@@ -271,7 +275,7 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector field can't be empty")
+          .hasMessage("$vector value can't be empty")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_SIZE);
     }
 
@@ -283,7 +287,7 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector search needs to be array of numbers")
+          .hasMessage("$vector value needs to be array of numbers")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_VALUE);
     }
 
@@ -361,7 +365,7 @@ public class ShredderTest {
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -421,7 +425,7 @@ public class ShredderTest {
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -476,7 +480,7 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -535,7 +539,7 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths = Arrays.asList();
 
@@ -575,7 +579,7 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector);
+      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -596,6 +600,46 @@ public class ShredderTest {
       assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Mo"));
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryVectorValues()).isNull();
+    }
+  }
+
+  @Nested
+  class JsonMetricsReporter {
+    @Test
+    public void validateJsonBytesWriteMetrics() throws Exception {
+      final String inputJson =
+          """
+                      {
+                        "name" : "Bob"
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      shredder.shred(
+          inputDoc, null, DocumentProjector.identityProjector(), "jsonBytesWriteCommand");
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> jsonBytesWrittenMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written")
+                          && !line.startsWith("json_bytes_written_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("jsonBytesWriteCommand"))
+              .toList();
+      assertThat(jsonBytesWrittenMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"jsonBytesWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
     }
   }
 

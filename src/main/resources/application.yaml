@@ -3,9 +3,6 @@
 
 stargate:
 
-  data-store:
-    ignore-bridge: true
-
   database:
     limits:
       max-collections: 5
@@ -84,12 +81,16 @@ quarkus:
           policy: authenticated
 
     limits:
-      # Let's limit low-level maximum HTTP request size to 5 megs: stricter limit (1 meg)
-      # is applied at the JSON API level. Low-level limits may result in EPIPE/413 errors
+      # Let's limit low-level maximum HTTP request size to 20 megs: stricter
+      # limit (4 meg per document) is applied at the JSON API level.
+      # Low-level limits may result in EPIPE/413 errors
       # whereas at higher level we can use regular JSON API error responses
-      max-body-size: 5M
+      max-body-size: 20M
 
     port: 8181
+
+  log:
+    min-level: trace
 
   # built-in micrometer properties
   micrometer:

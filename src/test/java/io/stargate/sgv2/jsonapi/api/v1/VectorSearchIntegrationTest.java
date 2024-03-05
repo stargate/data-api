@@ -122,15 +122,48 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("status.ok", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_FIELD_TOO_BIG"))
+          .body("errors[0].errorCode", is("VECTOR_SEARCH_TOO_BIG_VALUE"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Vector embedding field '$vector' length too big: "
+                  "Vector embedding property '$vector' length too big: "
                       + tooHighDimension
                       + " (max "
                       + maxDimension
                       + ")"));
+    }
+
+    @Test
+    public void failForInvalidVectorMetric() {
+      String json =
+          """
+                     {
+                      "createCollection": {
+                        "name" : "invalidVectorMetric",
+                        "options": {
+                          "vector": {
+                            "dimension": 5,
+                            "metric": "invalidName"
+                          }
+                        }
+                      }
+                    }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Problem: function name can only be 'dot_product', 'cosine' or 'euclidean'"));
     }
   }
 
@@ -336,7 +369,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector field can't be empty"))
+          .body("errors[0].message", startsWith("$vector value can't be empty"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -369,7 +402,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector search needs to be array of numbers"))
+          .body("errors[0].message", startsWith("$vector value needs to be array of numbers"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -726,7 +759,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               endsWith("limit options should not be greater than 1000 for vector search."));
@@ -756,7 +790,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message", endsWith("skip options should not be used with vector search."));
     }
@@ -872,7 +907,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUEST"))
+          .body("errors[0].errorCode", is("INVALID_QUERY"))
           .body(
               "errors[0].message",
               endsWith("Zero vectors cannot be indexed or queried with cosine similarity"));

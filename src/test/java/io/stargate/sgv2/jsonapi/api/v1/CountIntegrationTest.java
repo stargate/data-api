@@ -811,6 +811,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
     @Test
     public void checkMetrics() {
       CountIntegrationTest.super.checkMetrics("CountDocumentsCommand");
+      CountIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }
