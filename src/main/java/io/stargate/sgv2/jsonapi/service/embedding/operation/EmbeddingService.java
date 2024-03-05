@@ -9,5 +9,24 @@ import java.util.Optional;
  * of chosen model.
  */
 public interface EmbeddingService {
-  Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride);
+  /**
+   * Vectorizes the given list of texts and returns the embeddings.
+   *
+   * @param texts List of texts to be vectorized
+   * @param apiKeyOverride Optional API key to be used for this request. If not provided, the
+   *     default API key will be used.
+   * @param embeddingRequestType Type of request (INDEX or SEARCH)
+   * @return List of embeddings for the given texts
+   */
+  Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType);
+
+  enum EmbeddingRequestType {
+    /** This is used when vectorizing data in write operation for indexing */
+    INDEX,
+    /** This is used when vectorizing data for search operation */
+    SEARCH
+  }
 }
