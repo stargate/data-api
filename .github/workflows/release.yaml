@@ -112,7 +112,7 @@ jobs:
         if: ${{ !inputs.skipPublish }}
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 ${{ matrix.profile }}
-          docker push stargateio/dataapi:${{needs.resolve-tag.outputs.release-tag}}
+          docker push stargateio/data-api:${{needs.resolve-tag.outputs.release-tag}}
           docker push stargateio/jsonapi:${{needs.resolve-tag.outputs.release-tag}}
 
      
@@ -193,13 +193,13 @@ jobs:
   # skip whole job if we did not push images
   sign-images:
     name: Sign container images
-    needs: [resolve-tag, publish-docker-ecr]
+    needs: [resolve-tag, publish-image-ecr]
     if: ${{ !inputs.skipPublish }}
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        image: [dataapi, jsonapi, jsonapi-native]
+        image: [data-api, jsonapi, jsonapi-native]
         exclude:
           - image: jsonapi-native
     env:

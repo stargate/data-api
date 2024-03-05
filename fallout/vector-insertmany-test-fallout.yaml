@@ -5,8 +5,8 @@ instance: m5.2xlarge
 token: token
 workload_duration: 25m
 keyspace: test
-workload_file: https://github.com/stargate/jsonapi/blob/hazel-nb-insertmany/fallout/vector-insertmany-test-fallout.yaml
-dataset: https://github.com/stargate/jsonapi/blob/main/nosqlbench/vector-dataset.txt
+workload_file: https://github.com/stargate/dataapi/blob/hazel-nb-insertmany/fallout/vector-insertmany-test-fallout.yaml
+dataset: https://github.com/stargate/dataapi/blob/main/nosqlbench/vector-dataset.txt
 client_count: 1
 docs_count: 1000
 #op_cycles: 1000
@@ -74,7 +74,7 @@ workload:
             - tags=block:schema-collection
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - threads=1
             - errors=stop
@@ -94,7 +94,7 @@ workload:
             - dataset={{dataset}}
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - docscount={{docs_count}}
             - threads=100

@@ -12,7 +12,7 @@ In contrast to other workflows, this one is not split into ramp-up and main phas
 
 ### default
 
-The default scenario for http-jsonapi-vector-crud.yaml runs each type of the main phase sequentially: write, read, update and delete. This means that setting cycles for each of the phases should be done using the: `write-cycles`, `read-cycles`, `update-cycles` and `delete-cycles`. The default value for all 4 cycles variables is the amount of documents to process (see [Workload Parameters](http://localhost:63342/markdownPreview/147307353/markdown-preview-index-1841516304.html?_ijt=avuea5chkg34krn8blmr2k7431#workload-parameters)).
+The default scenario for http-dataapi-vector-crud.yaml runs each type of the main phase sequentially: write, read, update and delete. This means that setting cycles for each of the phases should be done using the: `write-cycles`, `read-cycles`, `update-cycles` and `delete-cycles`. The default value for all 4 cycles variables is the amount of documents to process (see [Workload Parameters](http://localhost:63342/markdownPreview/147307353/markdown-preview-index-1841516304.html?_ijt=avuea5chkg34krn8blmr2k7431#workload-parameters)).
 
 Note that error handling is set to `errors=timer,warn`, which means that in case of HTTP errors the scenario is not stopped.
 
@@ -23,7 +23,7 @@ Note that error handling is set to `errors=timer,warn`, which means that in case
 Vector size is 1536 in the nosqlbench file. (openAI embedding vector standard size is 1536)
 Sample dataset is in [vector dataset](vector-dataset.txt)
 
-> If you want to test different vector-size, please change [http-jsonapi-vector-crud create-collection op](http-jsonapi-vector-crud.yaml) and [vector dataset](vector-dataset.txt)
+> If you want to test different vector-size, please change [http-dataapi-vector-crud create-collection op](http-dataapi-vector-crud.yaml) and [vector dataset](vector-dataset.txt)
 
 ## Workload Parameters
 
@@ -36,15 +36,15 @@ Sample dataset is in [vector dataset](vector-dataset.txt)
 
 ### Against AstraDB
 
-> comment out `create-namespace` op in the [nosqlbench yaml file](http-jsonapi-vector-crud.yaml) 
+> comment out `create-namespace` op in the [nosqlbench yaml file](http-dataapi-vector-crud.yaml) 
 
 ```
-nb5 -v http-jsonapi-vector-crud docscount=1000 threads=20 jsonapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token jsonapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
+nb5 -v http-dataapi-vector-crud docscount=1000 threads=20 dataapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token dataapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
 ```
 
 ### Against Local DATA API
 
 ```
-nb5 -v http-jsonapi-vector-crud jsonapi_host=localhost docscount=1000 threads=20
+nb5 -v http-dataapi-vector-crud dataapi_host=localhost docscount=1000 threads=20
 ```
 
