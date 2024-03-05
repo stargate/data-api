@@ -11,8 +11,7 @@ public class DseTestResource extends StargateTestResource {
     super();
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
-      System.setProperty(
-          "testing.containers.cassandra-image", "datastax/dse-server:7.0.0-alpha.4");
+      System.setProperty("testing.containers.cassandra-image", "datastax/dse-server:7.0.0-alpha.4");
     }
 
     if (null == System.getProperty("testing.containers.stargate-image")) {
