@@ -91,6 +91,8 @@ public class CommandResolverWithVectorizerTest {
                 null,
                 null,
                 null),
+            new TestEmbeddingService(),
+            "testCommand",
             null);
 
     @Test
