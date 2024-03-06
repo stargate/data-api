@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
-
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
