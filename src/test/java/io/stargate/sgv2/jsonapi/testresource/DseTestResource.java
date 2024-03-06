@@ -18,7 +18,7 @@ public class DseTestResource extends StargateTestResource {
       // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
       //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-8");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-9");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {
