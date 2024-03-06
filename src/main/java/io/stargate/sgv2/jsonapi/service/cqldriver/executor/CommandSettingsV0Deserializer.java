@@ -4,8 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 
+/**
+ * schema_version 0 is before we introduce schema_version into the C* table comment of data api
+ * collection at this version, table comment only works for indexing options sample:
+ * {"indexing":{"deny":["address"]}}
+ */
 public class CommandSettingsV0Deserializer implements CommandSettingsDeserializer {
-
   public CollectionSettings deserialize(
       JsonNode commentConfigNode,
       String collectionName,
