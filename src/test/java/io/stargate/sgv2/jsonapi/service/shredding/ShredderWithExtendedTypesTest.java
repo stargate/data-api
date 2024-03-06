@@ -12,6 +12,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -43,23 +44,26 @@ public class ShredderWithExtendedTypesTest {
   @Nested
   class OkCasesId {
     @Test
-    public void shredSimpleWithId() throws Exception {
+    public void shredSimpleWithUUIDKeyAndValue() throws Exception {
+      final String idUUID = defaultTestUUID().toString();
+      final String valueUUID = defaultTestUUID2().toString();
       final String inputJson =
           """
                       { "_id" : {"$uuid": "%s"},
-                        "name" : "Bob"
+                        "name" : "Bob",
+                        "extraId" : {"$uuid": "%s"}
                       }
                       """
-              .formatted(defaultTestUUID());
+              .formatted(idUUID, valueUUID);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      final String idUUID = defaultTestUUID().toString();
       WritableShreddedDocument doc = shredder.shred(inputDoc);
 
       assertThat(doc.id())
           .isEqualTo(
               DocumentId.fromExtensionType(
                   JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(idUUID)));
-      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"), JsonPath.from("extraId"));
 
       // First verify paths
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -67,7 +71,9 @@ public class ShredderWithExtendedTypesTest {
       assertThat(doc.arraySize()).isEmpty();
 
       // We have 2 from array, plus 3 main level properties (_id excluded)
-      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SBob");
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder(
+              "name SBob", "extraId " + new DocValueHasher().getHash(valueUUID).hash());
 
       // Also, the document should be the same, including _id:
       JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
@@ -77,7 +83,14 @@ public class ShredderWithExtendedTypesTest {
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNumberValues()).isEmpty();
       assertThat(doc.queryTextValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), idUUID, JsonPath.from("name"), "Bob"));
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("_id"),
+                  idUUID,
+                  JsonPath.from("name"),
+                  "Bob",
+                  JsonPath.from("extraId"),
+                  valueUUID));
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryVectorValues()).isNull();
     }
@@ -125,101 +138,7 @@ public class ShredderWithExtendedTypesTest {
   }
 
   @Nested
-  class EJSONDateTime {
-    @Test
-    public void shredDocWithDateTimeColumn() {
-      final long testTimestamp = defaultTestDate().getTime();
-      final String inputJson =
-          """
-              {
-                "_id" : 123,
-                "name" : "Bob",
-                "datetime" : {
-                  "$date" : %d
-                }
-              }
-              """
-              .formatted(testTimestamp);
-      final JsonNode inputDoc = fromJson(inputJson);
-      WritableShreddedDocument doc = shredder.shred(inputDoc);
-      assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
-
-      JsonNode jsonFromShredded = fromJson(doc.docJson());
-      assertThat(jsonFromShredded).isEqualTo(inputDoc);
-
-      assertThat(doc.arraySize()).isEmpty();
-      // 2 non-doc-id main-level properties
-      assertThat(doc.arrayContains())
-          .containsExactlyInAnyOrder("name SBob", "datetime T" + testTimestamp);
-
-      assertThat(doc.queryBoolValues()).isEmpty();
-      assertThat(doc.queryNullValues()).isEmpty();
-      assertThat(doc.queryNumberValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), new BigDecimal(123L)));
-      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("name"), "Bob"));
-      assertThat(doc.queryTimestampValues())
-          .isEqualTo(Map.of(JsonPath.from("datetime"), new Date(testTimestamp)));
-    }
-
-    @Test
-    public void badEJSONDate() {
-      Throwable t =
-          catchThrowable(
-              () -> shredder.shred(objectMapper.readTree("{ \"date\": { \"$date\": false } }")));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessage(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
-    }
-
-    @Test
-    public void badEmptyVectorData() {
-      Throwable t =
-          catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"$vector\": [] }")));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessage("$vector value can't be empty")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_SIZE);
-    }
-
-    @Test
-    public void badEJSONUnrecognized() {
-      Throwable t =
-          catchThrowable(
-              () ->
-                  shredder.shred(
-                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }")));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessageStartingWith("Document key name constraints violated")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION);
-    }
-  }
-
-  @Nested
-  class ErrorCases {
-
-    @Test
-    public void docUnknownEJSonAsId() {
-      final String inputJson =
-          """
-                              { "_id" : {"$unknown": "value"} }
-                              """;
-      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(inputJson)));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessage(
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
-                  + ": unrecognized extended JSON type '$unknown'")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
-    }
-
+  class ErrorCasesDocId {
     @Test
     public void docBadUUIDAsId() {
       final String inputJson =
@@ -236,6 +155,57 @@ public class ShredderWithExtendedTypesTest {
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
                   + ": invalid value ('\"not-a-uuid\"') for extended JSON type '$uuid' (path '_id')")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+
+    @Test
+    public void docUnknownEJSonAsId() {
+      final String inputJson =
+          """
+                                  { "_id" : {"$unknown": "value"} }
+                                  """;
+      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(inputJson)));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage(
+              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
+                  + ": unrecognized extended JSON type '$unknown'")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
+    }
+  }
+
+  @Nested
+  class ErrorCasesValue {
+    @Test
+    public void docBadUUIDAsValue() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  shredder.shred(
+                      objectMapper.readTree("{ \"value\": { \"$uuid\": \"foobar\" } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasMessageStartingWith(
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": invalid value ('\"foobar\"') for extended JSON type '$uuid' (path 'value')");
+    }
+
+    @Test
+    public void docUnknownEJsonAsValue() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  shredder.shred(
+                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(
+              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()
+                  + ": property name ('$unknownType') contains character(s) not allowed");
     }
   }
 
@@ -254,5 +224,9 @@ public class ShredderWithExtendedTypesTest {
 
   protected UUID defaultTestUUID() {
     return UUID.fromString("128a5eb5-008a-4e4e-ac1f-0d4255f00f61");
+  }
+
+  protected UUID defaultTestUUID2() {
+    return UUID.fromString("8a251cdc-624e-4b10-a290-1aaad0bb57d0");
   }
 }

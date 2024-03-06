@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -287,6 +288,21 @@ public class Shredder {
       ++depth;
       validateDocDepth(limits, depth);
 
+      // First, special case: Extension JSON types
+      if (objectValue.size() == 1) {
+        String key = objectValue.fieldNames().next();
+        if (JsonExtensionType.fromEncodedName(key) != null) {
+          // These are only superficially validated here, more detailed validation
+          // during actual shredding
+          JsonNode value = objectValue.iterator().next();
+          if (value.isTextual() || value.isIntegralNumber()) {
+            return;
+          }
+          throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
+              "'%s' has invalid value type %s", key, value.getNodeType());
+        }
+      }
+
       var it = objectValue.fields();
       while (it.hasNext()) {
         var entry = it.next();
@@ -311,18 +327,17 @@ public class Shredder {
         throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
       }
       if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
-        // Special names are accepted in some cases: for now only one such case for
-        // Date values -- if more needed, will refactor. But for now inline:
-        if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
-          ; // Fine, looks like legit Date value
-        } else if (depth == 1 && key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-          ; // Fine, looks like legit vector property
-        } else if (depth == 1 && key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          ; // Fine, looks like legit vectorize property
-        } else {
+        // Special names are accepted in some cases:
+        do {
+          if (depth == 1) {
+            if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+              break; // Fine, looks like legit vector or vectorize property
+            }
+          }
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
               "property name ('%s') contains character(s) not allowed", key);
-        }
+        } while (false);
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
