@@ -264,7 +264,8 @@ public class ShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
     }
 

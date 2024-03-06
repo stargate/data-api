@@ -65,7 +65,7 @@ public enum ErrorCode {
 
   SHRED_DOC_KEY_NAME_VIOLATION("Document key name constraints violated"),
 
-  SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
+  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 

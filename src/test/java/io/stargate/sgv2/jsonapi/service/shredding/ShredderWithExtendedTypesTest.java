@@ -170,7 +170,8 @@ public class ShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
     }
 
@@ -204,37 +205,21 @@ public class ShredderWithExtendedTypesTest {
   class ErrorCases {
 
     @Test
-    public void docBadJSONType() {
-      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree("[ 1, 2 ]")));
+    public void docBadUUIDAsId() {
+      final String inputJson =
+          """
+                          { "_id" : {"$uuid": "not-a-uuid"},
+                            "name" : "Bob"
+                          }
+                          """;
+      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(inputJson)));
 
       assertThat(t)
           .isNotNull()
           .hasMessage(
-              "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCUMENT_TYPE);
-    }
-
-    @Test
-    public void docBadDocIdTypeArray() {
-      Throwable t =
-          catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : [ ] }")));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
-    }
-
-    @Test
-    public void docBadDocIdEmptyString() {
-      Throwable t =
-          catchThrowable(() -> shredder.shred(objectMapper.readTree("{ \"_id\" : \"\" }")));
-
-      assertThat(t)
-          .isNotNull()
-          .hasMessage("Bad value for '_id' property: empty String not allowed")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": invalid value ('\"not-a-uuid\"') for extended JSON type '$uuid' (path '_id')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
     }
   }
 

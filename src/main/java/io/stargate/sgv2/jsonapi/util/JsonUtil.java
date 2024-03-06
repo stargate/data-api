@@ -169,11 +169,16 @@ public class JsonUtil {
           }
           break;
         case OBJECT_ID:
+          // !!! TODO: implement with validation
+          return value.asText();
         case UUID:
         case UUID_V6:
         case UUID_V7:
-          // !!! TODO: implement with validation
-          return value.asText();
+          try {
+            return java.util.UUID.fromString(value.asText());
+          } catch (IllegalArgumentException e) {
+            return null;
+          }
       }
     }
     return null;
