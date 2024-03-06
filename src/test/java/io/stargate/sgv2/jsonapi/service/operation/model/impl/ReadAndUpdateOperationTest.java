@@ -617,7 +617,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
       FindOperation findOperation =
           FindOperation.sorted(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,
