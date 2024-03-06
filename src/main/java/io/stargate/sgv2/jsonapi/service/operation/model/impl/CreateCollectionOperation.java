@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
-    DeleteCollectionOperation deleteCollectionOperation,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
@@ -60,7 +59,6 @@ public record CreateCollectionOperation(
       int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
-        new DeleteCollectionOperation(commandContext, name),
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -82,7 +80,6 @@ public record CreateCollectionOperation(
       int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
-        new DeleteCollectionOperation(commandContext, name),
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -195,24 +192,29 @@ public record CreateCollectionOperation(
                         .matches(
                             ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
         .recoverWithUni(
-            error ->
-                deleteCollectionOperation
-                    .execute(queryExecutor)
-                    .onItem()
-                    .transform(
-                        res ->
-                            ErrorCode.TOO_MANY_INDEXES.toApiException(
-                                "cannot create a new collection; need %d indexes to create the collection;",
-                                dbLimitsConfig.indexesNeededPerCollection()))
-                    .onFailure()
-                    .recoverWithItem(
-                        e -> {
-                          // This is unlikely to happen for delete collection, return with
-                          // TOO_MANY_INDEXES exception
-                          return ErrorCode.TOO_MANY_INDEXES.toApiException(
-                              "collection created with indexes creation failure; need %d indexes to create the collection;",
-                              dbLimitsConfig.indexesNeededPerCollection());
-                        }));
+            error -> {
+              DeleteCollectionOperation deleteCollectionOperation =
+                  new DeleteCollectionOperation(commandContext, name);
+              return deleteCollectionOperation
+                  .execute(queryExecutor)
+                  .onItem()
+                  .transform(
+                      res ->
+                          ErrorCode.TOO_MANY_INDEXES.toApiException(
+                              "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                              name,
+                              dbLimitsConfig.indexesNeededPerCollection()))
+                  .onFailure()
+                  .recoverWithItem(
+                      e -> {
+                        // This is unlikely to happen for delete collection, return with
+                        // TOO_MANY_INDEXES exception
+                        return ErrorCode.TOO_MANY_INDEXES.toApiException(
+                            "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                            name,
+                            dbLimitsConfig.indexesNeededPerCollection());
+                      });
+            });
   }
 
   /**
