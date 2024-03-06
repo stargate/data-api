@@ -202,8 +202,7 @@ public record CreateCollectionOperation(
                       res ->
                           ErrorCode.TOO_MANY_INDEXES.toApiException(
                               "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                              name,
-                              dbLimitsConfig.indexesNeededPerCollection()))
+                              name, dbLimitsConfig.indexesNeededPerCollection()))
                   .onFailure()
                   .recoverWithItem(
                       e -> {
@@ -211,8 +210,7 @@ public record CreateCollectionOperation(
                         // TOO_MANY_INDEXES exception
                         return ErrorCode.TOO_MANY_INDEXES.toApiException(
                             "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                            name,
-                            dbLimitsConfig.indexesNeededPerCollection());
+                            name, dbLimitsConfig.indexesNeededPerCollection());
                       });
             });
   }
