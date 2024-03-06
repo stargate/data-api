@@ -179,14 +179,22 @@ public record WritableShreddedDocument(
                 shredTimestamp(path, dtValue);
                 return false; // we are done
               }
+              break;
             default:
-              shredExtendedType(path, type, obj);
-              return false;
+              Object extValue = JsonUtil.tryExtractExtendedValue(type, obj);
+              if (extValue != null) {
+                shredExtendedType(path, type, extValue);
+                return false;
+              }
+              break;
           }
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "invalid value ('%s') for extended JSON type '%s' (path '%s')",
+              obj.iterator().next(), obj.fieldNames().next(), path);
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
         throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-            "unrecognized type '%s' (path '%s')", obj.fieldNames().next(), path);
+            "unrecognized extended JSON type '%s' (path '%s')", obj.fieldNames().next(), path);
       }
 
       addKey(path);
@@ -299,8 +307,8 @@ public record WritableShreddedDocument(
       queryVectorValues = arrayVals;
     }
 
-    public void shredExtendedType(JsonPath path, JsonExtensionType type, JsonNode value) {
-      shredText(path, value.asText());
+    public void shredExtendedType(JsonPath path, JsonExtensionType type, Object extensionValue) {
+      shredText(path, String.valueOf(extensionValue));
     }
 
     /*

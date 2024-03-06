@@ -54,6 +54,7 @@ public class ShredderWithExtendedTypesTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       final String idUUID = defaultTestUUID().toString();
       WritableShreddedDocument doc = shredder.shred(inputDoc);
+
       assertThat(doc.id())
           .isEqualTo(
               DocumentId.fromExtensionType(
@@ -76,7 +77,7 @@ public class ShredderWithExtendedTypesTest {
       assertThat(doc.queryBoolValues()).isEmpty();
       assertThat(doc.queryNumberValues()).isEmpty();
       assertThat(doc.queryTextValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), idUUID, JsonPath.from("name"), "SBob"));
+          .isEqualTo(Map.of(JsonPath.from("_id"), idUUID, JsonPath.from("name"), "Bob"));
       assertThat(doc.queryNullValues()).isEmpty();
       assertThat(doc.queryVectorValues()).isNull();
     }

@@ -157,6 +157,28 @@ public class JsonUtil {
     }
     return null;
   }
+
+  public static Object tryExtractExtendedValue(JsonExtensionType type, JsonNode valueWrapper) {
+    // Caller should have verified that we have a single-field Object; but double check
+    if (valueWrapper.isObject() && valueWrapper.size() == 1) {
+      JsonNode value = valueWrapper.iterator().next();
+      switch (type) {
+        case EJSON_DATE:
+          if (value.isIntegralNumber() && value.canConvertToLong()) {
+            return new Date(value.longValue());
+          }
+          break;
+        case OBJECT_ID:
+        case UUID:
+        case UUID_V6:
+        case UUID_V7:
+          // !!! TODO: implement with validation
+          return value.asText();
+      }
+    }
+    return null;
+  }
+
   /**
    * Utility method to check whether UTF-8 encoded length of given String is above given maximum
    * length, and if so, return actual length (in bytes); otherwise return {@code
