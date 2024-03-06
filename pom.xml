@@ -28,7 +28,7 @@
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
-    <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
+    <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
   </properties>
   <dependencyManagement>
