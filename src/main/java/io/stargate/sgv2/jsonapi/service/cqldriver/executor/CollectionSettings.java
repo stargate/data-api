@@ -87,6 +87,14 @@ public record CollectionSettings(
     }
   }
 
+  /**
+   * incorporates vectorizeConfig into vectorConfig
+   *
+   * @param vectorEnabled
+   * @param vectorSize
+   * @param similarityFunction
+   * @param vectorizeConfig
+   */
   public record VectorConfig(
       boolean vectorEnabled,
       int vectorSize,
@@ -97,6 +105,7 @@ public record CollectionSettings(
       return new VectorConfig(false, -1, null, null);
     }
 
+    // convert a vector jsonNode from table comment to vectorConfig
     public static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
       // dimension, similarityFunction, must exist
       int dimension = jsonNode.get("dimension").asInt();
@@ -273,35 +282,26 @@ public record CollectionSettings(
         // This should never happen, already check if vectorize is a valid JSON
         throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
       }
-
-      // new table comment design, with collection as top-level key
-      if (commentConfigNode.has(TableCommentConstants.TOP_LEVEL_KEY)) {
-        JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
-        JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
-        VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
-        JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
-        if (!vector.isMissingNode()) {
-          vectorConfig = VectorConfig.fromJson(vector, objectMapper);
+      // new table comment design from schema_version v1, with collection as top-level key
+      JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
+      if (collectionNode != null) {
+        final JsonNode schemaVersionNode =
+            collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
+        if (schemaVersionNode == null) {
+          throw ErrorCode.INVALID_SCHEMA_VERSION.toApiException();
         }
-        IndexingConfig indexingConfig = null;
-        JsonNode indexing =
-            collectionOptionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
-        if (!indexing.isMissingNode()) {
-          indexingConfig = IndexingConfig.fromJson(indexing);
+        switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
+          case 1:
+            return new CommandSettingsV1Deserializer()
+                .deserialize(collectionNode, collectionName, objectMapper);
+          default:
+            throw ErrorCode.INVALID_SCHEMA_VERSION.toApiException();
         }
-        return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
       } else {
         // backward compatibility for old indexing table comment
-        // indexing options have been used in production, and the table comment structure is not
-        // compatible with schema-version 1.
         // sample comment : {"indexing":{"deny":["address"]}}}
-        VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
-        IndexingConfig indexingConfig = null;
-        JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
-        if (!indexing.isMissingNode()) {
-          indexingConfig = IndexingConfig.fromJson(indexing);
-        }
-        return new CollectionSettings(collectionName, vectorConfig, indexingConfig);
+        return new CommandSettingsV0Deserializer()
+            .deserialize(commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
       }
     }
   }

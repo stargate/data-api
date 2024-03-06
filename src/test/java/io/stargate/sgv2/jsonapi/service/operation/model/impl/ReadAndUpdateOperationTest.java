@@ -113,11 +113,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
             COLLECTION_NAME,
             new CollectionSettings(
                 COLLECTION_NAME,
-                true,
-                -1,
-                CollectionSettings.SimilarityFunction.COSINE,
-                null,
-                null,
+                new CollectionSettings.VectorConfig(
+                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",
@@ -320,7 +317,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               new DBFilterBase.IDFilter(
                   DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
 
       FindOperation findOperation =
@@ -617,12 +613,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               new DBFilterBase.TextFilter(
                   "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
 
       FindOperation findOperation =
           FindOperation.sorted(
-              commandContext,
+              COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,

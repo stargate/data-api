@@ -171,10 +171,10 @@ public class CollectionResource {
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
-                  EmbeddingProvider embeddingProvider = null;
+                EmbeddingProvider embeddingProvider = null;
                 if (collectionProperty.vectorConfig().vectorizeConfig() != null) {
-                    embeddingProvider =
-                            embeddingProviderFactory.getConfiguration(
+                  embeddingProvider =
+                      embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorConfig().vectorizeConfig().provider(),
                           collectionProperty.vectorConfig().vectorizeConfig().modelName());

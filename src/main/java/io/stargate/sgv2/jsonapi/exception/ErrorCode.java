@@ -143,7 +143,9 @@ public enum ErrorCode {
   NO_NODE_AVAILABLE("No node was available to execute the query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
   COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection");
+      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+  INVALID_SCHEMA_VERSION(
+      "Collection has invalid schema version. Recommend re-creating the collection");
 
   private final String message;
 
