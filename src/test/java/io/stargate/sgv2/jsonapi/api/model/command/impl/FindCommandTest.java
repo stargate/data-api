@@ -159,7 +159,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("skip options should be used with sort clause");
+          .contains("skip option should be used with sort clause");
     }
 
     @Test
@@ -183,7 +183,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("skip options should be used with sort clause");
+          .contains("skip option should be used with sort clause");
     }
 
     @Test
@@ -230,7 +230,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("skip options should not be used with vector search");
+          .contains("skip option should not be used with vector search");
     }
 
     @Test

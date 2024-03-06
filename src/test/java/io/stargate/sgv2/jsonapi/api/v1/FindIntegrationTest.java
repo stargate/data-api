@@ -1990,7 +1990,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.options.skip' value '10' not valid. Problem: skip options should be used with sort clause."));
+                  "Request invalid: field 'command.options.skip' value '10' not valid. Problem: skip option should be used with sort clause."));
     }
   }
 

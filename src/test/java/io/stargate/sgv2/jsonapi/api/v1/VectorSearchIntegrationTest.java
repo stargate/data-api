@@ -793,7 +793,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
-              "errors[0].message", endsWith("skip options should not be used with vector search."));
+              "errors[0].message", endsWith("skip option should not be used with vector search."));
     }
   }
 
