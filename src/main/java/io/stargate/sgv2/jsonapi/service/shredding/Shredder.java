@@ -293,7 +293,7 @@ public class Shredder {
         final String key = entry.getKey();
 
         // Doc id validation done elsewhere, skip here to avoid failure for
-        // next Extension JSON types (Object-wrapped UUIDs, ObjectIds)
+        // new Extension JSON types (Object-wrapped UUIDs, ObjectIds)
         if (depth == 1 && key.equals(DocumentConstants.Fields.DOC_ID)) {
           continue;
         }

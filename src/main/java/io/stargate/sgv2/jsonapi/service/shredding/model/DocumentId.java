@@ -61,6 +61,9 @@ public interface DocumentId {
       case STRING:
         return fromString(node.textValue());
       case OBJECT:
+        if (!JsonUtil.looksLikeEJsonValue(node)) {
+          break;
+        }
         JsonExtensionType extType = JsonUtil.findJsonExtensionType(node);
         if (extType != null) {
           // We know it's single-entry Object so can just get the one property value
@@ -75,7 +78,8 @@ public interface DocumentId {
               return fromExtensionType(extType, valueNode);
           }
         }
-        break;
+        throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+            "unrecognized extended JSON type '%s'", node.fieldNames().next());
     }
     throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
         "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",

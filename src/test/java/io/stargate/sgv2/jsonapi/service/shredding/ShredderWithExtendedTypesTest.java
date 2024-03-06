@@ -205,6 +205,22 @@ public class ShredderWithExtendedTypesTest {
   class ErrorCases {
 
     @Test
+    public void docUnknownEJSonAsId() {
+      final String inputJson =
+          """
+                              { "_id" : {"$unknown": "value"} }
+                              """;
+      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(inputJson)));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage(
+              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
+                  + ": unrecognized extended JSON type '$unknown'")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
+    }
+
+    @Test
     public void docBadUUIDAsId() {
       final String inputJson =
           """
