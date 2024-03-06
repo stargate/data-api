@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.ConstraintViolation;
@@ -51,16 +52,16 @@ public class ConstraintViolationExceptionMapper {
       propertyPath = propertyPath.substring(PREFIX_POST_COMMAND.length());
     }
 
-    String propertyValueDesc = valueDescription(violation.getInvalidValue());
+    String propertyValueDesc = valueDescription(violation.getInvalidValue(), propertyPath);
     JsonApiException ex =
         ErrorCode.COMMAND_FIELD_INVALID.toApiException(
-            "field '%s' value %s not valid. Problem: %s.",
+            "field '%s' value '%s' not valid. Problem: %s.",
             propertyPath, propertyValueDesc, message);
     return ex.getCommandResultError(ex.getMessage(), Response.Status.OK);
   }
 
   /** Helper method for construction description of value that caused the constraint violation. */
-  private static String valueDescription(Object rawValue) {
+  private static String valueDescription(Object rawValue, String propertyPath) {
     if (rawValue == null) {
       return "`null`";
     }
@@ -76,12 +77,24 @@ public class ConstraintViolationExceptionMapper {
       return "<JSON value of " + rawValue.toString().length() + " characters>";
     }
 
+    if (rawValue instanceof FindCommand) {
+      if (propertyPath.contains("options.skip")) {
+        return String.format("%s", ((FindCommand) rawValue).options().skip());
+      }
+      if (propertyPath.contains("options.limit")) {
+        return String.format("%s", ((FindCommand) rawValue).options().limit());
+      }
+      if (propertyPath.contains("options.pageState")) {
+        return String.format("%s", ((FindCommand) rawValue).options().pageState());
+      }
+    }
+
     String valueDesc = rawValue.toString();
     if (valueDesc.length() <= MAX_VALUE_LENGTH_TO_INCLUDE) {
-      return String.format("\"%s\"", valueDesc);
+      return String.format("%s", valueDesc);
     }
     return String.format(
-        "\"%s\"...[TRUNCATED from %d to %d characters]",
+        "%s...[TRUNCATED from %d to %d characters]",
         valueDesc, valueDesc.length(), MAX_VALUE_LENGTH_TO_INCLUDE);
   }
 }

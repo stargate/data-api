@@ -1962,6 +1962,36 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
     }
+
+    @Test
+    public void invalidOptionsSkipNoSort() throws Exception {
+      String json =
+          """
+              {
+              "find": {
+                  "filter" : {"username" : "user1"},
+                  "options" : {
+                    "skip" : 10
+                  }
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Request invalid: field 'command.options.skip' value '10' not valid. Problem: skip options should be used with sort clause."));
+    }
   }
 
   @Nested
