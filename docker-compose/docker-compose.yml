@@ -1,7 +1,7 @@
 version: '2'
 services:
   dse:
-    image: datastax/dse-server:${DSE7TAG}
+    image: datastax/dse-server:${DSETAG}
     platform: linux/amd64
     networks:
       - stargate
