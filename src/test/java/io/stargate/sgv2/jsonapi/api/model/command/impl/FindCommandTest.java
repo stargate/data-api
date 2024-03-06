@@ -183,7 +183,7 @@ public class FindCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("skip options should be used with non empty sort clause");
+          .contains("skip options should be used with sort clause");
     }
 
     @Test

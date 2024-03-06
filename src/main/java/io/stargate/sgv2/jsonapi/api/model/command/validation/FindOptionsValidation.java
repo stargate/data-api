@@ -23,18 +23,9 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
     if (options == null) return true;
 
     context.disableDefaultConstraintViolation();
-    if (options.skip() != null && value.sortClause() == null) {
+    if (options.skip() != null && (value.sortClause() == null || value.sortClause().isEmpty())) {
       context
           .buildConstraintViolationWithTemplate("skip options should be used with sort clause")
-          .addPropertyNode("options.skip")
-          .addConstraintViolation();
-      return false;
-    }
-
-    if (options.skip() != null && value.sortClause().isEmpty()) {
-      context
-          .buildConstraintViolationWithTemplate(
-              "skip options should be used with non empty sort clause")
           .addPropertyNode("options.skip")
           .addConstraintViolation();
       return false;
