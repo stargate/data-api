@@ -14,12 +14,9 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
           "namespace",
           "collection",
           new CollectionSettings(
-              "collection",
-              true,
-              3,
-              CollectionSettings.SimilarityFunction.COSINE,
-              null,
-              null,
+              "collections",
+              new CollectionSettings.VectorConfig(
+                  true, 3, CollectionSettings.SimilarityFunction.COSINE, null),
               null),
           new TestEmbeddingProvider(),
           "testCommand",

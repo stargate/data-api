@@ -172,13 +172,12 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 EmbeddingProvider embeddingProvider = null;
-                if (collectionProperty.vectorizeServiceName() != null
-                    && collectionProperty.modelName() != null) {
+                if (collectionProperty.vectorConfig().vectorizeConfig() != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
-                          collectionProperty.vectorizeServiceName(),
-                          collectionProperty.modelName());
+                          collectionProperty.vectorConfig().vectorizeConfig().provider(),
+                          collectionProperty.vectorConfig().vectorizeConfig().modelName());
                 }
 
                 CommandContext commandContext =

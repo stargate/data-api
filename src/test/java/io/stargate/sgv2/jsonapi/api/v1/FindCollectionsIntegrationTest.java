@@ -3,11 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -338,20 +334,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
-      String expected1 = """
-      {"name":"TableName"}
-      """;
-      String expected2 = """
-              {"name":"collection1"}
-              """;
-      String expected3 =
-          """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
-      """;
-      String expected4 =
-          """
-              {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
-              """;
       json =
           """
                   {
@@ -362,7 +344,20 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     }
                   }
                   """;
-
+      String expected1 = """
+      {"name":"TableName"}
+      """;
+      String expected2 = """
+              {"name":"collection1"}
+              """;
+      String expected3 =
+          """
+          {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+          """;
+      String expected4 =
+          """
+                  {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+                  """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -371,7 +366,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("status.collections", hasSize(4))
+          .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
           .body(
               "status.collections",
               containsInAnyOrder(

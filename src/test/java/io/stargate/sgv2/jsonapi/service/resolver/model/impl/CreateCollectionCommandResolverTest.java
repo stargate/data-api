@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -92,23 +93,29 @@ class CreateCollectionCommandResolverTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name" : "my_collection",
-              "options": {
-                "vector": {
-                  "dimension": 4,
-                  "metric": "cosine"
-                },
-                "vectorize": {
-                  "service" : "openai",
-                  "options" : {
-                    "modelName": "text-embedding-ada-002"
-                  }
+            {
+                "createCollection": {
+                    "name": "my_collection",
+                    "options": {
+                        "vector": {
+                            "metric": "cosine",
+                            "dimension": 4,
+                            "service": {
+                                "provider": "openai",
+                                "model_name": "text-embedding-ada-002",
+                                "authentication": {
+                                    "type": [
+                                        "HEADER"
+                                    ]
+                                },
+                                "parameters": {
+                                    "project_id": "test project"
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }
           """;
 
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
@@ -125,7 +132,8 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"vectorize\":{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}}");
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"model_name\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 
@@ -161,7 +169,10 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorSearch()).isEqualTo(true);
                 assertThat(op.vectorSize()).isEqualTo(4);
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
-                assertThat(op.comment()).isEqualTo("{\"indexing\":{\"deny\":[\"comment\"]}}");
+                assertThat(op.comment())
+                    .isEqualTo(
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\"}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 

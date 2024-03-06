@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -53,7 +54,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
 
     if (command.options() != null) {
-      boolean vectorize = false;
+      boolean vector = false;
       boolean indexing = false;
       int vectorSize = 0;
       String function = null;
@@ -67,7 +68,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
       }
 
-      // handling vector and vectorize options
+      // handling vector option
       if (command.options().vector() != null) {
         function = command.options().vector().metric();
         vectorSize = command.options().vector().dimension();
@@ -80,21 +81,29 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                   vectorSize,
                   documentLimitsConfig.maxVectorEmbeddingLength()));
         }
-        if (command.options().vectorize() != null) {
-          vectorize = true;
-        }
+        vector = true;
       }
 
       String comment = null;
-      if (indexing || vectorize) {
-        final ObjectNode objectNode = objectMapper.createObjectNode();
+      if (indexing || vector) {
+        final ObjectNode collectionNode = objectMapper.createObjectNode();
+        ObjectNode optionsNode =
+            objectMapper.createObjectNode(); // Create a new ObjectNode for collection options
         if (indexing) {
-          objectNode.putPOJO("indexing", command.options().indexing());
+          optionsNode.putPOJO(
+              TableCommentConstants.COLLECTION_INDEXING_KEY, command.options().indexing());
         }
-        if (vectorize) {
-          objectNode.putPOJO("vectorize", command.options().vectorize());
+        if (vector) {
+          optionsNode.putPOJO(
+              TableCommentConstants.COLLECTION_VECTOR_KEY, command.options().vector());
         }
-        comment = objectNode.toString();
+        collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, command.name());
+        collectionNode.put(
+            TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
+        collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
+        final ObjectNode tableCommentNode = objectMapper.createObjectNode();
+        tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
+        comment = tableCommentNode.toString();
       }
 
       if (command.options().vector() != null) {
