@@ -194,13 +194,25 @@ public record CreateCollectionOperation(
                         .getMessage()
                         .matches(
                             ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
-        .recoverWithUni(error -> deleteCollectionOperation.execute(queryExecutor))
-        .onItem()
-        .transform(
-            res ->
-                ErrorCode.TOO_MANY_INDEXES.toApiException(
-                    "cannot create a new collection; need %d indexes to create the collection;",
-                    dbLimitsConfig.indexesNeededPerCollection()));
+        .recoverWithUni(
+            error ->
+                deleteCollectionOperation
+                    .execute(queryExecutor)
+                    .onItem()
+                    .transform(
+                        res ->
+                            ErrorCode.TOO_MANY_INDEXES.toApiException(
+                                "cannot create a new collection; need %d indexes to create the collection;",
+                                dbLimitsConfig.indexesNeededPerCollection()))
+                    .onFailure()
+                    .recoverWithItem(
+                        e -> {
+                          // This is unlikely to happen for delete collection, return with
+                          // TOO_MANY_INDEXES exception
+                          return ErrorCode.TOO_MANY_INDEXES.toApiException(
+                              "collection created with indexes creation failure; need %d indexes to create the collection;",
+                              dbLimitsConfig.indexesNeededPerCollection());
+                        }));
   }
 
   /**
