@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import org.bson.types.ObjectId;
 
 public class JsonUtil {
   @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
@@ -169,8 +170,11 @@ public class JsonUtil {
           }
           break;
         case OBJECT_ID:
-          // !!! TODO: implement with validation
-          return value.asText();
+          try {
+            return new ObjectId(value.asText());
+          } catch (IllegalArgumentException e) {
+            return null;
+          }
         case UUID:
         case UUID_V6:
         case UUID_V7:

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -96,6 +97,58 @@ public class ShredderWithExtendedTypesTest {
     }
 
     @Test
+    public void shredSimpleWithObjectIdKeyAndValue() throws Exception {
+      final String idObjectId = defaultTestObjectId().toString();
+      final String valueObjectId = defaultTestObjectId2().toString();
+      final String inputJson =
+          """
+                          { "_id" : {"$objectId": "%s"},
+                            "name" : "Bob",
+                            "objectId2" : {"$objectId": "%s"}
+                          }
+                          """
+              .formatted(idObjectId, valueObjectId);
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = shredder.shred(inputDoc);
+
+      assertThat(doc.id())
+          .isEqualTo(
+              DocumentId.fromExtensionType(
+                  JsonExtensionType.OBJECT_ID, objectMapper.getNodeFactory().textNode(idObjectId)));
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"), JsonPath.from("objectId2"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      assertThat(doc.arraySize()).isEmpty();
+
+      // We have 2 from array, plus 3 main level properties (_id excluded)
+      assertThat(doc.arrayContains())
+          .containsExactlyInAnyOrder(
+              "name SBob", "objectId2 " + new DocValueHasher().getHash(valueObjectId).hash());
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNumberValues()).isEmpty();
+      assertThat(doc.queryTextValues())
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("_id"),
+                  idObjectId,
+                  JsonPath.from("name"),
+                  "Bob",
+                  JsonPath.from("objectId2"),
+                  valueObjectId));
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryVectorValues()).isNull();
+    }
+
+    @Test
     public void shredSimpleWithoutId() throws Exception {
       final String inputJson =
           """
@@ -140,7 +193,25 @@ public class ShredderWithExtendedTypesTest {
   @Nested
   class ErrorCasesDocId {
     @Test
-    public void docBadUUIDAsId() {
+    public void docBadObjectAsDocId() {
+      final String inputJson =
+          """
+                              { "_id" : {"$objectId": "not-an-oid"},
+                                "name" : "Bob"
+                              }
+                              """;
+      Throwable t = catchThrowable(() -> shredder.shred(objectMapper.readTree(inputJson)));
+
+      assertThat(t)
+          .isNotNull()
+          .hasMessage(
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": invalid value ('\"not-an-oid\"') for extended JSON type '$objectId' (path '_id')")
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+    }
+
+    @Test
+    public void docBadUUIDAsDocId() {
       final String inputJson =
           """
                           { "_id" : {"$uuid": "not-a-uuid"},
@@ -176,6 +247,22 @@ public class ShredderWithExtendedTypesTest {
 
   @Nested
   class ErrorCasesValue {
+    @Test
+    public void docBadObjectIdAsValue() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  shredder.shred(
+                      objectMapper.readTree("{ \"value\": { \"$objectId\": \"abc\" } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasMessageStartingWith(
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": invalid value ('\"abc\"') for extended JSON type '$objectId' (path 'value')");
+    }
+
     @Test
     public void docBadUUIDAsValue() {
       Throwable t =
@@ -228,5 +315,13 @@ public class ShredderWithExtendedTypesTest {
 
   protected UUID defaultTestUUID2() {
     return UUID.fromString("8a251cdc-624e-4b10-a290-1aaad0bb57d0");
+  }
+
+  protected ObjectId defaultTestObjectId() {
+    return new ObjectId("1234567890abcdef12345678");
+  }
+
+  protected ObjectId defaultTestObjectId2() {
+    return new ObjectId("1234567890abcdef87654321");
   }
 }
