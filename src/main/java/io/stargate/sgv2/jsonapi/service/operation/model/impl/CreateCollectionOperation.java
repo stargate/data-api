@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
+    DeleteCollectionOperation deleteCollectionOperation,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
@@ -58,6 +60,7 @@ public record CreateCollectionOperation(
       int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
+        new DeleteCollectionOperation(commandContext, name),
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -79,6 +82,7 @@ public record CreateCollectionOperation(
       int ddlDelayMillis) {
     return new CreateCollectionOperation(
         commandContext,
+        new DeleteCollectionOperation(commandContext, name),
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -182,7 +186,21 @@ public record CreateCollectionOperation(
               } else {
                 return new SchemaChangeResult(true);
               }
-            });
+            })
+        .onFailure(
+            error ->
+                error instanceof InvalidQueryException
+                    && error
+                        .getMessage()
+                        .matches(
+                            ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
+        .recoverWithUni(error -> deleteCollectionOperation.execute(queryExecutor))
+        .onItem()
+        .transform(
+            res ->
+                ErrorCode.TOO_MANY_INDEXES.toApiException(
+                    "cannot create a new collection; need %d indexes to create the collection;",
+                    dbLimitsConfig.indexesNeededPerCollection()));
   }
 
   /**
