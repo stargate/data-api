@@ -8,6 +8,8 @@ import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
+
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,7 +17,8 @@ import java.util.Objects;
 import java.util.OptionalInt;
 
 public class JsonUtil {
-  public static final String EJSON_VALUE_KEY_DATE = "$date";
+  @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
+  public static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
 
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
