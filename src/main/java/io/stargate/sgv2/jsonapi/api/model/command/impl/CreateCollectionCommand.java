@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -106,25 +107,25 @@ public record CreateCollectionCommand(
               @JsonProperty("model_name")
               String modelName,
           @Valid
-              @NotNull
+              @Nullable
               @Schema(
                   description = "Authentication config for chosen embedding service",
                   type = SchemaType.OBJECT,
                   implementation = VectorizeServiceAuthentication.class)
               @JsonProperty("authentication")
-              VectorizeServiceAuthentication vectorizeServiceAuthentication,
-          @Valid
               @JsonInclude(JsonInclude.Include.NON_NULL)
-              @Nullable
+              VectorizeServiceAuthentication vectorizeServiceAuthentication,
+          @Nullable
               @Schema(
                   description =
                       "Optional parameters that match the template provided for the provider",
-                  type = SchemaType.OBJECT,
-                  implementation = VectorizeServiceParameter.class)
+                  type = SchemaType.OBJECT)
               @JsonProperty("parameters")
-              VectorizeServiceParameter vectorizeServiceParameter) {
+              @JsonInclude(JsonInclude.Include.NON_NULL)
+              Map<String, Object> vectorizeServiceParameter) {
         public record VectorizeServiceAuthentication(
-            @NotNull
+            @Nullable
+                @JsonInclude(JsonInclude.Include.NON_NULL)
                 @Schema(
                     description =
                         "List of authentications that can be used when sending documents that need vectorization. One or more of \"NONE\", \"HEADER\", \"SHARED_SECRET\"",
@@ -138,8 +139,8 @@ public record CreateCollectionCommand(
                                 "authentication type can only be one or more of 'NONE', 'HEADER' or 'SHARED_SECRET'")
                         String>
                     type,
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-                @Nullable
+            @Nullable
+                @JsonInclude(JsonInclude.Include.NON_NULL)
                 @Schema(
                     description =
                         "Secret name. when stored_secrets authentication is used must be provided with the name of a pre-registered secret",
@@ -147,16 +148,6 @@ public record CreateCollectionCommand(
                     implementation = String.class)
                 @JsonProperty("secret_name")
                 String secretName) {}
-
-        public record VectorizeServiceParameter(
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-                @Nullable
-                @Schema(
-                    description = "project id",
-                    type = SchemaType.STRING,
-                    implementation = String.class)
-                @JsonProperty("project_id")
-                String projectId) {}
       }
     }
 

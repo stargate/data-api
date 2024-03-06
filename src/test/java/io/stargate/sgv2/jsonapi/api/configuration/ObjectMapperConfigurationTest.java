@@ -30,7 +30,9 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -489,6 +491,9 @@ class ObjectMapperConfigurationTest {
 
       Command result = objectMapper.readValue(json, Command.class);
 
+      Map<String, Object> parameterMap = new HashMap<>();
+      parameterMap.put("project_id", "test project");
+
       assertThat(result)
           .isInstanceOfSatisfying(
               CreateCollectionCommand.class,
@@ -525,17 +530,15 @@ class ObjectMapperConfigurationTest {
                             .options()
                             .vector()
                             .vectorizeConfig()
-                            .vectorizeServiceParameter()
-                            .projectId())
+                            .vectorizeServiceParameter())
                     .isNotNull();
                 assertThat(
                         createCollection
                             .options()
                             .vector()
                             .vectorizeConfig()
-                            .vectorizeServiceParameter()
-                            .projectId())
-                    .isEqualTo("test project");
+                            .vectorizeServiceParameter())
+                    .isEqualTo(parameterMap);
                 assertThat(createCollection.options().indexing()).isNotNull();
                 assertThat(createCollection.options().indexing().allow()).isNull();
                 assertThat(createCollection.options().indexing().deny()).hasSize(1);
