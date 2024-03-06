@@ -3,9 +3,6 @@
 
 stargate:
 
-  data-store:
-    ignore-bridge: true
-
   database:
     limits:
       max-collections: 5
@@ -35,40 +32,6 @@ stargate:
   metrics:
     global-tags:
       module: sgv2-jsonapi
-
-  # custom properties for enabling vectorize method
-  jsonapi:
-    embedding:
-      service:
-        # Open AI embedding service configuration
-        openai:
-          enabled: true
-          url: https://api.openai.com/v1/
-          api-key: YOUR_API_KEY
-
-        # Hugging face embedding service configuration
-        huggingface:
-          enabled: true
-          url: https://api-inference.huggingface.co/pipeline/feature-extraction/
-          api-key: YOUR_API_KEY
-
-        # Vertex AI embedding service configuration
-        vertexai:
-          enabled: true
-          url: https://us-central1-aiplatform.googleapis.com
-          api-key: YOUR_API_KEY
-
-        # Cohere embedding service configuration
-        cohere:
-          enabled: true
-          url: https://api.cohere.ai/v1/
-          api-key: YOUR_API_KEY
-
-        # NVidia embedding service configuration
-        nvidia:
-          enabled: true
-          url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
-          api-key: YOUR_API_KEY
 
 quarkus:
 
@@ -100,6 +63,9 @@ quarkus:
       max-body-size: 20M
 
     port: 8181
+
+  log:
+    min-level: trace
 
   # built-in micrometer properties
   micrometer:

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -38,6 +39,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -46,28 +48,15 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAndUpdateOperationTest extends OperationTestBase {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  private CommandContext COMMAND_CONTEXT;
 
-  private static final CommandContext COMMAND_VECTOR_CONTEXT =
-      new CommandContext(
-          KEYSPACE_NAME,
-          COLLECTION_NAME,
-          new CollectionSettings(
-              COLLECTION_NAME,
-              new CollectionSettings.VectorConfig(
-                  true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
-              null),
-          null);
+  private CommandContext COMMAND_VECTOR_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
@@ -112,6 +101,28 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
           TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
+
+  @PostConstruct
+  public void init() {
+    COMMAND_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_VECTOR_CONTEXT =
+        new CommandContext(
+            KEYSPACE_NAME,
+            COLLECTION_NAME,
+            new CollectionSettings(
+                COLLECTION_NAME,
+                true,
+                -1,
+                CollectionSettings.SimilarityFunction.COSINE,
+                null,
+                null,
+                null),
+            null,
+            "testCommand",
+            jsonProcessingMetricsReporter);
+  }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
     List<ByteBuffer> buffers = Stream.of(values).map(value -> byteBufferFromAny(value)).toList();
@@ -310,9 +321,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
+      CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
+
       FindOperation findOperation =
           FindOperation.unsortedSingle(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               ReadType.DOCUMENT,
@@ -327,7 +340,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT,
+              commandContext,
               findOperation,
               documentUpdater,
               true,
@@ -357,6 +370,141 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
       assertThat(result.errors()).isNull();
       assertThat(result.data().getResponseDocuments()).hasSize(1);
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+
+      // there should be no json_bytes_written metrics (no write)
+      List<String> jsonBytesWriteMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written") && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonBytesWriteMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(0);
+              });
+      // should have three metrics start with "json_docs_written" in total
+      List<String> jsonDocsWrittenMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written")
+                          && !line.startsWith("json_docs_written_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadNoWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, the value should be one
+      List<String> jsonDocsWrittenCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_count")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenCountMetrics).hasSize(1);
+      jsonDocsWrittenCountMetrics.forEach(
+          line -> {
+            System.out.println(line);
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- update no docs, should be zero
+      List<String> jsonDocsWrittenSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_sum")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenSumMetrics).hasSize(1);
+      jsonDocsWrittenSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(0.0);
+          });
+
+      // there should be three json_bytes_read metrics (one read)
+      List<String> jsonBytesReadMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      // should have three metrics in total
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadNoWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, the value should be one
+      List<String> jsonDocsReadCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_count")
+                          && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonDocsReadCountMetrics).hasSize(1);
+      jsonDocsReadCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- read one doc, should be one
+      List<String> jsonDocsReadSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_sum") && line.contains("ReadNoWriteCommand"))
+              .toList();
+      assertThat(jsonDocsReadSumMetrics).hasSize(1);
+      jsonDocsReadSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
     }
 
     @Test
@@ -470,9 +618,11 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
+      CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
+
       FindOperation findOperation =
           FindOperation.sorted(
-              COMMAND_CONTEXT,
+              commandContext,
               implicitAnd,
               DocumentProjector.identityProjector(),
               null,
@@ -490,7 +640,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
                   UpdateOperator.SET, objectMapper.createObjectNode().put("name", "test")));
       ReadAndUpdateOperation operation =
           new ReadAndUpdateOperation(
-              COMMAND_CONTEXT,
+              commandContext,
               findOperation,
               documentUpdater,
               true,
@@ -520,6 +670,126 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
       assertThat(result.errors()).isNull();
+
+      // verify metrics
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+
+      // there should be three json_bytes_written metrics (one write)
+      List<String> jsonBytesWriteMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_written")
+                          && !line.startsWith("json_bytes_written_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonBytesWriteMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadAndWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, the value should be one
+      List<String> jsonDocsWrittenCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_count")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenCountMetrics).hasSize(1);
+      jsonDocsWrittenCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- update one docs, should be one
+      List<String> jsonDocsWrittenSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_written_sum")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonDocsWrittenSumMetrics).hasSize(1);
+      jsonDocsWrittenSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+
+      // there should be three json_bytes_read metrics (one read)
+      List<String> jsonBytesReadMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_bytes_read")
+                          && !line.startsWith("json_bytes_read_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonBytesReadMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"ReadAndWriteCommand\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).contains("tenant=\"unknown\"");
+                    });
+              });
+      // verify count metric -- command called once, should be one
+      List<String> jsonDocsReadCountMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_count")
+                          && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonDocsReadCountMetrics).hasSize(1);
+      jsonDocsReadCountMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
+      // verify sum metric -- read one doc, should be one
+      List<String> jsonDocsReadSumMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("json_docs_read_sum") && line.contains("ReadAndWriteCommand"))
+              .toList();
+      assertThat(jsonDocsReadSumMetrics).hasSize(1);
+      jsonDocsReadSumMetrics.forEach(
+          line -> {
+            String[] parts = line.split(" ");
+            String numericPart =
+                parts[parts.length - 1]; // Get the last part which should be the number
+            double value = Double.parseDouble(numericPart);
+            assertThat(value).isEqualTo(1.0);
+          });
     }
 
     @Test
@@ -633,7 +903,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
     @Test
     public void happyPathReplaceUpsert() throws Exception {
-      UUID tx_id = UUID.randomUUID();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       // read

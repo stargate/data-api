@@ -17,12 +17,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingServiceFactory;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -61,9 +62,11 @@ public class CollectionResource {
 
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingServiceFactory embeddingServiceFactory;
+  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -168,17 +171,23 @@ public class CollectionResource {
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
-                EmbeddingService embeddingService = null;
+                  EmbeddingProvider embeddingProvider = null;
                 if (collectionProperty.vectorConfig().vectorizeConfig() != null) {
-                  embeddingService =
-                      embeddingServiceFactory.getConfiguration(
+                    embeddingProvider =
+                            embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorConfig().vectorizeConfig().provider(),
                           collectionProperty.vectorConfig().vectorizeConfig().modelName());
                 }
 
                 CommandContext commandContext =
-                    new CommandContext(namespace, collection, collectionProperty, embeddingService);
+                    new CommandContext(
+                        namespace,
+                        collection,
+                        collectionProperty,
+                        embeddingProvider,
+                        command.getClass().getSimpleName(),
+                        jsonProcessingMetricsReporter);
 
                 // call processor
                 return meteredCommandProcessor.processCommand(commandContext, command);

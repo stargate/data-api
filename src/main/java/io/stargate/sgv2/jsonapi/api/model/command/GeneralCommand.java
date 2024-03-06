@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 
 /**
@@ -11,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
   @JsonSubTypes.Type(value = CreateNamespaceCommand.class),
   @JsonSubTypes.Type(value = DropNamespaceCommand.class),
   @JsonSubTypes.Type(value = FindNamespacesCommand.class),

@@ -12,25 +12,25 @@ import java.util.Optional;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class HuggingFaceEmbeddingClient implements EmbeddingService {
+public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
 
   private String baseUrl;
-  private final HuggingFaceEmbeddingService embeddingService;
+  private final HuggingFaceEmbeddingProvider embeddingProvider;
 
   public HuggingFaceEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(HuggingFaceEmbeddingService.class);
+            .build(HuggingFaceEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface HuggingFaceEmbeddingService {
+  public interface HuggingFaceEmbeddingProvider {
     @POST
     @Path("/{modelId}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -45,9 +45,12 @@ public class HuggingFaceEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
-    return embeddingService.embed(
+    return embeddingProvider.embed(
         "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
         modelName,
         request);

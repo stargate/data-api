@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 
 /**
@@ -16,14 +17,30 @@ public record CommandContext(
     String namespace,
     String collection,
     CollectionSettings collectionSettings,
-    EmbeddingService embeddingService) {
+    EmbeddingProvider embeddingProvider,
+    String commandName,
+    JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
   public CommandContext(String namespace, String collection) {
-    this(namespace, collection, CollectionSettings.empty(), null);
+    this(namespace, collection, CollectionSettings.empty(), null, null, null);
+  }
+
+  public CommandContext(
+      String namespace,
+      String collection,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    this(
+        namespace,
+        collection,
+        CollectionSettings.empty(),
+        null,
+        commandName,
+        jsonProcessingMetricsReporter);
   }
 
   private static final CommandContext EMPTY =
-      new CommandContext(null, null, CollectionSettings.empty(), null);
+      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}

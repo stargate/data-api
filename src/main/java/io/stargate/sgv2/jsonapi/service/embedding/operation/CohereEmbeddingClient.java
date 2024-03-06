@@ -16,24 +16,24 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen Cohere model.
  */
-public class CohereEmbeddingClient implements EmbeddingService {
+public class CohereEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final CohereEmbeddingService embeddingService;
+  private final CohereEmbeddingProvider embeddingProvider;
 
   public CohereEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(CohereEmbeddingService.class);
+            .build(CohereEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface CohereEmbeddingService {
+  public interface CohereEmbeddingProvider {
     @POST
     @Path("/embed")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -61,14 +61,20 @@ public class CohereEmbeddingClient implements EmbeddingService {
 
   // Input type to be used for vector search should "search_query"
   private static final String SEARCH_QUERY = "search_query";
+  private static final String SEARCH_DOCUMENT = "search_document";
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
+    String input_type =
+        embeddingRequestType == EmbeddingRequestType.INDEX ? SEARCH_DOCUMENT : SEARCH_QUERY;
     EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), modelName, SEARCH_QUERY);
+        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
-        embeddingService.embed(
+        embeddingProvider.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
     return response
         .onItem()

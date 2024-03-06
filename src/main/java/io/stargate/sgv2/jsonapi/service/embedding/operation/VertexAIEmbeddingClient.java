@@ -14,22 +14,22 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class VertexAIEmbeddingClient implements EmbeddingService {
+public class VertexAIEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
-  private final VertexAIEmbeddingService embeddingService;
+  private final VertexAIEmbeddingProvider embeddingProvider;
 
   public VertexAIEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(VertexAIEmbeddingService.class);
+            .build(VertexAIEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface VertexAIEmbeddingService {
+  public interface VertexAIEmbeddingProvider {
     @POST
     @Path("/{modelId}:predict")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -106,11 +106,14 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
     Uni<EmbeddingResponse> serviceResponse =
-        embeddingService.embed(
+        embeddingProvider.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
             modelName,
             request);

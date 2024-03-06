@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +25,7 @@ import java.util.Optional;
  * documents, sort clause and update clause.
  */
 public class DataVectorizer {
-  private final EmbeddingService embeddingService;
+  private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final Optional<String> embeddingApiKey;
   private final String collectionName;
@@ -33,18 +33,18 @@ public class DataVectorizer {
   /**
    * Constructor
    *
-   * @param embeddingService - Service client based on embedding service configuration set for the
+   * @param embeddingProvider - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingApiKey - Optional override embedding api key came in request header
    * @param collectionName - Collection name for which the vectorize is called
    */
   public DataVectorizer(
-      EmbeddingService embeddingService,
+      EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       Optional<String> embeddingApiKey,
       String collectionName) {
-    this.embeddingService = embeddingService;
+    this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;
     this.collectionName = collectionName;
@@ -92,10 +92,12 @@ public class DataVectorizer {
       }
 
       if (!vectorizeTexts.isEmpty()) {
-        if (embeddingService == null) {
+        if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(vectorizeTexts, embeddingApiKey);
+        Uni<List<float[]>> vectors =
+            embeddingProvider.vectorize(
+                vectorizeTexts, embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
         return vectors
             .onItem()
             .transform(
@@ -135,10 +137,12 @@ public class DataVectorizer {
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
         SortExpression expression = sortExpressions.get(0);
         String text = expression.vectorize();
-        if (embeddingService == null) {
+        if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
-        Uni<List<float[]>> vectors = embeddingService.vectorize(List.of(text), embeddingApiKey);
+        Uni<List<float[]>> vectors =
+            embeddingProvider.vectorize(
+                List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.SEARCH);
         return vectors
             .onItem()
             .transform(
@@ -201,11 +205,12 @@ public class DataVectorizer {
         node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
-        if (embeddingService == null) {
+        if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
         }
         final Uni<List<float[]>> vectors =
-            embeddingService.vectorize(List.of(text), embeddingApiKey);
+            embeddingProvider.vectorize(
+                List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
         return vectors
             .onItem()
             .transform(

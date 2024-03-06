@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class TestEmbeddingService implements EmbeddingService {
+public class TestEmbeddingProvider implements EmbeddingProvider {
 
   public static CommandContext commandContextWithVectorize =
       new CommandContext(
@@ -18,10 +18,13 @@ public class TestEmbeddingService implements EmbeddingService {
               new CollectionSettings.VectorConfig(
                   true, 3, CollectionSettings.SimilarityFunction.COSINE, null),
               null),
-          new TestEmbeddingService());
+          new TestEmbeddingProvider(),
+          "testCommand",
+          null);
 
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKey) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts, Optional<String> apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
     return Uni.createFrom().item(response);

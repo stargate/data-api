@@ -673,6 +673,56 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "findEmbeddingProviders",
+                  summary = "`findEmbeddingProviders` command result",
+                  value =
+                      """
+                        {
+                            "status": {
+                                "embeddingProviders": {
+                                    "openai": {
+                                        "url": "https://api.openai.com/v1/",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [],
+                                        "models": []
+                                    },
+                                    "vertexai": {
+                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict",
+                                        "supportedAuthentication": [
+                                            "HEADER",
+                                            "SHARED_SECRETS"
+                                        ],
+                                        "parameters": [
+                                            {
+                                                "name": "PROJECT_ID",
+                                                "type": "STRING",
+                                                "defaultValue": null,
+                                                "help": null,
+                                                "required": true
+                                            }
+                                        ],
+                                        "models": [
+                                            {
+                                                "name": "textembedding-gecko@003",
+                                                "parameters": [
+                                                    {
+                                                        "name": "autoTruncate",
+                                                        "type": "BOOLEAN",
+                                                        "defaultValue": "true",
+                                                        "help": null,
+                                                        "required": false
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }                      """)
             }))
 public class StargateJsonApi extends Application {
   @Produces

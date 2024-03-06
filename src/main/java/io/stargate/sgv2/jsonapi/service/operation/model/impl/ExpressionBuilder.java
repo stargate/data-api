@@ -7,7 +7,6 @@ import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,8 +39,7 @@ public class ExpressionBuilder {
       Expression<BuiltCondition> expressionWithoutId,
       List<DBFilterBase.IDFilter> idFilters) {
     if (idFilters.size() > 1) {
-      throw new JsonApiException(
-          ErrorCode.FILTER_MULTIPLE_ID_FILTER, ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
+      throw ErrorCode.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter

@@ -132,6 +132,39 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       + maxDimension
                       + ")"));
     }
+
+    @Test
+    public void failForInvalidVectorMetric() {
+      String json =
+          """
+                     {
+                      "createCollection": {
+                        "name" : "invalidVectorMetric",
+                        "options": {
+                          "vector": {
+                            "dimension": 5,
+                            "metric": "invalidName"
+                          }
+                        }
+                      }
+                    }
+                """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Problem: function name can only be 'dot_product', 'cosine' or 'euclidean'"));
+    }
   }
 
   @Nested
@@ -726,7 +759,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               endsWith("limit options should not be greater than 1000 for vector search."));
@@ -756,7 +790,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message", endsWith("skip options should not be used with vector search."));
     }

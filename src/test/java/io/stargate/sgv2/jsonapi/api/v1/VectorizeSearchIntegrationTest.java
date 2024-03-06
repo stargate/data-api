@@ -9,7 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.ClassOrderer;
@@ -141,7 +141,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -167,7 +167,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -202,7 +202,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -243,7 +243,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -297,7 +297,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -385,7 +385,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                 HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                 getAuthToken(),
                 HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                CustomITEmbeddingService.TEST_API_KEY))
+                CustomITEmbeddingProvider.TEST_API_KEY))
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -429,7 +429,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -474,7 +474,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -508,7 +508,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -550,7 +550,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -580,7 +580,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -610,7 +610,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -655,7 +655,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -690,7 +690,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -724,7 +724,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -765,7 +765,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -798,7 +798,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -850,7 +850,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -887,7 +887,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -921,7 +921,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -955,7 +955,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                   HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
                   getAuthToken(),
                   HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingService.TEST_API_KEY))
+                  CustomITEmbeddingProvider.TEST_API_KEY))
           .contentType(ContentType.JSON)
           .body(json)
           .when()

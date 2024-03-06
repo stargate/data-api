@@ -16,31 +16,31 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen nvidia model.
  */
-public class NVidiaEmbeddingClient implements EmbeddingService {
+public class NVidiaEmbeddingClient implements EmbeddingProvider {
   private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final NVidiaEmbeddingService embeddingService;
+  private final NVidiaEmbeddingProvider embeddingProvider;
 
   public NVidiaEmbeddingClient(String baseUrl, String apiKey, String modelName) {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(NVidiaEmbeddingService.class);
+            .build(NVidiaEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface NVidiaEmbeddingService {
+  public interface NVidiaEmbeddingProvider {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
   }
 
-  private record EmbeddingRequest(String[] input, String model) {}
+  private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record EmbeddingResponse(Data[] data, String model, Usage usage) {
@@ -51,12 +51,21 @@ public class NVidiaEmbeddingClient implements EmbeddingService {
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 
+  private static final String PASSAGE = "passage";
+  private static final String QUERY = "query";
+
   @Override
-  public Uni<List<float[]>> vectorize(List<String> texts, Optional<String> apiKeyOverride) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
+    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
+
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
-        embeddingService.embed(
+        embeddingProvider.embed(
             "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request);
     return response
         .onItem()
