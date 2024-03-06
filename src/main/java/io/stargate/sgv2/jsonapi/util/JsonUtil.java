@@ -150,6 +150,13 @@ public class JsonUtil {
     return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
   }
 
+  public static JsonExtensionType findJsonExtensionType(JsonNode jsonValue) {
+    if (jsonValue.isObject() && jsonValue.size() == 1) {
+      String fieldName = jsonValue.fieldNames().next();
+      return JsonExtensionType.fromEncodedName(fieldName);
+    }
+    return null;
+  }
   /**
    * Utility method to check whether UTF-8 encoded length of given String is above given maximum
    * length, and if so, return actual length (in bytes); otherwise return {@code

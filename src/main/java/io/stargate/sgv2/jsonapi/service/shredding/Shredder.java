@@ -287,12 +287,17 @@ public class Shredder {
       ++depth;
       validateDocDepth(limits, depth);
 
-      final int propCount = objectValue.size();
-
       var it = objectValue.fields();
       while (it.hasNext()) {
         var entry = it.next();
         final String key = entry.getKey();
+
+        // Doc id validation done elsewhere, skip here to avoid failure for
+        // next Extension JSON types (Object-wrapped UUIDs, ObjectIds)
+        if (depth == 1 && key.equals(DocumentConstants.Fields.DOC_ID)) {
+          continue;
+        }
+
         validateObjectKey(key, entry.getValue(), depth, parentPathLength);
         // Path through property consists of segments separated by comma:
         final int propPathLength = parentPathLength + 1 + key.length();
@@ -310,9 +315,9 @@ public class Shredder {
         // Date values -- if more needed, will refactor. But for now inline:
         if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
           ; // Fine, looks like legit Date value
-        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
+        } else if (depth == 1 && key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
           ; // Fine, looks like legit vector property
-        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
+        } else if (depth == 1 && key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           ; // Fine, looks like legit vectorize property
         } else {
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(

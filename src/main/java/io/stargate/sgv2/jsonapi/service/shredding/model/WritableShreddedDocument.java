@@ -168,19 +168,25 @@ public record WritableShreddedDocument(
 
     @Override
     public boolean shredObject(JsonPath path, ObjectNode obj) {
-      // Either Sub-doc or EJSON-encoded Date/timestamp value:
+      // Either Sub-doc or EJSON-encoded Date/timestamp or other extension value:
       if (JsonUtil.looksLikeEJsonValue(obj)) {
-        Date dtValue = JsonUtil.extractEJsonDate(obj, path);
-        if (dtValue != null) {
-          shredTimestamp(path, dtValue);
-          return false; // we are done
+        JsonExtensionType type = JsonUtil.findJsonExtensionType(obj);
+        if (type != null) {
+          switch (type) {
+            case EJSON_DATE:
+              Date dtValue = JsonUtil.extractEJsonDate(obj, path);
+              if (dtValue != null) {
+                shredTimestamp(path, dtValue);
+                return false; // we are done
+              }
+            default:
+              shredExtendedType(path, type, obj);
+              return false;
+          }
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_EJSON_VALUE,
-            String.format(
-                "%s: unrecognized type '%s' (path '%s')",
-                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(), obj.fieldNames().next(), path));
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "unrecognized type '%s' (path '%s')", obj.fieldNames().next(), path);
       }
 
       addKey(path);
@@ -291,6 +297,10 @@ public record WritableShreddedDocument(
         arrayVals[i] = element.floatValue();
       }
       queryVectorValues = arrayVals;
+    }
+
+    public void shredExtendedType(JsonPath path, JsonExtensionType type, JsonNode value) {
+      shredText(path, value.asText());
     }
 
     /*

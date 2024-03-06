@@ -4,8 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Type of "extends" JSON scalar type: generally used to retain client-side type information in
- * cases where processing on server-side is still based on enclosed String value.
+ * Types that "extend" JSON scalar type: by wrapping scalar value (usually String) in a single-entry
+ * JSON Object value where key indicates the type. These are generally used to retain client-side
+ * type information in cases where processing on server-side is still based on enclosed String
+ * value; one exception being "EJSON Date" which is used to specify Date values for indexing and
+ * sort purposes.
  */
 public enum JsonExtensionType {
   EJSON_DATE("$date"),

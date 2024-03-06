@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -51,30 +52,34 @@ public interface DocumentId {
 
   static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
-      case BOOLEAN -> {
+      case BOOLEAN:
         return fromBoolean(node.booleanValue());
-      }
-      case NULL -> {
+      case NULL:
         return fromNull();
-      }
-      case NUMBER -> {
+      case NUMBER:
         return fromNumber(node.decimalValue());
-      }
-      case STRING -> {
+      case STRING:
         return fromString(node.textValue());
-      }
-      case OBJECT -> {
-        Date dt = JsonUtil.tryExtractEJsonDate(node);
-        if (dt != null) {
-          return fromTimestamp(dt);
+      case OBJECT:
+        JsonExtensionType extType = JsonUtil.findJsonExtensionType(node);
+        if (extType != null) {
+          // We know it's single-entry Object so can just get the one property value
+          JsonNode valueNode = node.iterator().next();
+          switch (extType) {
+            case EJSON_DATE:
+              if (valueNode.isIntegralNumber() && valueNode.canConvertToLong()) {
+                return fromTimestamp(valueNode.longValue());
+              }
+              break;
+            default:
+              return fromExtensionType(extType, valueNode);
+          }
         }
-      }
+        break;
     }
-    throw new JsonApiException(
-        ErrorCode.SHRED_BAD_DOCID_TYPE,
-        String.format(
-            "%s: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
-            ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), node.getNodeType()));
+    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+        "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
+        node.getNodeType());
   }
 
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
@@ -164,6 +169,15 @@ public interface DocumentId {
 
   static DocumentId fromTimestamp(long keyAsLong) {
     return new DateId(keyAsLong);
+  }
+
+  static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
+    if (valueNode.isTextual()) {
+      return new ExtensionTypeId(extType, valueNode.textValue());
+    }
+    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+        "Extension type '%s' must have JSON String as value: instead got %s",
+        ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), valueNode.getNodeType());
   }
 
   /*
@@ -317,6 +331,35 @@ public interface DocumentId {
     @Override
     public String toString() {
       return "null";
+    }
+  }
+
+  record ExtensionTypeId(JsonExtensionType type, String valueAsString) implements DocumentId {
+    @Override
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_STRING;
+    }
+
+    @Override
+    public Object value() {
+      return valueAsString();
+    }
+
+    @Override
+    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+      ObjectNode node = nodeFactory.objectNode();
+      node.put(type().encodedName(), valueAsString);
+      return node;
+    }
+
+    @Override
+    public String asDBKey() {
+      return valueAsString();
+    }
+
+    @Override
+    public String toString() {
+      return String.format("{'%s': '%s'}", type().encodedName(), valueAsString());
     }
   }
 }
