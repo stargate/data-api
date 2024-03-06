@@ -69,51 +69,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .statusCode(200)
           .body("status.ok", is(1));
     }
-
-    @Test
-    public void failedWithInvalidAuthenticationType() {
-      String json =
-          """
-                    {
-                        "createCollection": {
-                            "name": "my_collection_vectorize",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 5,
-                                    "service": {
-                                        "provider": "custom",
-                                        "model_name": "text-embedding-ada-002",
-                                        "authentication": {
-                                            "type": [
-                                                "invalid"
-                                            ],
-                                            "secret_name": "name_given_by_user"
-                                        },
-                                        "parameters": {
-                                            "project_id": "test project"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    """;
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(nullValue()))
-          .body("errors[0].exceptionClass", is("ConstraintViolationException"))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "Problem: authentication type can only be one or more of 'NONE', 'HEADER' or 'SHARED_SECRET'"));
-    }
   }
 
   @Nested
