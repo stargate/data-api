@@ -163,6 +163,30 @@ public class FindCommandTest {
     }
 
     @Test
+    public void invalidOptionsSkipEmptySort() throws Exception {
+      String json =
+          """
+              {
+              "find": {
+                  "filter" : {"username" : "user1"},
+                  "sort": {},
+                  "options" : {
+                    "skip" : 10
+                  }
+                }
+              }
+              """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("skip options should be used with non empty sort clause");
+    }
+
+    @Test
     public void invalidOptionsPageStateWithSort() throws Exception {
       String json =
           """

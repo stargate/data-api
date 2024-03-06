@@ -55,4 +55,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
       }
     }
   }
+
+  public boolean isEmpty() {
+    return sortExpressions.isEmpty();
+  }
 }
