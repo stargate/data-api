@@ -55,7 +55,7 @@ public class ConstraintViolationExceptionMapper {
     String propertyValueDesc = valueDescription(violation.getInvalidValue(), propertyPath);
     JsonApiException ex =
         ErrorCode.COMMAND_FIELD_INVALID.toApiException(
-            "field '%s' value '%s' not valid. Problem: %s.",
+            "field '%s' value %s not valid. Problem: %s.",
             propertyPath, propertyValueDesc, message);
     return ex.getCommandResultError(ex.getMessage(), Response.Status.OK);
   }
@@ -63,7 +63,7 @@ public class ConstraintViolationExceptionMapper {
   /** Helper method for construction description of value that caused the constraint violation. */
   private static String valueDescription(Object rawValue, String propertyPath) {
     if (rawValue == null) {
-      return "`null`";
+      return "'null'";
     }
     // Some value types never truncated: Numbers, Booleans.
     if (rawValue instanceof Number
@@ -78,23 +78,17 @@ public class ConstraintViolationExceptionMapper {
     }
 
     if (rawValue instanceof FindCommand) {
-      if (propertyPath.contains("options.skip")) {
-        return String.format("%s", ((FindCommand) rawValue).options().skip());
-      }
-      if (propertyPath.contains("options.limit")) {
-        return String.format("%s", ((FindCommand) rawValue).options().limit());
-      }
-      if (propertyPath.contains("options.pageState")) {
-        return String.format("%s", ((FindCommand) rawValue).options().pageState());
+      if (propertyPath.contains("options")) {
+        return String.format("'%s'", ((FindCommand) rawValue).options());
       }
     }
 
     String valueDesc = rawValue.toString();
     if (valueDesc.length() <= MAX_VALUE_LENGTH_TO_INCLUDE) {
-      return String.format("%s", valueDesc);
+      return String.format("'%s'", valueDesc);
     }
     return String.format(
-        "%s...[TRUNCATED from %d to %d characters]",
+        "'%s'...[TRUNCATED from %d to %d characters]",
         valueDesc, valueDesc.length(), MAX_VALUE_LENGTH_TO_INCLUDE);
   }
 }
