@@ -589,6 +589,84 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors", is(nullValue()));
     }
 
+    @Test
+    public void insertDocWithUUIDValues() {
+      final String KEY = UUID.randomUUID().toString();
+      final String UUID_VALUE = UUID.randomUUID().toString();
+      final String UUID_VALUE2 = UUID.randomUUID().toString();
+      String doc =
+          """
+                      {
+                        "_id": "%s",
+                        "value": { "$uuid": "%s"},
+                        "nested": {
+                          "id": { "$uuid": "%s"}
+                        }
+                      }
+                  """
+              .formatted(KEY, UUID_VALUE, UUID_VALUE2);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void insertDocWithObjectIdValues() {
+      final String KEY = UUID.randomUUID().toString();
+      final String OBJECTID_VALUE = new ObjectId().toHexString();
+      final String OBJECTID_VALUE2 = new ObjectId().toHexString();
+      String doc =
+          """
+                      {
+                        "_id": "%s",
+                        "subdoc": {
+                          "id": { "$objectId": "%s"}
+                        },
+                        "value": { "$objectId": "%s"}
+                      }
+                  """
+              .formatted(KEY, OBJECTID_VALUE, OBJECTID_VALUE2);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
     // // // Failing cases
 
     @Test
