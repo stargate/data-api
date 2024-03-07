@@ -27,6 +27,7 @@ import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -34,7 +35,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.functions.types.CodecRegistry;
@@ -56,8 +56,9 @@ public class FileWriterSession implements CqlSession {
   private final CQLSessionCache.SessionCacheKey cacheKey;
   private final String ssTableOutputDirectory;
   private final CQLSSTableWriter cqlsSSTableWriter;
-  private int fileWriterBufferSizeInMB = 20;
+  private final int fileWriterBufferSizeInMB;
   private final FileWriterParams fileWriterParams;
+  private static final String EMPTY_CASSANDRA_DATA_DIRECTORY = "/var/tmp/sstables_test/cassandra";
 
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
@@ -82,57 +83,44 @@ public class FileWriterSession implements CqlSession {
                         0,
                         RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)),
                     AttachmentPoint.NONE)));
-    if (Files.exists(Path.of(fileWriterParams.ssTableOutputDirectory()))) {
-      recursiveDelete(
-          Path.of(
-              fileWriterParams
-                  .ssTableOutputDirectory())); // TODO-SL: avoid deleting recursively and check if
-      // its empty
+    if (!Files.exists(Path.of(fileWriterParams.ssTableOutputDirectory()))) {
+      throw new FileNotFoundException(
+          "Directory does not exist: " + fileWriterParams.ssTableOutputDirectory());
     }
-    this.ssTableOutputDirectory = fileWriterParams.ssTableOutputDirectory();
-    if (fileWriterParams.fileWriterBufferSizeInMB() > 0) {
-      this.fileWriterBufferSizeInMB = fileWriterParams.fileWriterBufferSizeInMB();
-    }
-    Files.createDirectories(Path.of(fileWriterParams.ssTableOutputDirectory()));
-    String dataDirectory = fileWriterParams.ssTableOutputDirectory() + File.separator + "data";
-    Files.createDirectories(Path.of(dataDirectory));
-    this.cqlsSSTableWriter =
+    this.ssTableOutputDirectory =
+        fileWriterParams.ssTableOutputDirectory()
+            + File.separator
+            + sessionId
+            + File.separator
+            + this.keyspace
+            + File.separator
+            + this.table;
+    this.fileWriterBufferSizeInMB = fileWriterParams.fileWriterBufferSizeInMB();
+    Files.createDirectories(Path.of(ssTableOutputDirectory));
+    CQLSSTableWriter.Builder cqlSSTableWriterBuilder =
         CQLSSTableWriter.builder()
-            .inDirectory(dataDirectory)
+            .inDirectory(ssTableOutputDirectory)
             .forTable(fileWriterParams.createTableCQL())
-            .using(fileWriterParams.insertStatementCQL())
-            .withBufferSizeInMB(fileWriterParams.fileWriterBufferSizeInMB())
-            .build();
+            .using(fileWriterParams.insertStatementCQL());
+    if (this.fileWriterBufferSizeInMB > 0) {
+      cqlSSTableWriterBuilder.withBufferSizeInMB(this.fileWriterBufferSizeInMB);
+    }
+    this.cqlsSSTableWriter = cqlSSTableWriterBuilder.build();
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Create table CQL: " + fileWriterParams.createTableCQL());
       LOGGER.trace("Insert statement: " + fileWriterParams.insertStatementCQL());
     }
     DatabaseDescriptor.getRawConfig().data_file_directories =
-        new String[] {fileWriterParams.ssTableOutputDirectory()};
+        new String[] {EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "data"};
     DatabaseDescriptor.getRawConfig().commitlog_directory =
-        fileWriterParams.ssTableOutputDirectory() + File.separator + "commitlog";
+        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "commitlog";
     DatabaseDescriptor.getRawConfig().saved_caches_directory =
-        fileWriterParams.ssTableOutputDirectory() + File.separator + "saved_caches";
+        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "saved_caches";
     DatabaseDescriptor.getRawConfig().hints_directory =
-        fileWriterParams.ssTableOutputDirectory() + File.separator + "hints";
+        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "hints";
     DatabaseDescriptor.getRawConfig().metadata_directory =
-        fileWriterParams.ssTableOutputDirectory() + File.separator + "metadata_directory";
+        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "metadata_directory";
     DatabaseDescriptor.getRawConfig().commitlog_sync = Config.CommitLogSync.batch;
-  }
-
-  public static void recursiveDelete(Path directory) throws IOException {
-    try (Stream<Path> files = Files.walk(directory)) {
-      files
-          .sorted(Comparator.reverseOrder())
-          .forEach(
-              file -> {
-                try {
-                  Files.delete(file);
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
   }
 
   @NonNull
@@ -278,6 +266,16 @@ public class FileWriterSession implements CqlSession {
         this.keyspace,
         this.table,
         this.ssTableOutputDirectory,
-        this.fileWriterBufferSizeInMB);
+        this.fileWriterBufferSizeInMB,
+        getDirectorySizeInMB(this.ssTableOutputDirectory));
+  }
+
+  private int getDirectorySizeInMB(String dataDirectory) {
+    File file = new File(dataDirectory);
+    long size = 0;
+    for (File f : Objects.requireNonNull(file.listFiles())) {
+      size += f.length();
+    }
+    return (int) (size / (1024 * 1024));
   }
 }

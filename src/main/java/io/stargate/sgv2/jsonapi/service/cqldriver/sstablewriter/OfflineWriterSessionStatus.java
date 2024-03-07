@@ -5,4 +5,5 @@ public record OfflineWriterSessionStatus(
     String keyspace,
     String tableName,
     String ssTableOutputDirectory,
-    int fileWriterBufferSizeInMB) {}
+    int fileWriterBufferSizeInMB,
+    int dataDirectorySizeInMB) {}
