@@ -30,7 +30,9 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -518,6 +520,160 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(2)
+  class InsertOneWithJsonExtensions {
+    @Test
+    public void insertDocWithUUIDKey() {
+      final String UUID_KEY = UUID.randomUUID().toString();
+      String doc =
+          """
+                  {
+                    "_id": { "$uuid": "%s"},
+                    "value": 42
+                  }
+              """
+              .formatted(UUID_KEY);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(UUID_KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(UUID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void insertDocWithObjectIdKey() {
+      final String OBJECTID_KEY = new ObjectId().toHexString();
+      String doc =
+          """
+                  {
+                    "_id": { "$objectId": "%s"},
+                    "value": "unknown"
+                  }
+              """
+              .formatted(OBJECTID_KEY);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(OBJECTID_KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(OBJECTID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    // // // Failing cases
+
+    @Test
+    public void failInsertDocWithInvalidUUIDAsDocId() {
+      String doc =
+          """
+                          {
+                            "_id": { "$uuid": 42},
+                            "value": 42
+                          }
+                      """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Bad type for '_id' property: Extension type '$uuid' must have JSON String as value"));
+    }
+
+    @Test
+    public void failInsertDocWithInvalidObjectIdAsDocId() {
+      String doc =
+          """
+                              {
+                                "_id": { "$objectId": "not-quite-objectid" },
+                                "value": 42
+                              }
+                          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "invalid value (\"not-quite-objectid\") for extended JSON type '$objectId'"));
+    }
+
+    @Test
+    public void failInsertDocWithUnknownExtensionAsDocId() {
+      String doc =
+          """
+              {
+                "_id": { "$myOwnThing": "xyz"},
+                "value": 42
+              }
+          """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              startsWith("Bad type for '_id' property: unrecognized JSON extension type"));
+    }
+  }
+
+  @Nested
+  @Order(3)
   class InsertOneConstraintChecking {
     private static final int MAX_ARRAY_LENGTH = DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH;
 
@@ -913,7 +1069,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(3)
+  @Order(4)
   class InsertInMixedCaseCollection {
     private static final String COLLECTION_MIXED = "MyCollection";
 
@@ -973,7 +1129,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class InsertMany {
 
     @Test
@@ -1392,7 +1548,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(5)
+  @Order(6)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1517,7 +1673,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(6)
+  @Order(7)
   class InsertManyFails {
     @Test
     public void insertManyWithTooManyDocuments() {
