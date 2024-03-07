@@ -17,11 +17,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.OfflineFileWriterInitializer;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
@@ -36,10 +38,12 @@ public final class ThrowableToErrorMapper {
         }
 
         // construct fieldsForMetricsTag, only expose exceptionClass in debugMode
-        // SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class); //
-        // TODO-SL
-        SmallRyeConfig config =
-            new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+        SmallRyeConfig config;
+        if (OfflineFileWriterInitializer.isOffline()) {
+          config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+        } else {
+          config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        }
         DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
         final boolean debugEnabled = debugModeConfig.enabled();
         Map<String, Object> fields =

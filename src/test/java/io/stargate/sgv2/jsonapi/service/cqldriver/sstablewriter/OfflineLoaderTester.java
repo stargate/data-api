@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.context.SmallRyeContextManagerProvider;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -40,11 +39,11 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 public class OfflineLoaderTester {
   public static void main(String[] args) throws InterruptedException, ExecutionException {
-    int threadCount = 2;
-    int threadPoolSize = 2;
+    OfflineFileWriterInitializer.initialize();
+    int iterationCount = 10;
+    int threadPoolSize = 3;
     ExecutorService executeService = Executors.newFixedThreadPool(threadPoolSize);
-    SmallRyeContextManagerProvider.instance();
-    for (int i = 0; i < threadCount; i++) {
+    for (int i = 0; i < iterationCount; i++) {
       // System.out.println("Starting thread " + i);
       int finalI = i;
       executeService.submit(
@@ -64,10 +63,6 @@ public class OfflineLoaderTester {
       Thread.sleep(1000);
       System.out.println("Waiting for threads to complete");
     }
-    // while (futures.stream().noneMatch(Future::isDone)) {
-    // for (Future future : futures) {
-    // future.get();
-    // }
     System.out.println("All threads completed");
   }
 
@@ -76,8 +71,8 @@ public class OfflineLoaderTester {
     List<String> sessionIds = new ArrayList<>();
     // System.out.println(threadId + "Started");
     boolean vectorTest = false;
-    int totalRecords = 100;
-    int chuckSize = totalRecords / 1;
+    int totalRecords = 100_000;
+    int chuckSize = totalRecords / 20;
     int createNewSessionAfterDataInMB = 20;
     List<JsonNode> records = getRecords(vectorTest, totalRecords);
     List<List<JsonNode>> recordsList = new ArrayList<>(Lists.partition(records, chuckSize));
