@@ -638,11 +638,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
           .body(
               "errors[0].message",
               startsWith(
-                  "invalid value (\"not-quite-objectid\") for extended JSON type '$objectId'"));
+                  "Bad JSON Extension value: invalid value (\"not-quite-objectid\") for extended JSON type '$objectId'"));
     }
 
     @Test
