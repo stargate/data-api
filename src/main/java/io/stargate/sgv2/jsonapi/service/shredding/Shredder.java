@@ -291,15 +291,17 @@ public class Shredder {
       // First, special case: Extension JSON types
       if (objectValue.size() == 1) {
         String key = objectValue.fieldNames().next();
-        if (JsonExtensionType.fromEncodedName(key) != null) {
+        JsonExtensionType extType = JsonExtensionType.fromEncodedName(key);
+        if (extType != null) {
           // These are only superficially validated here, more detailed validation
           // during actual shredding
           JsonNode value = objectValue.iterator().next();
           if (value.isTextual() || value.isIntegralNumber()) {
             return;
           }
-          throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "'%s' has invalid value type %s", key, value.getNodeType());
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "type '%s' has invalid JSON value of type %s",
+              extType.encodedName(), value.getNodeType());
         }
       }
 

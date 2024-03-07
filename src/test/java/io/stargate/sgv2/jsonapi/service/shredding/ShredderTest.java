@@ -263,10 +263,10 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
-              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()
-                  + ": '$date' has invalid value type BOOLEAN");
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": type '$date' has invalid JSON value of type BOOLEAN");
     }
 
     @Test
