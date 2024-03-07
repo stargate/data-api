@@ -40,8 +40,8 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 public class OfflineLoaderTester {
   public static void main(String[] args) throws InterruptedException, ExecutionException {
     OfflineFileWriterInitializer.initialize();
-    int iterationCount = 10;
-    int threadPoolSize = 3;
+    int iterationCount = 1;
+    int threadPoolSize = 1;
     ExecutorService executeService = Executors.newFixedThreadPool(threadPoolSize);
     for (int i = 0; i < iterationCount; i++) {
       // System.out.println("Starting thread " + i);
@@ -70,7 +70,7 @@ public class OfflineLoaderTester {
       throws JsonProcessingException, ExecutionException, InterruptedException {
     List<String> sessionIds = new ArrayList<>();
     // System.out.println(threadId + "Started");
-    boolean vectorTest = false;
+    boolean vectorTest = true;
     int totalRecords = 100_000;
     int chuckSize = totalRecords / 20;
     int createNewSessionAfterDataInMB = 20;
@@ -239,14 +239,18 @@ public class OfflineLoaderTester {
       throws JsonProcessingException {
     List<JsonNode> records = new ArrayList<>();
     String template = """
-        {"_id": %s,"name": "jim"%s}
+        {"_id": %s,"name": "person%s", "age":"%s"%s}
         """;
     for (int i = 0; i < totalRecords; i++) {
       records.add(
           new ObjectMapper()
               .readTree(
                   String.format(
-                      template, i, isVectorEnabled ? ",\"$vector\": [0.3,0.4,0.5]" : "")));
+                      template,
+                      i,
+                      i,
+                      (int) (Math.random() * 99) + 1,
+                      isVectorEnabled ? ",\"$vector\": [0.3,0.4,0.5]" : "")));
     }
     return records;
   }
