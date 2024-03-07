@@ -251,10 +251,10 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
           .hasMessage(
               ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
-                  + ": unrecognized extended JSON type '$unknown'")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
+                  + ": unrecognized JSON extension type '$unknown'");
     }
   }
 

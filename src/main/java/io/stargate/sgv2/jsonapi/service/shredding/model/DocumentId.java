@@ -79,7 +79,7 @@ public interface DocumentId {
           }
         }
         throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
-            "unrecognized extended JSON type '%s'", node.fieldNames().next());
+            "unrecognized JSON extension type '%s'", node.fieldNames().next());
     }
     throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
         "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
