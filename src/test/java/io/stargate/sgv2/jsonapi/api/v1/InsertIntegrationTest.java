@@ -512,7 +512,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.document' value `null` not valid. Problem: must not be null"));
+                  "Request invalid: field 'command.document' value 'null' not valid. Problem: must not be null"));
     }
   }
 

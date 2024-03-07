@@ -2043,7 +2043,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
+                  "Request invalid: field 'command.updateClause' value 'null' not valid. Problem: must not be null."));
     }
 
     @Test

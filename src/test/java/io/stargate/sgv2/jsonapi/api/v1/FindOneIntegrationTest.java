@@ -792,7 +792,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"))
+                  "Request invalid: field 'collection' value 'table,rate=100' not valid. Problem:"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"));
     }

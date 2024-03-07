@@ -96,7 +96,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
+                  "Request invalid: field 'namespace' value '7_no_leading_number' not valid. Problem: must match "));
     }
 
     @Test
@@ -113,7 +113,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command' value `null` not valid. Problem: must not be null"));
+                  "Request invalid: field 'command' value 'null' not valid. Problem: must not be null"));
     }
   }
 }

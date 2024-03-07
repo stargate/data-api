@@ -93,7 +93,7 @@ class GeneralResourceIntegrationTest {
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command' value `null` not valid. Problem: must not be null"));
+                  "Request invalid: field 'command' value 'null' not valid. Problem: must not be null"));
     }
   }
 }
