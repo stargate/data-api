@@ -89,11 +89,9 @@ public interface DocumentId {
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
     JsonType type = DocumentConstants.KeyTypeId.getJsonType(typeId);
     if (type == null) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_BAD_DOCID_TYPE,
-          String.format(
-              "%s: Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), typeId));
+      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+          "Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
+          typeId);
     }
     switch (type) {
       case BOOLEAN -> {
@@ -181,7 +179,7 @@ public interface DocumentId {
     }
     throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
         "Extension type '%s' must have JSON String as value: instead got %s",
-        ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), valueNode.getNodeType());
+        extType.encodedName(), valueNode.getNodeType());
   }
 
   /*

@@ -193,7 +193,7 @@ public class ShredderWithExtendedTypesTest {
   @Nested
   class ErrorCasesDocId {
     @Test
-    public void docBadObjectAsDocId() {
+    public void docInvalidObjectAsDocId() {
       final String inputJson =
           """
                               { "_id" : {"$objectId": "not-an-oid"},
@@ -211,7 +211,8 @@ public class ShredderWithExtendedTypesTest {
     }
 
     @Test
-    public void docBadUUIDAsDocId() {
+    public void docInvalidUUIDAsDocId() {
+      // First, invalid String
       final String inputJson =
           """
                           { "_id" : {"$uuid": "not-a-uuid"},
@@ -222,10 +223,22 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value ('\"not-a-uuid\"') for extended JSON type '$uuid' (path '_id')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+                  + ": invalid value ('\"not-a-uuid\"') for extended JSON type '$uuid' (path '_id')");
+
+      // second: JSON Object also not valid UUID representation
+      t =
+          catchThrowable(
+              () -> shredder.shred(objectMapper.readTree("{ \"_id\" : {\"$uuid\": { } } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasMessage(
+              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
+                  + ": Extension type '$uuid' must have JSON String as value: instead got OBJECT");
     }
 
     @Test
