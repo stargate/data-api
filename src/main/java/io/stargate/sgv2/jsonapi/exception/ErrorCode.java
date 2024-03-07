@@ -132,6 +132,8 @@ public enum ErrorCode {
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
+
+  VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
@@ -141,7 +143,10 @@ public enum ErrorCode {
   NO_NODE_AVAILABLE("No node was available to execute the query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
   COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection");
+      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+  INVALID_SCHEMA_VERSION(
+      "Collection has invalid schema version. Recommend re-creating the collection"),
+  INVALID_ID_TYPE("Invalid Id type");
 
   private final String message;
 

@@ -57,11 +57,11 @@ public record CommandContext(
   }
 
   public CollectionSettings.SimilarityFunction similarityFunction() {
-    return collectionSettings.similarityFunction();
+    return collectionSettings.vectorConfig().similarityFunction();
   }
 
   public boolean isVectorEnabled() {
-    return collectionSettings.vectorEnabled();
+    return collectionSettings.vectorConfig().vectorEnabled();
   }
 
   public DocumentProjector indexingProjector() {
