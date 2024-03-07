@@ -330,16 +330,14 @@ public class Shredder {
       }
       if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
         // Special names are accepted in some cases:
-        do {
-          if (depth == 1) {
-            if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-              break; // Fine, looks like legit vector or vectorize property
-            }
-          }
+        if ((depth == 1)
+            && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD))) {
+          ;
+        } else {
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
               "property name ('%s') contains character(s) not allowed", key);
-        } while (false);
+        }
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
