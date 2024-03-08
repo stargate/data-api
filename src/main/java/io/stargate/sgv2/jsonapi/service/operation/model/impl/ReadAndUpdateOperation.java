@@ -59,7 +59,6 @@ public record ReadAndUpdateOperation(
     final AtomicInteger modifiedCount = new AtomicInteger(0);
     Uni<ReadOperation.FindResponse> docsToUpdate =
         findOperation().getDocuments(queryExecutor, findOperation().pageState(), null);
-
     return docsToUpdate
         .onItem()
         .transformToMulti(
@@ -69,6 +68,7 @@ public record ReadAndUpdateOperation(
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
+                matchedCount.addAndGet(docs.size());
                 return Multi.createFrom().items(docs.stream());
               }
             })
