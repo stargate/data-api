@@ -47,6 +47,9 @@ public record CreateCollectionOperation(
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
+  // boolean flag for collection creation rollback
+  private static final boolean TOO_MANY_INDEXES_ROLLBACK = true;
+
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
@@ -94,6 +97,7 @@ public record CreateCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
     logger.info("Executing CreateCollectionOperation for {}", name);
+    // validate Data API collection limit guardrail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession().getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -108,16 +112,14 @@ public record CreateCollectionOperation(
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
-    // table doesn't exist, continue
+    // if table doesn't exist, continue to create collection
     if (table == null) {
-      return executeCollectionCreation(queryExecutor);
+      return executeCollectionCreation(queryExecutor, true);
     }
-    // if table exist:
-    // get collection settings from the existing collection
-    CollectionSettings collectionSettings =
+    // if table exists, compare existedCollectionSettings and newCollectionSettings
+    CollectionSettings existedCollectionSettings =
         CollectionSettings.getCollectionSettings(table, objectMapper);
-    // get collection settings from user input
-    CollectionSettings collectionSettings_cur =
+    CollectionSettings newCollectionSettings =
         CollectionSettings.getCollectionSettings(
             name,
             vectorSearch,
@@ -128,8 +130,8 @@ public record CreateCollectionOperation(
     // if table exists we have to choices:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
-    if (collectionSettings.equals(collectionSettings_cur)) {
-      return executeCollectionCreation(queryExecutor);
+    if (existedCollectionSettings.equals(newCollectionSettings)) {
+      return executeCollectionCreation(queryExecutor, false);
     }
     return Uni.createFrom()
         .failure(
@@ -138,7 +140,15 @@ public record CreateCollectionOperation(
                 name));
   }
 
-  private Uni<Supplier<CommandResult>> executeCollectionCreation(QueryExecutor queryExecutor) {
+  /**
+   * execute collection creation and indexes creation
+   *
+   * @param queryExecutor
+   * @param collectionExisted
+   * @return
+   */
+  private Uni<Supplier<CommandResult>> executeCollectionCreation(
+      QueryExecutor queryExecutor, boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(getCreateTable(commandContext.namespace(), name));
     final Uni<Boolean> indexResult =
@@ -186,6 +196,7 @@ public record CreateCollectionOperation(
             })
         .onFailure(
             error ->
+                // InvalidQueryException(DB index limit violation)
                 error instanceof InvalidQueryException
                     && error
                         .getMessage()
@@ -193,27 +204,47 @@ public record CreateCollectionOperation(
                             ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
         .recoverWithUni(
             error -> {
-              DeleteCollectionOperation deleteCollectionOperation =
-                  new DeleteCollectionOperation(commandContext, name);
-              return deleteCollectionOperation
-                  .execute(queryExecutor)
-                  .onItem()
-                  .transform(
-                      res ->
+              // if index creation violates DB index limit and collection not existed before,
+              // and rollback is enabled, then drop the collection
+              if (!collectionExisted && TOO_MANY_INDEXES_ROLLBACK) {
+                return cleanUpCollectionFailedWithTooManyIndex(queryExecutor);
+              }
+              // if index creation violates DB index limit and collection existed before,
+              // will not drop the collection
+              return Uni.createFrom()
+                  .item(
+                      () ->
                           ErrorCode.TOO_MANY_INDEXES.toApiException(
                               "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                              name, dbLimitsConfig.indexesNeededPerCollection()))
-                  .onFailure()
-                  .recoverWithItem(
-                      e -> {
-                        // This is unlikely to happen for delete collection, return with
-                        // TOO_MANY_INDEXES exception
-                        return ErrorCode.TOO_MANY_INDEXES.toApiException(
-                            "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                            name, dbLimitsConfig.indexesNeededPerCollection());
-                      });
+                              name, dbLimitsConfig.indexesNeededPerCollection()));
             });
   }
+
+  public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
+      QueryExecutor queryExecutor) {
+    DeleteCollectionOperation deleteCollectionOperation =
+        new DeleteCollectionOperation(commandContext, name);
+    return deleteCollectionOperation
+        .execute(queryExecutor)
+        .onItem()
+        .transform(
+            res ->
+                ErrorCode.TOO_MANY_INDEXES.toApiException(
+                    "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                    name, dbLimitsConfig.indexesNeededPerCollection()))
+        .onFailure()
+        .recoverWithItem(
+            e -> {
+              // This is unlikely to happen for delete collection though
+              // Also return with TOO_MANY_INDEXES exception
+              return ErrorCode.TOO_MANY_INDEXES.toApiException(
+                  "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                  name, dbLimitsConfig.indexesNeededPerCollection());
+            });
+  }
+
+  // if index creation violates DB index limit and collection not existed before,
+  // then drop the collection and throw TOO_MANY_INDEXES JsonApiException
 
   /**
    * Method for finding existing table with given name, if one exists and returning that table; or
