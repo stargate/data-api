@@ -377,8 +377,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
                   "Date value has to be sent as epoch time");
             } else if (etype != null) {
-              if (true) throw new Error("EType (" + etype + ") found: " + node);
-
               // This will convert to Java value if valid value; we'll just convert back to String
               // since all non-Date JSON extension values are indexed as Strings
               Object evalue = JsonUtil.tryExtractExtendedValue(etype, node);
