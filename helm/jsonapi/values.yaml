@@ -7,12 +7,17 @@ replicaCount: 1
 
 # Coordinator or bridge registry and image
 image:
-  registry: "docker.io"
+  registry: "gcr.io"
   repository: "stargateio/jsonapi"
   tag: "v1"
 
 # topology key for anti affinity
 topologyKey: "kubernetes.io/hostname"
+
+# Stargate gRPC bridge hostname and kubernetes namespace
+sgGrpcBridge:
+  serviceName: "stargate-bridge"
+  namespace: "default"
 
 # JSON API service image - don't change it. CPU and memory are both request
 cpu: 2000
@@ -33,7 +38,7 @@ probe:
     failureThreshold: 5
     initialDelaySeconds: 30
 
-# HorizontalPodAutoscaler for coordinator and all services. This needs metrics server installed (kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml) in the cluster.
+# HorizontalPodAutoscaler for coordinator and all services. This needs metrics server installed (kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml) in the cluster. 
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -41,15 +46,12 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# Ingress is not added to deployment by default. This needs to have ingress controller installed. Default configuration uses nginx controller. (Controller installed using
-# helm upgrade --install ingress-nginx ingress-nginx \
+# Ingress is not added to deployment by default. This needs to have ingress controller installed. Default configuration uses nginx controller. (Controller installed using 
+# helm upgrade --install ingress-nginx ingress-nginx \           
 #   --repo https://kubernetes.github.io/ingress-nginx \
 #   --namespace ingress-nginx --create-namespace
-
-# To connect to cassandra, set ip for end points
-cassandraEndPoints:  "cassandra end points"
 
 ingress:
   enabled: true
   ingressClassName: nginx
-
+ 

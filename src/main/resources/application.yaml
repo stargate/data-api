@@ -3,6 +3,9 @@
 
 stargate:
 
+  data-store:
+    ignore-bridge: true
+
   database:
     limits:
       max-collections: 5
@@ -88,9 +91,6 @@ quarkus:
       max-body-size: 20M
 
     port: 8181
-
-  log:
-    min-level: trace
 
   # built-in micrometer properties
   micrometer:
