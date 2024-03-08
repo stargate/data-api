@@ -243,9 +243,6 @@ public record CreateCollectionOperation(
             });
   }
 
-  // if index creation violates DB index limit and collection not existed before,
-  // then drop the collection and throw TOO_MANY_INDEXES JsonApiException
-
   /**
    * Method for finding existing table with given name, if one exists and returning that table; or
    * if not, verify maximum table limit and return null.
