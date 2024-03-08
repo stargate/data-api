@@ -15,11 +15,7 @@ public enum JsonExtensionType {
 
   OBJECT_ID("$objectId"),
 
-  UUID("$uuid"),
-
-  UUID_V6("$uuid6"),
-
-  UUID_V7("$uuid7");
+  UUID("$uuid");
 
   private final String encodedName;
 
