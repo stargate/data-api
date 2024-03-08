@@ -133,7 +133,7 @@ public record CreateCollectionOperation(
     return Uni.createFrom()
         .failure(
             ErrorCode.INVALID_COLLECTION_NAME.toApiException(
-                "provided collection ('%s') already exists with different 'vector' and/or 'indexing' options",
+                "provided collection ('%s') already exists with different collection options",
                 name));
   }
 
