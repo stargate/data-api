@@ -35,6 +35,10 @@ public enum CommandStatus {
   /** The element has value 1 if collection is created */
   @JsonProperty("ok")
   OK,
+
+  /** Page state value that can be used in client side for pagination */
+  @JsonProperty("pageState")
+  PAGE_STATE,
   /**
    * The element has the document id of newly inserted document part of update, when upserted option
    * is 'true' and no document available in DB for matching condition
