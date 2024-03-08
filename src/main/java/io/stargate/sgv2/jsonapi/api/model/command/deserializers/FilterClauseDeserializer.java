@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -367,21 +368,30 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         }
       case OBJECT:
         {
-          if (JsonUtil.looksLikeEJsonValue(node)) {
-            JsonNode value = node.get(JsonUtil.EJSON_VALUE_KEY_DATE);
-            if (value != null) {
+          if (JsonUtil.looksLikeEJsonValue(node)) { // means it's a single-entry Map, key
+            JsonExtensionType etype = JsonUtil.findJsonExtensionType(node);
+            if (etype == JsonExtensionType.EJSON_DATE) {
+              JsonNode value = node.iterator().next();
               if (value.isIntegralNumber() && value.canConvertToLong()) {
                 return new Date(value.longValue());
-              } else {
-                throw new JsonApiException(
-                    ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
+              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+                  "Date value has to be sent as epoch time");
+            } else if (etype != null) {
+              // This will convert to Java value if valid value; we'll just convert back to String
+              // since all non-Date JSON extension values are indexed as Strings
+              Object evalue = JsonUtil.tryExtractExtendedValue(etype, node);
+              if (evalue != null) {
+                return evalue.toString();
+              }
+              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+                  "" + "JSON Extension value of type '%s' has invalid contents (%s)",
+                  etype.encodedName(), node.iterator().next());
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }
-              throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION,
-                  String.format("Invalid use of %s operator", node.fields().next().getKey()));
+              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+                  "Invalid use of %s operator", node.fieldNames().next());
             }
           } else {
             ObjectNode objectNode = (ObjectNode) node;

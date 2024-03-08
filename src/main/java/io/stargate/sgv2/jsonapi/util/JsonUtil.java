@@ -104,14 +104,9 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_EJSON_VALUE,
-            String.format(
-                "%s: Date (%s) needs to have NUMBER value, has %s (path '%s')",
-                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(),
-                EJSON_VALUE_KEY_DATE,
-                value.getNodeType(),
-                path));
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
+            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
       }
     }
     return null;

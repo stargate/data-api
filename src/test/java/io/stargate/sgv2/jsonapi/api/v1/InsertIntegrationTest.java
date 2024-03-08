@@ -619,7 +619,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
