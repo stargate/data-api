@@ -543,6 +543,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is(UUID_KEY))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+
+      // Search by UUID, full $uuid notation
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+
+      // Search by UUID, short-cut (unwrapped)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -577,6 +591,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is(OBJECTID_KEY))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+      // Search by ObjectId, full $objectId notation
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
+                  .formatted(OBJECTID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+      // Search by ObjectId, shortcut notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
