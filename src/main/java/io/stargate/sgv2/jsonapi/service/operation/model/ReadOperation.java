@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -333,19 +331,6 @@ public interface ReadOperation extends Operation {
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);
             });
-  }
-
-  /**
-   * Database key type is tuple<int, text>, first field is json value type and second field is text
-   *
-   * @param value
-   * @return
-   */
-  default DocumentId getDocumentId(QueryOuterClass.Value value) {
-    QueryOuterClass.Collection coll = value.getCollection();
-    int typeId = Values.tinyint(coll.getElements(0));
-    String documentIdAsText = Values.string(coll.getElements(1));
-    return DocumentId.fromDatabase(typeId, documentIdAsText);
   }
 
   default DocumentId getDocumentId(TupleValue value) {
