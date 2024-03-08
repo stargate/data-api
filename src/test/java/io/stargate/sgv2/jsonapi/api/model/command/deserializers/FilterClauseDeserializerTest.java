@@ -1580,21 +1580,20 @@ public class FilterClauseDeserializerTest {
             {"_id": {"$uuid": "%s"}}
           """.formatted(UUID);
       final ComparisonExpression expectedResult =
-              new ComparisonExpression(
-                      "_id",
-                      List.of(
-                              new ValueComparisonOperation(
-                                      ValueComparisonOperator.EQ,
-                                      new JsonLiteral(UUID, JsonType.DOCUMENT_ID))),
-                      null);
+          new ComparisonExpression(
+              "_id",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral(UUID, JsonType.DOCUMENT_ID))),
+              null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
               filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
-              .isEqualTo(expectedResult.getFilterOperations());
+          .isEqualTo(expectedResult.getFilterOperations());
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-              .isEqualTo(expectedResult.getPath());
+          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
@@ -1605,11 +1604,11 @@ public class FilterClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
-              .isInstanceOf(JsonApiException.class)
-              .satisfies(
-                      t -> {
-                        assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
-                      });
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
+              });
     }
 
     @Test
@@ -1620,11 +1619,11 @@ public class FilterClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
-              .isInstanceOf(JsonApiException.class)
-              .satisfies(
-                      t -> {
-                        assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
-                      });
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
+              });
     }
   }
 }
