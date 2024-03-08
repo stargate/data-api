@@ -185,10 +185,9 @@ public record ReadAndUpdateOperation(
               final WritableShreddedDocument writableShreddedDocument =
                   shredder()
                       .shred(
+                          commandContext(),
                           documentUpdaterResponse.document(),
-                          readDocument.txnId(),
-                          commandContext().indexingProjector(),
-                          commandContext().commandName());
+                          readDocument.txnId());
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();

@@ -114,9 +114,9 @@
       <version>5.0.0</version>
     </dependency>
     <dependency>
-      <!-- for ObjectId handling -->
+      <!-- for ObjectId handling: only need BSON lib not full client -->
       <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-sync</artifactId>
+      <artifactId>bson</artifactId>
       <version>5.0.0</version>
     </dependency>
     <!-- Test dependencies -->

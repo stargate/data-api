@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
@@ -62,11 +64,24 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    return shred(doc, txId, DocumentProjector.identityProjector(), "testCommand");
+    return shred(
+        doc,
+        txId,
+        DocumentProjector.identityProjector(),
+        "testCommand",
+        CollectionSettings.empty());
+  }
+
+  public WritableShreddedDocument shred(CommandContext ctx, JsonNode doc, UUID txId) {
+    return shred(doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings());
   }
 
   public WritableShreddedDocument shred(
-      JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
+      JsonNode doc,
+      UUID txId,
+      DocumentProjector indexProjector,
+      String commandName,
+      CollectionSettings collectionSettings) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {

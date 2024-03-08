@@ -176,8 +176,6 @@ public class JsonUtil {
             return null;
           }
         case UUID:
-        case UUID_V6:
-        case UUID_V7:
           try {
             return java.util.UUID.fromString(value.asText());
           } catch (IllegalArgumentException e) {

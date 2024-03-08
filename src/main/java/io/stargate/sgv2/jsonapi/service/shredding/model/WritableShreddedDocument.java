@@ -189,7 +189,7 @@ public record WritableShreddedDocument(
               break;
           }
           throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-              "invalid value ('%s') for extended JSON type '%s' (path '%s')",
+              "invalid value (%s) for extended JSON type '%s' (path '%s')",
               obj.iterator().next(), obj.fieldNames().next(), path);
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail

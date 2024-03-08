@@ -206,7 +206,7 @@ public class ShredderWithExtendedTypesTest {
           .isNotNull()
           .hasMessage(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value ('\"not-an-oid\"') for extended JSON type '$objectId' (path '_id')")
+                  + ": invalid value (\"not-an-oid\") for extended JSON type '$objectId' (path '_id')")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
     }
 
@@ -226,7 +226,7 @@ public class ShredderWithExtendedTypesTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value ('\"not-a-uuid\"') for extended JSON type '$uuid' (path '_id')");
+                  + ": invalid value (\"not-a-uuid\") for extended JSON type '$uuid' (path '_id')");
 
       // second: JSON Object also not valid UUID representation
       t =
@@ -273,7 +273,7 @@ public class ShredderWithExtendedTypesTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessageStartingWith(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value ('\"abc\"') for extended JSON type '$objectId' (path 'value')");
+                  + ": invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
     }
 
     @Test
@@ -289,7 +289,7 @@ public class ShredderWithExtendedTypesTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessageStartingWith(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value ('\"foobar\"') for extended JSON type '$uuid' (path 'value')");
+                  + ": invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
     }
 
     @Test
