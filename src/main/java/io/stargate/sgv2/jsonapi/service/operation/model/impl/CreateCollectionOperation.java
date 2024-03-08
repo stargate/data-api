@@ -40,15 +40,13 @@ public record CreateCollectionOperation(
     int vectorSize,
     String vectorFunction,
     String comment,
-    int ddlDelayMillis)
+    int ddlDelayMillis,
+    boolean tooManyIndexesRollbackEnabled)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
   // shared matcher instance used to tell Collections from Tables
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
-
-  // boolean flag for collection creation rollback
-  private static final boolean TOO_MANY_INDEXES_ROLLBACK = true;
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
@@ -59,7 +57,8 @@ public record CreateCollectionOperation(
       int vectorSize,
       String vectorFunction,
       String comment,
-      int ddlDelayMillis) {
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -70,7 +69,8 @@ public record CreateCollectionOperation(
         vectorSize,
         vectorFunction,
         comment,
-        ddlDelayMillis);
+        ddlDelayMillis,
+        tooManyIndexesRollbackEnabled);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -80,7 +80,8 @@ public record CreateCollectionOperation(
       CQLSessionCache cqlSessionCache,
       String name,
       String comment,
-      int ddlDelayMillis) {
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -91,7 +92,8 @@ public record CreateCollectionOperation(
         0,
         null,
         comment,
-        ddlDelayMillis);
+        ddlDelayMillis,
+        tooManyIndexesRollbackEnabled);
   }
 
   @Override
@@ -206,7 +208,7 @@ public record CreateCollectionOperation(
             error -> {
               // if index creation violates DB index limit and collection not existed before,
               // and rollback is enabled, then drop the collection
-              if (!collectionExisted && TOO_MANY_INDEXES_ROLLBACK) {
+              if (!collectionExisted && tooManyIndexesRollbackEnabled) {
                 return cleanUpCollectionFailedWithTooManyIndex(queryExecutor);
               }
               // if index creation violates DB index limit and collection existed before,
