@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.bridge.grpc.Values;
+import io.stargate.bridge.proto.QueryOuterClass;
 import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.api.common.cql.builder.Predicate;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CustomValueSerializers;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -700,6 +702,21 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     }
   }
 
+  private static QueryOuterClass.Value getGrpcValue(Object value) {
+    if (value instanceof String) {
+      return Values.of((String) value);
+    } else if (value instanceof BigDecimal) {
+      return Values.of((BigDecimal) value);
+    } else if (value instanceof Byte) {
+      return Values.of((Byte) value);
+    } else if (value instanceof Integer) {
+      return Values.of((Integer) value);
+    } else if (value instanceof Date) {
+      return Values.of(((Date) value).getTime());
+    }
+    return Values.of((String) null);
+  }
+
   /**
    * Return JsonNode for a filter conditions value, used to set in new document created for upsert.
    *
@@ -747,5 +764,9 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
   private static String getHash(DocValueHasher hasher, Object arrayValue) {
     return hasher.getHash(arrayValue).hash();
+  }
+
+  private static QueryOuterClass.Value getDocumentIdValue(DocumentId value) {
+    return Values.of(CustomValueSerializers.getDocumentIdValue(value));
   }
 }
