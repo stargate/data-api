@@ -757,7 +757,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOneFail {
     @Test
-    public void findWithMissingCollection() {
+    public void failForMissingCollection() {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -769,15 +769,15 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              is("Collection does not exist, collection name: no_such_collection"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"));
+              is("Collection does not exist, collection name: no_such_collection"));
     }
 
     @Test
-    public void findWithInvalidCollectionName() {
+    public void failForInvalidCollectionName() {
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -789,12 +789,30 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"))
+                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"));
+    }
+
+    @Test
+    public void failForInvalidJsonExtension() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$guid\": \"doc1\"}}}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"));
+          .body("errors[0].message", is("Unsupported filter operator: $guid"));
     }
   }
 
