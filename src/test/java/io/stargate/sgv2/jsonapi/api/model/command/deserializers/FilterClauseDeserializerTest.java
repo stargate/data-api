@@ -266,7 +266,9 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: $date value has to be sent as epoch time");
               });
     }
 
@@ -281,7 +283,9 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Invalid filter expression: $date value has to be sent as epoch time");
               });
     }
 
@@ -1549,7 +1553,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator $vector");
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $vector");
               });
     }
 

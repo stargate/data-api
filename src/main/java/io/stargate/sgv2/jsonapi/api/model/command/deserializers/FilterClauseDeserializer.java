@@ -375,7 +375,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 return new Date(value.longValue());
               }
               throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
-                  "Date value has to be sent as epoch time");
+                  "$date value has to be sent as epoch time");
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
               // since all non-Date JSON extension values are indexed as Strings
@@ -384,7 +384,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 return evalue.toString();
               }
               throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
-                  "" + "JSON Extension value of type '%s' has invalid contents (%s)",
+                  "JSON Extension value of type '%s' has invalid contents (%s)",
                   etype.encodedName(), node.iterator().next());
             } else {
               // handle an invalid filter use case:
