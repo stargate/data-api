@@ -258,29 +258,28 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
-      FilterOperator operator = null;
-      try {
-        operator = FilterOperator.FilterOperatorUtils.getComparisonOperator(updateField.getKey());
-      } catch (JsonApiException exception) {
-        // If getComparisonOperator returns an exception, check for subdocument equality condition,
-        // this will happen when shortcut is used "filter" : { "size" : { "w": 21, "h": 14} }
-        if (updateField.getKey().startsWith("$")
-            && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
-          throw exception;
-        } else {
-          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION,
-                String.format(
-                    "%s: filter clause path ('%s') contains character(s) not allowed",
-                    ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
-          }
-          comparisonExpressionList.add(
-              ComparisonExpression.eq(
-                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
-          return comparisonExpressionList;
+      final String updateKey = updateField.getKey();
+      FilterOperator operator =
+          FilterOperator.FilterOperatorUtils.findComparisonOperator(updateKey);
+
+      // If assumed filter not found, may be JSON Extension value like "$date" or "$uuid":
+      if (operator == null) {
+        if (updateKey.startsWith("$") && JsonUtil.findJsonExtensionType(updateKey) == null) {
+          throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
+        if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+          throw new JsonApiException(
+              ErrorCode.INVALID_FILTER_EXPRESSION,
+              String.format(
+                  "%s: filter clause path ('%s') contains character(s) not allowed",
+                  ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+        }
+        comparisonExpressionList.add(
+            ComparisonExpression.eq(
+                entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+        return comparisonExpressionList;
       }
+
       // if the key does not match pattern or the entry is not ($vector and $exist operator)
       // combination, throw error
       if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
@@ -378,6 +377,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
                   "Date value has to be sent as epoch time");
             } else if (etype != null) {
+              if (true) throw new Error("EType (" + etype + ") found: " + node);
+
               // This will convert to Java value if valid value; we'll just convert back to String
               // since all non-Date JSON extension values are indexed as Strings
               Object evalue = JsonUtil.tryExtractExtendedValue(etype, node);

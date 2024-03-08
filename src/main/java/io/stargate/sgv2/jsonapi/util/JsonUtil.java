@@ -154,6 +154,10 @@ public class JsonUtil {
     return null;
   }
 
+  public static JsonExtensionType findJsonExtensionType(String encodedType) {
+    return JsonExtensionType.fromEncodedName(encodedType);
+  }
+
   public static Object tryExtractExtendedValue(JsonExtensionType type, JsonNode valueWrapper) {
     // Caller should have verified that we have a single-field Object; but double check
     if (valueWrapper.isObject() && valueWrapper.size() == 1) {
